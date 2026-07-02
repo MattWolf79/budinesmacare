@@ -39,9 +39,18 @@ const employeeNavItems = [
   { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
 ];
 
-function ProfileCard({ profileId, selectedProfile, onSelectProfile }) {
+function UserPhoto({ user, fallback }) {
+  if (user?.photoUrl) {
+    return <img src={user.photoUrl} alt="" />;
+  }
+
+  return fallback;
+}
+
+function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
   const profile = profileOptions[profileId];
   const isSelected = selectedProfile === profileId;
+  const shouldUseClientPhoto = profileId === 'client' && Boolean(user?.photoUrl);
 
   return (
     <button
@@ -49,7 +58,9 @@ function ProfileCard({ profileId, selectedProfile, onSelectProfile }) {
       className={`profile-card ${isSelected ? 'is-selected' : ''}`}
       onClick={() => onSelectProfile(profileId)}
     >
-      <span className="profile-card-icon" aria-hidden="true">{profile.icon}</span>
+      <span className={`profile-card-icon ${shouldUseClientPhoto ? 'has-photo' : ''}`} aria-hidden="true">
+        <UserPhoto user={profileId === 'client' ? user : null} fallback={profile.icon} />
+      </span>
       <span className="profile-card-eyebrow">{profile.eyebrow}</span>
       <span className="profile-card-title">{profile.label}</span>
       <span className="profile-card-copy">{profile.description}</span>
@@ -101,6 +112,7 @@ function ServiceColorLegend() {
 function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canChangeProfile }) {
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
   const profile = profileOptions[selectedProfile];
+  const shouldUseClientPhoto = selectedProfile === 'client' && Boolean(user?.photoUrl);
 
   return (
     <main className="role-workspace">
@@ -128,6 +140,9 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
           </div>
 
           <div className="role-workspace-session">
+            <span className="app-navbar-avatar role-workspace-avatar" aria-hidden="true">
+              <UserPhoto user={user} fallback={String(user?.displayName || user?.email || 'U').trim().charAt(0).toUpperCase() || 'U'} />
+            </span>
             <span>{user?.email || 'Sin usuario'}</span>
             {canChangeProfile && (
               <button type="button" className="app-navbar-switch" onClick={onChangeProfile}>Cambiar perfil</button>
@@ -144,7 +159,9 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
           <p>{profile.description}</p>
           {selectedProfile === 'client' && <ServiceColorLegend />}
         </div>
-        <span className="role-workspace-icon" aria-hidden="true">{profile.icon}</span>
+        <span className={`role-workspace-icon ${shouldUseClientPhoto ? 'has-photo' : ''}`} aria-hidden="true">
+          <UserPhoto user={shouldUseClientPhoto ? user : null} fallback={profile.icon} />
+        </span>
       </section>
 
       {selectedProfile === 'client' ? (
@@ -209,6 +226,7 @@ export default function RoleAccess({
               profileId={profileId}
               selectedProfile={selectedProfile}
               onSelectProfile={onSelectProfile}
+              user={user}
             />
           ))}
         </div>

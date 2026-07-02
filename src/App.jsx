@@ -16,6 +16,18 @@ const getAvailableProfiles = (role) => {
   return ['client'];
 };
 
+const getAuthPhotoUrl = (user) => {
+  const metadata = user?.user_metadata || {};
+
+  return metadata.avatar_url || metadata.picture || metadata.photo_url || null;
+};
+
+const getAuthDisplayName = (user) => {
+  const metadata = user?.user_metadata || {};
+
+  return metadata.full_name || metadata.name || user?.email || '';
+};
+
 const loadStoredInternalSession = () => {
   const storedSession = sessionStorage.getItem(internalSessionStorageKey);
 
@@ -216,7 +228,8 @@ export default function App() {
     ...session.user,
     email: authProfile?.email || session.user.email,
     role: authProfile?.role || accessProfile,
-    displayName: authProfile?.display_name || session.user.email,
+    displayName: authProfile?.display_name || getAuthDisplayName(session.user),
+    photoUrl: getAuthPhotoUrl(session.user),
     employeeId: authProfile?.employee_id || null,
     isInternal: false
   };

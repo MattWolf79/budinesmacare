@@ -77,7 +77,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
             .order('start_time', { ascending: true });
 
       const [employeeResult, bookingsResult, servicesResult, availabilityResult] = await Promise.all([
-        supabase.from('employees').select('*').eq('id', employeeId).maybeSingle(),
+        supabase.from('employees').select('*').eq('id', employeeId).is('deleted_at', null).maybeSingle(),
         supabase
           .from('bookings')
           .select('*')

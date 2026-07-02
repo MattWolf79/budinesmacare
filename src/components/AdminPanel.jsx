@@ -180,7 +180,7 @@ export default function AdminPanel({ view, onDataChanged }) {
     setIsLoading(true);
 
     const [employeeResult, serviceResult, relationResult, accessResult] = await Promise.all([
-      supabase.from('employees').select('*').order('name', { ascending: true }),
+      supabase.from('employees').select('*').is('deleted_at', null).order('name', { ascending: true }),
       supabase.from('services').select('*').order('id', { ascending: true }),
       supabase.from('employee_services').select('*'),
       view === 'employees'
@@ -458,10 +458,14 @@ export default function AdminPanel({ view, onDataChanged }) {
     const shouldDelete = window.confirm(`¿Eliminar a ${employee.name}?`);
     if (!shouldDelete) return;
 
+    const now = new Date().toISOString().slice(0, 19);
+
     const { data: existingBookings, error: bookingError } = await supabase
       .from('bookings')
       .select('id')
       .eq('employee_id', employee.id)
+      .in('status', ['reserved', 'confirmed'])
+      .gte('end_at', now)
       .limit(1);
 
     if (bookingError) {
@@ -470,27 +474,16 @@ export default function AdminPanel({ view, onDataChanged }) {
     }
 
     if (existingBookings?.length) {
-      alert('No se puede eliminar un empleado con turnos cargados. Podés dejarlo inactivo para conservar el historial.');
+      alert('No se puede eliminar un empleado con turnos futuros. Cancelá o reasigná esos turnos primero.');
       return;
     }
 
-    const relationResult = await supabase
-      .from('employee_services')
-      .delete()
-      .eq('employee_id', employee.id);
-
-    if (relationResult.error) {
-      alert('No se pudieron quitar las actividades del empleado.');
-      return;
-    }
-
-    const employeeResult = await supabase
-      .from('employees')
-      .delete()
-      .eq('id', employee.id);
+    const employeeResult = await supabase.rpc('delete_admin_employee', {
+      employee_id_value: employee.id
+    });
 
     if (employeeResult.error) {
-      alert('No se pudo eliminar el empleado.');
+      alert(`No se pudo eliminar el empleado. ${employeeResult.error.message}`);
       return;
     }
 
@@ -695,7 +688,7 @@ export default function AdminPanel({ view, onDataChanged }) {
 
   if (isLoading) {
     return (
-      <section className="admin-shell">
+      <section className="admin-shell employee-admin-manager">
         <div className="agenda-modal-card admin-loading-card">
           <div className="agenda-modal-header">Administración</div>
           <div className="agenda-modal-body agenda-empty-state">Cargando datos...</div>
@@ -742,8 +735,14 @@ export default function AdminPanel({ view, onDataChanged }) {
                   </div>
 
                   <div className="admin-record-actions">
-                    <button className="agenda-close-button" type="button" disabled={isSaving} onClick={() => approveAccessRequest(request)}>Aprobar</button>
-                    <button className="agenda-danger-button" type="button" disabled={isSaving} onClick={() => rejectAccessRequest(request)}>Rechazar</button>
+                    <button className="agenda-close-button access-request-action" type="button" disabled={isSaving} onClick={() => approveAccessRequest(request)} aria-label="Aprobar solicitud" title="Aprobar solicitud">
+                      <span className="admin-action-label-full">Aprobar</span>
+                      <span className="admin-action-label-compact" aria-hidden="true">✓</span>
+                    </button>
+                    <button className="agenda-danger-button access-request-action" type="button" disabled={isSaving} onClick={() => rejectAccessRequest(request)} aria-label="Rechazar solicitud" title="Rechazar solicitud">
+                      <span className="admin-action-label-full">Rechazar</span>
+                      <span className="admin-action-label-compact" aria-hidden="true">X</span>
+                    </button>
                   </div>
                 </article>
               ))}
@@ -752,7 +751,7 @@ export default function AdminPanel({ view, onDataChanged }) {
         )}
 
         <div className="admin-layout">
-          <form className="agenda-modal-card admin-form-card" onSubmit={saveEmployee}>
+          <form className="agenda-modal-card admin-form-card employee-form-card" onSubmit={saveEmployee}>
             <div className="agenda-modal-header">{editingEmployeeId ? 'Editar empleado' : 'Nuevo empleado'}</div>
             <div className="agenda-modal-body admin-form-grid">
               <label className="admin-photo-field">
@@ -777,8 +776,8 @@ export default function AdminPanel({ view, onDataChanged }) {
               </div>
 
               <label>
-                Nombre visible
-                <input value={employeeForm.name} onChange={(event) => updateEmployeeField('name', event.target.value)} placeholder="Julio Pérez" />
+                Usuario visible
+                <input value={employeeForm.name} onChange={(event) => updateEmployeeField('name', event.target.value)} placeholder="Catatita" />
               </label>
 
               <div className="admin-two-columns">
@@ -839,21 +838,21 @@ export default function AdminPanel({ view, onDataChanged }) {
               </div>
 
               <div className="admin-actions">
-                <button className="agenda-close-button" type="submit" disabled={isSaving}>
-                  {editingEmployeeId ? 'Guardar' : 'Crear'}
+                <button className="agenda-close-button" type="submit" disabled={isSaving} aria-label={editingEmployeeId ? 'Guardar empleado' : 'Crear empleado'} title={editingEmployeeId ? 'Guardar empleado' : 'Crear empleado'}>
+                  ✓
                 </button>
                 {editingEmployeeId && (
-                  <button className="agenda-option-button" type="button" onClick={resetEmployeeForm}>
-                    Limpiar
+                  <button className="agenda-option-button" type="button" onClick={resetEmployeeForm} aria-label="Cancelar edición" title="Cancelar edición">
+                    X
                   </button>
                 )}
               </div>
             </div>
           </form>
 
-          <div className="admin-list">
+          <div className="admin-list employee-record-list">
             {employees.map((employee) => (
-              <article className={`admin-record-card admin-record-card-plain ${employee.active === false ? 'is-muted' : ''}`} key={employee.id}>
+              <article className={`admin-record-card admin-record-card-plain employee-record-card ${employee.active === false ? 'is-muted' : ''}`} key={employee.id}>
                 <div className="admin-record-avatar" aria-hidden="true">
                   {employee.photo_url ? <img src={employee.photo_url} alt="" /> : (employee.name || 'E').slice(0, 1).toUpperCase()}
                 </div>
@@ -861,13 +860,19 @@ export default function AdminPanel({ view, onDataChanged }) {
                   <div className="admin-record-title">{employee.name}</div>
                   <div className="admin-record-meta">{employee.code || 'Sin código'} · {employee.active === false ? 'Inactivo' : 'Activo'}</div>
                   <div className="admin-record-profile-line">
-                    {employee.birth_date ? `${calculateAge(employee.birth_date)} años` : 'Sin nacimiento'} · {employee.phone || 'Sin celular'} · {[employee.address_street, employee.address_number, employee.address_locality].filter(Boolean).join(' ') || 'Sin dirección'}
+                    {employee.phone || 'Sin celular'}
                   </div>
                   <div className="admin-record-services">{getServiceNames(employee.id, employeeServices, services) || 'Sin actividades asignadas'}</div>
                 </div>
                 <div className="admin-record-actions">
-                  <button className="agenda-close-button" type="button" onClick={() => editEmployee(employee)}>Editar</button>
-                  <button className="agenda-danger-button" type="button" onClick={() => deleteEmployee(employee)}>Eliminar</button>
+                  <button className="agenda-close-button employee-list-action" type="button" onClick={() => editEmployee(employee)} aria-label="Editar empleado" title="Editar empleado">
+                    <span className="employee-list-action-full">Editar</span>
+                    <span className="employee-list-action-icon" aria-hidden="true">✏️</span>
+                  </button>
+                  <button className="agenda-danger-button employee-list-action" type="button" onClick={() => deleteEmployee(employee)} aria-label="Eliminar empleado" title="Eliminar empleado">
+                    <span className="employee-list-action-full">Eliminar</span>
+                    <span className="employee-list-action-icon" aria-hidden="true">🗑️</span>
+                  </button>
                 </div>
               </article>
             ))}
@@ -878,7 +883,7 @@ export default function AdminPanel({ view, onDataChanged }) {
   }
 
   return (
-    <section className="admin-shell">
+    <section className="admin-shell service-admin-manager">
       <div className="admin-hero">
         <div>
           <span className="admin-kicker">ABM</span>
@@ -890,7 +895,7 @@ export default function AdminPanel({ view, onDataChanged }) {
       </div>
 
       <div className="admin-layout">
-        <form className="agenda-modal-card admin-form-card" onSubmit={saveService}>
+        <form className="agenda-modal-card admin-form-card service-form-card" onSubmit={saveService}>
           <div className="agenda-modal-header">{editingServiceId ? 'Editar actividad' : 'Nueva actividad'}</div>
           <div className="agenda-modal-body admin-form-grid">
             <label>
@@ -957,21 +962,21 @@ export default function AdminPanel({ view, onDataChanged }) {
             </label>
 
             <div className="admin-actions">
-              <button className="agenda-close-button" type="submit" disabled={isSaving}>
-                {editingServiceId ? 'Guardar' : 'Crear'}
+              <button className="agenda-close-button" type="submit" disabled={isSaving} aria-label={editingServiceId ? 'Guardar actividad' : 'Crear actividad'} title={editingServiceId ? 'Guardar actividad' : 'Crear actividad'}>
+                ✓
               </button>
               {editingServiceId && (
-                <button className="agenda-option-button" type="button" onClick={resetServiceForm}>
-                  Limpiar
+                <button className="agenda-option-button" type="button" onClick={resetServiceForm} aria-label="Cancelar edición" title="Cancelar edición">
+                  X
                 </button>
               )}
             </div>
           </div>
         </form>
 
-        <div className="admin-list">
+        <div className="admin-list service-record-list">
           {services.map((service) => (
-            <article className={`admin-record-card ${service.active === false ? 'is-muted' : ''}`} key={service.id}>
+            <article className={`admin-record-card service-record-card ${service.active === false ? 'is-muted' : ''}`} key={service.id}>
               <div className="admin-record-color" style={{ background: service.color || '#94a3b8' }} />
               <div className="admin-record-main">
                 <div className="admin-record-title admin-record-title-icon"><ActivityIcon service={service} size="small" /> {service.name}</div>
@@ -979,11 +984,15 @@ export default function AdminPanel({ view, onDataChanged }) {
                 <div className="admin-record-services">{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length} empleado(s) asignado(s)</div>
               </div>
               <div className="admin-record-actions">
-                <button className="agenda-close-button" type="button" onClick={() => editService(service)}>Editar</button>
-                <button className="agenda-option-button" type="button" onClick={() => toggleServiceStatus(service)}>
-                  {service.active === false ? 'Activar' : 'Desactivar'}
+                <button className="agenda-close-button" type="button" onClick={() => editService(service)} aria-label="Editar actividad" title="Editar actividad">
+                  ✏️
                 </button>
-                <button className="agenda-danger-button" type="button" onClick={() => deleteService(service)}>Eliminar</button>
+                <button className="agenda-option-button" type="button" onClick={() => toggleServiceStatus(service)} aria-label={service.active === false ? 'Activar actividad' : 'Desactivar actividad'} title={service.active === false ? 'Activar actividad' : 'Desactivar actividad'}>
+                  {service.active === false ? '+' : '-'}
+                </button>
+                <button className="agenda-danger-button" type="button" onClick={() => deleteService(service)} aria-label="Eliminar actividad" title="Eliminar actividad">
+                  X
+                </button>
               </div>
             </article>
           ))}

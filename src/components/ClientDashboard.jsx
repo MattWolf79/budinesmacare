@@ -52,7 +52,7 @@ export default function ClientDashboard({ user }) {
           .order('start_at', { ascending: true })
           .limit(6),
         supabase.from('services').select('*'),
-        supabase.from('employees').select('*')
+        supabase.from('employees').select('*').is('deleted_at', null)
       ]);
 
       if (!active) return;

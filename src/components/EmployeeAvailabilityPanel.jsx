@@ -185,7 +185,7 @@ export default function EmployeeAvailabilityPanel({
     setLoadError('');
 
     const employeesRequest = isAdminMode
-      ? supabase.from('employees').select('*').order('name', { ascending: true })
+      ? supabase.from('employees').select('*').is('deleted_at', null).order('name', { ascending: true })
       : Promise.resolve({ data: employeeId ? [{ id: employeeId, name: employeeName || 'Mi agenda', active: true }] : [], error: null });
 
     const availabilityRequest = !isAdminMode && user?.isInternal
@@ -620,8 +620,8 @@ export default function EmployeeAvailabilityPanel({
                             <strong>{getEmployeeName(employees, item.employee_id, employeeName || 'Empleado')}</strong>
                             <time>{formatTime(item.start_time)} - {formatTime(item.end_time)}</time>
                             <div className="availability-calendar-actions">
-                              <button className="agenda-close-button" type="button" onClick={() => editAvailability(item)} disabled={isSaving}>Editar</button>
-                              <button className="agenda-danger-button" type="button" onClick={() => deleteAvailability(item)} disabled={isSaving}>Eliminar</button>
+                              <button className="agenda-close-button" type="button" onClick={() => editAvailability(item)} disabled={isSaving} aria-label="Editar horario" title="Editar horario">✏️</button>
+                              <button className="agenda-danger-button" type="button" onClick={() => deleteAvailability(item)} disabled={isSaving} aria-label="Eliminar horario" title="Eliminar horario">X</button>
                             </div>
                           </article>
                         ))}

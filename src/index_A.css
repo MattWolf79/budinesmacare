@@ -2152,12 +2152,12 @@ code {
 
 .availability-calendar-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 22px;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
-    "time actions"
-    "name actions";
+    "name actions"
+    "time actions";
   align-items: center;
-  gap: 1px 4px;
+  gap: 1px 5px;
   border: 1px solid #bae6fd;
   border-radius: 6px;
   padding: 4px;
@@ -2173,8 +2173,8 @@ code {
 
 .availability-calendar-item strong {
   grid-area: name;
-  color: #0f766e;
-  font-size: 9px;
+  color: #155e75;
+  font-size: 10px;
   font-weight: 900;
 }
 
@@ -2188,19 +2188,19 @@ code {
 .availability-calendar-actions {
   grid-area: actions;
   display: grid;
-  grid-template-columns: 22px;
-  gap: 2px;
+  grid-template-columns: repeat(2, 24px);
+  gap: 3px;
 }
 
 .availability-calendar-actions .agenda-close-button,
 .availability-calendar-actions .agenda-danger-button {
-  width: 22px;
-  min-width: 22px;
-  height: 22px;
-  min-height: 22px;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  min-height: 24px;
   padding: 0;
   border-radius: 5px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
 }
 
@@ -4149,108 +4149,5 @@ code {
 
   .employee-record-card .employee-list-action-icon {
     display: none !important;
-  }
-}
-
-/* ==== FIX EMPLEADOS JUL-2026 ==== */
-@media (max-width: 1080px) {
-  .employee-record-card.admin-record-card-plain:has(.admin-record-avatar) {
-    grid-template-columns: 38px minmax(0, 1fr) auto !important;
-  }
-
-  .employee-record-card .admin-record-actions {
-    display: grid !important;
-    grid-auto-flow: column !important;
-    grid-auto-columns: 34px !important;
-    width: auto !important;
-    min-width: unset !important;
-    gap: 6px !important;
-    padding: 7px !important;
-  }
-
-  .employee-record-card .employee-list-action {
-    width: 34px !important;
-    min-width: 34px !important;
-    height: 34px !important;
-    min-height: 34px !important;
-    padding: 0 !important;
-  }
-
-  .employee-record-card .employee-list-action-full {
-    display: none !important;
-  }
-
-  .employee-record-card .employee-list-action-icon {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-}
-
-
-/* Desktop: texto completo en botones empleados */
-@media (min-width: 1081px) {
-
-  .employee-record-card .admin-record-actions {
-    display: flex !important;
-    gap: 8px !important;
-  }
-
-  .employee-record-card .employee-list-action {
-    width: auto !important;
-    min-width: 90px !important;
-    height: 34px !important;
-    padding: 0 12px !important;
-  }
-
-  .employee-record-card .employee-list-action-full {
-    display: inline !important;
-  }
-
-  .employee-record-card .employee-list-action-icon {
-    display: none !important;
-  }
-}
-
-/* Disponibilidad: priorizar horarios en la grilla semanal de escritorio. */
-@media (min-width: 641px) {
-  .employee-availability-manager .availability-calendar-item {
-    grid-template-columns: minmax(72px, 1fr) 20px !important;
-    grid-template-areas:
-      "time actions"
-      "name actions" !important;
-    gap: 1px 3px !important;
-    padding: 3px !important;
-  }
-
-  .employee-availability-manager .availability-calendar-item time {
-    overflow: visible !important;
-    font-size: 10px !important;
-    line-height: 1.15 !important;
-    text-overflow: clip !important;
-    white-space: nowrap !important;
-  }
-
-  .employee-availability-manager .availability-calendar-item strong {
-    font-size: 8px !important;
-    line-height: 1.15 !important;
-  }
-
-  .employee-availability-manager .availability-calendar-actions {
-    display: grid !important;
-    grid-template-columns: 20px !important;
-    gap: 2px !important;
-  }
-
-  .employee-availability-manager .availability-calendar-actions .agenda-close-button,
-  .employee-availability-manager .availability-calendar-actions .agenda-danger-button {
-    width: 20px !important;
-    min-width: 20px !important;
-    height: 20px !important;
-    min-height: 20px !important;
-    padding: 0 !important;
-    border-radius: 5px !important;
-    font-size: 11px !important;
-    line-height: 1 !important;
   }
 }

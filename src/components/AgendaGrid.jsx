@@ -269,7 +269,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     return Promise.all([
       supabase.from('bookings').select('*'),
       supabase.from('services').select('*'),
-      supabase.from('employees').select('*'),
+      supabase.from('employees').select('*').is('deleted_at', null),
       supabase.from('employee_availability').select('*')
     ]);
   };
@@ -329,6 +329,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       const { data: emp } = await supabase
         .from('employees')
         .select('*')
+        .is('deleted_at', null)
         .in('id', filteredIds);
 
       if (!active) return;
