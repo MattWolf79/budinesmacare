@@ -69,6 +69,14 @@ const formatDateForDb = (date) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
+const formatDateOnlyForDb = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
 const buildReservationRange = (day, startSlot, endSlot) => {
   const startLocal = buildSlotDate(day, startSlot);
   const endLocal = buildSlotDate(day, endSlot + 1);
@@ -129,21 +137,35 @@ const clientHasBookingConflict = (bookings, client, range) => {
   });
 };
 
-const employeeHasBlockConflict = (blocks, employeeId, range) => {
+const timeToMinutes = (value) => {
+  const [hours = 0, minutes = 0] = String(value || '').slice(0, 5).split(':').map(Number);
+  return (hours * 60) + minutes;
+};
+
+const employeeHasAvailability = (availability, employeeId, range, skipAvailabilityCheck = false) => {
+  if (skipAvailabilityCheck) return true;
   if (!range) return false;
 
-  const newStart = range.startLocal.getTime();
-  const newEnd = range.endLocal.getTime();
+  const rangeStart = range.startLocal;
+  const rangeEnd = range.endLocal;
+  const weekday = rangeStart.getDay();
+  const rangeDate = formatDateOnlyForDb(rangeStart);
+  const startMinutes = (rangeStart.getHours() * 60) + rangeStart.getMinutes();
+  const isSameDay = rangeStart.getFullYear() === rangeEnd.getFullYear() &&
+    rangeStart.getMonth() === rangeEnd.getMonth() &&
+    rangeStart.getDate() === rangeEnd.getDate();
+  const endMinutes = isSameDay ? (rangeEnd.getHours() * 60) + rangeEnd.getMinutes() : 24 * 60;
 
-  return blocks.some((block) => {
-    if (String(block.employee_id) !== String(employeeId)) return false;
+  return availability.some((item) => {
+    if (item.active === false) return false;
+    if (String(item.employee_id) !== String(employeeId)) return false;
+    if (item.available_date) {
+      if (String(item.available_date) !== rangeDate) return false;
+    } else if (Number(item.weekday) !== weekday) {
+      return false;
+    }
 
-    return rangesOverlap(
-      parseBookingDate(block.start_at).getTime(),
-      parseBookingDate(block.end_at).getTime(),
-      newStart,
-      newEnd
-    );
+    return timeToMinutes(item.start_time) <= startMinutes && timeToMinutes(item.end_time) >= endMinutes;
   });
 };
 
@@ -188,7 +210,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [employeeBlocks, setEmployeeBlocks] = useState([]);
+  const [employeeAvailability, setEmployeeAvailability] = useState([]);
+  const [availabilityLoadFailed, setAvailabilityLoadFailed] = useState(false);
 
   const [offset, setOffset] = useState(0);
   const [visibleDayCount, setVisibleDayCount] = useState(getVisibleDayCount);
@@ -247,15 +270,16 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       supabase.from('bookings').select('*'),
       supabase.from('services').select('*'),
       supabase.from('employees').select('*'),
-      supabase.from('employee_blocks').select('*')
+      supabase.from('employee_availability').select('*')
     ]);
   };
 
-  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, { data: blocks } = {}]) => {
+  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}]) => {
     setBookings(bk || []);
     setServices(srv || []);
     setEmployees(emp || []);
-    setEmployeeBlocks(blocks || []);
+    setEmployeeAvailability(availabilityResult.data || []);
+    setAvailabilityLoadFailed(Boolean(availabilityResult.error));
   };
 
   const loadAll = async () => {
@@ -311,8 +335,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
       const available = (emp || []).filter((employee) =>
         employee.active !== false &&
-        !employeeHasBookingConflict(bookings, employee.id, selectedRange) &&
-        !employeeHasBlockConflict(employeeBlocks, employee.id, selectedRange)
+        employeeHasAvailability(employeeAvailability, employee.id, selectedRange, availabilityLoadFailed) &&
+        !employeeHasBookingConflict(bookings, employee.id, selectedRange)
       );
 
       setAvailableEmployees(available);
@@ -323,7 +347,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     return () => {
       active = false;
     };
-  }, [selectedService, selection, bookings, employeeBlocks, offset, selectedRange, isEmployeeView, employeeId]);
+  }, [selectedService, selection, bookings, employeeAvailability, availabilityLoadFailed, offset, selectedRange, isEmployeeView, employeeId]);
 
   /* =========================
      SELECTION
@@ -477,8 +501,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    if (employeeHasBlockConflict(employeeBlocks, employee.id, range)) {
-      alert(`${employee.name} no está disponible en ese horario`);
+    if (!employeeHasAvailability(employeeAvailability, employee.id, range, availabilityLoadFailed)) {
+      alert(`${employee.name} no tiene disponibilidad configurada para ese horario`);
       return;
     }
 
@@ -502,23 +526,25 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    const { data: blockConflicts, error: blockConflictError } = await supabase
-      .from('employee_blocks')
-      .select('id')
-      .eq('employee_id', employee.id)
-      .lt('start_at', range.end_at)
-      .gt('end_at', range.start_at)
-      .limit(1);
+    if (!availabilityLoadFailed) {
+      const weekday = range.startLocal.getDay();
+      const { data: availabilityRows, error: availabilityError } = await supabase
+        .from('employee_availability')
+        .select('*')
+        .eq('employee_id', employee.id)
+        .eq('weekday', weekday)
+        .eq('active', true);
 
-    if (blockConflictError) {
-      alert('No se pudo validar la disponibilidad del empleado. Intentá nuevamente.');
-      return;
-    }
+      if (availabilityError) {
+        alert('No se pudo validar la disponibilidad horaria del empleado. Intentá nuevamente.');
+        return;
+      }
 
-    if (blockConflicts?.length) {
-      alert(`${employee.name} no está disponible en ese horario`);
-      await loadAll();
-      return;
+      if (!employeeHasAvailability(availabilityRows || [], employee.id, range)) {
+        alert(`${employee.name} no tiene disponibilidad configurada para ese horario`);
+        await loadAll();
+        return;
+      }
     }
 
     const { data: clientConflicts, error: clientConflictError } = await supabase

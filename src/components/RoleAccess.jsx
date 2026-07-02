@@ -18,15 +18,15 @@ const profileOptions = {
     eyebrow: 'Acceso interno',
     icon: '🧑‍💼',
     title: 'Mi agenda laboral',
-    description: 'Un panel enfocado en los turnos asignados, disponibilidad y bloqueos propios.',
-    actions: ['Ver agenda asignada', 'Consultar disponibilidad', 'Revisar bloqueos']
+    description: 'Un panel enfocado en los turnos asignados y la disponibilidad propia.',
+    actions: ['Ver agenda asignada', 'Consultar disponibilidad', 'Actualizar horarios']
   },
   admin: {
     label: 'Administrador',
     eyebrow: 'Gestión completa',
     icon: '🛠️',
     title: 'Administración general',
-    description: 'Mantiene la agenda completa actual con empleados, actividades, bloqueos y reservas.',
+    description: 'Mantiene la agenda completa actual con empleados, actividades, disponibilidad y reservas.',
     actions: ['Gestionar agenda', 'Administrar empleados', 'Configurar actividades']
   }
 };
@@ -36,7 +36,7 @@ const profileList = ['client', 'employee', 'admin'];
 const employeeNavItems = [
   { id: 'summary', label: 'Resumen', icon: '▦' },
   { id: 'agenda', label: 'Agenda', icon: '📅' },
-  { id: 'blocks', label: 'Bloqueos', icon: '⛔' }
+  { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
 ];
 
 function ProfileCard({ profileId, selectedProfile, onSelectProfile }) {

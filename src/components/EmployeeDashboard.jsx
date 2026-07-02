@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import ActivityIcon from './ActivityIcon';
 import AgendaGrid from './AgendaGrid';
-import EmployeeBlocksPanel from './EmployeeBlocksPanel';
+import EmployeeAvailabilityPanel from './EmployeeAvailabilityPanel';
 
 const parseDate = (value) => value instanceof Date ? value : new Date(value);
 
@@ -35,11 +35,21 @@ const getCustomerLabel = (booking) => (
     : booking.user_email || 'Cliente sin email'
 );
 
+const formatAvailabilityTime = (value) => String(value || '').slice(0, 5);
+
+const getTodayWeekday = () => new Date().getDay();
+
+const getProfileInitials = (label) => {
+  const parts = String(label || 'Empleado').trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return String(parts[0]?.[0] || 'E').toUpperCase();
+};
+
 export default function EmployeeDashboard({ user, activeView = 'summary' }) {
   const [employee, setEmployee] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
-  const [blocks, setBlocks] = useState([]);
+  const [availability, setAvailability] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -57,15 +67,16 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
       setIsLoading(true);
       setError('');
 
-      const blocksRequest = user?.isInternal
-        ? supabase.rpc('list_internal_employee_blocks', { account_id_value: user.id })
+      const availabilityRequest = user?.isInternal
+        ? supabase.rpc('list_internal_employee_availability', { account_id_value: user.id })
         : supabase
-            .from('employee_blocks')
+            .from('employee_availability')
             .select('*')
             .eq('employee_id', employeeId)
-            .order('start_at', { ascending: true });
+            .order('weekday', { ascending: true })
+            .order('start_time', { ascending: true });
 
-      const [employeeResult, bookingsResult, servicesResult, blocksResult] = await Promise.all([
+      const [employeeResult, bookingsResult, servicesResult, availabilityResult] = await Promise.all([
         supabase.from('employees').select('*').eq('id', employeeId).maybeSingle(),
         supabase
           .from('bookings')
@@ -74,7 +85,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
           .in('status', ['confirmed', 'reserved'])
           .order('start_at', { ascending: true }),
         supabase.from('services').select('*'),
-        blocksRequest
+        availabilityRequest
       ]);
 
       if (!active) {
@@ -83,7 +94,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
 
       setIsLoading(false);
 
-      const firstError = employeeResult.error || bookingsResult.error || servicesResult.error || blocksResult.error;
+      const firstError = employeeResult.error || bookingsResult.error || servicesResult.error || availabilityResult.error;
 
       if (firstError) {
         setError(firstError.message || 'No se pudo cargar la información del empleado.');
@@ -93,7 +104,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
       setEmployee(employeeResult.data || null);
       setBookings(bookingsResult.data || []);
       setServices(servicesResult.data || []);
-      setBlocks(blocksResult.data || []);
+      setAvailability(availabilityResult.data || []);
     };
 
     loadEmployeeWorkspace();
@@ -119,10 +130,25 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
     [upcomingBookings]
   );
 
-  const upcomingBlocks = useMemo(
-    () => blocks.filter((block) => parseDate(block.end_at) >= now),
-    [blocks, now]
+  const activeAvailability = useMemo(
+    () => availability.filter((item) => item.active !== false),
+    [availability]
   );
+
+  const availabilityDayCount = useMemo(
+    () => new Set(activeAvailability.map((item) => Number(item.weekday))).size,
+    [activeAvailability]
+  );
+
+  const todayAvailabilityLabel = useMemo(() => {
+    const todayItems = activeAvailability.filter((item) => Number(item.weekday) === getTodayWeekday());
+
+    if (!todayItems.length) return 'hoy sin horario';
+
+    return todayItems
+      .map((item) => `${formatAvailabilityTime(item.start_time)}-${formatAvailabilityTime(item.end_time)}`)
+      .join(' · ');
+  }, [activeAvailability]);
 
   if (!employeeId) {
     return (
@@ -165,15 +191,20 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
               <strong>{upcomingBookings.length}</strong>
               <p>turno(s) activos</p>
             </article>
-            <article className="employee-summary-card">
-              <span>Bloqueos</span>
-              <strong>{upcomingBlocks.length}</strong>
-              <p>no disponibilidad</p>
+            <article className="employee-summary-card employee-summary-card-availability">
+              <span>Disponibilidad</span>
+              <strong>{availabilityDayCount}</strong>
+              <p>{todayAvailabilityLabel}</p>
             </article>
           </div>
 
           <div className="employee-layout">
             <article className="employee-card employee-profile-card">
+              <span className="employee-profile-avatar" aria-hidden="true">
+                {employee?.photo_url || user?.photoUrl ? (
+                  <img src={employee?.photo_url || user?.photoUrl} alt="" />
+                ) : getProfileInitials(employee?.name || user?.displayName || user?.email)}
+              </span>
               <p className="admin-kicker">Empleado</p>
               <h2>{employee?.name || user?.email || 'Empleado'}</h2>
               <p>{employee?.active === false ? 'Perfil inactivo' : 'Perfil activo'}</p>
@@ -232,13 +263,13 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
         </article>
       )}
 
-      {activeView === 'blocks' && (
-        <EmployeeBlocksPanel
+      {activeView === 'availability' && (
+        <EmployeeAvailabilityPanel
           user={user}
+          mode="employee"
           employeeId={employeeId}
           employeeName={employee?.name || user?.email || 'Empleado'}
-          initialBlocks={blocks}
-          onBlocksChanged={refreshEmployeeWorkspace}
+          onAvailabilityChanged={refreshEmployeeWorkspace}
         />
       )}
     </section>

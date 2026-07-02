@@ -32,6 +32,24 @@ El archivo incremental historico usado durante desarrollo es:
 database/001_profiles_internal_access.sql
 ```
 
+La migracion incremental especifica para agregar disponibilidad por fecha a una base existente es:
+
+```text
+database/002_employee_availability.sql
+```
+
+Si la base ya tenia disponibilidad creada con el modelo anterior, aplicar luego:
+
+```text
+database/004_employee_availability_dates.sql
+```
+
+Para bases existentes que ya llegan hasta disponibilidad por fecha, aplicar despues la migracion de perfiles internos con usuario unico, datos personales y foto:
+
+```text
+database/005_internal_user_profiles.sql
+```
+
 Para una base nueva, usar `000_full_schema_migration.sql`. El archivo `001_profiles_internal_access.sql` queda como referencia de evolucion, no como primera opcion de migracion desde cero.
 
 ## Stack destino
@@ -46,7 +64,9 @@ Para una base nueva, usar `000_full_schema_migration.sql`. El archivo `001_profi
 
 La aplicacion usa horarios locales y debe conservarlos sin drift UTC.
 
-- `bookings.start_at`, `bookings.end_at`, `employee_blocks.start_at` y `employee_blocks.end_at` son `timestamp without time zone`.
+- `bookings.start_at` y `bookings.end_at` son `timestamp without time zone`.
+- `employee_availability.available_date` es `date` y representa la fecha concreta disponible.
+- `employee_availability.start_time` y `employee_availability.end_time` son `time without time zone` porque representan horarios dentro de esa fecha.
 - El frontend guarda strings locales `YYYY-MM-DD HH:mm:ss`.
 - No convertir estos campos con `toISOString()`.
 - Las constraints usan `tsrange(start_at, end_at, '[)')`.
@@ -131,21 +151,27 @@ Indices:
 - `bookings_user_idx`
 - `bookings_status_idx`
 
-### `public.employee_blocks`
+### `public.employee_availability`
 
-Bloqueos/no disponibilidad de empleados.
+Disponibilidad positiva por fecha de empleados.
 
 Columnas principales:
 - `id uuid primary key default gen_random_uuid()`
 - `employee_id uuid references public.employees(id) on delete cascade`
-- `start_at timestamp without time zone not null`
-- `end_at timestamp without time zone not null`
-- `reason text`
+- `available_date date not null`
+- `weekday smallint`: `0` domingo, `1` lunes, ..., `6` sabado
+- `start_time time without time zone`
+- `end_time time without time zone`
+- `active boolean default true`
 - `created_at`, `updated_at`
 
 Reglas:
-- `employee_blocks_valid_range_chk`: `end_at > start_at`
-- `employee_blocks_employee_no_overlap_excl`: evita bloqueos superpuestos del mismo empleado.
+- `employee_availability_weekday_chk`: `weekday between 0 and 6`
+- `employee_availability_valid_range_chk`: `end_time > start_time`
+- `employee_availability_no_overlap_excl`: evita rangos activos superpuestos del mismo empleado en la misma fecha.
+
+Indices:
+- `employee_availability_employee_date_idx`
 
 ### `public.profiles`
 
@@ -261,22 +287,21 @@ Uso:
   - Solo admin Auth.
   - Crea cuenta interna directa.
 
-## RPCs requeridas para bloqueos de empleado interno
+## RPCs requeridas para disponibilidad de empleado interno
 
 Estas son necesarias porque el login interno no es una sesion real de Supabase Auth y no satisface RLS con `auth.uid()`.
 
-- `public.list_internal_employee_blocks(account_id_value)` devuelve `jsonb`.
-- `public.create_internal_employee_block(account_id_value, start_at_value, end_at_value, reason_value)` devuelve `jsonb`.
-- `public.update_internal_employee_block(account_id_value, block_id_value text, start_at_value, end_at_value, reason_value)` devuelve `jsonb`.
-- `public.delete_internal_employee_block(account_id_value, block_id_value text)` devuelve `void`.
+- `public.list_internal_employee_availability(account_id_value)` devuelve `jsonb`.
+- `public.create_internal_employee_availability(account_id_value, available_date_value, start_time_value, end_time_value, active_value)` devuelve `jsonb`.
+- `public.update_internal_employee_availability(account_id_value, availability_id_value text, available_date_value, start_time_value, end_time_value, active_value)` devuelve `jsonb`.
+- `public.delete_internal_employee_availability(account_id_value, availability_id_value text)` devuelve `void`.
 
 Estas funciones validan:
 - cuenta interna activa;
 - rol employee;
 - `employee_id` vinculado;
-- rango valido;
-- no crear/mover bloqueos al pasado;
-- no solapar bloqueos del mismo empleado.
+- dia semanal valido;
+- rango horario valido.
 
 ## Triggers requeridos
 
@@ -285,7 +310,7 @@ Estas funciones validan:
 - `employees_set_updated_at`.
 - `services_set_updated_at`.
 - `bookings_set_updated_at`.
-- `employee_blocks_set_updated_at`.
+- `employee_availability_set_updated_at`.
 - `profiles_set_updated_at`.
 - `internal_accounts_set_updated_at`.
 
@@ -301,7 +326,8 @@ Role `authenticated`:
 - `select, insert, update, delete` en `services`.
 - `select, insert, update, delete` en `employees`.
 - `select, insert, delete` en `employee_services`.
-- `select, insert, update, delete` en `employee_blocks`.
+- `select` en `employee_availability` para `anon` y `authenticated`.
+- `insert, update, delete` en `employee_availability` para `authenticated`.
 - usage/select sobre sequences de `public`.
 
 Tablas internas:
@@ -312,7 +338,7 @@ Tablas internas:
 RPCs publicas:
 - `request_internal_registration`: `anon`, `authenticated`.
 - `verify_internal_login`: `anon`, `authenticated`.
-- RPCs de bloqueos internos: `anon`, `authenticated`.
+- RPCs de disponibilidad interna: `anon`, `authenticated`.
 
 RPCs administrativas:
 - `register_internal_account`, `list_internal_registration_requests`, `approve_internal_registration`, `reject_internal_registration`: `authenticated`, con validacion interna `public.is_admin()`.
@@ -327,7 +353,7 @@ RLS habilitado en:
 - `services`
 - `employees`
 - `employee_services`
-- `employee_blocks`
+- `employee_availability`
 
 Policies principales:
 
@@ -369,12 +395,12 @@ Policies principales:
 - `bookings_update_own_future_or_admin`: admin, empleado Auth vinculado o cliente propietario futuro.
 - `bookings_delete_own_future_or_admin`: admin, empleado Auth vinculado o cliente propietario futuro.
 
-### Employee blocks
+### Employee availability
 
-- `employee_blocks_authenticated_read`: authenticated lee todos para disponibilidad.
-- `employee_blocks_admin_insert`: admin o empleado Auth vinculado.
-- `employee_blocks_admin_update`: admin o empleado Auth vinculado.
-- `employee_blocks_admin_delete`: admin o empleado Auth vinculado.
+- `employee_availability_read`: anon/authenticated lee disponibilidad para filtrar agenda y soportar sesiones internas.
+- `employee_availability_insert`: admin o empleado Auth vinculado.
+- `employee_availability_update`: admin o empleado Auth vinculado.
+- `employee_availability_delete`: admin o empleado Auth vinculado.
 
 ## Orden recomendado de migracion en Supabase
 
@@ -397,8 +423,10 @@ where email = 'tu-email@gmail.com';
    - crear actividades;
    - crear empleados;
    - asignar actividades a empleados;
-   - crear bloqueos si corresponde;
+  - configurar disponibilidad por fecha de empleados;
    - aprobar solicitudes internas.
+
+Para actualizar una base existente ya migrada con `004_employee_availability_dates.sql`, ejecutar tambien `database/005_internal_user_profiles.sql` antes de probar nuevos registros internos.
 
 ## Validaciones post-migracion
 
@@ -413,7 +441,7 @@ where table_schema = 'public'
     'services',
     'employee_services',
     'bookings',
-    'employee_blocks',
+    'employee_availability',
     'profiles',
     'internal_accounts',
     'internal_registration_requests'
@@ -434,7 +462,7 @@ where conname in (
   'bookings_employee_no_active_overlap_excl',
   'bookings_user_no_active_overlap_excl',
   'bookings_customer_email_no_active_overlap_excl',
-  'employee_blocks_employee_no_overlap_excl'
+  'employee_availability_no_overlap_excl'
 )
 order by conname;
 ```
@@ -457,10 +485,10 @@ where nspname = 'public'
     'request_internal_registration',
     'verify_internal_login',
     'approve_internal_registration',
-    'list_internal_employee_blocks',
-    'create_internal_employee_block',
-    'update_internal_employee_block',
-    'delete_internal_employee_block'
+    'list_internal_employee_availability',
+    'create_internal_employee_availability',
+    'update_internal_employee_availability',
+    'delete_internal_employee_availability'
   )
 order by proname;
 ```
@@ -474,15 +502,15 @@ order by proname;
 5. Crear al menos una actividad con icono, color y duracion.
 6. Crear al menos un empleado.
 7. Asignar la actividad al empleado.
-8. Crear un turno desde cliente.
-9. Intentar crear otro turno superpuesto para el mismo empleado: debe fallar.
-10. Intentar crear otro turno superpuesto para el mismo cliente/email: debe fallar.
-11. Crear bloqueo de empleado.
-12. Intentar reservar dentro del bloqueo: debe fallar.
+8. Configurar disponibilidad por fecha o rango de fechas del empleado.
+9. Crear un turno desde cliente dentro de esa disponibilidad.
+10. Intentar crear un turno fuera de disponibilidad: no debe ofrecer empleado disponible.
+11. Intentar crear otro turno superpuesto para el mismo empleado: debe fallar.
+12. Intentar crear otro turno superpuesto para el mismo cliente/email: debe fallar.
 13. Registrar cuenta interna de empleado.
 14. Aprobar solicitud desde admin.
 15. Login interno empleado.
-16. Crear/editar/eliminar bloqueo propio.
+16. Crear/editar/eliminar disponibilidad propia.
 17. En celular, probar cancelar turno desde la grilla y confirmar que no abre seleccion nueva.
 
 ## Datos que no migra automaticamente este SQL
@@ -496,7 +524,7 @@ Si se necesita migrar datos reales, exportar e importar en este orden para respe
 3. `employee_services`
 4. `profiles` despues de tener usuarios en `auth.users`
 5. `bookings`
-6. `employee_blocks`
+6. `employee_availability`
 7. `internal_accounts` si realmente se desean conservar hashes internos
 8. `internal_registration_requests` si se desea conservar historico
 
@@ -509,11 +537,11 @@ Advertencia sobre `auth.users`:
 
 - Las sesiones internas actuales viven en `sessionStorage`; no son sesiones Supabase Auth.
 - Las escrituras directas protegidas por `auth.uid()` funcionan para usuarios Auth, no para sesiones internas puras.
-- Por eso existen RPCs `security definer` para bloqueos internos de empleados.
+- Por eso existen RPCs `security definer` para disponibilidad interna de empleados.
 - Si en el futuro se quiere que admin interno maneje todo sin Google/Auth, crear RPCs administrativas para ABM y reservas.
 - Las exclusion constraints pueden fallar si se importan datos con solapamientos. Limpiar conflictos antes de aplicar constraints o importar datos ya saneados.
 - Mantener `extensions.crypt` y `extensions.gen_salt`, no `crypt` sin schema, porque en Supabase puede depender del `search_path`.
 
 ## Prompt corto para otro asistente
 
-Necesito migrar/recrear la base de datos de Turnos App en un nuevo Supabase. Usa `database/000_full_schema_migration.sql` como fuente principal. Debe incluir extensiones `pgcrypto` y `btree_gist`, enum `app_role`, tablas `employees`, `services`, `employee_services`, `bookings`, `employee_blocks`, `profiles`, `internal_accounts`, `internal_registration_requests`, triggers, funciones helper, RPCs internas, grants, RLS policies y exclusion constraints contra solapamientos de empleados, usuarios, emails de clientes y bloqueos. Mantener `timestamp without time zone` y formato local para horarios. Despues de ejecutar, configurar Google OAuth, hacer login con la cuenta admin y promoverla en `profiles` con rol `admin`. Validar con consultas a tablas, constraints, policies y RPCs, y probar alta de actividad, empleado, reserva, bloqueo, login interno y cancelacion movil.
+Necesito migrar/recrear la base de datos de Turnos App en un nuevo Supabase. Usa `database/000_full_schema_migration.sql` como fuente principal. Debe incluir extensiones `pgcrypto` y `btree_gist`, enum `app_role`, tablas `employees`, `services`, `employee_services`, `bookings`, `employee_availability`, `profiles`, `internal_accounts`, `internal_registration_requests`, triggers, funciones helper, RPCs internas, grants, RLS policies y exclusion constraints contra solapamientos de empleados, usuarios, emails de clientes y disponibilidad por fecha. Mantener `timestamp without time zone` y formato local para turnos, `date` para la fecha disponible, y `time without time zone` para los rangos horarios de disponibilidad. Despues de ejecutar, configurar Google OAuth, hacer login con la cuenta admin y promoverla en `profiles` con rol `admin`. Validar con consultas a tablas, constraints, policies y RPCs, y probar alta de actividad, empleado, disponibilidad, reserva, login interno y cancelacion movil.

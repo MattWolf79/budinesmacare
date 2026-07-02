@@ -61,6 +61,14 @@ $$;
 create table if not exists public.employees (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  first_name text,
+  last_name text,
+  birth_date date,
+  phone text,
+  address_street text,
+  address_number text,
+  address_locality text,
+  photo_url text,
   code text,
   active boolean not null default true,
   created_at timestamp without time zone not null default now(),
@@ -106,15 +114,18 @@ create table if not exists public.bookings (
   constraint bookings_status_chk check (status in ('reserved', 'confirmed', 'cancelled'))
 );
 
-create table if not exists public.employee_blocks (
+create table if not exists public.employee_availability (
   id uuid primary key default gen_random_uuid(),
   employee_id uuid not null references public.employees(id) on delete cascade,
-  start_at timestamp without time zone not null,
-  end_at timestamp without time zone not null,
-  reason text,
+  available_date date not null,
+  weekday smallint not null,
+  start_time time without time zone not null,
+  end_time time without time zone not null,
+  active boolean not null default true,
   created_at timestamp without time zone not null default now(),
   updated_at timestamp without time zone not null default now(),
-  constraint employee_blocks_valid_range_chk check (end_at > start_at)
+  constraint employee_availability_weekday_chk check (weekday between 0 and 6),
+  constraint employee_availability_valid_range_chk check (end_time > start_time)
 );
 
 -- -----------------------------------------------------------------------------
@@ -146,7 +157,16 @@ create table if not exists public.profiles (
 create table if not exists public.internal_accounts (
   id uuid primary key default gen_random_uuid(),
   role public.app_role not null,
+  username text not null,
   display_name text not null,
+  first_name text,
+  last_name text,
+  birth_date date,
+  phone text,
+  address_street text,
+  address_number text,
+  address_locality text,
+  photo_url text,
   username_normalized text not null,
   password_hash text not null,
   employee_id uuid references public.employees(id) on delete set null,
@@ -155,7 +175,8 @@ create table if not exists public.internal_accounts (
   created_at timestamp without time zone not null default now(),
   updated_at timestamp without time zone not null default now(),
   constraint internal_accounts_role_chk check (role in ('admin'::public.app_role, 'employee'::public.app_role)),
-  constraint internal_accounts_username_chk check (username_normalized = public.normalize_text(display_name)),
+  constraint internal_accounts_username_chk check (username_normalized = public.normalize_text(username)),
+  constraint internal_accounts_username_not_blank_chk check (length(trim(username)) >= 3),
   constraint internal_accounts_password_hash_chk check (length(password_hash) > 20),
   constraint internal_accounts_employee_link_chk check (
     (role = 'employee' and employee_id is not null)
@@ -166,7 +187,16 @@ create table if not exists public.internal_accounts (
 create table if not exists public.internal_registration_requests (
   id uuid primary key default gen_random_uuid(),
   role public.app_role not null,
+  username text not null,
   display_name text not null,
+  first_name text,
+  last_name text,
+  birth_date date,
+  phone text,
+  address_street text,
+  address_number text,
+  address_locality text,
+  photo_url text,
   username_normalized text not null,
   password_hash text not null,
   employee_id uuid references public.employees(id) on delete set null,
@@ -176,7 +206,8 @@ create table if not exists public.internal_registration_requests (
   created_at timestamp without time zone not null default now(),
   constraint internal_registration_requests_role_chk check (role in ('admin'::public.app_role, 'employee'::public.app_role)),
   constraint internal_registration_requests_status_chk check (status in ('pending', 'approved', 'rejected')),
-  constraint internal_registration_requests_username_chk check (username_normalized = public.normalize_text(display_name)),
+  constraint internal_registration_requests_username_chk check (username_normalized = public.normalize_text(username)),
+  constraint internal_registration_requests_username_not_blank_chk check (length(trim(username)) >= 3),
   constraint internal_registration_requests_password_hash_chk check (length(password_hash) > 20)
 );
 
@@ -215,9 +246,9 @@ create trigger bookings_set_updated_at
 before update on public.bookings
 for each row execute function public.set_updated_at();
 
-drop trigger if exists employee_blocks_set_updated_at on public.employee_blocks;
-create trigger employee_blocks_set_updated_at
-before update on public.employee_blocks
+drop trigger if exists employee_availability_set_updated_at on public.employee_availability;
+create trigger employee_availability_set_updated_at
+before update on public.employee_availability
 for each row execute function public.set_updated_at();
 
 drop trigger if exists profiles_set_updated_at on public.profiles;
@@ -282,12 +313,15 @@ create index if not exists profiles_user_id_idx on public.profiles(user_id);
 create index if not exists profiles_role_idx on public.profiles(role);
 create index if not exists profiles_employee_id_idx on public.profiles(employee_id);
 
-create unique index if not exists internal_accounts_role_username_uidx
-  on public.internal_accounts(role, username_normalized);
+create unique index if not exists internal_accounts_username_uidx
+  on public.internal_accounts(username_normalized);
 create index if not exists internal_accounts_employee_id_idx
   on public.internal_accounts(employee_id);
 create index if not exists internal_registration_requests_status_idx
   on public.internal_registration_requests(status, role);
+create index if not exists internal_registration_requests_pending_username_idx
+  on public.internal_registration_requests(username_normalized)
+  where status = 'pending';
 create index if not exists internal_registration_requests_employee_id_idx
   on public.internal_registration_requests(employee_id);
 
@@ -307,8 +341,8 @@ create index if not exists bookings_user_idx
   on public.bookings(user_id);
 create index if not exists bookings_status_idx
   on public.bookings(status);
-create index if not exists employee_blocks_employee_range_idx
-  on public.employee_blocks(employee_id, start_at, end_at);
+create index if not exists employee_availability_employee_date_idx
+  on public.employee_availability(employee_id, available_date, start_time, end_time);
 
 do $$
 begin
@@ -351,13 +385,19 @@ end $$;
 
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conname = 'employee_blocks_employee_no_overlap_excl') then
-    alter table public.employee_blocks
-      add constraint employee_blocks_employee_no_overlap_excl
+  if not exists (select 1 from pg_constraint where conname = 'employee_availability_no_overlap_excl') then
+    alter table public.employee_availability
+      add constraint employee_availability_no_overlap_excl
       exclude using gist (
         employee_id with =,
-        tsrange(start_at, end_at, '[)') with &&
-      );
+        available_date with =,
+        int4range(
+          ((extract(hour from start_time)::int * 60) + extract(minute from start_time)::int),
+          ((extract(hour from end_time)::int * 60) + extract(minute from end_time)::int),
+          '[)'
+        ) with &&
+      )
+      where (active = true);
   end if;
 end $$;
 
@@ -410,15 +450,32 @@ $$;
 -- Internal access RPCs
 -- -----------------------------------------------------------------------------
 
+drop function if exists public.request_internal_registration(public.app_role, text, text, uuid);
+drop function if exists public.request_internal_registration(public.app_role, text, text, text, date, text, text, text, text, text, text, uuid);
+drop function if exists public.register_internal_account(public.app_role, text, text, uuid);
+drop function if exists public.register_internal_account(public.app_role, text, text, text, text, date, text, text, text, text, text, uuid);
+drop function if exists public.verify_internal_login(public.app_role, text, text);
+drop function if exists public.list_internal_registration_requests(text);
+drop function if exists public.approve_internal_registration(uuid, uuid);
+
 create or replace function public.request_internal_registration(
   account_role public.app_role,
-  display_name_value text,
+  username_value text,
+  first_name_value text,
+  last_name_value text,
+  birth_date_value date,
+  phone_value text,
   password_value text,
+  address_street_value text default null,
+  address_number_value text default null,
+  address_locality_value text default null,
+  photo_url_value text default null,
   employee_id_value uuid default null
 )
 returns table (
   id uuid,
   role public.app_role,
+  username text,
   display_name text,
   status text
 )
@@ -427,39 +484,77 @@ security definer
 set search_path = public
 as $$
 declare
-  clean_name text := trim(coalesce(display_name_value, ''));
+  clean_username text := trim(coalesce(username_value, ''));
+  clean_first_name text := trim(coalesce(first_name_value, ''));
+  clean_last_name text := trim(coalesce(last_name_value, ''));
+  clean_display_name text := trim(concat_ws(' ', nullif(trim(coalesce(first_name_value, '')), ''), nullif(trim(coalesce(last_name_value, '')), '')));
   clean_password text := trim(coalesce(password_value, ''));
 begin
   if account_role not in ('admin'::public.app_role, 'employee'::public.app_role) then
     raise exception 'Rol interno invalido.';
   end if;
 
-  if length(clean_name) < 3 then
-    raise exception 'El nombre debe tener al menos 3 caracteres.';
+  if length(clean_username) < 3 or clean_username !~ '^[A-Za-z0-9._-]+$' then
+    raise exception 'El usuario debe tener al menos 3 caracteres y solo puede usar letras, numeros, punto, guion o guion bajo.';
+  end if;
+
+  if length(clean_first_name) < 2 or length(clean_last_name) < 2 then
+    raise exception 'Ingresá nombre y apellido.';
+  end if;
+
+  if birth_date_value is null or birth_date_value > current_date then
+    raise exception 'La fecha de nacimiento es invalida.';
   end if;
 
   if length(clean_password) < 6 or clean_password !~ '^[A-Za-z0-9]+$' then
     raise exception 'La contraseña debe ser alfanumerica y tener al menos 6 caracteres.';
   end if;
 
+  if exists (select 1 from public.internal_accounts accounts where accounts.username_normalized = public.normalize_text(clean_username)) then
+    raise exception 'Ya existe una cuenta interna con ese usuario.';
+  end if;
+
+  if exists (select 1 from public.internal_registration_requests requests where requests.status = 'pending' and requests.username_normalized = public.normalize_text(clean_username)) then
+    raise exception 'Ya existe una solicitud pendiente con ese usuario.';
+  end if;
+
   return query
   insert into public.internal_registration_requests (
     role,
+    username,
     display_name,
+    first_name,
+    last_name,
+    birth_date,
+    phone,
+    address_street,
+    address_number,
+    address_locality,
+    photo_url,
     username_normalized,
     password_hash,
     employee_id
   )
   values (
     account_role,
-    clean_name,
-    public.normalize_text(clean_name),
+    clean_username,
+    clean_display_name,
+    clean_first_name,
+    clean_last_name,
+    birth_date_value,
+    nullif(trim(coalesce(phone_value, '')), ''),
+    nullif(trim(coalesce(address_street_value, '')), ''),
+    nullif(trim(coalesce(address_number_value, '')), ''),
+    nullif(trim(coalesce(address_locality_value, '')), ''),
+    nullif(photo_url_value, ''),
+    public.normalize_text(clean_username),
     extensions.crypt(clean_password, extensions.gen_salt('bf')),
     employee_id_value
   )
   returning
     internal_registration_requests.id,
     internal_registration_requests.role,
+    internal_registration_requests.username,
     internal_registration_requests.display_name,
     internal_registration_requests.status;
 end;
@@ -467,14 +562,24 @@ $$;
 
 create or replace function public.register_internal_account(
   account_role public.app_role,
-  display_name_value text,
+  username_value text,
+  first_name_value text,
+  last_name_value text,
   password_value text,
+  birth_date_value date default null,
+  phone_value text default null,
+  address_street_value text default null,
+  address_number_value text default null,
+  address_locality_value text default null,
+  photo_url_value text default null,
   employee_id_value uuid default null
 )
 returns table (
   id uuid,
   role public.app_role,
+  username text,
   display_name text,
+  photo_url text,
   employee_id uuid
 )
 language plpgsql
@@ -482,7 +587,10 @@ security definer
 set search_path = public
 as $$
 declare
-  clean_name text := trim(coalesce(display_name_value, ''));
+  clean_username text := trim(coalesce(username_value, ''));
+  clean_first_name text := trim(coalesce(first_name_value, ''));
+  clean_last_name text := trim(coalesce(last_name_value, ''));
+  clean_display_name text := trim(concat_ws(' ', nullif(trim(coalesce(first_name_value, '')), ''), nullif(trim(coalesce(last_name_value, '')), '')));
   clean_password text := trim(coalesce(password_value, ''));
 begin
   if not public.is_admin() then
@@ -493,8 +601,12 @@ begin
     raise exception 'Rol interno invalido.';
   end if;
 
-  if length(clean_name) < 3 then
-    raise exception 'El nombre debe tener al menos 3 caracteres.';
+  if length(clean_username) < 3 or clean_username !~ '^[A-Za-z0-9._-]+$' then
+    raise exception 'El usuario debe tener al menos 3 caracteres y solo puede usar letras, numeros, punto, guion o guion bajo.';
+  end if;
+
+  if length(clean_first_name) < 2 or length(clean_last_name) < 2 then
+    raise exception 'Ingresá nombre y apellido.';
   end if;
 
   if length(clean_password) < 6 or clean_password !~ '^[A-Za-z0-9]+$' then
@@ -508,35 +620,59 @@ begin
   return query
   insert into public.internal_accounts (
     role,
+    username,
     display_name,
+    first_name,
+    last_name,
+    birth_date,
+    phone,
+    address_street,
+    address_number,
+    address_locality,
+    photo_url,
     username_normalized,
     password_hash,
     employee_id
   )
   values (
     account_role,
-    clean_name,
-    public.normalize_text(clean_name),
+    clean_username,
+    clean_display_name,
+    clean_first_name,
+    clean_last_name,
+    birth_date_value,
+    nullif(trim(coalesce(phone_value, '')), ''),
+    nullif(trim(coalesce(address_street_value, '')), ''),
+    nullif(trim(coalesce(address_number_value, '')), ''),
+    nullif(trim(coalesce(address_locality_value, '')), ''),
+    nullif(photo_url_value, ''),
+    public.normalize_text(clean_username),
     extensions.crypt(clean_password, extensions.gen_salt('bf')),
     employee_id_value
   )
   returning
     internal_accounts.id,
     internal_accounts.role,
+    internal_accounts.username,
     internal_accounts.display_name,
+    internal_accounts.photo_url,
     internal_accounts.employee_id;
 end;
 $$;
 
 create or replace function public.verify_internal_login(
   account_role public.app_role,
-  display_name_value text,
+  username_value text,
   password_value text
 )
 returns table (
   id uuid,
   role public.app_role,
+  username text,
   display_name text,
+  first_name text,
+  last_name text,
+  photo_url text,
   employee_id uuid
 )
 language plpgsql
@@ -550,7 +686,7 @@ begin
   into account_record
   from public.internal_accounts
   where internal_accounts.role = account_role
-    and internal_accounts.username_normalized = public.normalize_text(display_name_value)
+    and internal_accounts.username_normalized = public.normalize_text(username_value)
     and internal_accounts.active = true
   limit 1;
 
@@ -566,7 +702,11 @@ begin
   select
     account_record.id,
     account_record.role,
+    account_record.username,
     account_record.display_name,
+    account_record.first_name,
+    account_record.last_name,
+    account_record.photo_url,
     account_record.employee_id;
 end;
 $$;
@@ -575,7 +715,16 @@ create or replace function public.list_internal_registration_requests(status_val
 returns table (
   id uuid,
   role public.app_role,
+  username text,
   display_name text,
+  first_name text,
+  last_name text,
+  birth_date date,
+  phone text,
+  address_street text,
+  address_number text,
+  address_locality text,
+  photo_url text,
   employee_id uuid,
   status text,
   created_at timestamp without time zone,
@@ -594,7 +743,16 @@ begin
   select
     requests.id,
     requests.role,
+    requests.username,
     requests.display_name,
+    requests.first_name,
+    requests.last_name,
+    requests.birth_date,
+    requests.phone,
+    requests.address_street,
+    requests.address_number,
+    requests.address_locality,
+    requests.photo_url,
     requests.employee_id,
     requests.status,
     requests.created_at,
@@ -614,7 +772,9 @@ create or replace function public.approve_internal_registration(
 returns table (
   id uuid,
   role public.app_role,
+  username text,
   display_name text,
+  photo_url text,
   employee_id uuid
 )
 language plpgsql
@@ -646,31 +806,70 @@ begin
   target_employee_id := coalesce(employee_id_value, request_record.employee_id);
 
   if request_record.role = 'employee'::public.app_role and target_employee_id is null then
-    insert into public.employees (name, active)
-    values (request_record.display_name, true)
+    insert into public.employees (
+      name,
+      first_name,
+      last_name,
+      birth_date,
+      phone,
+      address_street,
+      address_number,
+      address_locality,
+      photo_url,
+      active
+    )
+    values (
+      request_record.display_name,
+      request_record.first_name,
+      request_record.last_name,
+      request_record.birth_date,
+      request_record.phone,
+      request_record.address_street,
+      request_record.address_number,
+      request_record.address_locality,
+      request_record.photo_url,
+      true
+    )
     returning employees.id into target_employee_id;
   end if;
 
   if exists (
     select 1
     from public.internal_accounts accounts
-    where accounts.role = request_record.role
-      and accounts.username_normalized = request_record.username_normalized
+    where accounts.username_normalized = request_record.username_normalized
   ) then
-    raise exception 'Ya existe una cuenta interna con ese nombre y rol.';
+    raise exception 'Ya existe una cuenta interna con ese usuario.';
   end if;
 
   return query
   insert into public.internal_accounts (
     role,
+    username,
     display_name,
+    first_name,
+    last_name,
+    birth_date,
+    phone,
+    address_street,
+    address_number,
+    address_locality,
+    photo_url,
     username_normalized,
     password_hash,
     employee_id
   )
   values (
     request_record.role,
+    request_record.username,
     request_record.display_name,
+    request_record.first_name,
+    request_record.last_name,
+    request_record.birth_date,
+    request_record.phone,
+    request_record.address_street,
+    request_record.address_number,
+    request_record.address_locality,
+    request_record.photo_url,
     request_record.username_normalized,
     request_record.password_hash,
     target_employee_id
@@ -678,7 +877,9 @@ begin
   returning
     internal_accounts.id,
     internal_accounts.role,
+    internal_accounts.username,
     internal_accounts.display_name,
+    internal_accounts.photo_url,
     internal_accounts.employee_id;
 
   update public.internal_registration_requests
@@ -714,15 +915,15 @@ begin
 end;
 $$;
 
--- Employee internal block RPCs.
-drop function if exists public.list_internal_employee_blocks(uuid);
-drop function if exists public.create_internal_employee_block(uuid, timestamp without time zone, timestamp without time zone, text);
-drop function if exists public.update_internal_employee_block(uuid, uuid, timestamp without time zone, timestamp without time zone, text);
-drop function if exists public.update_internal_employee_block(uuid, text, timestamp without time zone, timestamp without time zone, text);
-drop function if exists public.delete_internal_employee_block(uuid, uuid);
-drop function if exists public.delete_internal_employee_block(uuid, text);
+-- Employee internal recurring availability RPCs.
+drop function if exists public.list_internal_employee_availability(uuid);
+drop function if exists public.create_internal_employee_availability(uuid, smallint, time without time zone, time without time zone, boolean);
+drop function if exists public.create_internal_employee_availability(uuid, date, time without time zone, time without time zone, boolean);
+drop function if exists public.update_internal_employee_availability(uuid, text, smallint, time without time zone, time without time zone, boolean);
+drop function if exists public.update_internal_employee_availability(uuid, text, date, time without time zone, time without time zone, boolean);
+drop function if exists public.delete_internal_employee_availability(uuid, text);
 
-create or replace function public.list_internal_employee_blocks(account_id_value uuid)
+create or replace function public.list_internal_employee_availability(account_id_value uuid)
 returns jsonb
 language plpgsql
 security definer
@@ -730,7 +931,7 @@ set search_path = public
 as $$
 declare
   account_record public.internal_accounts%rowtype;
-  blocks_payload jsonb;
+  availability_payload jsonb;
 begin
   select *
   into account_record
@@ -744,24 +945,25 @@ begin
     raise exception 'La cuenta interna no esta vinculada a un empleado activo.';
   end if;
 
-  select coalesce(jsonb_agg(to_jsonb(ordered_blocks) order by ordered_blocks.start_at), '[]'::jsonb)
-  into blocks_payload
+  select coalesce(jsonb_agg(to_jsonb(ordered_availability) order by ordered_availability.available_date, ordered_availability.start_time), '[]'::jsonb)
+  into availability_payload
   from (
-    select blocks.*
-    from public.employee_blocks blocks
-    where blocks.employee_id = account_record.employee_id
-    order by blocks.start_at asc
-  ) ordered_blocks;
+    select availability.*
+    from public.employee_availability availability
+    where availability.employee_id = account_record.employee_id
+    order by availability.available_date asc, availability.start_time asc
+  ) ordered_availability;
 
-  return blocks_payload;
+  return availability_payload;
 end;
 $$;
 
-create or replace function public.create_internal_employee_block(
+create or replace function public.create_internal_employee_availability(
   account_id_value uuid,
-  start_at_value timestamp without time zone,
-  end_at_value timestamp without time zone,
-  reason_value text default null
+  available_date_value date,
+  start_time_value time without time zone,
+  end_time_value time without time zone,
+  active_value boolean default true
 )
 returns jsonb
 language plpgsql
@@ -770,7 +972,7 @@ set search_path = public
 as $$
 declare
   account_record public.internal_accounts%rowtype;
-  saved_block public.employee_blocks%rowtype;
+  saved_availability public.employee_availability%rowtype;
 begin
   select *
   into account_record
@@ -784,37 +986,33 @@ begin
     raise exception 'La cuenta interna no esta vinculada a un empleado activo.';
   end if;
 
-  if end_at_value <= start_at_value then
-    raise exception 'El fin del bloqueo debe ser posterior al inicio.';
+  if available_date_value is null then
+    raise exception 'La fecha de disponibilidad es invalida.';
   end if;
 
-  if start_at_value < localtimestamp then
-    raise exception 'No se pueden crear bloqueos en fechas u horarios que ya pasaron.';
+  if available_date_value < current_date then
+    raise exception 'No se puede crear disponibilidad en fechas pasadas.';
   end if;
 
-  if exists (
-    select 1
-    from public.employee_blocks blocks
-    where blocks.employee_id = account_record.employee_id
-      and tsrange(blocks.start_at, blocks.end_at, '[)') && tsrange(start_at_value, end_at_value, '[)')
-  ) then
-    raise exception 'Ya existe un bloqueo superpuesto en ese rango.';
+  if end_time_value <= start_time_value then
+    raise exception 'La hora fin debe ser posterior a la hora inicio.';
   end if;
 
-  insert into public.employee_blocks (employee_id, start_at, end_at, reason)
-  values (account_record.employee_id, start_at_value, end_at_value, nullif(trim(coalesce(reason_value, '')), ''))
-  returning * into saved_block;
+  insert into public.employee_availability (employee_id, available_date, weekday, start_time, end_time, active)
+  values (account_record.employee_id, available_date_value, extract(dow from available_date_value)::smallint, start_time_value, end_time_value, coalesce(active_value, true))
+  returning * into saved_availability;
 
-  return to_jsonb(saved_block);
+  return to_jsonb(saved_availability);
 end;
 $$;
 
-create or replace function public.update_internal_employee_block(
+create or replace function public.update_internal_employee_availability(
   account_id_value uuid,
-  block_id_value text,
-  start_at_value timestamp without time zone,
-  end_at_value timestamp without time zone,
-  reason_value text default null
+  availability_id_value text,
+  available_date_value date,
+  start_time_value time without time zone,
+  end_time_value time without time zone,
+  active_value boolean default true
 )
 returns jsonb
 language plpgsql
@@ -823,8 +1021,7 @@ set search_path = public
 as $$
 declare
   account_record public.internal_accounts%rowtype;
-  block_record public.employee_blocks%rowtype;
-  saved_block public.employee_blocks%rowtype;
+  saved_availability public.employee_availability%rowtype;
 begin
   select *
   into account_record
@@ -838,51 +1035,40 @@ begin
     raise exception 'La cuenta interna no esta vinculada a un empleado activo.';
   end if;
 
-  select *
-  into block_record
-  from public.employee_blocks
-  where employee_blocks.id::text = block_id_value
-    and employee_blocks.employee_id = account_record.employee_id
-  for update;
-
-  if block_record.id is null then
-    raise exception 'El bloqueo no existe o no pertenece a este empleado.';
+  if available_date_value is null then
+    raise exception 'La fecha de disponibilidad es invalida.';
   end if;
 
-  if end_at_value <= start_at_value then
-    raise exception 'El fin del bloqueo debe ser posterior al inicio.';
+  if available_date_value < current_date then
+    raise exception 'No se puede mover disponibilidad a fechas pasadas.';
   end if;
 
-  if start_at_value < localtimestamp then
-    raise exception 'No se pueden mover bloqueos a fechas u horarios que ya pasaron.';
+  if end_time_value <= start_time_value then
+    raise exception 'La hora fin debe ser posterior a la hora inicio.';
   end if;
 
-  if exists (
-    select 1
-    from public.employee_blocks blocks
-    where blocks.employee_id = account_record.employee_id
-      and blocks.id::text <> block_id_value
-      and tsrange(blocks.start_at, blocks.end_at, '[)') && tsrange(start_at_value, end_at_value, '[)')
-  ) then
-    raise exception 'Ya existe un bloqueo superpuesto en ese rango.';
-  end if;
-
-  update public.employee_blocks
-  set start_at = start_at_value,
-      end_at = end_at_value,
-      reason = nullif(trim(coalesce(reason_value, '')), ''),
+  update public.employee_availability
+    set available_date = available_date_value,
+      weekday = extract(dow from available_date_value)::smallint,
+      start_time = start_time_value,
+      end_time = end_time_value,
+      active = coalesce(active_value, true),
       updated_at = now()
-  where employee_blocks.id::text = block_id_value
-    and employee_blocks.employee_id = account_record.employee_id
-  returning * into saved_block;
+  where employee_availability.id::text = availability_id_value
+    and employee_availability.employee_id = account_record.employee_id
+  returning * into saved_availability;
 
-  return to_jsonb(saved_block);
+  if saved_availability.id is null then
+    raise exception 'La disponibilidad no existe o no pertenece a este empleado.';
+  end if;
+
+  return to_jsonb(saved_availability);
 end;
 $$;
 
-create or replace function public.delete_internal_employee_block(
+create or replace function public.delete_internal_employee_availability(
   account_id_value uuid,
-  block_id_value text
+  availability_id_value text
 )
 returns void
 language plpgsql
@@ -904,12 +1090,12 @@ begin
     raise exception 'La cuenta interna no esta vinculada a un empleado activo.';
   end if;
 
-  delete from public.employee_blocks
-  where employee_blocks.id::text = block_id_value
-    and employee_blocks.employee_id = account_record.employee_id;
+  delete from public.employee_availability
+  where employee_availability.id::text = availability_id_value
+    and employee_availability.employee_id = account_record.employee_id;
 
   if not found then
-    raise exception 'El bloqueo no existe o no pertenece a este empleado.';
+    raise exception 'La disponibilidad no existe o no pertenece a este empleado.';
   end if;
 end;
 $$;
@@ -931,22 +1117,22 @@ grant select on public.employees to authenticated;
 grant insert, update, delete on public.employees to authenticated;
 grant select on public.employee_services to authenticated;
 grant insert, delete on public.employee_services to authenticated;
-grant select on public.employee_blocks to authenticated;
-grant insert, update, delete on public.employee_blocks to authenticated;
+grant select on public.employee_availability to anon, authenticated;
+grant insert, update, delete on public.employee_availability to authenticated;
 
 revoke all on public.internal_accounts from anon, authenticated;
 revoke all on public.internal_registration_requests from anon, authenticated;
 
-grant execute on function public.register_internal_account(public.app_role, text, text, uuid) to authenticated;
+grant execute on function public.register_internal_account(public.app_role, text, text, text, text, date, text, text, text, text, text, uuid) to authenticated;
 grant execute on function public.list_internal_registration_requests(text) to authenticated;
 grant execute on function public.approve_internal_registration(uuid, uuid) to authenticated;
 grant execute on function public.reject_internal_registration(uuid) to authenticated;
-grant execute on function public.list_internal_employee_blocks(uuid) to anon, authenticated;
-grant execute on function public.create_internal_employee_block(uuid, timestamp without time zone, timestamp without time zone, text) to anon, authenticated;
-grant execute on function public.update_internal_employee_block(uuid, text, timestamp without time zone, timestamp without time zone, text) to anon, authenticated;
-grant execute on function public.delete_internal_employee_block(uuid, text) to anon, authenticated;
+grant execute on function public.list_internal_employee_availability(uuid) to anon, authenticated;
+grant execute on function public.create_internal_employee_availability(uuid, date, time without time zone, time without time zone, boolean) to anon, authenticated;
+grant execute on function public.update_internal_employee_availability(uuid, text, date, time without time zone, time without time zone, boolean) to anon, authenticated;
+grant execute on function public.delete_internal_employee_availability(uuid, text) to anon, authenticated;
 grant execute on function public.verify_internal_login(public.app_role, text, text) to anon, authenticated;
-grant execute on function public.request_internal_registration(public.app_role, text, text, uuid) to anon, authenticated;
+grant execute on function public.request_internal_registration(public.app_role, text, text, text, date, text, text, text, text, text, text, uuid) to anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- Row-level security
@@ -959,7 +1145,7 @@ alter table public.bookings enable row level security;
 alter table public.services enable row level security;
 alter table public.employees enable row level security;
 alter table public.employee_services enable row level security;
-alter table public.employee_blocks enable row level security;
+alter table public.employee_availability enable row level security;
 
 -- Profiles
 
@@ -1119,30 +1305,30 @@ using (
   or (user_id = auth.uid() and start_at > localtimestamp)
 );
 
--- Employee blocks
+-- Employee availability
 
-drop policy if exists "employee_blocks_authenticated_read" on public.employee_blocks;
-create policy "employee_blocks_authenticated_read"
-on public.employee_blocks for select
-to authenticated
+drop policy if exists "employee_availability_read" on public.employee_availability;
+create policy "employee_availability_read"
+on public.employee_availability for select
+to anon, authenticated
 using (true);
 
-drop policy if exists "employee_blocks_admin_insert" on public.employee_blocks;
-create policy "employee_blocks_admin_insert"
-on public.employee_blocks for insert
+drop policy if exists "employee_availability_insert" on public.employee_availability;
+create policy "employee_availability_insert"
+on public.employee_availability for insert
 to authenticated
 with check (public.is_admin() or public.is_employee_for(employee_id));
 
-drop policy if exists "employee_blocks_admin_update" on public.employee_blocks;
-create policy "employee_blocks_admin_update"
-on public.employee_blocks for update
+drop policy if exists "employee_availability_update" on public.employee_availability;
+create policy "employee_availability_update"
+on public.employee_availability for update
 to authenticated
 using (public.is_admin() or public.is_employee_for(employee_id))
 with check (public.is_admin() or public.is_employee_for(employee_id));
 
-drop policy if exists "employee_blocks_admin_delete" on public.employee_blocks;
-create policy "employee_blocks_admin_delete"
-on public.employee_blocks for delete
+drop policy if exists "employee_availability_delete" on public.employee_availability;
+create policy "employee_availability_delete"
+on public.employee_availability for delete
 to authenticated
 using (public.is_admin() or public.is_employee_for(employee_id));
 

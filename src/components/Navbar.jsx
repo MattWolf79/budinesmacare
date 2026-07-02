@@ -2,13 +2,24 @@ const defaultNavItems = [
   { id: 'agenda', label: 'Agenda', icon: '📅' },
   { id: 'employees', label: 'Empleados', icon: '👥' },
   { id: 'services', label: 'Actividades', icon: '✨' },
-  { id: 'blocks', label: 'Bloqueos', icon: '⛔' }
+  { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
 ];
 
 const profileLabels = {
   admin: 'Administrador',
   client: 'Cliente',
   employee: 'Empleado'
+};
+
+const getUserInitials = (user) => {
+  const label = user?.displayName || user?.email || user?.username || 'U';
+  const parts = String(label).trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+
+  return String(parts[0]?.[0] || 'U').toUpperCase();
 };
 
 export default function Navbar({
@@ -52,6 +63,10 @@ export default function Navbar({
       )}
 
       <div className="app-navbar-session">
+        <span className="app-navbar-avatar" aria-hidden="true">
+          {user?.photoUrl ? <img src={user.photoUrl} alt="" /> : getUserInitials(user)}
+        </span>
+
         <div className="app-navbar-user">
           <span className="app-navbar-email">{user?.email ? user.email : 'Sin usuario'}</span>
           {showProfileBadge && accessProfile && (

@@ -86,6 +86,10 @@ export default function App() {
       id: account.id,
       role: account.role,
       displayName: account.display_name,
+      username: account.username || null,
+      firstName: account.first_name || null,
+      lastName: account.last_name || null,
+      photoUrl: account.photo_url || null,
       employeeId: account.employee_id || null
     };
 
@@ -175,6 +179,11 @@ export default function App() {
       email: internalSession.displayName,
       role: internalSession.role,
       employeeId: internalSession.employeeId,
+      username: internalSession.username,
+      displayName: internalSession.displayName,
+      firstName: internalSession.firstName,
+      lastName: internalSession.lastName,
+      photoUrl: internalSession.photoUrl,
       isInternal: true
     };
 

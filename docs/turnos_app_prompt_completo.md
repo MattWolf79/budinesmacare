@@ -4,9 +4,9 @@ Usa este prompt para continuar, recrear o explicar la aplicacion Turnos App en o
 
 ## Contexto general
 
-Turnos App es una aplicacion web React/Vite conectada a Supabase para gestionar reservas de turnos entre clientes, empleados y administradores. La app esta pensada para negocios que ofrecen actividades o servicios por empleado, con agenda semanal, seleccion por rango horario, colores por actividad, bloqueos de disponibilidad y control de accesos por rol.
+Turnos App es una aplicacion web React/Vite conectada a Supabase para gestionar reservas de turnos entre clientes, empleados y administradores. La app esta pensada para negocios que ofrecen actividades o servicios por empleado, con agenda semanal, seleccion por rango horario, colores por actividad, disponibilidad por fecha y control de accesos por rol.
 
-La aplicacion debe mantener semantica horaria local. Los turnos y bloqueos se guardan como `timestamp without time zone` en formato local `YYYY-MM-DD HH:mm:ss`. No se debe usar `toISOString()` para persistir horarios de agenda porque introduce drift UTC.
+La aplicacion debe mantener semantica horaria local. Los turnos se guardan como `timestamp without time zone` en formato local `YYYY-MM-DD HH:mm:ss`. No se debe usar `toISOString()` para persistir horarios de agenda porque introduce drift UTC.
 
 ## Stack tecnico
 
@@ -33,19 +33,19 @@ La aplicacion debe mantener semantica horaria local. Los turnos y bloqueos se gu
 
 - Ingresa con nombre y contrasena internos.
 - Puede registrarse internamente; la solicitud queda pendiente hasta aprobacion admin.
-- Tiene workspace con navegacion: `Resumen`, `Agenda`, `Bloqueos`.
+- Tiene workspace con navegacion: `Resumen`, `Agenda`, `Disponibilidad`.
 - Ve sus turnos asignados.
 - Puede gestionar su agenda desde la grilla, limitado a su empleado vinculado.
-- Puede crear, editar y eliminar bloqueos propios de disponibilidad.
+- Puede definir sus dias y horarios semanales disponibles para atender.
 
 ### Administrador
 
 - Recomendado operativo: usuario Supabase Auth con perfil `admin` en `profiles`.
-- Ve panel completo con navbar: agenda, empleados, actividades y bloqueos.
+- Ve panel completo con navbar: agenda, empleados, actividades y disponibilidad.
 - Puede crear, editar, activar/desactivar y eliminar empleados si no tienen turnos.
 - Puede crear, editar, activar/desactivar y eliminar actividades si no tienen turnos.
 - Puede vincular empleados con actividades mediante `employee_services`.
-- Puede crear y gestionar bloqueos de empleados.
+- Puede configurar la disponibilidad por fecha o rango de fechas corridas de cada empleado, por ejemplo del 2026-07-06 al 2026-07-10 de 08:00-12:00 y 14:00-18:00.
 - Puede aprobar o rechazar solicitudes internas de empleados/admin.
 
 Nota importante: las sesiones internas actuales no son sesiones reales de Supabase Auth. Las policies basadas en `auth.uid()` protegen escrituras directas de tablas. Para administracion directa, lo mas consistente es usar un admin Google/Supabase Auth o migrar las acciones internas admin a RPCs `security definer`.
@@ -120,17 +120,23 @@ Campos principales:
 - `status text`: `reserved`, `confirmed`, `cancelled`.
 - `created_at`, `updated_at`
 
-### `employee_blocks`
+### `employee_availability`
 
-Bloqueos de disponibilidad de empleados.
+Disponibilidad positiva por fecha de empleados. Define en que fechas y rangos horarios un empleado puede recibir reservas.
 
 Campos principales:
 - `id uuid`
 - `employee_id uuid`
-- `start_at timestamp without time zone`
-- `end_at timestamp without time zone`
-- `reason text`
+- `available_date date`: fecha concreta disponible.
+- `weekday smallint`: `0` domingo, `1` lunes, ..., `6` sabado.
+- `start_time time without time zone`
+- `end_time time without time zone`
+- `active boolean`
 - `created_at`, `updated_at`
+
+Reglas:
+- `employee_availability_valid_range_chk`: la hora fin debe ser posterior a la hora inicio.
+- `employee_availability_no_overlap_excl`: evita rangos activos superpuestos para el mismo empleado y fecha.
 
 ### `profiles`
 
@@ -185,7 +191,7 @@ Campos principales:
 - El usuario selecciona un rango arrastrando con mouse o touch sobre los cuadros horarios. La grilla usa eventos `pointer` para soportar celular.
 - Al terminar seleccion:
   1. Se abre modal de actividad.
-  2. Se abre modal de empleado disponible para esa actividad.
+  2. Se abre modal de empleado disponible para esa actividad y para ese rango segun `employee_availability`.
   3. Si agenda cliente, se reserva directamente para el usuario autenticado.
   4. Si agenda admin/empleado, se abre modal para ingresar nombre y email del cliente real.
 - En celular la grilla es compacta: celdas mas bajas, columna horaria mas angosta y turnos reducidos.
@@ -198,6 +204,7 @@ La app valida conflictos en frontend y la base los refuerza con exclusion constr
 
 - Un empleado no puede tener dos turnos activos superpuestos.
 - Un empleado no puede recibir turnos dentro de un bloqueo superpuesto.
+- Un empleado solo puede recibir turnos dentro de un rango de `employee_availability` que cubra completamente la seleccion para esa fecha.
 - Un cliente/persona no puede tener dos turnos activos superpuestos, aunque sean con empleados o actividades distintas.
 - Para clientes autenticados se valida por `user_id`.
 - Para reservas creadas por admin/empleado se valida por `user_email` normalizado.
@@ -208,7 +215,7 @@ Constraints importantes:
 - `bookings_employee_no_active_overlap_excl`
 - `bookings_user_no_active_overlap_excl`
 - `bookings_customer_email_no_active_overlap_excl`
-- `employee_blocks_employee_no_overlap_excl`
+- `employee_availability_no_overlap_excl`
 
 ## Manejo de fechas y UTC
 
@@ -230,7 +237,7 @@ const formatDateForDb = (date) => {
 };
 ```
 
-No usar `toISOString()` para `start_at`, `end_at` o bloqueos.
+No usar `toISOString()` para `start_at` o `end_at`.
 
 ## Componentes principales
 
@@ -253,7 +260,7 @@ No usar `toISOString()` para `start_at`, `end_at` o bloqueos.
 
 - Shell por rol.
 - Cliente: muestra hero, leyenda de colores y `ClientDashboard`.
-- Empleado: muestra navbar con `Resumen`, `Agenda`, `Bloqueos` y `EmployeeDashboard`.
+- Empleado: muestra navbar con `Resumen`, `Agenda`, `Disponibilidad` y `EmployeeDashboard`.
 - Admin: si se pasa `children`, renderiza `Dashboard`.
 
 ### `ClientDashboard.jsx`
@@ -267,11 +274,11 @@ No usar `toISOString()` para `start_at`, `end_at` o bloqueos.
 
 - Grilla semanal reutilizable para cliente, empleado y admin.
 - Adapta cantidad de dias visibles con `getVisibleDayCount()`: 7 escritorio, 5 tablet, 3 celular.
-- Carga bookings, services, employees y employee_blocks.
+- Carga bookings, services, employees y employee_availability.
 - Permite seleccion por arrastre con mouse y touch mediante eventos `pointer`.
 - Calcula alturas dinamicas por cantidad de reservas en fila.
 - En celular usa una grilla compacta con menor alto de celda, menor columna de hora y menor altura por turno.
-- Valida conflictos de empleado, bloqueos y cliente.
+- Valida disponibilidad por fecha, conflictos de empleado y cliente.
 - Reserva con payload local:
   - Cliente: `user_id = user.id`, `user_email = user.email`.
   - Staff/admin: `user_id = null`, `customer_name` y `user_email` ingresados en modal.
@@ -288,25 +295,27 @@ No usar `toISOString()` para `start_at`, `end_at` o bloqueos.
 
 - ABM empleados.
 - ABM actividades.
-- ABM bloqueos.
+- Gestion de disponibilidad por fecha de empleados desde vista `Disponibilidad`.
 - Aprobacion/rechazo de solicitudes internas.
 - Verifica que Supabase realmente haya aplicado inserts/updates para detectar problemas de RLS.
 
 ### `EmployeeDashboard.jsx`
 
-- Resumen de turnos de hoy, proximos y bloqueos.
+- Resumen de turnos de hoy, proximos y disponibilidad.
 - Agenda asignada.
 - Gestion de agenda propia.
-- Panel de bloqueos propios.
+- Panel de disponibilidad por fecha propia.
 
-### `EmployeeBlocksPanel.jsx`
+### `EmployeeAvailabilityPanel.jsx`
 
-- Permite al empleado crear/editar/eliminar bloqueos propios.
-- Si el usuario es interno usa RPCs:
-  - `list_internal_employee_blocks`
-  - `create_internal_employee_block`
-  - `update_internal_employee_block`
-  - `delete_internal_employee_block`
+- Permite al admin o empleado definir disponibilidad por fecha o por rango de fechas corridas.
+- Soporta fraccionar cada dia seleccionado en dos rangos, por ejemplo manana y tarde.
+- Agrupa la disponibilidad por fecha en una tabla compacta.
+- Si el empleado tiene sesion interna usa RPCs:
+  - `list_internal_employee_availability`
+  - `create_internal_employee_availability`
+  - `update_internal_employee_availability`
+  - `delete_internal_employee_availability`
 
 ### `ActivityIcon.jsx`
 
@@ -359,6 +368,8 @@ where email = 'tu-email@gmail.com';
 5. Desde la app, crear actividades, empleados y asignaciones.
 6. Aprobar solicitudes internas si se van a usar empleados internos.
 
+Para bases existentes que ya tenian disponibilidad por fecha, ejecutar tambien `database/005_internal_user_profiles.sql` para habilitar usuario unico, datos personales y foto de perfil en accesos internos.
+
 El archivo `database/001_profiles_internal_access.sql` conserva la evolucion incremental usada durante el desarrollo, pero para migrar a una base nueva desde cero conviene usar `database/000_full_schema_migration.sql`.
 
 Para una guia de migracion detallada, con checklist, tablas, constraints, policies, RPCs, grants, validaciones y pruebas post-migracion, usar `docs/database_migration_prompt.md`.
@@ -379,7 +390,7 @@ npm.cmd run build
 - No permitir doble reserva de la misma persona.
 - Permitir turnos superpuestos de empleados distintos si son clientes/personas distintas.
 - Permitir que admin/empleado reserven para terceros ingresando nombre y email del cliente real.
-- Mantener ABM de empleados, actividades y bloqueos.
+- Mantener ABM de empleados, actividades y disponibilidad.
 - Mantener aprobacion de registros internos.
 - Mantener leyenda de colores de actividades.
 - Mantener la grilla densa y legible.

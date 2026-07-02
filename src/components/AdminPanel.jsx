@@ -1,9 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import ActivityIcon from './ActivityIcon';
 
 const emptyEmployee = {
   name: '',
+  first_name: '',
+  last_name: '',
+  birth_date: '',
+  phone: '',
+  address_street: '',
+  address_number: '',
+  address_locality: '',
+  photo_url: '',
   code: '',
   active: true,
   serviceIds: []
@@ -17,17 +25,24 @@ const emptyService = {
   active: true
 };
 
-const emptyBlock = {
-  employeeId: '',
-  startDate: '',
-  endDate: '',
-  startTime: '08:00',
-  endTime: '18:00',
-  fullDay: true,
-  reason: ''
-};
-
-const serviceIconOptions = ['💆', '🔥', '💅', '💇', '✂️', '🧴', '🧖', '🪒', '✨', '⭐', '🩺', '🧘'];
+const serviceIconGroups = [
+  {
+    label: 'Belleza',
+    icons: ['💆', '💇', '💅', '💅🏻', '💅🏼', '💅🏽', '💅🏾', '💅🏿', '🖐️', '🦶', '🧖', '🧴', '🪒', '🪄', '⚡', '🔆', '✨', '✂️', '💄', '💋', '👁️', '👄', '🪮', '🧼', '🧽', '🫧', '🌸', '🌺', '🌷', '🪷']
+  },
+  {
+    label: 'Bienestar',
+    icons: ['🧘', '🩺', '💪', '🫶', '🦶', '🦷', '👂', '👃', '🧠', '❤️', '💙', '💚', '🌿', '🍃', '☀️', '🌙']
+  },
+  {
+    label: 'Energía',
+    icons: ['✨', '⭐', '🌟', '💫', '🔥', '⚡', '💎', '🎯', '🏆', '🎁', '🎉', '🎀', '🔔', '📌', '🪄', '🧿']
+  },
+  {
+    label: 'Profesiones',
+    icons: ['👩‍⚕️', '👨‍⚕️', '👩‍🔬', '👨‍🔬', '👩‍🏫', '👨‍🏫', '👩‍💼', '👨‍💼', '🧑‍🍳', '🧑‍🎨', '🧑‍🔧', '🧑‍💻']
+  }
+];
 
 const internalRoleLabels = {
   admin: 'Administrador',
@@ -73,6 +88,14 @@ const serviceMatchesPayload = (service, payload) =>
 const employeeMatchesPayload = (employee, payload) =>
   employee &&
   employee.name === payload.name &&
+  (employee.first_name || null) === payload.first_name &&
+  (employee.last_name || null) === payload.last_name &&
+  (employee.birth_date || null) === payload.birth_date &&
+  (employee.phone || null) === payload.phone &&
+  (employee.address_street || null) === payload.address_street &&
+  (employee.address_number || null) === payload.address_number &&
+  (employee.address_locality || null) === payload.address_locality &&
+  (employee.photo_url || null) === payload.photo_url &&
   (employee.code || null) === payload.code &&
   employee.active === payload.active;
 
@@ -85,57 +108,36 @@ const sameServiceIds = (leftIds, rightIds) => {
 
 const pad = (value) => String(value).padStart(2, '0');
 
-const formatDateForDb = (date) => (
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:00`
-);
-
-const formatDateInput = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-
-const formatTimeInput = (date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-
-const getTodayInput = () => formatDateInput(new Date());
-
-const getNowTimeInput = () => formatTimeInput(new Date());
-
-const isSameDateValue = (dateValue, date) => dateValue === formatDateInput(date);
-
-const parseLocalDateTime = (dateValue, timeValue) => {
-  const [year, month, day] = dateValue.split('-').map(Number);
-  const [hours, minutes] = timeValue.split(':').map(Number);
-  return new Date(year, month - 1, day, hours, minutes, 0, 0);
-};
-
-const buildBlockRange = (blockForm) => {
-  const startDate = blockForm.startDate;
-  const endDate = blockForm.endDate || blockForm.startDate;
-
-  if (!startDate) return null;
-
-  if (blockForm.fullDay) {
-    const start = parseLocalDateTime(startDate, '00:00');
-    const end = parseLocalDateTime(endDate, '00:00');
-    end.setDate(end.getDate() + 1);
-    return { start, end };
-  }
-
-  return {
-    start: parseLocalDateTime(startDate, blockForm.startTime),
-    end: parseLocalDateTime(endDate, blockForm.endTime)
-  };
-};
-
-const formatBlockLabel = (block) => {
-  const start = new Date(block.start_at);
-  const end = new Date(block.end_at);
-  return `${start.toLocaleDateString()} ${pad(start.getHours())}:${pad(start.getMinutes())} - ${end.toLocaleDateString()} ${pad(end.getHours())}:${pad(end.getMinutes())}`;
-};
-
 const formatRequestDate = (value) => {
   if (!value) return 'Sin fecha';
 
   const date = new Date(value);
   return `${date.toLocaleDateString()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
+
+const calculateAge = (birthDateValue) => {
+  if (!birthDateValue) return '';
+
+  const birthDate = new Date(`${birthDateValue}T00:00:00`);
+  if (Number.isNaN(birthDate.getTime())) return '';
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? String(age) : '';
+};
+
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result || ''));
+  reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+  reader.readAsDataURL(file);
+});
 
 const getAdminLoadError = (results) => {
   const failedResult = results.find((result) => result.error);
@@ -146,14 +148,14 @@ export default function AdminPanel({ view, onDataChanged }) {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
   const [employeeServices, setEmployeeServices] = useState([]);
-  const [employeeBlocks, setEmployeeBlocks] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
   const [employeeForm, setEmployeeForm] = useState(emptyEmployee);
   const [serviceForm, setServiceForm] = useState(emptyService);
-  const [blockForm, setBlockForm] = useState(emptyBlock);
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
   const [editingServiceId, setEditingServiceId] = useState(null);
-  const [editingBlockId, setEditingBlockId] = useState(null);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [emojiSearch, setEmojiSearch] = useState('');
+  const emojiPickerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -162,16 +164,25 @@ export default function AdminPanel({ view, onDataChanged }) {
     [services]
   );
 
+  const filteredIconGroups = useMemo(() => {
+    const normalizedSearch = normalizeComparableText(emojiSearch);
+    if (!normalizedSearch) return serviceIconGroups;
+
+    return serviceIconGroups
+      .map((group) => ({
+        ...group,
+        icons: group.icons.filter((icon) => normalizeComparableText(`${group.label} ${icon}`).includes(normalizedSearch))
+      }))
+      .filter((group) => group.icons.length);
+  }, [emojiSearch]);
+
   const loadAdminData = useCallback(async () => {
     setIsLoading(true);
 
-    const [employeeResult, serviceResult, relationResult, blockResult, accessResult] = await Promise.all([
+    const [employeeResult, serviceResult, relationResult, accessResult] = await Promise.all([
       supabase.from('employees').select('*').order('name', { ascending: true }),
       supabase.from('services').select('*').order('id', { ascending: true }),
       supabase.from('employee_services').select('*'),
-      view === 'blocks'
-        ? supabase.from('employee_blocks').select('*').order('start_at', { ascending: true })
-        : Promise.resolve({ data: [], error: null }),
       view === 'employees'
         ? supabase.rpc('list_internal_registration_requests', { status_value: 'pending' })
         : Promise.resolve({ data: [], error: null })
@@ -181,7 +192,6 @@ export default function AdminPanel({ view, onDataChanged }) {
       { label: 'Empleados', error: employeeResult.error },
       { label: 'Actividades', error: serviceResult.error },
       { label: 'Relaciones empleado-actividad', error: relationResult.error },
-      { label: 'Bloqueos', error: blockResult.error },
       { label: 'Solicitudes de acceso', error: accessResult.error }
     ]);
 
@@ -194,7 +204,6 @@ export default function AdminPanel({ view, onDataChanged }) {
     setEmployees(employeeResult.data || []);
     setServices(serviceResult.data || []);
     setEmployeeServices(relationResult.data || []);
-    setEmployeeBlocks(blockResult.data || []);
     setAccessRequests(accessResult.data || []);
     setIsLoading(false);
   }, [view]);
@@ -207,6 +216,20 @@ export default function AdminPanel({ view, onDataChanged }) {
     return () => window.clearTimeout(timeoutId);
   }, [loadAdminData]);
 
+  useEffect(() => {
+    if (!isEmojiPickerOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!emojiPickerRef.current?.contains(event.target)) {
+        setIsEmojiPickerOpen(false);
+        setEmojiSearch('');
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isEmojiPickerOpen]);
+
   const resetEmployeeForm = () => {
     setEmployeeForm(emptyEmployee);
     setEditingEmployeeId(null);
@@ -215,35 +238,44 @@ export default function AdminPanel({ view, onDataChanged }) {
   const resetServiceForm = () => {
     setServiceForm(emptyService);
     setEditingServiceId(null);
-  };
-
-  const resetBlockForm = () => {
-    setBlockForm(emptyBlock);
-    setEditingBlockId(null);
+    setIsEmojiPickerOpen(false);
+    setEmojiSearch('');
   };
 
   const updateEmployeeField = (field, value) => {
     setEmployeeForm((current) => ({ ...current, [field]: value }));
   };
 
+  const updateEmployeePhoto = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Seleccioná una imagen válida para la foto de perfil.');
+      return;
+    }
+
+    if (file.size > 750 * 1024) {
+      alert('La foto debe pesar menos de 750 KB.');
+      return;
+    }
+
+    try {
+      const photoUrl = await fileToDataUrl(file);
+      updateEmployeeField('photo_url', photoUrl);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
   const updateServiceField = (field, value) => {
     setServiceForm((current) => ({ ...current, [field]: value }));
   };
 
-  const updateBlockField = (field, value) => {
-    setBlockForm((current) => {
-      if (field === 'startDate') {
-        const shouldMoveEndDate = !current.endDate || current.endDate < value;
-
-        return {
-          ...current,
-          startDate: value,
-          endDate: shouldMoveEndDate ? value : current.endDate
-        };
-      }
-
-      return { ...current, [field]: value };
-    });
+  const selectServiceIcon = (icon) => {
+    updateServiceField('icon', icon);
+    setIsEmojiPickerOpen(false);
+    setEmojiSearch('');
   };
 
   const toggleEmployeeService = (serviceId) => {
@@ -265,6 +297,14 @@ export default function AdminPanel({ view, onDataChanged }) {
     setEditingEmployeeId(employee.id);
     setEmployeeForm({
       name: employee.name || '',
+      first_name: employee.first_name || '',
+      last_name: employee.last_name || '',
+      birth_date: employee.birth_date || '',
+      phone: employee.phone || '',
+      address_street: employee.address_street || '',
+      address_number: employee.address_number || '',
+      address_locality: employee.address_locality || '',
+      photo_url: employee.photo_url || '',
       code: employee.code || '',
       active: employee.active !== false,
       serviceIds: getEmployeeServiceIds(employee.id, employeeServices)
@@ -279,28 +319,6 @@ export default function AdminPanel({ view, onDataChanged }) {
       color: service.color || '#42A5F5',
       default_duration: service.default_duration || 30,
       active: service.active !== false
-    });
-  };
-
-  const editBlock = (block) => {
-    const start = new Date(block.start_at);
-    const end = new Date(block.end_at);
-    const fullDay = start.getHours() === 0 && start.getMinutes() === 0 && end.getHours() === 0 && end.getMinutes() === 0;
-    const endDate = new Date(end);
-
-    if (fullDay) {
-      endDate.setDate(endDate.getDate() - 1);
-    }
-
-    setEditingBlockId(block.id);
-    setBlockForm({
-      employeeId: block.employee_id || '',
-      startDate: formatDateInput(start),
-      endDate: formatDateInput(endDate),
-      startTime: `${pad(start.getHours())}:${pad(start.getMinutes())}`,
-      endTime: `${pad(end.getHours())}:${pad(end.getMinutes())}`,
-      fullDay,
-      reason: block.reason || ''
     });
   };
 
@@ -325,8 +343,18 @@ export default function AdminPanel({ view, onDataChanged }) {
   const saveEmployee = async (event) => {
     event.preventDefault();
 
+    const fullName = [employeeForm.first_name.trim(), employeeForm.last_name.trim()].filter(Boolean).join(' ');
+
     const payload = {
-      name: employeeForm.name.trim(),
+      name: employeeForm.name.trim() || fullName,
+      first_name: employeeForm.first_name.trim() || null,
+      last_name: employeeForm.last_name.trim() || null,
+      birth_date: employeeForm.birth_date || null,
+      phone: employeeForm.phone.trim() || null,
+      address_street: employeeForm.address_street.trim() || null,
+      address_number: employeeForm.address_number.trim() || null,
+      address_locality: employeeForm.address_locality.trim() || null,
+      photo_url: employeeForm.photo_url || null,
       code: employeeForm.code.trim() || null,
       active: employeeForm.active
     };
@@ -346,7 +374,7 @@ export default function AdminPanel({ view, onDataChanged }) {
       : await supabase
           .from('employees')
           .insert(payload)
-          .select('id, name, code, active')
+          .select('*')
           .single();
 
     if (employeeResult.error) {
@@ -358,7 +386,7 @@ export default function AdminPanel({ view, onDataChanged }) {
     const savedEmployee = editingEmployeeId
       ? await supabase
           .from('employees')
-          .select('id, name, code, active')
+          .select('*')
           .eq('id', editingEmployeeId)
           .single()
       : employeeResult;
@@ -467,120 +495,6 @@ export default function AdminPanel({ view, onDataChanged }) {
     }
 
     if (editingEmployeeId === employee.id) resetEmployeeForm();
-    await loadAdminData();
-    onDataChanged?.();
-  };
-
-  const saveBlock = async (event) => {
-    event.preventDefault();
-
-    const range = buildBlockRange(blockForm);
-
-    if (!blockForm.employeeId) {
-      alert('Seleccioná un empleado.');
-      return;
-    }
-
-    if (!range) {
-      alert('Ingresá la fecha del bloqueo.');
-      return;
-    }
-
-    if (range.end <= range.start) {
-      alert('El fin del bloqueo debe ser posterior al inicio.');
-      return;
-    }
-
-    const now = new Date();
-
-    if (range.start < now) {
-      alert('No se pueden crear bloqueos en fechas u horarios que ya pasaron.');
-      return;
-    }
-
-    setIsSaving(true);
-
-    const payload = {
-      employee_id: blockForm.employeeId,
-      start_at: formatDateForDb(range.start),
-      end_at: formatDateForDb(range.end),
-      reason: blockForm.reason.trim() || null
-    };
-
-    const overlapResult = await supabase
-      .from('employee_blocks')
-      .select('id')
-      .eq('employee_id', payload.employee_id)
-      .lt('start_at', payload.end_at)
-      .gt('end_at', payload.start_at);
-
-    if (overlapResult.error) {
-      alert(`No se pudo validar bloqueos existentes: ${overlapResult.error.message}`);
-      setIsSaving(false);
-      return;
-    }
-
-    const hasOverlap = (overlapResult.data || []).some((block) => String(block.id) !== String(editingBlockId));
-
-    if (hasOverlap) {
-      alert('Ese empleado ya tiene un bloqueo superpuesto en ese rango.');
-      setIsSaving(false);
-      return;
-    }
-
-    const blockResult = editingBlockId
-      ? await supabase
-          .from('employee_blocks')
-          .update(payload)
-          .eq('id', editingBlockId)
-      : await supabase
-          .from('employee_blocks')
-          .insert(payload)
-          .select('*')
-          .single();
-
-    if (blockResult.error) {
-      alert(`No se pudo guardar el bloqueo: ${blockResult.error.message}`);
-      setIsSaving(false);
-      return;
-    }
-
-    const savedBlock = editingBlockId
-      ? await supabase
-          .from('employee_blocks')
-          .select('*')
-          .eq('id', editingBlockId)
-          .single()
-      : blockResult;
-
-    if (savedBlock.error || !savedBlock.data) {
-      alert(`No se pudo verificar el bloqueo: ${savedBlock.error?.message || 'Supabase no devolvió el bloqueo.'}`);
-      setIsSaving(false);
-      return;
-    }
-
-    resetBlockForm();
-    await loadAdminData();
-    onDataChanged?.();
-    setIsSaving(false);
-  };
-
-  const deleteBlock = async (block) => {
-    const employee = employees.find((item) => item.id === block.employee_id);
-    const shouldDelete = window.confirm(`¿Eliminar el bloqueo de ${employee?.name || 'este empleado'}?`);
-    if (!shouldDelete) return;
-
-    const { error } = await supabase
-      .from('employee_blocks')
-      .delete()
-      .eq('id', block.id);
-
-    if (error) {
-      alert(`No se pudo eliminar el bloqueo: ${error.message}`);
-      return;
-    }
-
-    if (editingBlockId === block.id) resetBlockForm();
     await loadAdminData();
     onDataChanged?.();
   };
@@ -809,15 +723,21 @@ export default function AdminPanel({ view, onDataChanged }) {
             <div className="admin-pending-list">
               {accessRequests.map((request) => (
                 <article className="admin-record-card admin-record-card-plain access-request-card" key={request.id}>
+                  <div className="admin-record-avatar" aria-hidden="true">
+                    {request.photo_url ? <img src={request.photo_url} alt="" /> : (request.display_name || request.username || 'U').slice(0, 1).toUpperCase()}
+                  </div>
                   <div className="admin-record-main">
                     <div className="admin-record-title">{request.display_name}</div>
                     <div className="admin-record-meta">
-                      {internalRoleLabels[request.role] || request.role} · {requestStatusLabels[request.status] || request.status} · {formatRequestDate(request.created_at)}
+                      @{request.username || 'sin-usuario'} · {internalRoleLabels[request.role] || request.role} · {requestStatusLabels[request.status] || request.status} · {formatRequestDate(request.created_at)}
                     </div>
                     <div className="admin-record-services">
                       {request.role === 'employee'
                         ? 'Se creará como empleado al aprobar.'
                         : 'Acceso administrativo interno'}
+                    </div>
+                    <div className="admin-record-profile-line">
+                      {request.birth_date ? `${calculateAge(request.birth_date)} años` : 'Sin nacimiento'} · {request.phone || 'Sin celular'} · {[request.address_street, request.address_number, request.address_locality].filter(Boolean).join(' ') || 'Sin dirección'}
                     </div>
                   </div>
 
@@ -835,10 +755,63 @@ export default function AdminPanel({ view, onDataChanged }) {
           <form className="agenda-modal-card admin-form-card" onSubmit={saveEmployee}>
             <div className="agenda-modal-header">{editingEmployeeId ? 'Editar empleado' : 'Nuevo empleado'}</div>
             <div className="agenda-modal-body admin-form-grid">
-              <label>
-                Nombre
-                <input value={employeeForm.name} onChange={(event) => updateEmployeeField('name', event.target.value)} placeholder="Julio" />
+              <label className="admin-photo-field">
+                Foto de perfil
+                <span className="admin-photo-control">
+                  <span className="admin-photo-preview" aria-hidden="true">
+                    {employeeForm.photo_url ? <img src={employeeForm.photo_url} alt="" /> : 'Foto'}
+                  </span>
+                  <input type="file" accept="image/*" onChange={updateEmployeePhoto} />
+                </span>
               </label>
+
+              <div className="admin-two-columns">
+                <label>
+                  Nombre
+                  <input value={employeeForm.first_name} onChange={(event) => updateEmployeeField('first_name', event.target.value)} placeholder="Julio" />
+                </label>
+                <label>
+                  Apellido
+                  <input value={employeeForm.last_name} onChange={(event) => updateEmployeeField('last_name', event.target.value)} placeholder="Pérez" />
+                </label>
+              </div>
+
+              <label>
+                Nombre visible
+                <input value={employeeForm.name} onChange={(event) => updateEmployeeField('name', event.target.value)} placeholder="Julio Pérez" />
+              </label>
+
+              <div className="admin-two-columns">
+                <label>
+                  Fecha de nacimiento
+                  <input type="date" value={employeeForm.birth_date} max={new Date().toISOString().slice(0, 10)} onChange={(event) => updateEmployeeField('birth_date', event.target.value)} />
+                </label>
+                <label>
+                  Edad
+                  <input value={calculateAge(employeeForm.birth_date)} disabled placeholder="Auto" />
+                </label>
+              </div>
+
+              <label>
+                Celular
+                <input value={employeeForm.phone} onChange={(event) => updateEmployeeField('phone', event.target.value)} placeholder="11 5555 5555" />
+              </label>
+
+              <div className="admin-address-grid">
+                <label>
+                  Calle
+                  <input value={employeeForm.address_street} onChange={(event) => updateEmployeeField('address_street', event.target.value)} placeholder="Av. Siempre Viva" />
+                </label>
+                <label>
+                  Nro.
+                  <input value={employeeForm.address_number} onChange={(event) => updateEmployeeField('address_number', event.target.value)} placeholder="742" />
+                </label>
+                <label>
+                  Localidad
+                  <input value={employeeForm.address_locality} onChange={(event) => updateEmployeeField('address_locality', event.target.value)} placeholder="CABA" />
+                </label>
+              </div>
+
               <label>
                 Código
                 <input value={employeeForm.code} onChange={(event) => updateEmployeeField('code', event.target.value)} placeholder="M3" />
@@ -881,9 +854,15 @@ export default function AdminPanel({ view, onDataChanged }) {
           <div className="admin-list">
             {employees.map((employee) => (
               <article className={`admin-record-card admin-record-card-plain ${employee.active === false ? 'is-muted' : ''}`} key={employee.id}>
+                <div className="admin-record-avatar" aria-hidden="true">
+                  {employee.photo_url ? <img src={employee.photo_url} alt="" /> : (employee.name || 'E').slice(0, 1).toUpperCase()}
+                </div>
                 <div className="admin-record-main">
                   <div className="admin-record-title">{employee.name}</div>
                   <div className="admin-record-meta">{employee.code || 'Sin código'} · {employee.active === false ? 'Inactivo' : 'Activo'}</div>
+                  <div className="admin-record-profile-line">
+                    {employee.birth_date ? `${calculateAge(employee.birth_date)} años` : 'Sin nacimiento'} · {employee.phone || 'Sin celular'} · {[employee.address_street, employee.address_number, employee.address_locality].filter(Boolean).join(' ') || 'Sin dirección'}
+                  </div>
                   <div className="admin-record-services">{getServiceNames(employee.id, employeeServices, services) || 'Sin actividades asignadas'}</div>
                 </div>
                 <div className="admin-record-actions">
@@ -892,120 +871,6 @@ export default function AdminPanel({ view, onDataChanged }) {
                 </div>
               </article>
             ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (view === 'blocks') {
-    const todayInput = getTodayInput();
-    const currentTimeInput = getNowTimeInput();
-    const startDateMin = todayInput;
-    const endDateMin = blockForm.startDate || todayInput;
-    const startTimeMin = !blockForm.fullDay && isSameDateValue(blockForm.startDate, new Date())
-      ? currentTimeInput
-      : undefined;
-    const endTimeMin = !blockForm.fullDay && blockForm.endDate === blockForm.startDate
-      ? blockForm.startTime
-      : undefined;
-
-    return (
-      <section className="admin-shell">
-        <div className="admin-hero">
-          <div>
-            <span className="admin-kicker">Disponibilidad</span>
-            <h1>Bloqueos</h1>
-          </div>
-          <button className="agenda-close-button admin-refresh-button" type="button" onClick={loadAdminData}>
-            Actualizar
-          </button>
-        </div>
-
-        <div className="admin-layout">
-          <form className="agenda-modal-card admin-form-card" onSubmit={saveBlock}>
-            <div className="agenda-modal-header">{editingBlockId ? 'Editar bloqueo' : 'Nuevo bloqueo'}</div>
-            <div className="agenda-modal-body admin-form-grid">
-              <label>
-                Empleado
-                <select value={blockForm.employeeId} onChange={(event) => updateBlockField('employeeId', event.target.value)}>
-                  <option value="">Seleccionar empleado</option>
-                  {employees.map((employee) => (
-                    <option key={employee.id} value={employee.id}>{employee.name}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="admin-switch-row">
-                <input type="checkbox" checked={blockForm.fullDay} onChange={(event) => updateBlockField('fullDay', event.target.checked)} />
-                Día completo
-              </label>
-
-              <div className="admin-two-columns">
-                <label>
-                  Desde
-                  <input type="date" min={startDateMin} value={blockForm.startDate} onChange={(event) => updateBlockField('startDate', event.target.value)} />
-                </label>
-                <label>
-                  Hasta
-                  <input type="date" min={endDateMin} value={blockForm.endDate} onChange={(event) => updateBlockField('endDate', event.target.value)} />
-                </label>
-              </div>
-
-              {!blockForm.fullDay && (
-                <div className="admin-two-columns">
-                  <label>
-                    Hora inicio
-                    <input type="time" min={startTimeMin} value={blockForm.startTime} onChange={(event) => updateBlockField('startTime', event.target.value)} />
-                  </label>
-                  <label>
-                    Hora fin
-                    <input type="time" min={endTimeMin} value={blockForm.endTime} onChange={(event) => updateBlockField('endTime', event.target.value)} />
-                  </label>
-                </div>
-              )}
-
-              <label>
-                Motivo
-                <input value={blockForm.reason} onChange={(event) => updateBlockField('reason', event.target.value)} placeholder="Trámite personal, vacaciones..." />
-              </label>
-
-              <div className="admin-actions">
-                <button className="agenda-close-button" type="submit" disabled={isSaving}>
-                  {editingBlockId ? 'Guardar' : 'Crear'}
-                </button>
-                {editingBlockId && (
-                  <button className="agenda-option-button" type="button" onClick={resetBlockForm}>
-                    Limpiar
-                  </button>
-                )}
-              </div>
-            </div>
-          </form>
-
-          <div className="admin-list">
-            {employeeBlocks.length === 0 ? (
-              <div className="agenda-modal-card admin-form-card">
-                <div className="agenda-modal-header">Sin bloqueos</div>
-                <div className="agenda-modal-body agenda-empty-state">No hay bloqueos programados.</div>
-              </div>
-            ) : employeeBlocks.map((block) => {
-              const employee = employees.find((item) => item.id === block.employee_id);
-
-              return (
-                <article className="admin-record-card admin-record-card-plain" key={block.id}>
-                  <div className="admin-record-main">
-                    <div className="admin-record-title">{employee?.name || 'Empleado'}</div>
-                    <div className="admin-record-meta">{formatBlockLabel(block)}</div>
-                    <div className="admin-record-services">{block.reason || 'Sin motivo'}</div>
-                  </div>
-                  <div className="admin-record-actions">
-                    <button className="agenda-close-button" type="button" onClick={() => editBlock(block)}>Editar</button>
-                    <button className="agenda-danger-button" type="button" onClick={() => deleteBlock(block)}>Eliminar</button>
-                  </div>
-                </article>
-              );
-            })}
           </div>
         </div>
       </section>
@@ -1034,24 +899,53 @@ export default function AdminPanel({ view, onDataChanged }) {
             </label>
             <div className="admin-fieldset">
               <div className="admin-fieldset-title">Icono</div>
-              <div className="admin-emoji-grid">
-                {serviceIconOptions.map((icon) => (
-                  <button
-                    key={icon}
-                    type="button"
-                    className={`admin-emoji-button ${serviceForm.icon === icon ? 'is-selected' : ''}`}
-                    onClick={() => updateServiceField('icon', icon)}
-                  >
-                    {icon}
+              <div className="admin-emoji-picker-anchor" ref={emojiPickerRef}>
+                <div className="admin-emoji-selected-row">
+                  <input
+                    className="admin-emoji-input"
+                    value={serviceForm.icon}
+                    onChange={(event) => updateServiceField('icon', event.target.value)}
+                    placeholder="Pegá un emoji o símbolo"
+                    maxLength="12"
+                  />
+                  <button className="agenda-option-button admin-emoji-open-button" type="button" onClick={() => setIsEmojiPickerOpen((current) => !current)}>
+                    Elegir
                   </button>
-                ))}
+                </div>
+
+                {isEmojiPickerOpen && (
+                  <div className="admin-emoji-popover">
+                    <input
+                      className="admin-emoji-search"
+                      value={emojiSearch}
+                      onChange={(event) => setEmojiSearch(event.target.value)}
+                      placeholder="Buscar categoría"
+                    />
+                    <div className="admin-emoji-popover-scroll">
+                      {filteredIconGroups.length === 0 ? (
+                        <div className="admin-emoji-empty">Sin resultados</div>
+                      ) : filteredIconGroups.map((group) => (
+                        <div className="admin-emoji-group" key={group.label}>
+                          <div className="admin-emoji-group-title">{group.label}</div>
+                          <div className="admin-emoji-grid">
+                            {group.icons.map((icon) => (
+                              <button
+                                key={`${group.label}-${icon}`}
+                                type="button"
+                                className={`admin-emoji-button ${serviceForm.icon === icon ? 'is-selected' : ''}`}
+                                onClick={() => selectServiceIcon(icon)}
+                              >
+                                {icon}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <input className="admin-emoji-input" value={serviceForm.icon} onChange={(event) => updateServiceField('icon', event.target.value)} placeholder="Pegá otro emoji" />
             </div>
-            <label>
-              Duración por defecto
-              <input type="number" min="15" step="15" value={serviceForm.default_duration} onChange={(event) => updateServiceField('default_duration', event.target.value)} />
-            </label>
             <label>
               Color
               <input type="color" value={serviceForm.color} onChange={(event) => updateServiceField('color', event.target.value)} />

@@ -33,7 +33,15 @@ const internalProfileLabels = {
 };
 
 const emptyRegistrationForm = {
-  name: '',
+  username: '',
+  firstName: '',
+  lastName: '',
+  birthDate: '',
+  phone: '',
+  addressStreet: '',
+  addressNumber: '',
+  addressLocality: '',
+  photoUrl: '',
   password: '',
   confirmPassword: ''
 };
@@ -44,6 +52,31 @@ const emptyVisiblePasswords = {
 };
 
 const isAlphanumeric = (value) => /^[a-z0-9]+$/i.test(value);
+const isUsername = (value) => /^[a-z0-9._-]+$/i.test(value);
+
+const calculateAge = (birthDateValue) => {
+  if (!birthDateValue) return '';
+
+  const birthDate = new Date(`${birthDateValue}T00:00:00`);
+  if (Number.isNaN(birthDate.getTime())) return '';
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? String(age) : '';
+};
+
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result || ''));
+  reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+  reader.readAsDataURL(file);
+});
 
 export default function Login({ onInternalAccess }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
@@ -111,16 +144,57 @@ export default function Login({ onInternalAccess }) {
     }));
   };
 
+  const updatePhoto = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setRegistrationError('Seleccioná una imagen válida para la foto de perfil.');
+      return;
+    }
+
+    if (file.size > 750 * 1024) {
+      setRegistrationError('La foto debe pesar menos de 750 KB.');
+      return;
+    }
+
+    try {
+      const photoUrl = await fileToDataUrl(file);
+      updateRegistrationField('photoUrl', photoUrl);
+    } catch (error) {
+      setRegistrationError(error.message);
+    }
+  };
+
   const submitRegistration = async (event) => {
     event.preventDefault();
 
-    const name = registrationForm.name.trim();
+    const username = registrationForm.username.trim();
+    const firstName = registrationForm.firstName.trim();
+    const lastName = registrationForm.lastName.trim();
     const password = registrationForm.password.trim();
     const confirmPassword = registrationForm.confirmPassword.trim();
 
-    if (name.length < 3) {
-      setRegistrationError('El nombre debe tener al menos 3 caracteres.');
+    if (username.length < 3 || !isUsername(username)) {
+      setRegistrationError('El usuario debe tener al menos 3 caracteres y solo puede usar letras, números, punto, guion o guion bajo.');
       return;
+    }
+
+    if (internalAccessMode === 'register') {
+      if (firstName.length < 2 || lastName.length < 2) {
+        setRegistrationError('Ingresá nombre y apellido.');
+        return;
+      }
+
+      if (!registrationForm.birthDate || !calculateAge(registrationForm.birthDate)) {
+        setRegistrationError('Ingresá una fecha de nacimiento válida.');
+        return;
+      }
+
+      if (!registrationForm.phone.trim()) {
+        setRegistrationError('Ingresá un celular de contacto.');
+        return;
+      }
     }
 
     if (password.length < 6) {
@@ -143,7 +217,15 @@ export default function Login({ onInternalAccess }) {
     if (internalAccessMode === 'register') {
       const { error } = await supabase.rpc('request_internal_registration', {
         account_role: registrationProfile,
-        display_name_value: name,
+        username_value: username,
+        first_name_value: firstName,
+        last_name_value: lastName,
+        birth_date_value: registrationForm.birthDate || null,
+        phone_value: registrationForm.phone.trim() || null,
+        address_street_value: registrationForm.addressStreet.trim() || null,
+        address_number_value: registrationForm.addressNumber.trim() || null,
+        address_locality_value: registrationForm.addressLocality.trim() || null,
+        photo_url_value: registrationForm.photoUrl || null,
         password_value: password,
         employee_id_value: null
       });
@@ -163,7 +245,7 @@ export default function Login({ onInternalAccess }) {
 
     const { data, error } = await supabase.rpc('verify_internal_login', {
       account_role: registrationProfile,
-      display_name_value: name,
+      username_value: username,
       password_value: password
     });
 
@@ -257,22 +339,106 @@ export default function Login({ onInternalAccess }) {
 
               <p className="internal-register-copy">
                 {internalAccessMode === 'register'
-                  ? 'Creá un acceso interno con nombre y contraseña. Clientes continúan ingresando únicamente con Google.'
-                  : 'Ingresá con el nombre y contraseña internos si ya tenés un usuario creado.'}
+                  ? 'Creá un acceso interno con usuario único, datos personales y contraseña. Clientes continúan ingresando únicamente con Google.'
+                  : 'Ingresá con tu usuario y contraseña internos si ya tenés una cuenta aprobada.'}
               </p>
 
               <label className="internal-register-field">
-                Nombre
+                Usuario
                 <input
                   type="text"
-                  value={registrationForm.name}
+                  value={registrationForm.username}
                   minLength="3"
                   maxLength="40"
-                  autoComplete="name"
-                  placeholder="Ej: Martina"
-                  onChange={(event) => updateRegistrationField('name', event.target.value)}
+                  autoComplete="username"
+                  placeholder="Ej: martina.perez"
+                  onChange={(event) => updateRegistrationField('username', event.target.value)}
                 />
               </label>
+
+              {internalAccessMode === 'register' && (
+                <>
+                  <div className="internal-register-two-columns">
+                    <label className="internal-register-field">
+                      Nombre
+                      <input
+                        type="text"
+                        value={registrationForm.firstName}
+                        maxLength="40"
+                        autoComplete="given-name"
+                        placeholder="Martina"
+                        onChange={(event) => updateRegistrationField('firstName', event.target.value)}
+                      />
+                    </label>
+
+                    <label className="internal-register-field">
+                      Apellido
+                      <input
+                        type="text"
+                        value={registrationForm.lastName}
+                        maxLength="40"
+                        autoComplete="family-name"
+                        placeholder="Pérez"
+                        onChange={(event) => updateRegistrationField('lastName', event.target.value)}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="internal-register-two-columns internal-register-age-row">
+                    <label className="internal-register-field">
+                      Fecha de nacimiento
+                      <input
+                        type="date"
+                        value={registrationForm.birthDate}
+                        max={new Date().toISOString().slice(0, 10)}
+                        onChange={(event) => updateRegistrationField('birthDate', event.target.value)}
+                      />
+                    </label>
+
+                    <label className="internal-register-field">
+                      Edad
+                      <input value={calculateAge(registrationForm.birthDate)} disabled placeholder="Auto" />
+                    </label>
+                  </div>
+
+                  <label className="internal-register-field">
+                    Celular
+                    <input
+                      type="tel"
+                      value={registrationForm.phone}
+                      maxLength="30"
+                      autoComplete="tel"
+                      placeholder="Ej: 11 5555 5555"
+                      onChange={(event) => updateRegistrationField('phone', event.target.value)}
+                    />
+                  </label>
+
+                  <div className="internal-register-address-grid">
+                    <label className="internal-register-field">
+                      Calle
+                      <input value={registrationForm.addressStreet} maxLength="80" autoComplete="address-line1" onChange={(event) => updateRegistrationField('addressStreet', event.target.value)} />
+                    </label>
+                    <label className="internal-register-field">
+                      Nro.
+                      <input value={registrationForm.addressNumber} maxLength="12" onChange={(event) => updateRegistrationField('addressNumber', event.target.value)} />
+                    </label>
+                    <label className="internal-register-field">
+                      Localidad
+                      <input value={registrationForm.addressLocality} maxLength="60" autoComplete="address-level2" onChange={(event) => updateRegistrationField('addressLocality', event.target.value)} />
+                    </label>
+                  </div>
+
+                  <label className="internal-register-field internal-photo-field">
+                    Foto de perfil
+                    <span className="internal-photo-control">
+                      <span className="internal-photo-preview" aria-hidden="true">
+                        {registrationForm.photoUrl ? <img src={registrationForm.photoUrl} alt="" /> : 'Foto'}
+                      </span>
+                      <input type="file" accept="image/*" onChange={updatePhoto} />
+                    </span>
+                  </label>
+                </>
+              )}
 
               <label className="internal-register-field">
                 Contraseña
