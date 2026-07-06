@@ -29,6 +29,7 @@ export default function BookingItem({
   const customerDetail = booking.customer_name
     ? `${booking.customer_name}${booking.user_email ? ` · ${booking.user_email}` : ''}`
     : booking.user_email;
+  const bookingLabel = employee?.name || service?.name || 'Turno';
 
   return (
     <div
@@ -53,14 +54,14 @@ export default function BookingItem({
       style={{
         background: service?.color || '#999',
         color: 'white',
-        borderRadius: 6,
-        padding: canCancel ? '3px 38px' : '3px 7px',
-        fontSize: 11,
-        marginBottom: 2,
+        borderRadius: 999,
+        padding: canCancel ? '2px 30px 2px 27px' : '2px 8px 2px 27px',
+        fontSize: 10,
+        marginBottom: 1,
         position: 'relative',
         zIndex: isHovered ? 20 : 1,
         overflow: 'visible',
-        minHeight: 26,
+        minHeight: 21,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -70,7 +71,7 @@ export default function BookingItem({
         className="agenda-booking-icon"
         style={{
           position: 'absolute',
-          left: 7,
+          left: 4,
           top: '50%',
           transform: 'translateY(-50%)',
           display: 'inline-flex'
@@ -89,10 +90,10 @@ export default function BookingItem({
           whiteSpace: 'nowrap'
         }}
       >
-        {employee?.name}
+        {bookingLabel}
       </span>
       <span className="agenda-booking-mobile-label">
-        {employee?.name || service?.name || 'Turno'}
+        {bookingLabel}
       </span>
 
       {canCancel && (
@@ -112,7 +113,7 @@ export default function BookingItem({
             top: 0,
             right: 0,
             bottom: 0,
-            width: 34,
+            width: 26,
             height: '100%',
             border: 'none',
             borderRadius: 0,
@@ -121,7 +122,7 @@ export default function BookingItem({
             color: 'white',
             cursor: 'pointer',
             lineHeight: 1,
-            fontSize: 18,
+            fontSize: 13,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -136,7 +137,7 @@ export default function BookingItem({
           <div className="agenda-detail-header">Detalle</div>
           <div className="agenda-detail-body">
             <div className="agenda-detail-title"><ActivityIcon service={service} size="small" /> <b>{service?.name}</b></div>
-            <div>👤 {employee?.name}</div>
+            {employee?.name && <div>👤 {employee.name}</div>}
             <div>🧍 {canViewCustomer ? customerDetail : customerLabel || 'Turno reservado'}</div>
             <div className="agenda-detail-time">
               ⏱ {startTime} - {endTime}

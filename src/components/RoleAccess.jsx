@@ -39,6 +39,11 @@ const employeeNavItems = [
   { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
 ];
 
+const clientNavItems = [
+  { id: 'home', label: 'Inicio', icon: '⌂' },
+  { id: 'reserve', label: 'Reservar Turno', icon: '+' }
+];
+
 function UserPhoto({ user, fallback }) {
   if (user?.photoUrl) {
     return <img src={user.photoUrl} alt="" />;
@@ -100,7 +105,7 @@ function ServiceColorLegend() {
   return (
     <div className="service-color-legend" aria-label="Referencias de colores de actividades">
       {services.map((service) => (
-        <span className="service-color-item" key={service.id}>
+        <span className="service-color-item" key={service.id} style={{ '--service-chip-color': service.color || '#94a3b8' }}>
           <span className="service-color-swatch" style={{ background: service.color || '#94a3b8' }} aria-hidden="true" />
           {service.name}
         </span>
@@ -110,29 +115,31 @@ function ServiceColorLegend() {
 }
 
 function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canChangeProfile }) {
+  const [clientActiveView, setClientActiveView] = useState('home');
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
   const profile = profileOptions[selectedProfile];
   const shouldUseClientPhoto = selectedProfile === 'client' && Boolean(user?.photoUrl);
+  const isClientProfile = selectedProfile === 'client';
 
   return (
-    <main className="role-workspace">
-      {selectedProfile === 'employee' ? (
+    <main className={`role-workspace role-workspace-${selectedProfile}`}>
+      {selectedProfile === 'employee' || isClientProfile ? (
         <Navbar
           user={user}
-          activeView={employeeActiveView}
+          activeView={isClientProfile ? clientActiveView : employeeActiveView}
           accessProfile={selectedProfile}
-          onViewChange={setEmployeeActiveView}
+          onViewChange={isClientProfile ? setClientActiveView : setEmployeeActiveView}
           onChangeProfile={onChangeProfile}
           onLogout={onLogout}
           showNavigation
           showProfileBadge
           canChangeProfile={canChangeProfile}
-          navItems={employeeNavItems}
+          navItems={isClientProfile ? clientNavItems : employeeNavItems}
         />
       ) : (
         <section className="role-workspace-topbar">
           <div className="role-workspace-brand">
-            <span className="app-navbar-mark">T</span>
+            <span className="app-navbar-mark">Claro</span>
             <div>
               <div className="app-navbar-title">Turnos App</div>
               <div className="app-navbar-subtitle">{profile.label}</div>
@@ -152,20 +159,42 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
         </section>
       )}
 
-      <section className="role-workspace-hero">
-        <div>
-          <p className="admin-kicker">{profile.eyebrow}</p>
-          <h1>{profile.title}</h1>
-          <p>{profile.description}</p>
-          {selectedProfile === 'client' && <ServiceColorLegend />}
-        </div>
-        <span className={`role-workspace-icon ${shouldUseClientPhoto ? 'has-photo' : ''}`} aria-hidden="true">
-          <UserPhoto user={shouldUseClientPhoto ? user : null} fallback={profile.icon} />
-        </span>
-      </section>
+      {isClientProfile ? (
+        <section className={`role-workspace-hero ${clientActiveView === 'home' ? 'client-welcome-hero' : 'client-reserve-hero'}`}>
+          <div>
+            <p className="admin-kicker">{clientActiveView === 'home' ? 'Bienvenida' : 'Reserva'}</p>
+            <h1>{clientActiveView === 'home' ? 'Bienvenido a Turnos App' : 'Reservar turno'}</h1>
+            <p>
+              {clientActiveView === 'home'
+                ? 'Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.'
+                : 'Seleccioná un horario disponible en la grilla para crear tu próximo turno.'}
+            </p>
+            <ServiceColorLegend />
+            {clientActiveView === 'home' && (
+              <button className="client-welcome-action" type="button" onClick={() => setClientActiveView('reserve')}>
+                Reservar Turno
+              </button>
+            )}
+          </div>
+          <span className={`role-workspace-icon ${shouldUseClientPhoto ? 'has-photo' : ''}`} aria-hidden="true">
+            <UserPhoto user={shouldUseClientPhoto ? user : null} fallback={profile.icon} />
+          </span>
+        </section>
+      ) : (
+        <section className="role-workspace-hero">
+          <div>
+            <p className="admin-kicker">{profile.eyebrow}</p>
+            <h1>{profile.title}</h1>
+            <p>{profile.description}</p>
+          </div>
+          <span className="role-workspace-icon" aria-hidden="true">
+            <UserPhoto user={null} fallback={profile.icon} />
+          </span>
+        </section>
+      )}
 
-      {selectedProfile === 'client' ? (
-        <ClientDashboard user={user} />
+      {isClientProfile ? (
+        <ClientDashboard user={user} showAgenda={clientActiveView === 'reserve'} />
       ) : selectedProfile === 'employee' ? (
         <EmployeeDashboard user={user} activeView={employeeActiveView} />
       ) : (

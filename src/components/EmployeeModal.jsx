@@ -1,6 +1,6 @@
 import ActivityIcon from './ActivityIcon';
 
-export default function EmployeeModal({ employees, rangeLabel, selectedService, onClose, onReserve }) {
+export default function EmployeeModal({ employees, rangeLabel, selectedService, onClose, onReserve, emptyMessage = 'No hay empleados disponibles para ese horario.' }) {
   return (
     <div className="modal">
       <div className="agenda-modal-card">
@@ -9,7 +9,7 @@ export default function EmployeeModal({ employees, rangeLabel, selectedService, 
         <div className="agenda-modal-body">
           {employees.length === 0 ? (
             <div className="agenda-empty-state">
-              No hay empleados disponibles para ese horario.
+              {emptyMessage}
             </div>
           ) : (
             <div className="agenda-option-grid">

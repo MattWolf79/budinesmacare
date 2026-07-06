@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 
 const weekdayOptions = [
-  { value: 1, short: 'Lun', label: 'Lunes' },
-  { value: 2, short: 'Mar', label: 'Martes' },
-  { value: 3, short: 'Mié', label: 'Miércoles' },
-  { value: 4, short: 'Jue', label: 'Jueves' },
-  { value: 5, short: 'Vie', label: 'Viernes' },
-  { value: 6, short: 'Sáb', label: 'Sábado' },
-  { value: 0, short: 'Dom', label: 'Domingo' }
+  { value: 1, short: 'Lun', initial: 'L', label: 'Lunes' },
+  { value: 2, short: 'Mar', initial: 'M', label: 'Martes' },
+  { value: 3, short: 'Mié', initial: 'M', label: 'Miércoles' },
+  { value: 4, short: 'Jue', initial: 'J', label: 'Jueves' },
+  { value: 5, short: 'Vie', initial: 'V', label: 'Viernes' },
+  { value: 6, short: 'Sáb', initial: 'S', label: 'Sábado' },
+  { value: 0, short: 'Dom', initial: 'D', label: 'Domingo' }
 ];
 
 const emptyAvailabilityForm = {
@@ -42,24 +42,6 @@ const parseDateInput = (value) => {
 
 const getWeekdayFromDateInput = (value) => parseDateInput(value)?.getDay() ?? 0;
 
-const addDays = (date, amount) => {
-  const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + amount);
-  return nextDate;
-};
-
-const getWeekStart = (date = new Date()) => {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  const day = start.getDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  start.setDate(start.getDate() + mondayOffset);
-  return start;
-};
-
-const getWeekDates = (weekStart) =>
-  Array.from({ length: 7 }, (_, index) => formatDateInput(addDays(weekStart, index)));
-
 const getDatesBetween = (startValue, endValue) => {
   const startDate = parseDateInput(startValue);
   const endDate = parseDateInput(endValue || startValue);
@@ -84,6 +66,8 @@ const timeToMinutes = (value) => {
 
 const formatTime = (value) => normalizeTimeInput(value || '00:00');
 
+const toBookingTimestamp = (dateValue, timeValue) => `${dateValue} ${formatTime(timeValue)}:00`;
+
 const getWeekdayLabel = (weekday) =>
   weekdayOptions.find((option) => Number(option.value) === Number(weekday))?.label || 'Día';
 
@@ -101,19 +85,20 @@ const formatDateLabel = (value, weekday) => {
   }).format(date);
 };
 
-const formatShortDateLabel = (value) => {
-  const date = parseDateInput(value);
-  if (!date) return 'Fecha';
-
-  return new Intl.DateTimeFormat('es-AR', {
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit'
-  }).format(date);
-};
-
 const getEmployeeName = (employees, employeeId, fallback = 'Empleado') =>
   employees.find((employee) => String(employee.id) === String(employeeId))?.name || fallback;
+
+const isValidWeekdayFilter = (value) =>
+  value === 'all' || weekdayOptions.some((option) => String(option.value) === String(value));
+
+const isCurrentOrFutureAvailability = (item) => {
+  if (!item.available_date) return true;
+
+  const availabilityDate = parseDateInput(item.available_date);
+  const today = parseDateInput(getTodayInput());
+
+  return availabilityDate && today && availabilityDate >= today;
+};
 
 const groupAvailabilityByDay = (items) => {
   const order = new Map(weekdayOptions.map((option, index) => [option.value, index]));
@@ -137,6 +122,7 @@ export default function EmployeeAvailabilityPanel({
   onAvailabilityChanged
 }) {
   const isAdminMode = mode === 'admin';
+  const availabilityFilterStorageKey = `turnos.availability.weekday.${isAdminMode ? 'admin' : employeeId || user?.id || 'employee'}`;
   const [employees, setEmployees] = useState(adminEmployees);
   const [availability, setAvailability] = useState([]);
   const [form, setForm] = useState(() => ({
@@ -146,29 +132,24 @@ export default function EmployeeAvailabilityPanel({
     endDate: getTodayInput()
   }));
   const [editingAvailabilityId, setEditingAvailabilityId] = useState(null);
-  const [calendarWeekStart, setCalendarWeekStart] = useState(() => getWeekStart(new Date()));
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [selectedWeekdayFilter, setSelectedWeekdayFilter] = useState(() => {
+    if (typeof window === 'undefined') return 'all';
+    const savedFilter = window.sessionStorage.getItem(availabilityFilterStorageKey);
+    return isValidWeekdayFilter(savedFilter) ? savedFilter : 'all';
+  });
+  const [isAvailabilityFormOpen, setIsAvailabilityFormOpen] = useState(false);
 
   const selectedEmployeeId = isAdminMode ? '' : employeeId;
   const visibleAvailability = useMemo(
-    () => availability.filter((item) => !selectedEmployeeId || String(item.employee_id) === String(selectedEmployeeId)),
+    () => availability.filter((item) =>
+      isCurrentOrFutureAvailability(item) &&
+      (!selectedEmployeeId || String(item.employee_id) === String(selectedEmployeeId))
+    ),
     [availability, selectedEmployeeId]
   );
-
-  const calendarDates = useMemo(() => getWeekDates(calendarWeekStart), [calendarWeekStart]);
-  const calendarAvailabilityByDate = useMemo(() => {
-    const grouped = new Map(calendarDates.map((date) => [date, []]));
-
-    groupAvailabilityByDay(visibleAvailability).forEach((item) => {
-      const itemDate = item.available_date || '';
-      if (!grouped.has(itemDate)) return;
-      grouped.get(itemDate).push(item);
-    });
-
-    return grouped;
-  }, [calendarDates, visibleAvailability]);
 
   const activeDayCount = useMemo(() => {
     const days = new Set(
@@ -179,6 +160,23 @@ export default function EmployeeAvailabilityPanel({
 
     return days.size;
   }, [visibleAvailability]);
+
+  const availabilityDayCounts = useMemo(() => {
+    const counts = new Map(weekdayOptions.map((option) => [option.value, 0]));
+
+    visibleAvailability.forEach((item) => {
+      if (item.active === false) return;
+      const weekday = Number(item.weekday);
+      counts.set(weekday, (counts.get(weekday) || 0) + 1);
+    });
+
+    return counts;
+  }, [visibleAvailability]);
+
+  const filteredAvailability = useMemo(() => {
+    if (selectedWeekdayFilter === 'all') return visibleAvailability;
+    return visibleAvailability.filter((item) => Number(item.weekday) === Number(selectedWeekdayFilter));
+  }, [selectedWeekdayFilter, visibleAvailability]);
 
   const loadAvailability = useCallback(async () => {
     setIsLoading(true);
@@ -226,6 +224,12 @@ export default function EmployeeAvailabilityPanel({
     return () => window.clearTimeout(timeoutId);
   }, [loadAvailability]);
 
+  const updateWeekdayFilter = (value) => {
+    const nextValue = String(value);
+    setSelectedWeekdayFilter(nextValue);
+    window.sessionStorage.setItem(availabilityFilterStorageKey, nextValue);
+  };
+
   const resetForm = () => {
     setEditingAvailabilityId(null);
     setForm({
@@ -252,6 +256,7 @@ export default function EmployeeAvailabilityPanel({
 
   const editAvailability = (item) => {
     setEditingAvailabilityId(item.id);
+    setIsAvailabilityFormOpen(true);
     setForm({
       employeeId: item.employee_id,
       startDate: item.available_date || getTodayInput(),
@@ -346,12 +351,22 @@ export default function EmployeeAvailabilityPanel({
       if (!isAdminMode && user?.isInternal) {
         if (editingAvailabilityId) {
           const availabilityDate = availabilityDates[0];
-          return supabase.rpc('update_internal_employee_availability', {
+          const updateResult = await supabase.rpc('update_internal_employee_availability', {
             account_id_value: user.id,
             availability_id_value: String(editingAvailabilityId),
             available_date_value: availabilityDate,
             start_time_value: startTime,
             end_time_value: endTime,
+            active_value: true
+          });
+
+          if (updateResult.error || !form.splitSchedule) return updateResult;
+
+          return supabase.rpc('create_internal_employee_availability', {
+            account_id_value: user.id,
+            available_date_value: availabilityDate,
+            start_time_value: secondStartTime,
+            end_time_value: secondEndTime,
             active_value: true
           });
         }
@@ -390,7 +405,16 @@ export default function EmployeeAvailabilityPanel({
           query = query.eq('employee_id', employeeId);
         }
 
-        return query;
+        const updateResult = await query;
+        if (updateResult.error || !form.splitSchedule) return updateResult;
+
+        return supabase.from('employee_availability').insert({
+          ...basePayload,
+          available_date: availabilityDate,
+          weekday: getWeekdayFromDateInput(availabilityDate),
+          start_time: secondStartTime,
+          end_time: secondEndTime
+        });
       }
 
       return supabase.from('employee_availability').insert(
@@ -414,17 +438,36 @@ export default function EmployeeAvailabilityPanel({
       return;
     }
 
-    if (isAdminMode) {
-      setCalendarWeekStart(getWeekStart(parseDateInput(availabilityDates[0]) || new Date()));
-    }
-
     resetForm();
+    setIsAvailabilityFormOpen(false);
     await loadAvailability();
     onAvailabilityChanged?.();
     setIsSaving(false);
   };
 
   const deleteAvailability = async (item) => {
+    const availabilityStart = toBookingTimestamp(item.available_date, item.start_time);
+    const availabilityEnd = toBookingTimestamp(item.available_date, item.end_time);
+
+    const { data: existingBookings, error: bookingError } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('employee_id', item.employee_id)
+      .in('status', ['reserved', 'confirmed'])
+      .lt('start_at', availabilityEnd)
+      .gt('end_at', availabilityStart)
+      .limit(1);
+
+    if (bookingError) {
+      alert('No se pudo validar si la disponibilidad tiene turnos asignados. Intentá nuevamente.');
+      return;
+    }
+
+    if (existingBookings?.length) {
+      alert('No se puede eliminar una disponibilidad con turnos asignados. Cancelá o reasigná esos turnos primero.');
+      return;
+    }
+
     const shouldDelete = window.confirm(`¿Eliminar la disponibilidad de ${formatDateLabel(item.available_date, item.weekday)} ${formatTime(item.start_time)}-${formatTime(item.end_time)}?`);
     if (!shouldDelete) return;
 
@@ -453,7 +496,10 @@ export default function EmployeeAvailabilityPanel({
     setIsSaving(false);
   };
 
-  const sortedAvailability = groupAvailabilityByDay(visibleAvailability);
+  const sortedAvailability = groupAvailabilityByDay(filteredAvailability);
+  const selectedDayLabel = selectedWeekdayFilter === 'all'
+    ? 'todos los días'
+    : getWeekdayLabel(selectedWeekdayFilter);
 
   return (
     <section className="admin-shell employee-availability-manager">
@@ -480,10 +526,53 @@ export default function EmployeeAvailabilityPanel({
         <span>{isAdminMode ? 'Todos los empleados' : getEmployeeName(employees, selectedEmployeeId, employeeName || 'Empleado')}</span>
       </div>
 
+      <div className="availability-day-filter" aria-label="Filtrar disponibilidad por día">
+        <button
+          className={`availability-day-filter-all ${selectedWeekdayFilter === 'all' ? 'is-selected' : ''}`}
+          type="button"
+          onClick={() => updateWeekdayFilter('all')}
+        >
+          Todos
+        </button>
+        <div className="availability-day-filter-circles">
+          {weekdayOptions.map((day) => {
+            const count = availabilityDayCounts.get(day.value) || 0;
+
+            return (
+              <button
+                className={`availability-day-circle ${Number(selectedWeekdayFilter) === Number(day.value) ? 'is-selected' : ''}`}
+                type="button"
+                key={day.value}
+                onClick={() => updateWeekdayFilter(day.value)}
+                title={`${day.label}: ${count} disponibilidad(es)`}
+                aria-label={`Ver disponibilidad de ${day.label}`}
+              >
+                <span>{day.initial}</span>
+                <small>{count}</small>
+              </button>
+            );
+          })}
+        </div>
+        <span className="availability-day-filter-caption">
+          Mostrando {selectedDayLabel}
+        </span>
+      </div>
+
       <div className="admin-layout">
         <form className="agenda-modal-card admin-form-card availability-form-card" onSubmit={saveAvailability}>
-          <div className="agenda-modal-header">{editingAvailabilityId ? 'Editar disponibilidad' : 'Nueva disponibilidad'}</div>
-          <div className="agenda-modal-body admin-form-grid">
+          <div className="agenda-modal-header availability-form-header">
+            <span>{editingAvailabilityId ? 'Editar disponibilidad' : 'Nueva disponibilidad'}</span>
+            <button
+              className="availability-form-toggle"
+              type="button"
+              onClick={() => setIsAvailabilityFormOpen((current) => !current)}
+              aria-expanded={isAvailabilityFormOpen}
+              aria-label={isAvailabilityFormOpen ? 'Ocultar formulario de disponibilidad' : 'Mostrar formulario de disponibilidad'}
+            >
+              &gt;
+            </button>
+          </div>
+          <div className={`agenda-modal-body admin-form-grid availability-form-body ${isAvailabilityFormOpen ? 'is-open' : 'is-collapsed'}`}>
             <label>
               Empleado
               {isAdminMode ? (
@@ -544,11 +633,11 @@ export default function EmployeeAvailabilityPanel({
             </div>
 
             <label className="admin-switch-row">
-              <input type="checkbox" checked={form.splitSchedule} onChange={(event) => updateField('splitSchedule', event.target.checked)} disabled={Boolean(editingAvailabilityId)} />
+              <input type="checkbox" checked={form.splitSchedule} onChange={(event) => updateField('splitSchedule', event.target.checked)} />
               Fraccionar horario
             </label>
 
-            {form.splitSchedule && !editingAvailabilityId && (
+            {form.splitSchedule && (
               <div className="availability-range-card">
                 <div className="admin-two-columns">
                   <label>
@@ -587,69 +676,29 @@ export default function EmployeeAvailabilityPanel({
               <div className="agenda-modal-header">Sin disponibilidad</div>
               <div className="agenda-modal-body agenda-empty-state">Todavía no hay horarios disponibles configurados.</div>
             </div>
-          ) : isAdminMode ? (
-            <div className="agenda-modal-card admin-form-card availability-calendar-card">
-              <div className="agenda-modal-header availability-calendar-header">
-                <button className="agenda-option-button" type="button" onClick={() => setCalendarWeekStart((current) => addDays(current, -7))}>
-                  Ant.
-                </button>
-                <span>
-                  {formatShortDateLabel(calendarDates[0])} - {formatShortDateLabel(calendarDates[6])}
-                </span>
-                <button className="agenda-option-button" type="button" onClick={() => setCalendarWeekStart((current) => addDays(current, 7))}>
-                  Sig.
-                </button>
-              </div>
-
-              <div className="availability-calendar-grid">
-                {calendarDates.map((date) => {
-                  const dayItems = calendarAvailabilityByDate.get(date) || [];
-
-                  return (
-                    <section className="availability-calendar-day" key={date}>
-                      <div className="availability-calendar-day-header">
-                        <strong>{formatShortDateLabel(date)}</strong>
-                        <span>{dayItems.length || 'Sin horarios'}</span>
-                      </div>
-
-                      <div className="availability-calendar-day-body">
-                        {dayItems.length === 0 ? (
-                          <div className="availability-calendar-empty">Libre</div>
-                        ) : dayItems.map((item) => (
-                          <article className="availability-calendar-item" key={item.id}>
-                            <strong>{getEmployeeName(employees, item.employee_id, employeeName || 'Empleado')}</strong>
-                            <time>{formatTime(item.start_time)} - {formatTime(item.end_time)}</time>
-                            <div className="availability-calendar-actions">
-                              <button className="agenda-close-button" type="button" onClick={() => editAvailability(item)} disabled={isSaving} aria-label="Editar horario" title="Editar horario">✏️</button>
-                              <button className="agenda-danger-button" type="button" onClick={() => deleteAvailability(item)} disabled={isSaving} aria-label="Eliminar horario" title="Eliminar horario">X</button>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-            </div>
           ) : (
-            <div className="agenda-modal-card admin-form-card availability-table-card">
-              <div className="agenda-modal-header">Horarios disponibles</div>
-              <div className="availability-table" role="table" aria-label="Horarios disponibles">
-                {sortedAvailability.map((item) => (
-                  <div className={`availability-row ${item.active === false ? 'is-muted' : ''}`} role="row" key={item.id}>
-                    <div className="availability-date-badge" aria-hidden="true">{getWeekdayShort(item.weekday)}</div>
-                    <div className="availability-row-main">
-                      <strong>{formatDateLabel(item.available_date, item.weekday)}</strong>
-                      <span>{getEmployeeName(employees, item.employee_id, employeeName || 'Empleado')}</span>
-                    </div>
+            <div className="availability-card-grid" aria-label="Horarios disponibles">
+              {sortedAvailability.map((item) => (
+                <article className={`admin-record-card availability-card ${item.active === false ? 'is-muted' : ''}`} key={item.id}>
+                  <div className="availability-card-accent" aria-hidden="true" />
+                  <div className="availability-date-badge" aria-hidden="true">{getWeekdayShort(item.weekday)}</div>
+                  <div className="admin-record-main availability-card-main">
+                    <strong className="admin-record-title">{formatDateLabel(item.available_date, item.weekday)}</strong>
+                    <span className="admin-record-meta">{getEmployeeName(employees, item.employee_id, employeeName || 'Empleado')}</span>
                     <time>{formatTime(item.start_time)} - {formatTime(item.end_time)}</time>
-                    <div className="availability-row-actions">
-                      <button className="agenda-close-button" type="button" onClick={() => editAvailability(item)} disabled={isSaving}>Editar</button>
-                      <button className="agenda-danger-button" type="button" onClick={() => deleteAvailability(item)} disabled={isSaving}>Eliminar</button>
-                    </div>
                   </div>
-                ))}
-              </div>
+                  <div className="admin-record-actions availability-card-actions">
+                    <button className="agenda-close-button availability-card-action" type="button" onClick={() => editAvailability(item)} disabled={isSaving}>
+                      <span className="admin-action-label-full">Editar</span>
+                      <span className="admin-action-label-compact" aria-hidden="true">Ed.</span>
+                    </button>
+                    <button className="agenda-danger-button availability-card-action" type="button" onClick={() => deleteAvailability(item)} disabled={isSaving}>
+                      <span className="admin-action-label-full">Eliminar</span>
+                      <span className="admin-action-label-compact" aria-hidden="true">X</span>
+                    </button>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
         </div>

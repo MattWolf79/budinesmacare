@@ -22,6 +22,10 @@ const getUserInitials = (user) => {
   return String(parts[0]?.[0] || 'U').toUpperCase();
 };
 
+const getNavbarSubtitle = (accessProfile) => (
+  accessProfile === 'client' ? 'Cliente' : 'Agenda y administración'
+);
+
 export default function Navbar({
   user,
   activeView,
@@ -39,10 +43,10 @@ export default function Navbar({
   return (
     <div className="app-navbar">
       <div className="app-navbar-brand">
-        <span className="app-navbar-mark">T</span>
+        <span className="app-navbar-mark">Claro</span>
         <div>
           <div className="app-navbar-title">Turnos App</div>
-          <div className="app-navbar-subtitle">Agenda y administración</div>
+          <div className="app-navbar-subtitle">{getNavbarSubtitle(accessProfile)}</div>
         </div>
       </div>
 

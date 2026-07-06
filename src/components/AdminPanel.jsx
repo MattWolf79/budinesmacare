@@ -63,6 +63,18 @@ const normalizeComparableText = (value) =>
     .replace(/\s+/g, ' ')
     .toLowerCase();
 
+const normalizeUsernamePart = (value) =>
+  normalizeComparableText(value).replace(/[^a-z0-9]/g, '');
+
+const generateEmployeeUsername = (firstName, lastName) => {
+  const normalizedFirstName = normalizeUsernamePart(firstName);
+  const normalizedLastName = normalizeUsernamePart(lastName);
+
+  if (!normalizedFirstName || !normalizedLastName) return '';
+
+  return `${normalizedFirstName.slice(0, 1)}${normalizedLastName}`;
+};
+
 const getEmployeeServiceIds = (employeeId, links) =>
   links
     .filter((relation) => relation.employee_id === employeeId)
@@ -144,6 +156,13 @@ const getAdminLoadError = (results) => {
   return failedResult ? `${failedResult.label}: ${failedResult.error.message}` : null;
 };
 
+const formatSupabaseError = (error) => [
+  error.message,
+  error.code ? `Código: ${error.code}` : '',
+  error.details ? `Detalle: ${error.details}` : '',
+  error.hint ? `Ayuda: ${error.hint}` : ''
+].filter(Boolean).join('\n');
+
 export default function AdminPanel({ view, onDataChanged }) {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
@@ -153,6 +172,8 @@ export default function AdminPanel({ view, onDataChanged }) {
   const [serviceForm, setServiceForm] = useState(emptyService);
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
   const [editingServiceId, setEditingServiceId] = useState(null);
+  const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
+  const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [emojiSearch, setEmojiSearch] = useState('');
   const emojiPickerRef = useRef(null);
@@ -162,6 +183,13 @@ export default function AdminPanel({ view, onDataChanged }) {
   const activeServices = useMemo(
     () => services.filter((service) => service.active !== false),
     [services]
+  );
+
+  const employeeUsernamePreview = useMemo(
+    () => editingEmployeeId
+      ? employeeForm.name
+      : generateEmployeeUsername(employeeForm.first_name, employeeForm.last_name),
+    [editingEmployeeId, employeeForm.first_name, employeeForm.last_name, employeeForm.name]
   );
 
   const filteredIconGroups = useMemo(() => {
@@ -295,6 +323,7 @@ export default function AdminPanel({ view, onDataChanged }) {
 
   const editEmployee = (employee) => {
     setEditingEmployeeId(employee.id);
+    setIsEmployeeFormOpen(true);
     setEmployeeForm({
       name: employee.name || '',
       first_name: employee.first_name || '',
@@ -313,6 +342,7 @@ export default function AdminPanel({ view, onDataChanged }) {
 
   const editService = (service) => {
     setEditingServiceId(service.id);
+    setIsServiceFormOpen(true);
     setServiceForm({
       name: service.name || '',
       icon: service.icon || '✨',
@@ -346,7 +376,7 @@ export default function AdminPanel({ view, onDataChanged }) {
     const fullName = [employeeForm.first_name.trim(), employeeForm.last_name.trim()].filter(Boolean).join(' ');
 
     const payload = {
-      name: employeeForm.name.trim() || fullName,
+      name: editingEmployeeId ? employeeForm.name.trim() : employeeUsernamePreview,
       first_name: employeeForm.first_name.trim() || null,
       last_name: employeeForm.last_name.trim() || null,
       birth_date: employeeForm.birth_date || null,
@@ -356,11 +386,16 @@ export default function AdminPanel({ view, onDataChanged }) {
       address_locality: employeeForm.address_locality.trim() || null,
       photo_url: employeeForm.photo_url || null,
       code: employeeForm.code.trim() || null,
-      active: employeeForm.active
+      active: editingEmployeeId ? employeeForm.active : true
     };
 
-    if (!payload.name) {
-      alert('Ingresá el nombre del empleado.');
+    if (!editingEmployeeId && (!payload.first_name || !payload.last_name)) {
+      alert('Ingresá nombre y apellido para generar el usuario.');
+      return;
+    }
+
+    if (!payload.name || (!editingEmployeeId && !fullName)) {
+      alert('No se pudo generar el usuario del empleado.');
       return;
     }
 
@@ -371,14 +406,22 @@ export default function AdminPanel({ view, onDataChanged }) {
           .from('employees')
           .update(payload)
           .eq('id', editingEmployeeId)
-      : await supabase
-          .from('employees')
-          .insert(payload)
-          .select('*')
-          .single();
+      : await supabase.rpc('create_admin_employee', {
+        name_value: payload.name,
+        first_name_value: payload.first_name,
+        last_name_value: payload.last_name,
+        birth_date_value: payload.birth_date,
+        phone_value: payload.phone,
+        address_street_value: payload.address_street,
+        address_number_value: payload.address_number,
+        address_locality_value: payload.address_locality,
+        photo_url_value: payload.photo_url,
+        code_value: payload.code,
+        service_ids_value: employeeForm.serviceIds
+      }).single();
 
     if (employeeResult.error) {
-      alert(`No se pudo guardar el empleado: ${employeeResult.error.message}`);
+      alert(`No se pudo guardar el empleado:\n${formatSupabaseError(employeeResult.error)}`);
       setIsSaving(false);
       return;
     }
@@ -397,13 +440,15 @@ export default function AdminPanel({ view, onDataChanged }) {
       return;
     }
 
-    if (!employeeMatchesPayload(savedEmployee.data, payload)) {
+    if (editingEmployeeId && !employeeMatchesPayload(savedEmployee.data, payload)) {
       alert('Supabase recibió el pedido, pero no aplicó los cambios del empleado. Revisá las policies de UPDATE sobre la tabla employees.');
       setIsSaving(false);
       return;
     }
 
-    const relationResult = await saveEmployeeRelations(savedEmployee.data.id, employeeForm.serviceIds);
+    const relationResult = editingEmployeeId
+      ? await saveEmployeeRelations(savedEmployee.data.id, employeeForm.serviceIds)
+      : { error: null };
 
     if (relationResult.error) {
       alert(`El empleado se guardó, pero no se pudieron actualizar sus actividades: ${relationResult.error.message}`);
@@ -430,6 +475,10 @@ export default function AdminPanel({ view, onDataChanged }) {
       return;
     }
 
+    if (!editingEmployeeId) {
+      alert(`Empleado activo creado. Usuario: ${savedEmployee.data.internal_username}. Contraseña inicial: 123456. Se le pedirá cambiarla en el primer ingreso.`);
+    }
+
     setEmployees((currentEmployees) => {
       if (editingEmployeeId) {
         return currentEmployees.map((employee) =>
@@ -449,6 +498,7 @@ export default function AdminPanel({ view, onDataChanged }) {
     ]);
 
     resetEmployeeForm();
+    setIsEmployeeFormOpen(false);
     await loadAdminData();
     onDataChanged?.();
     setIsSaving(false);
@@ -569,6 +619,7 @@ export default function AdminPanel({ view, onDataChanged }) {
     });
 
     resetServiceForm();
+    setIsServiceFormOpen(false);
     await loadAdminData();
     onDataChanged?.();
     setIsSaving(false);
@@ -699,15 +750,45 @@ export default function AdminPanel({ view, onDataChanged }) {
 
   if (view === 'employees') {
     return (
-      <section className="admin-shell">
-        <div className="admin-hero">
+      <section className="admin-shell employee-admin-manager">
+        <div className="admin-page-heading">
+          <div>
+            <h1>Administración de empleados</h1>
+            <p>Gestioná perfiles internos, actividades asignadas y datos de contacto.</p>
+          </div>
+          <button className="admin-link-button" type="button" onClick={loadAdminData}>
+            Actualizar
+          </button>
+        </div>
+
+        <div className="admin-metric-grid employee-metric-grid" aria-label="Resumen de empleados">
+          <article className="admin-metric-card">
+            <span>Empleados</span>
+            <strong>{employees.length}</strong>
+            <small>Total registrados.</small>
+          </article>
+          <article className="admin-metric-card">
+            <span>Activos</span>
+            <strong>{employees.filter((employee) => employee.active !== false).length}</strong>
+            <small>Disponibles para turnos.</small>
+          </article>
+          <article className="admin-metric-card">
+            <span>Pendientes</span>
+            <strong>{accessRequests.length}</strong>
+            <small>Solicitudes de acceso.</small>
+          </article>
+          <article className="admin-metric-card">
+            <span>Actividades</span>
+            <strong>{activeServices.length}</strong>
+            <small>Servicios asignables.</small>
+          </article>
+        </div>
+
+        <div className="admin-hero employee-legacy-heading">
           <div>
             <span className="admin-kicker">ABM</span>
             <h1>Empleados</h1>
           </div>
-          <button className="agenda-close-button admin-refresh-button" type="button" onClick={loadAdminData}>
-            Actualizar
-          </button>
         </div>
 
         {accessRequests.length > 0 && (
@@ -752,8 +833,19 @@ export default function AdminPanel({ view, onDataChanged }) {
 
         <div className="admin-layout">
           <form className="agenda-modal-card admin-form-card employee-form-card" onSubmit={saveEmployee}>
-            <div className="agenda-modal-header">{editingEmployeeId ? 'Editar empleado' : 'Nuevo empleado'}</div>
-            <div className="agenda-modal-body admin-form-grid">
+            <div className="agenda-modal-header admin-collapsible-form-header">
+              <span>{editingEmployeeId ? 'Editar empleado' : 'Nuevo empleado'}</span>
+              <button
+                className="availability-form-toggle admin-collapsible-form-toggle"
+                type="button"
+                onClick={() => setIsEmployeeFormOpen((current) => !current)}
+                aria-expanded={isEmployeeFormOpen}
+                aria-label={isEmployeeFormOpen ? 'Ocultar formulario de empleado' : 'Mostrar formulario de empleado'}
+              >
+                &gt;
+              </button>
+            </div>
+            <div className={`agenda-modal-body admin-form-grid admin-collapsible-form-body ${isEmployeeFormOpen ? 'is-open' : 'is-collapsed'}`}>
               <label className="admin-photo-field">
                 Foto de perfil
                 <span className="admin-photo-control">
@@ -776,8 +868,8 @@ export default function AdminPanel({ view, onDataChanged }) {
               </div>
 
               <label>
-                Usuario visible
-                <input value={employeeForm.name} onChange={(event) => updateEmployeeField('name', event.target.value)} placeholder="Catatita" />
+                Usuario
+                <input value={employeeUsernamePreview} disabled placeholder="mlobo" />
               </label>
 
               <div className="admin-two-columns">
@@ -816,7 +908,7 @@ export default function AdminPanel({ view, onDataChanged }) {
                 <input value={employeeForm.code} onChange={(event) => updateEmployeeField('code', event.target.value)} placeholder="M3" />
               </label>
               <label className="admin-switch-row">
-                <input type="checkbox" checked={employeeForm.active} onChange={(event) => updateEmployeeField('active', event.target.checked)} />
+                <input type="checkbox" checked={editingEmployeeId ? employeeForm.active : true} disabled={!editingEmployeeId} onChange={(event) => updateEmployeeField('active', event.target.checked)} />
                 Empleado activo
               </label>
 
@@ -828,6 +920,7 @@ export default function AdminPanel({ view, onDataChanged }) {
                       key={service.id}
                       type="button"
                       className={`admin-service-chip ${employeeForm.serviceIds.includes(String(service.id)) ? 'is-selected' : ''}`}
+                      style={{ '--service-chip-color': service.color || '#3fc9d5' }}
                       onClick={() => toggleEmployeeService(service.id)}
                     >
                       <ActivityIcon service={service} size="small" />
@@ -839,18 +932,18 @@ export default function AdminPanel({ view, onDataChanged }) {
 
               <div className="admin-actions">
                 <button className="agenda-close-button" type="submit" disabled={isSaving} aria-label={editingEmployeeId ? 'Guardar empleado' : 'Crear empleado'} title={editingEmployeeId ? 'Guardar empleado' : 'Crear empleado'}>
-                  ✓
+                  {editingEmployeeId ? 'Guardar' : 'Crear'}
                 </button>
                 {editingEmployeeId && (
                   <button className="agenda-option-button" type="button" onClick={resetEmployeeForm} aria-label="Cancelar edición" title="Cancelar edición">
-                    X
+                    Limpiar
                   </button>
                 )}
               </div>
             </div>
           </form>
 
-          <div className="admin-list employee-record-list">
+          <div className="admin-list employee-record-list employee-button-list">
             {employees.map((employee) => (
               <article className={`admin-record-card admin-record-card-plain employee-record-card ${employee.active === false ? 'is-muted' : ''}`} key={employee.id}>
                 <div className="admin-record-avatar" aria-hidden="true">
@@ -884,20 +977,68 @@ export default function AdminPanel({ view, onDataChanged }) {
 
   return (
     <section className="admin-shell service-admin-manager">
-      <div className="admin-hero">
+      <div className="admin-page-heading">
         <div>
-          <span className="admin-kicker">ABM</span>
-          <h1>Actividades</h1>
+          <h1>Administración de actividades</h1>
+          <p>Configurá servicios, colores y disponibilidad operativa.</p>
         </div>
-        <button className="agenda-close-button admin-refresh-button" type="button" onClick={loadAdminData}>
+        <button className="admin-link-button" type="button" onClick={loadAdminData}>
           Actualizar
         </button>
       </div>
 
+      <div className="admin-metric-grid service-metric-grid" aria-label="Resumen de actividades">
+        <article className="admin-metric-card">
+          <span>Actividades</span>
+          <strong>{services.length}</strong>
+          <small>Total configuradas.</small>
+        </article>
+        <article className="admin-metric-card">
+          <span>Activas</span>
+          <strong>{services.filter((service) => service.active !== false).length}</strong>
+          <small>Disponibles para turnos.</small>
+        </article>
+        <article className="admin-metric-card">
+          <span>Pausadas</span>
+          <strong>{services.filter((service) => service.active === false).length}</strong>
+          <small>Ocultas temporalmente.</small>
+        </article>
+        <article className="admin-metric-card">
+          <span>Asignaciones</span>
+          <strong>{employeeServices.length}</strong>
+          <small>Empleado por actividad.</small>
+        </article>
+      </div>
+
+      <div className="admin-status-tabs service-status-tabs" aria-label="Estados de referencia">
+        <span className="is-success">Activa</span>
+        <span className="is-info">Editable</span>
+        <span className="is-warning">Pausada</span>
+        <span className="is-danger">Eliminable</span>
+      </div>
+
+      <div className="admin-hero service-legacy-heading">
+        <div>
+          <span className="admin-kicker">ABM</span>
+          <h1>Actividades</h1>
+        </div>
+      </div>
+
       <div className="admin-layout">
         <form className="agenda-modal-card admin-form-card service-form-card" onSubmit={saveService}>
-          <div className="agenda-modal-header">{editingServiceId ? 'Editar actividad' : 'Nueva actividad'}</div>
-          <div className="agenda-modal-body admin-form-grid">
+          <div className="agenda-modal-header admin-collapsible-form-header">
+            <span>{editingServiceId ? 'Editar actividad' : 'Nueva actividad'}</span>
+            <button
+              className="availability-form-toggle admin-collapsible-form-toggle"
+              type="button"
+              onClick={() => setIsServiceFormOpen((current) => !current)}
+              aria-expanded={isServiceFormOpen}
+              aria-label={isServiceFormOpen ? 'Ocultar formulario de actividad' : 'Mostrar formulario de actividad'}
+            >
+              &gt;
+            </button>
+          </div>
+          <div className={`agenda-modal-body admin-form-grid admin-collapsible-form-body ${isServiceFormOpen ? 'is-open' : 'is-collapsed'}`}>
             <label>
               Nombre
               <input value={serviceForm.name} onChange={(event) => updateServiceField('name', event.target.value)} placeholder="Peluquería" />
@@ -963,35 +1104,38 @@ export default function AdminPanel({ view, onDataChanged }) {
 
             <div className="admin-actions">
               <button className="agenda-close-button" type="submit" disabled={isSaving} aria-label={editingServiceId ? 'Guardar actividad' : 'Crear actividad'} title={editingServiceId ? 'Guardar actividad' : 'Crear actividad'}>
-                ✓
+                {editingServiceId ? 'Guardar' : 'Crear'}
               </button>
               {editingServiceId && (
                 <button className="agenda-option-button" type="button" onClick={resetServiceForm} aria-label="Cancelar edición" title="Cancelar edición">
-                  X
+                  Limpiar
                 </button>
               )}
             </div>
           </div>
         </form>
 
-        <div className="admin-list service-record-list">
+        <div className="admin-list service-record-list service-button-grid">
           {services.map((service) => (
             <article className={`admin-record-card service-record-card ${service.active === false ? 'is-muted' : ''}`} key={service.id}>
               <div className="admin-record-color" style={{ background: service.color || '#94a3b8' }} />
               <div className="admin-record-main">
                 <div className="admin-record-title admin-record-title-icon"><ActivityIcon service={service} size="small" /> {service.name}</div>
-                <div className="admin-record-meta">{service.default_duration || 30} min · {service.active === false ? 'Inactiva' : 'Activa'}</div>
+                <div className="service-record-badges">
+                  <span>{service.default_duration || 30} min</span>
+                  <span className={service.active === false ? 'is-warning' : 'is-success'}>{service.active === false ? 'Pausada' : 'Activa'}</span>
+                </div>
                 <div className="admin-record-services">{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length} empleado(s) asignado(s)</div>
               </div>
               <div className="admin-record-actions">
-                <button className="agenda-close-button" type="button" onClick={() => editService(service)} aria-label="Editar actividad" title="Editar actividad">
-                  ✏️
+                <button className="agenda-close-button service-card-action" type="button" onClick={() => editService(service)} aria-label="Editar actividad" title="Editar actividad">
+                  Editar
                 </button>
-                <button className="agenda-option-button" type="button" onClick={() => toggleServiceStatus(service)} aria-label={service.active === false ? 'Activar actividad' : 'Desactivar actividad'} title={service.active === false ? 'Activar actividad' : 'Desactivar actividad'}>
-                  {service.active === false ? '+' : '-'}
+                <button className="agenda-option-button service-card-action" type="button" onClick={() => toggleServiceStatus(service)} aria-label={service.active === false ? 'Activar actividad' : 'Desactivar actividad'} title={service.active === false ? 'Activar actividad' : 'Desactivar actividad'}>
+                  {service.active === false ? 'Activar' : 'Pausar'}
                 </button>
-                <button className="agenda-danger-button" type="button" onClick={() => deleteService(service)} aria-label="Eliminar actividad" title="Eliminar actividad">
-                  X
+                <button className="agenda-danger-button service-card-action" type="button" onClick={() => deleteService(service)} aria-label="Eliminar actividad" title="Eliminar actividad">
+                  Eliminar
                 </button>
               </div>
             </article>

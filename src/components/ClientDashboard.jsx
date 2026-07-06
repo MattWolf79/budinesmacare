@@ -3,7 +3,11 @@ import { supabase } from '../api/supabaseClient';
 import ActivityIcon from './ActivityIcon';
 import AgendaGrid from './AgendaGrid';
 
-const ACTIVE_BOOKING_STATUSES = ['confirmed', 'reserved'];
+const ACTIVE_BOOKING_STATUSES = ['confirmed', 'reserved', 'pending_assignment'];
+
+const getBookingStatusLabel = (booking) => (
+  !booking.employee_id || booking.status === 'pending_assignment' ? 'Pendiente de asignación' : 'Turno confirmado'
+);
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -22,10 +26,9 @@ const formatBookingTime = (startValue, endValue) => {
   return `${pad(start.getHours())}:${pad(start.getMinutes())} - ${pad(end.getHours())}:${pad(end.getMinutes())}`;
 };
 
-export default function ClientDashboard({ user }) {
+export default function ClientDashboard({ user, showAgenda = true }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
-  const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -42,7 +45,7 @@ export default function ClientDashboard({ user }) {
 
       const now = formatDateForDb(new Date());
 
-      const [bookingResult, serviceResult, employeeResult] = await Promise.all([
+      const [bookingResult, serviceResult] = await Promise.all([
         supabase
           .from('bookings')
           .select('*')
@@ -51,13 +54,12 @@ export default function ClientDashboard({ user }) {
           .gte('start_at', now)
           .order('start_at', { ascending: true })
           .limit(6),
-        supabase.from('services').select('*'),
-        supabase.from('employees').select('*').is('deleted_at', null)
+        supabase.from('services').select('*')
       ]);
 
       if (!active) return;
 
-      if (bookingResult.error || serviceResult.error || employeeResult.error) {
+      if (bookingResult.error || serviceResult.error) {
         alert('No se pudieron cargar tus próximos turnos.');
         setIsLoading(false);
         return;
@@ -65,7 +67,6 @@ export default function ClientDashboard({ user }) {
 
       setBookings(bookingResult.data || []);
       setServices(serviceResult.data || []);
-      setEmployees(employeeResult.data || []);
       setIsLoading(false);
     }, 0);
 
@@ -77,9 +78,8 @@ export default function ClientDashboard({ user }) {
 
   const bookingDetails = useMemo(() => bookings.map((booking) => ({
     booking,
-    service: services.find((service) => Number(service.id) === Number(booking.service)),
-    employee: employees.find((employee) => String(employee.id) === String(booking.employee_id))
-  })), [bookings, employees, services]);
+    service: services.find((service) => Number(service.id) === Number(booking.service))
+  })), [bookings, services]);
 
   const refreshBookings = () => {
     setRefreshKey((current) => current + 1);
@@ -101,12 +101,12 @@ export default function ClientDashboard({ user }) {
           <p className="client-summary-empty">Todavía no tenés turnos próximos.</p>
         ) : (
           <div className="client-booking-list">
-            {bookingDetails.map(({ booking, service, employee }) => (
+            {bookingDetails.map(({ booking, service }) => (
               <article className="client-booking-card" key={booking.id}>
                 <ActivityIcon service={service} size="small" variant="summary" />
                 <div>
                   <strong>{service?.name || 'Actividad'}</strong>
-                  <span>{employee?.name || 'Empleado'} · {formatBookingDate(booking.start_at)}</span>
+                  <span>{getBookingStatusLabel(booking)} · {formatBookingDate(booking.start_at)}</span>
                 </div>
                 <time>{formatBookingTime(booking.start_at, booking.end_at)}</time>
               </article>
@@ -115,9 +115,11 @@ export default function ClientDashboard({ user }) {
         )}
       </div>
 
-      <div className="client-agenda-panel">
-        <AgendaGrid user={user} accessProfile="client" refreshKey={refreshKey} onBookingsChanged={refreshBookings} />
-      </div>
+      {showAgenda && (
+        <div className="client-agenda-panel">
+          <AgendaGrid user={user} accessProfile="client" refreshKey={refreshKey} onBookingsChanged={refreshBookings} />
+        </div>
+      )}
     </section>
   );
 }

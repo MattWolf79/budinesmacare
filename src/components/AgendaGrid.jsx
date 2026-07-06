@@ -5,14 +5,15 @@ import CancelBookingModal from './CancelBookingModal';
 import CustomerModal from './CustomerModal';
 import EmployeeModal from './EmployeeModal';
 import ServiceModal from './ServiceModal';
+import ActivityIcon from './ActivityIcon';
 
 const SLOT_MINUTES = 30;
 const START_HOUR = 8;
 const SLOTS = 30;
-const EMPTY_SLOT_HEIGHT = 42;
-const BOOKED_SLOT_PADDING_HEIGHT = 8;
-const BOOKING_STACK_HEIGHT = 32;
-const ACTIVE_BOOKING_STATUSES = new Set(['confirmed', 'reserved']);
+const EMPTY_SLOT_HEIGHT = 30;
+const BOOKED_SLOT_PADDING_HEIGHT = 5;
+const BOOKING_STACK_HEIGHT = 24;
+const ACTIVE_BOOKING_STATUSES = new Set(['confirmed', 'reserved', 'pending_assignment']);
 
 /* =========================
    TIME (FIX DEFINITIVO)
@@ -53,6 +54,9 @@ const rangesOverlap = (startA, endA, startB, endB) =>
 const isActiveBooking = (booking) =>
   ACTIVE_BOOKING_STATUSES.has(String(booking.status || '').trim().toLowerCase());
 
+const isPendingAssignmentBooking = (booking) =>
+  isActiveBooking(booking) && (!booking.employee_id || booking.status === 'pending_assignment');
+
 const parseBookingDate = (value) => {
   if (value instanceof Date) return value;
   return new Date(value);
@@ -80,6 +84,18 @@ const formatDateOnlyForDb = (date) => {
 const buildReservationRange = (day, startSlot, endSlot) => {
   const startLocal = buildSlotDate(day, startSlot);
   const endLocal = buildSlotDate(day, endSlot + 1);
+
+  return {
+    startLocal,
+    endLocal,
+    start_at: formatDateForDb(startLocal),
+    end_at: formatDateForDb(endLocal)
+  };
+};
+
+const buildRangeFromBooking = (booking) => {
+  const startLocal = parseBookingDate(booking.start_at);
+  const endLocal = parseBookingDate(booking.end_at);
 
   return {
     startLocal,
@@ -216,21 +232,25 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [offset, setOffset] = useState(0);
   const [visibleDayCount, setVisibleDayCount] = useState(getVisibleDayCount);
   const days = useMemo(() => getWeekDays(offset, visibleDayCount), [offset, visibleDayCount]);
-  const canGoBack = offset > 0;
 
   const [selection, setSelection] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
   const [availableEmployees, setAvailableEmployees] = useState([]);
+  const [isLoadingAvailableEmployees, setIsLoadingAvailableEmployees] = useState(false);
   const [pendingEmployee, setPendingEmployee] = useState(null);
   const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [assignmentRequest, setAssignmentRequest] = useState(null);
+  const [assignmentEmployees, setAssignmentEmployees] = useState([]);
+  const [isLoadingAssignmentEmployees, setIsLoadingAssignmentEmployees] = useState(false);
 
   const [dragStart, setDragStart] = useState(null);
   const [dragEnd, setDragEnd] = useState(null);
   const isAdminView = accessProfile === 'admin';
   const isEmployeeView = accessProfile === 'employee';
   const isClientView = accessProfile === 'client';
+  const canGoBack = !isClientView || offset > 0;
   const isCompactAgenda = visibleDayCount <= 3;
-  const timeColumnWidth = isCompactAgenda ? 56 : 80;
+  const timeColumnWidth = isCompactAgenda ? 46 : 64;
 
   const activeSelection = dragStart && dragEnd
     ? {
@@ -248,6 +268,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const selectedRangeLabel = selection && selectedRange
     ? `${formatTime(selectedRange.startLocal)} - ${formatTime(selectedRange.endLocal)} (${formatDuration(selection.start, selection.end)})`
     : '';
+  const pendingAssignmentBookings = useMemo(() => bookings
+    .filter(isPendingAssignmentBooking)
+    .filter((booking) => parseBookingDate(booking.start_at) >= new Date())
+    .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [bookings]);
 
   /* =========================
      LOAD DATA
@@ -305,12 +329,14 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   useEffect(() => {
     if (!selectedService?.id || !selection) {
+      setIsLoadingAvailableEmployees(false);
       return;
     }
 
     let active = true;
 
     const load = async () => {
+      setIsLoadingAvailableEmployees(true);
       const { data: rel } = await supabase
         .from('employee_services')
         .select('employee_id')
@@ -322,7 +348,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         : ids;
 
       if (!filteredIds.length) {
-        if (active) setAvailableEmployees([]);
+        if (active) {
+          setAvailableEmployees([]);
+          setIsLoadingAvailableEmployees(false);
+        }
         return;
       }
 
@@ -341,6 +370,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       );
 
       setAvailableEmployees(available);
+      setIsLoadingAvailableEmployees(false);
     };
 
     load();
@@ -473,11 +503,73 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const chooseEmployeeForReservation = (employee) => {
     if (isClientView) {
-      reserve(employee);
+      reserveClientRequest();
       return;
     }
 
     setPendingEmployee(employee);
+  };
+
+  const reserveClientRequest = async () => {
+    const range = selectedRange;
+
+    if (!range || !selectedService?.id) return;
+
+    const customerName = user?.displayName || user?.email || '';
+    const customerEmail = user?.email || '';
+    const clientIdentity = {
+      userId: user?.id,
+      email: customerEmail
+    };
+
+    if (clientHasBookingConflict(bookings, clientIdentity, range)) {
+      alert('Ya tenés un turno o solicitud en ese horario. Una persona no puede tener dos reservas superpuestas.');
+      return;
+    }
+
+    if (!availabilityLoadFailed && !availableEmployees.length) {
+      alert('No hay disponibilidad para esa actividad en ese horario. Probá con otro horario.');
+      return;
+    }
+
+    const { data: clientConflicts, error: clientConflictError } = await supabase
+      .from('bookings')
+      .select('id, user_id, user_email, status, start_at, end_at')
+      .in('status', ['confirmed', 'reserved', 'pending_assignment'])
+      .lt('start_at', range.end_at)
+      .gt('end_at', range.start_at);
+
+    if (clientConflictError) {
+      alert('No se pudo validar tu disponibilidad. Intentá nuevamente.');
+      return;
+    }
+
+    if (clientHasBookingConflict(clientConflicts || [], clientIdentity, range)) {
+      alert('Ya tenés un turno o solicitud en ese horario. Una persona no puede tener dos reservas superpuestas.');
+      await loadAll();
+      return;
+    }
+
+    const { error } = await supabase.from('bookings').insert({
+      user_id: user.id,
+      user_email: customerEmail,
+      customer_name: customerName || null,
+      service: selectedService.id,
+      employee_id: null,
+      start_at: range.start_at,
+      end_at: range.end_at,
+      status: 'reserved'
+    });
+
+    if (error) {
+      alert(`No se pudo solicitar el turno: ${error.message}`);
+      return;
+    }
+
+    alert('Solicitud enviada. El administrador asignará un empleado y confirmará el turno.');
+    close();
+    await loadAll();
+    onBookingsChanged?.();
   };
 
   const reserve = async (employee, customer = null) => {
@@ -550,7 +642,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     const { data: clientConflicts, error: clientConflictError } = await supabase
       .from('bookings')
-      .select('id, user_id, user_email')
+      .select('id, user_id, user_email, status, start_at, end_at')
       .in('status', ['confirmed', 'reserved'])
       .lt('start_at', range.end_at)
       .gt('end_at', range.start_at);
@@ -589,6 +681,107 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     onBookingsChanged?.();
   };
 
+  const formatBookingRangeLabel = (booking) => {
+    const range = buildRangeFromBooking(booking);
+    return `${range.startLocal.toLocaleDateString('es-AR')} ${formatTime(range.startLocal)} - ${formatTime(range.endLocal)}`;
+  };
+
+  const openAssignmentRequest = async (booking) => {
+    const service = services.find((item) => Number(item.id) === Number(booking.service));
+    const range = buildRangeFromBooking(booking);
+
+    setAssignmentRequest({ booking, service, range });
+    setAssignmentEmployees([]);
+    setIsLoadingAssignmentEmployees(true);
+
+    const { data: rel, error: relError } = await supabase
+      .from('employee_services')
+      .select('employee_id')
+      .eq('service_id', booking.service);
+
+    if (relError) {
+      alert('No se pudieron consultar empleados para esa actividad.');
+      setIsLoadingAssignmentEmployees(false);
+      return;
+    }
+
+    const ids = rel?.map((relation) => relation.employee_id) || [];
+
+    if (!ids.length) {
+      setAssignmentEmployees([]);
+      setIsLoadingAssignmentEmployees(false);
+      return;
+    }
+
+    const { data: emp, error: empError } = await supabase
+      .from('employees')
+      .select('*')
+      .is('deleted_at', null)
+      .in('id', ids);
+
+    if (empError) {
+      alert('No se pudieron consultar empleados disponibles.');
+      setIsLoadingAssignmentEmployees(false);
+      return;
+    }
+
+    const assignmentOptions = (emp || [])
+      .filter((employee) => employee.active !== false)
+      .map((employee) => {
+        const hasAvailability = employeeHasAvailability(employeeAvailability, employee.id, range, availabilityLoadFailed);
+        const hasConflict = employeeHasBookingConflict(bookings, employee.id, range);
+
+        return {
+          ...employee,
+          assignmentHasAvailability: hasAvailability,
+          assignmentHasConflict: hasConflict,
+          assignmentCanAssign: !hasConflict && (availabilityLoadFailed || hasAvailability)
+        };
+      })
+      .sort((left, right) => String(left.name || '').localeCompare(String(right.name || ''), 'es'));
+
+    setAssignmentEmployees(assignmentOptions);
+    setIsLoadingAssignmentEmployees(false);
+  };
+
+  const closeAssignmentRequest = () => {
+    setAssignmentRequest(null);
+    setAssignmentEmployees([]);
+    setIsLoadingAssignmentEmployees(false);
+  };
+
+  const assignEmployeeToRequest = async (employee) => {
+    if (!assignmentRequest?.booking?.id) return;
+
+    if (employee.assignmentHasConflict) {
+      alert(`${employee.name} ya tiene un turno en ese horario.`);
+      return;
+    }
+
+    if (!availabilityLoadFailed && employee.assignmentHasAvailability === false) {
+      alert(`${employee.name} no tiene disponibilidad configurada para ese horario.`);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({
+        employee_id: employee.id,
+        status: 'confirmed'
+      })
+      .eq('id', assignmentRequest.booking.id)
+      .is('employee_id', null);
+
+    if (error) {
+      alert(`No se pudo asignar el empleado: ${error.message}`);
+      return;
+    }
+
+    closeAssignmentRequest();
+    await loadAll();
+    onBookingsChanged?.();
+  };
+
   /* =========================
      MATCH SLOT (FIX TIMEZONE SAFE)
   ========================= */
@@ -614,12 +807,40 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       style={{ userSelect: 'none' }}
     >
 
+      {isAdminView && pendingAssignmentBookings.length > 0 && (
+        <section className="admin-pending-panel booking-assignment-panel">
+          <div className="agenda-modal-header">Solicitudes pendientes de asignación</div>
+          <div className="admin-pending-list">
+            {pendingAssignmentBookings.map((booking) => {
+              const service = services.find((item) => Number(item.id) === Number(booking.service));
+
+              return (
+                <article className="admin-record-card booking-assignment-card" key={booking.id} style={{ '--service-chip-color': service?.color || '#15b8c8' }}>
+                  <div className="admin-record-main">
+                    <span className="booking-assignment-service">
+                      <ActivityIcon service={service} size="small" />
+                      <strong>{service?.name || 'Actividad'}</strong>
+                    </span>
+                    <span className="admin-record-meta booking-assignment-meta">{booking.customer_name || booking.user_email || 'Cliente'} · {formatBookingRangeLabel(booking)}</span>
+                  </div>
+                  <div className="admin-record-actions">
+                    <button className="agenda-close-button" type="button" onClick={() => openAssignmentRequest(booking)}>
+                      Asignar empleado
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* NAV */}
       <div className="agenda-week-nav">
         <button
           className="agenda-week-button"
           disabled={!canGoBack}
-          onClick={() => setOffset(Math.max(0, offset - visibleDayCount))}
+          onClick={() => setOffset(isClientView ? Math.max(0, offset - visibleDayCount) : offset - visibleDayCount)}
           aria-label="Semana anterior"
         >
           ←
@@ -652,15 +873,16 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           );
         });
         const rowMaxBookings = Math.max(0, ...rowSlotBookings.map((slotBookings) => slotBookings.length));
-        const emptySlotHeight = isCompactAgenda ? 34 : EMPTY_SLOT_HEIGHT;
-        const bookedSlotPaddingHeight = isCompactAgenda ? 5 : BOOKED_SLOT_PADDING_HEIGHT;
-        const bookingStackHeight = isCompactAgenda ? 21 : BOOKING_STACK_HEIGHT;
+        const emptySlotHeight = isCompactAgenda ? 28 : EMPTY_SLOT_HEIGHT;
+        const bookedSlotPaddingHeight = isCompactAgenda ? 4 : BOOKED_SLOT_PADDING_HEIGHT;
+        const bookingStackHeight = isCompactAgenda ? 20 : BOOKING_STACK_HEIGHT;
         const rowHeight = rowMaxBookings
           ? Math.max(emptySlotHeight, bookedSlotPaddingHeight + (rowMaxBookings * bookingStackHeight))
           : emptySlotHeight;
 
         return (
           <div
+            className="agenda-row"
             key={slotIndex}
             style={{
               display: 'grid',
@@ -681,6 +903,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
               return (
                 <div
+                  className="agenda-slot-cell"
                   key={dayIndex}
                   data-agenda-cell="true"
                   data-day-index={dayIndex}
@@ -688,17 +911,17 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                   onPointerDown={(event) => startPointerSelection(event, dayIndex, slotIndex)}
                   onPointerEnter={() => move(dayIndex, slotIndex)}
                   style={{
-                    border: '1px solid #eee',
+                    border: '1px solid #edf1f5',
                     minHeight: rowHeight,
                     position: 'relative',
                     display: 'flex',
                     flexDirection: 'column',
                     background: isDisabled
-                      ? '#f1f1f1'
+                      ? '#f7f8fa'
                       : isSelected
-                        ? 'rgba(33, 150, 243, 0.18)'
+                        ? 'rgba(15, 62, 168, 0.09)'
                         : 'transparent',
-                    outline: isSelected ? '2px solid rgba(33, 150, 243, 0.65)' : 'none',
+                    outline: isSelected ? '2px solid rgba(15, 62, 168, 0.38)' : 'none',
                     outlineOffset: -2,
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     opacity: isDisabled ? 0.55 : 1
@@ -707,7 +930,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                   <div style={{ flex: '1 1 auto' }}>
                     {slotBookings.map(b => {
                       const service = services.find(s => Number(s.id) === Number(b.service));
-                      const emp = employees.find(e => e.id === b.employee_id);
+                      const emp = isClientView ? null : employees.find(e => e.id === b.employee_id);
                       const isOwn = isOwnBooking(b);
                       const isAssigned = isAssignedBooking(b);
 
@@ -735,7 +958,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                     aria-hidden="true"
                     style={{
                       flex: slotBookings.length ? '0 0 4px' : '1 1 auto',
-                      borderTop: slotBookings.length ? '1px dashed rgba(33, 150, 243, 0.25)' : 'none'
+                      borderTop: slotBookings.length ? '1px dashed rgba(15, 62, 168, 0.16)' : 'none'
                     }}
                   />
                 </div>
@@ -756,7 +979,36 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       )}
 
       {/* MODAL EMPLEADOS */}
-      {selection && selectedService && !pendingEmployee && (
+      {selection && selectedService && isClientView && (
+        <div className="modal">
+          <div className="agenda-modal-card client-request-modal" style={{ '--service-chip-color': selectedService?.color || '#15b8c8' }}>
+            <div className="agenda-modal-header">Solicitar turno</div>
+            <div className="agenda-modal-body">
+              <div className="agenda-modal-summary client-request-service-chip">
+                <span className="agenda-summary-title"><ActivityIcon service={selectedService} size="small" /> {selectedService.name}</span>
+                <span className="client-request-time">{selectedRangeLabel}</span>
+              </div>
+
+              {isLoadingAvailableEmployees ? (
+                <div className="agenda-empty-state">Validando disponibilidad...</div>
+              ) : availableEmployees.length === 0 && !availabilityLoadFailed ? (
+                <div className="agenda-empty-state">No hay disponibilidad para ese horario.</div>
+              ) : (
+                <div className="agenda-empty-state">El administrador asignará un empleado disponible para tu turno.</div>
+              )}
+
+              <div className="agenda-modal-actions client-request-actions">
+                <button className="agenda-option-button" type="button" onClick={close}>Cerrar</button>
+                <button className="agenda-close-button client-request-submit" type="button" onClick={reserveClientRequest} disabled={isLoadingAvailableEmployees || (availableEmployees.length === 0 && !availabilityLoadFailed)}>
+                  Solicitar turno
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selection && selectedService && !isClientView && !pendingEmployee && (
         <EmployeeModal
           employees={availableEmployees}
           rangeLabel={selectedRangeLabel}
@@ -764,6 +1016,64 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           onClose={close}
           onReserve={chooseEmployeeForReservation}
         />
+      )}
+
+      {assignmentRequest && (
+        <div className="modal">
+          <div className="agenda-modal-card assignment-employee-modal" style={{ '--service-chip-color': assignmentRequest.service?.color || '#15b8c8' }}>
+            <div className="agenda-modal-header assignment-employee-header">
+              <span>Asignar empleado</span>
+            </div>
+            <div className="agenda-modal-body">
+              <div className="assignment-service-summary">
+                <span className="assignment-service-chip">
+                  <ActivityIcon service={assignmentRequest.service} size="small" />
+                  <strong>{assignmentRequest.service?.name || 'Actividad'}</strong>
+                </span>
+                <span>{formatBookingRangeLabel(assignmentRequest.booking)}</span>
+              </div>
+
+              {isLoadingAssignmentEmployees ? (
+                <div className="agenda-empty-state">Buscando empleados de esta actividad...</div>
+              ) : assignmentEmployees.length === 0 ? (
+                <div className="agenda-empty-state">No hay empleados activos vinculados a esta actividad.</div>
+              ) : (
+                <div className="assignment-employee-grid">
+                  {assignmentEmployees.map((employee) => {
+                    const statusLabel = employee.assignmentHasConflict
+                      ? 'Ocupado en este horario'
+                      : employee.assignmentHasAvailability
+                        ? 'Disponible'
+                        : 'Sin disponibilidad configurada';
+
+                    return (
+                      <button
+                        className={`assignment-employee-card ${employee.assignmentCanAssign ? '' : 'is-disabled'}`}
+                        type="button"
+                        key={employee.id}
+                        onClick={() => assignEmployeeToRequest(employee)}
+                        disabled={!employee.assignmentCanAssign || isLoadingAssignmentEmployees}
+                      >
+                        <span className="assignment-employee-avatar" aria-hidden="true">
+                          {employee.photo_url ? <img src={employee.photo_url} alt="" /> : (employee.name || 'E').slice(0, 1).toUpperCase()}
+                        </span>
+                        <span className="assignment-employee-main">
+                          <strong>{employee.name}</strong>
+                          <small>{statusLabel}</small>
+                        </span>
+                        <span className="assignment-employee-action">Asignar</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="agenda-modal-actions assignment-employee-actions">
+                <button className="agenda-option-button" type="button" onClick={closeAssignmentRequest}>Cerrar</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {selection && selectedService && pendingEmployee && (

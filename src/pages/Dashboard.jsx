@@ -23,7 +23,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   };
 
   return (
-    <Container maxWidth="xl">
+    <Container maxWidth={false} disableGutters className="dashboard-shell">
       <Navbar
         user={user}
         activeView={activeView}
@@ -36,7 +36,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         canChangeProfile={canChangeProfile}
       />
 
-      <Box sx={{ mt: 3 }}>
+      <Box className="dashboard-content">
         {activeView === 'agenda' && (
           <div className="agenda-responsive-shell">
             <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} />
