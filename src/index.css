@@ -4114,6 +4114,16 @@ code {
   line-height: 1 !important;
 }
 
+.employee-availability-manager .availability-form-card .admin-actions {
+  width: 100% !important;
+}
+
+.employee-availability-manager .availability-form-card .admin-actions .agenda-close-button {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 1 100% !important;
+}
+
 .employee-record-list,
 .service-record-list {
   container-type: inline-size;
@@ -6371,6 +6381,18 @@ body {
   color: #fff;
   border-color: #16a34a;
   background: #16a34a;
+}
+
+@media (min-width: 901px) {
+  .employee-availability-manager .availability-form-card .admin-actions {
+    width: 100% !important;
+  }
+
+  .employee-availability-manager .availability-form-card .admin-actions .agenda-close-button {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
 }
 
 .availability-card-grid {
