@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import BookingItem from './BookingItem';
 import CancelBookingModal from './CancelBookingModal';
@@ -14,6 +14,7 @@ const EMPTY_SLOT_HEIGHT = 30;
 const BOOKED_SLOT_PADDING_HEIGHT = 5;
 const BOOKING_STACK_HEIGHT = 24;
 const ACTIVE_BOOKING_STATUSES = new Set(['confirmed', 'reserved', 'pending_assignment']);
+const TOUCH_TAP_MOVE_TOLERANCE = 8;
 
 /* =========================
    TIME (FIX DEFINITIVO)
@@ -245,6 +246,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const [dragStart, setDragStart] = useState(null);
   const [dragEnd, setDragEnd] = useState(null);
+  const [mobileRangeStart, setMobileRangeStart] = useState(null);
+  const touchTapRef = useRef(null);
   const isAdminView = accessProfile === 'admin';
   const isEmployeeView = accessProfile === 'employee';
   const isClientView = accessProfile === 'client';
@@ -258,6 +261,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         start: Math.min(dragStart.s, dragEnd.s),
         end: Math.max(dragStart.s, dragEnd.s)
       }
+    : mobileRangeStart
+      ? {
+          day: mobileRangeStart.day,
+          start: mobileRangeStart.slot,
+          end: mobileRangeStart.slot
+        }
     : selection;
 
   const selectedRange = useMemo(() => {
@@ -429,12 +438,35 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const startPointerSelection = (event, dayIndex, slotIndex) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
+    if (event.pointerType === 'touch') {
+      touchTapRef.current = {
+        pointerId: event.pointerId,
+        dayIndex,
+        slotIndex,
+        startX: event.clientX,
+        startY: event.clientY,
+        moved: false
+      };
+      return;
+    }
+
     event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
     start(dayIndex, slotIndex);
   };
 
   const movePointerSelection = (event) => {
+    if (event.pointerType === 'touch' && touchTapRef.current?.pointerId === event.pointerId) {
+      const deltaX = Math.abs(event.clientX - touchTapRef.current.startX);
+      const deltaY = Math.abs(event.clientY - touchTapRef.current.startY);
+
+      if (deltaX > TOUCH_TAP_MOVE_TOLERANCE || deltaY > TOUCH_TAP_MOVE_TOLERANCE) {
+        touchTapRef.current.moved = true;
+      }
+
+      return;
+    }
+
     if (!dragStart) return;
 
     const pointerCell = getPointerCell(event);
@@ -445,6 +477,50 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setDragEnd({ d: pointerCell.day, s: pointerCell.slot });
   };
 
+  const selectMobileRangePoint = (dayIndex, slotIndex) => {
+    if (isPastDay(days[dayIndex])) return;
+
+    if (!mobileRangeStart || mobileRangeStart.day !== dayIndex) {
+      setSelection(null);
+      setSelectedService(null);
+      setAvailableEmployees([]);
+      setPendingEmployee(null);
+      setMobileRangeStart({ day: dayIndex, slot: slotIndex });
+      return;
+    }
+
+    setSelection({
+      day: dayIndex,
+      start: Math.min(mobileRangeStart.slot, slotIndex),
+      end: Math.max(mobileRangeStart.slot, slotIndex)
+    });
+    setMobileRangeStart(null);
+  };
+
+  const finishPointerSelection = (event) => {
+    if (event.pointerType === 'touch') {
+      const touchTap = touchTapRef.current;
+      touchTapRef.current = null;
+
+      if (touchTap?.pointerId === event.pointerId && !touchTap.moved) {
+        selectMobileRangePoint(touchTap.dayIndex, touchTap.slotIndex);
+      }
+
+      return;
+    }
+
+    end();
+  };
+
+  const cancelPointerSelection = (event) => {
+    if (event.pointerType === 'touch') {
+      touchTapRef.current = null;
+      return;
+    }
+
+    end();
+  };
+
   const close = () => {
     setSelection(null);
     setSelectedService(null);
@@ -452,6 +528,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setPendingEmployee(null);
     setDragStart(null);
     setDragEnd(null);
+    setMobileRangeStart(null);
+    touchTapRef.current = null;
   };
 
   const isOwnBooking = (booking) => String(booking.user_id) === String(user?.id);
@@ -802,8 +880,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     <div
       className="agenda-grid"
       onPointerMove={movePointerSelection}
-      onPointerUp={end}
-      onPointerCancel={end}
+      onPointerUp={finishPointerSelection}
+      onPointerCancel={cancelPointerSelection}
       style={{ userSelect: 'none' }}
     >
 
@@ -862,6 +940,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         ))}
       </div>
 
+      {mobileRangeStart && !selection && (
+        <div className="agenda-mobile-range-hint">
+          Elegí el horario final
+        </div>
+      )}
+
       {/* GRID */}
       {[...Array(SLOTS)].map((_, slotIndex) => {
         const label = buildSlotDate(days[0], slotIndex);
@@ -873,9 +957,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           );
         });
         const rowMaxBookings = Math.max(0, ...rowSlotBookings.map((slotBookings) => slotBookings.length));
-        const emptySlotHeight = isCompactAgenda ? 28 : EMPTY_SLOT_HEIGHT;
-        const bookedSlotPaddingHeight = isCompactAgenda ? 4 : BOOKED_SLOT_PADDING_HEIGHT;
-        const bookingStackHeight = isCompactAgenda ? 20 : BOOKING_STACK_HEIGHT;
+        const emptySlotHeight = isCompactAgenda ? 36 : EMPTY_SLOT_HEIGHT;
+        const bookedSlotPaddingHeight = isCompactAgenda ? 6 : BOOKED_SLOT_PADDING_HEIGHT;
+        const bookingStackHeight = isCompactAgenda ? 28 : BOOKING_STACK_HEIGHT;
         const rowHeight = rowMaxBookings
           ? Math.max(emptySlotHeight, bookedSlotPaddingHeight + (rowMaxBookings * bookingStackHeight))
           : emptySlotHeight;

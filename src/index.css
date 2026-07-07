@@ -271,6 +271,10 @@ code {
   font-weight: 900;
 }
 
+.agenda-mobile-range-hint {
+  display: none;
+}
+
 .agenda-time-cell {
   display: flex;
   align-items: flex-start;
@@ -3403,9 +3407,9 @@ code {
   .agenda-booking-item {
     width: 100% !important;
     max-width: 100% !important;
-    min-height: 19px !important;
+    min-height: 23px !important;
     margin-bottom: 1px !important;
-    padding: 2px 28px 2px 4px !important;
+    padding: 3px 28px 3px 5px !important;
     overflow: hidden !important;
     border-radius: 5px !important;
     font-size: 9px !important;
@@ -3427,7 +3431,7 @@ code {
     width: 26px !important;
     min-width: 26px !important;
     height: 100% !important;
-    min-height: 19px !important;
+    min-height: 23px !important;
     border-left: 1px solid rgba(255, 255, 255, 0.26) !important;
     background: rgba(15, 23, 42, 0.46) !important;
     font-size: 13px !important;
@@ -6739,6 +6743,22 @@ body {
   .agenda-grid {
     min-width: 0 !important;
     padding: 10px;
+    touch-action: auto;
+  }
+
+  .agenda-mobile-range-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    margin: -2px 0 8px;
+    border: 1px solid #c7eef2;
+    border-radius: 8px;
+    color: #116973;
+    background: linear-gradient(180deg, #f2fcfd 0%, #e9f9fb 100%);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
   }
 
   .agenda-week-nav {
@@ -6768,9 +6788,9 @@ body {
   }
 
   .agenda-booking-item {
-    min-height: 18px !important;
+    min-height: 24px !important;
     border-radius: 999px !important;
-    padding: 2px 25px 2px 5px !important;
+    padding: 3px 25px 3px 6px !important;
     font-size: 9px !important;
     pointer-events: none !important;
   }
@@ -6778,7 +6798,7 @@ body {
   .agenda-booking-cancel {
     width: 23px !important;
     min-width: 23px !important;
-    min-height: 18px !important;
+    min-height: 24px !important;
     font-size: 11px !important;
   }
 }
