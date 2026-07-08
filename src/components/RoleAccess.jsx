@@ -4,6 +4,7 @@ import ClientDashboard from './ClientDashboard';
 import Navbar from './Navbar';
 import { supabase } from '../api/supabaseClient';
 import turnosAppLogo from '../assets/turnos-app-navbar-logo.svg';
+import turnosAppIcon from '../assets/turnos-app-icon.svg';
 
 const profileOptions = {
   client: {
@@ -238,7 +239,7 @@ export default function RoleAccess({
   return (
     <main className="profile-select-page">
       <section className="profile-select-panel">
-        <div className="login-brand-mark">T</div>
+        <img className="login-brand-mark" src={turnosAppIcon} alt="Turnos app" />
         <p className="login-kicker">Tipo de acceso</p>
         <h1>Elegí cómo querés entrar</h1>
         <p className="profile-select-copy">

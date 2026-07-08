@@ -946,16 +946,11 @@ code {
 }
 
 .login-brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  color: #2f3842;
-  background: #3fc9d5;
-  font-size: 22px;
-  font-weight: 900;
+  display: block;
+  width: 70px;
+  height: 70px;
+  margin: 0 auto;
+  object-fit: contain;
 }
 
 .login-kicker {
@@ -7022,8 +7017,13 @@ body {
   padding: 7px 14px;
 }
 
-.role-workspace-client .app-navbar-button.is-active,
 .role-workspace-client .app-navbar-button:hover {
+  color: #0f3ea8;
+  border-color: #b9cdfd;
+  background: #eef5ff;
+}
+
+.role-workspace-client .app-navbar-button.is-active {
   color: #0f3ea8;
   border-color: #b9cdfd;
   background: #eef5ff;

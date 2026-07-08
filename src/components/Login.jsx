@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import turnosAppIcon from '../assets/turnos-app-icon.svg';
 
 const requestedProfileStorageKey = 'turnos_requested_profile';
 const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
@@ -371,7 +372,7 @@ export default function Login({ onInternalAccess }) {
   return (
     <main className="login-page">
       <section className="login-card">
-        <div className="login-brand-mark">T</div>
+        <img className="login-brand-mark" src={turnosAppIcon} alt="Turnos app" />
         <p className="login-kicker">Reserva de turnos</p>
         <h1>Turnos App</h1>
         <p className="login-copy">
@@ -398,10 +399,6 @@ export default function Login({ onInternalAccess }) {
           ))}
         </div>
 
-        <button className="login-google-button" type="button" onClick={() => handleLogin('client')}>
-          <span className="login-google-icon" aria-hidden="true">G</span>
-          Continuar como cliente con Google
-        </button>
       </section>
 
       {registrationProfile && (
