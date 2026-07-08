@@ -57,8 +57,8 @@ begin
     raise exception 'Sesión interna inválida.';
   end if;
 
-  select accounts, sessions.id
-  into account_record, session_id_value
+  select accounts.*
+  into account_record
   from public.internal_accounts accounts
   join public.internal_sessions sessions
     on sessions.account_id = accounts.id
@@ -74,6 +74,16 @@ begin
   if account_record.id is null then
     raise exception 'Sesión interna inválida o vencida.';
   end if;
+
+  select sessions.id
+  into session_id_value
+  from public.internal_sessions sessions
+  where sessions.account_id = account_record.id
+    and sessions.revoked_at is null
+    and sessions.expires_at > now()
+    and sessions.token_hash = extensions.crypt(trim(session_token_value), sessions.token_hash)
+  order by sessions.created_at desc
+  limit 1;
 
   update public.internal_sessions
   set last_used_at = now()
@@ -213,26 +223,26 @@ begin
 end;
 $$;
 
-alter function if exists public.get_admin_panel_data(uuid, text) rename to get_admin_panel_data_legacy;
-alter function if exists public.get_internal_employee_workspace(uuid) rename to get_internal_employee_workspace_legacy;
-alter function if exists public.create_admin_employee(text, text, text, date, text, text, text, text, text, text, text[], boolean, uuid) rename to create_admin_employee_legacy;
-alter function if exists public.update_admin_employee(uuid, text, text, text, date, text, text, text, text, text, text, boolean, boolean, text[], uuid) rename to update_admin_employee_legacy;
-alter function if exists public.approve_internal_registration(uuid, uuid, uuid) rename to approve_internal_registration_legacy;
-alter function if exists public.reject_internal_registration(uuid, uuid) rename to reject_internal_registration_legacy;
-alter function if exists public.delete_admin_employee(uuid, uuid) rename to delete_admin_employee_legacy;
-alter function if exists public.reset_admin_employee_password(uuid, uuid) rename to reset_admin_employee_password_legacy;
-alter function if exists public.save_admin_service(bigint, text, text, text, integer, boolean, uuid) rename to save_admin_service_legacy;
-alter function if exists public.delete_admin_service(bigint, uuid) rename to delete_admin_service_legacy;
-alter function if exists public.save_admin_employee_availability(text, uuid, date, time without time zone, time without time zone, boolean, uuid) rename to save_admin_employee_availability_legacy;
-alter function if exists public.delete_admin_employee_availability(text, uuid) rename to delete_admin_employee_availability_legacy;
-alter function if exists public.create_admin_booking(bigint, uuid, timestamp without time zone, timestamp without time zone, text, text, uuid) rename to create_admin_booking_legacy;
-alter function if exists public.create_internal_employee_booking(bigint, uuid, timestamp without time zone, timestamp without time zone, text, text, uuid) rename to create_internal_employee_booking_legacy;
-alter function if exists public.cancel_booking(uuid, uuid) rename to cancel_booking_legacy;
-alter function if exists public.assign_admin_booking_employee(uuid, uuid, uuid) rename to assign_admin_booking_employee_legacy;
-alter function if exists public.list_internal_employee_availability(uuid) rename to list_internal_employee_availability_legacy;
-alter function if exists public.create_internal_employee_availability(uuid, date, time without time zone, time without time zone, boolean) rename to create_internal_employee_availability_legacy;
-alter function if exists public.update_internal_employee_availability(uuid, text, date, time without time zone, time without time zone, boolean) rename to update_internal_employee_availability_legacy;
-alter function if exists public.delete_internal_employee_availability(uuid, text) rename to delete_internal_employee_availability_legacy;
+alter function public.get_admin_panel_data(uuid, text) rename to get_admin_panel_data_legacy;
+alter function public.get_internal_employee_workspace(uuid) rename to get_internal_employee_workspace_legacy;
+alter function public.create_admin_employee(text, text, text, date, text, text, text, text, text, text, text[], boolean, uuid) rename to create_admin_employee_legacy;
+alter function public.update_admin_employee(uuid, text, text, text, date, text, text, text, text, text, text, boolean, boolean, text[], uuid) rename to update_admin_employee_legacy;
+alter function public.approve_internal_registration(uuid, uuid, uuid) rename to approve_internal_registration_legacy;
+alter function public.reject_internal_registration(uuid, uuid) rename to reject_internal_registration_legacy;
+alter function public.delete_admin_employee(uuid, uuid) rename to delete_admin_employee_legacy;
+alter function public.reset_admin_employee_password(uuid, uuid) rename to reset_admin_employee_password_legacy;
+alter function public.save_admin_service(bigint, text, text, text, integer, boolean, uuid) rename to save_admin_service_legacy;
+alter function public.delete_admin_service(bigint, uuid) rename to delete_admin_service_legacy;
+alter function public.save_admin_employee_availability(text, uuid, date, time without time zone, time without time zone, boolean, uuid) rename to save_admin_employee_availability_legacy;
+alter function public.delete_admin_employee_availability(text, uuid) rename to delete_admin_employee_availability_legacy;
+alter function public.create_admin_booking(bigint, uuid, timestamp without time zone, timestamp without time zone, text, text, uuid) rename to create_admin_booking_legacy;
+alter function public.create_internal_employee_booking(bigint, uuid, timestamp without time zone, timestamp without time zone, text, text, uuid) rename to create_internal_employee_booking_legacy;
+alter function public.cancel_booking(uuid, uuid) rename to cancel_booking_legacy;
+alter function public.assign_admin_booking_employee(uuid, uuid, uuid) rename to assign_admin_booking_employee_legacy;
+alter function public.list_internal_employee_availability(uuid) rename to list_internal_employee_availability_legacy;
+alter function public.create_internal_employee_availability(uuid, date, time without time zone, time without time zone, boolean) rename to create_internal_employee_availability_legacy;
+alter function public.update_internal_employee_availability(uuid, text, date, time without time zone, time without time zone, boolean) rename to update_internal_employee_availability_legacy;
+alter function public.delete_internal_employee_availability(uuid, text) rename to delete_internal_employee_availability_legacy;
 
 revoke execute on function public.get_admin_panel_data_legacy(uuid, text) from anon, authenticated;
 revoke execute on function public.get_internal_employee_workspace_legacy(uuid) from anon, authenticated;
