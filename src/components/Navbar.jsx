@@ -1,4 +1,4 @@
-import turnitosLogo from '../assets/turnitos-logo.svg';
+import turnosAppLogo from '../assets/turnos-app-navbar-logo.svg';
 
 const defaultNavItems = [
   { id: 'agenda', label: 'Agenda', icon: '📅' },
@@ -25,7 +25,11 @@ const getUserInitials = (user) => {
 };
 
 const getNavbarSubtitle = (accessProfile) => (
-  accessProfile === 'client' ? 'Cliente' : 'Agenda y administración'
+  accessProfile === 'client'
+    ? 'Reservas online'
+    : accessProfile === 'employee'
+      ? 'Agenda laboral'
+      : 'Panel comercial'
 );
 
 export default function Navbar({
@@ -45,11 +49,7 @@ export default function Navbar({
   return (
     <div className="app-navbar">
       <div className="app-navbar-brand">
-        <img className="app-navbar-logo" src={turnitosLogo} alt="Turnitos Turnos-app" />
-        <div>
-          <div className="app-navbar-title">Turnos App</div>
-          <div className="app-navbar-subtitle">{getNavbarSubtitle(accessProfile)}</div>
-        </div>
+        <img className="app-navbar-logo" src={turnosAppLogo} alt={`Turnos app - ${getNavbarSubtitle(accessProfile)}`} />
       </div>
 
       {showNavigation && (

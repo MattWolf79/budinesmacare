@@ -3321,6 +3321,12 @@ code {
     gap: 8px;
   }
 
+  .role-workspace > .app-navbar .app-navbar-logo,
+  .app-navbar .app-navbar-logo {
+    width: 142px !important;
+    height: 40px !important;
+  }
+
   .app-navbar-mark {
     width: 34px;
     height: 34px;
@@ -4465,48 +4471,62 @@ body {
   position: sticky;
   top: 0;
   z-index: 50;
-  min-height: 58px;
+  min-height: 64px;
   gap: 16px;
   padding: 0 44px;
-  color: #1f2937;
-  background: #fff;
-  border-bottom: 1px solid #e4e8ef;
+  color: #f8fafc;
+  background: linear-gradient(180deg, #4a505a 0%, #3d434d 100%);
+  border-bottom: 1px solid #343a43;
   border-radius: 0;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
 }
 
 .app-navbar-brand {
   flex: 0 0 auto;
-  gap: 14px;
+  gap: 0;
+  min-width: 184px;
 }
 
 .app-navbar-logo {
   display: block;
-  width: 86px;
-  height: 58px;
+  width: 174px;
+  height: 48px;
   object-fit: contain;
 }
 
 .app-navbar-mark {
-  width: auto;
-  height: auto;
-  border-radius: 0;
-  color: #ed1c24;
-  background: transparent;
-  font-size: 27px;
-  font-weight: 900;
-  letter-spacing: 0;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #ffd5d6;
+  border-radius: 10px;
+  color: #c31920;
+  background: linear-gradient(180deg, #fff 0%, #fff5f5 100%);
+  box-shadow: 0 1px 2px rgba(195, 25, 32, 0.08);
+  font-size: 19px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.app-navbar-brand-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
 }
 
 .app-navbar-title {
-  color: #111827;
-  font-size: 13px;
+  color: #171a1f;
+  font-size: 15px;
   font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 .app-navbar-subtitle {
-  color: #8b95a5;
-  font-size: 10px;
+  color: #7b8494;
+  font-size: 10.5px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .app-navbar-menu {
@@ -4522,21 +4542,22 @@ body {
 
 .app-navbar-button {
   min-height: 38px;
-  border: 1px solid #d6dde8;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 6px;
   padding: 8px 13px;
-  color: #4b5563;
-  background: #fff;
+  color: #f3f7fc;
+  background: rgba(255, 255, 255, 0.14);
   font-size: 13px;
   font-weight: 800;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(15, 23, 42, 0.14);
 }
 
 .app-navbar-button:hover,
 .app-navbar-button.is-active {
   color: #0f3ea8;
-  border-color: #b9cdfd;
-  background: #eef5ff;
+  border-color: #bfd8ff;
+  background: #f4f8ff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
 }
 
 .app-navbar-session {
@@ -4547,19 +4568,19 @@ body {
 .app-navbar-avatar {
   width: 38px;
   height: 38px;
-  border: 2px solid #ffd6d8;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  color: #b91c1c;
-  background: #fff3f3;
+  color: #ffffff;
+  background: rgba(43, 133, 255, 0.24);
 }
 
 .app-navbar-email {
-  color: #5f6b7a;
+  color: #edf2f8;
 }
 
 .app-navbar-profile {
-  color: #0f3ea8;
-  background: #eef5ff;
+  color: #d7e8ff;
+  background: rgba(43, 133, 255, 0.18);
 }
 
 .app-navbar-switch,
@@ -4571,15 +4592,15 @@ body {
 }
 
 .app-navbar-switch {
-  color: #0f3ea8;
-  border-color: #b9cdfd;
-  background: #eef5ff;
+  color: #d7e8ff;
+  border-color: rgba(43, 133, 255, 0.4);
+  background: rgba(43, 133, 255, 0.14);
 }
 
 .app-navbar-logout {
   color: #fff;
-  border-color: #eb8f91;
-  background: #ed8f91;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: #eb5d64;
 }
 
 .admin-page-heading {
@@ -5617,11 +5638,20 @@ body {
   }
 
   .dashboard-shell > .app-navbar .app-navbar-brand {
-    display: none !important;
+    order: 1 !important;
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-content: flex-start !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-logo {
+    width: 142px !important;
+    height: 40px !important;
   }
 
   .dashboard-shell > .app-navbar .app-navbar-session {
-    order: 1 !important;
+    order: 2 !important;
     display: grid !important;
     grid-template-columns: 34px minmax(0, 1fr) auto !important;
     align-items: center !important;
@@ -5669,7 +5699,7 @@ body {
   }
 
   .dashboard-shell > .app-navbar .app-navbar-menu {
-    order: 2 !important;
+    order: 3 !important;
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     width: 100% !important;
@@ -6884,23 +6914,21 @@ body {
 }
 
 .role-workspace-client .role-workspace-brand {
-  gap: 14px;
+  gap: 11px;
 }
 
 .role-workspace-client .role-workspace-brand .app-navbar-mark {
-  width: auto;
-  height: auto;
-  border-radius: 0;
-  color: #ed1c24;
-  background: transparent;
-  font-size: 27px;
-  font-weight: 900;
-  letter-spacing: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  color: #c31920;
+  background: linear-gradient(180deg, #fff 0%, #fff5f5 100%);
+  font-size: 19px;
 }
 
 .role-workspace-client .app-navbar-title {
-  color: #111827;
-  font-size: 13px;
+  color: #171a1f;
+  font-size: 15px;
   font-weight: 900;
 }
 

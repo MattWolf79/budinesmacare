@@ -3,7 +3,7 @@ import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import Navbar from './Navbar';
 import { supabase } from '../api/supabaseClient';
-import turnitosLogo from '../assets/turnitos-logo.svg';
+import turnosAppLogo from '../assets/turnos-app-navbar-logo.svg';
 
 const profileOptions = {
   client: {
@@ -140,11 +140,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
       ) : (
         <section className="role-workspace-topbar">
           <div className="role-workspace-brand">
-            <img className="app-navbar-logo" src={turnitosLogo} alt="Turnitos Turnos-app" />
-            <div>
-              <div className="app-navbar-title">Turnos App</div>
-              <div className="app-navbar-subtitle">{profile.label}</div>
-            </div>
+            <img className="app-navbar-logo" src={turnosAppLogo} alt={`Turnos app - ${profile.label}`} />
           </div>
 
           <div className="role-workspace-session">
