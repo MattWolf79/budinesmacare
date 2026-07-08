@@ -192,7 +192,7 @@ const employeeHasAvailability = (availability, employeeId, range, skipAvailabili
 
 const getVisibleDayCount = () => {
   if (typeof window === 'undefined') return 7;
-  if (window.innerWidth <= 640) return 3;
+  if (window.innerWidth <= 640) return 2;
   if (window.innerWidth <= 900) return 3;
   return 7;
 };
@@ -1046,9 +1046,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           );
         });
         const rowMaxBookings = Math.max(0, ...rowSlotBookings.map((slotBookings) => slotBookings.length));
-        const emptySlotHeight = isCompactAgenda ? 36 : EMPTY_SLOT_HEIGHT;
-        const bookedSlotPaddingHeight = isCompactAgenda ? 6 : BOOKED_SLOT_PADDING_HEIGHT;
-        const bookingStackHeight = isCompactAgenda ? 28 : BOOKING_STACK_HEIGHT;
+        const emptySlotHeight = isCompactAgenda ? 44 : EMPTY_SLOT_HEIGHT;
+        const bookedSlotPaddingHeight = isCompactAgenda ? 8 : BOOKED_SLOT_PADDING_HEIGHT;
+        const bookingStackHeight = isCompactAgenda ? 48 : BOOKING_STACK_HEIGHT;
         const rowHeight = rowMaxBookings
           ? Math.max(emptySlotHeight, bookedSlotPaddingHeight + (rowMaxBookings * bookingStackHeight))
           : emptySlotHeight;
@@ -1114,6 +1114,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       const emp = isClientView ? null : employees.find(e => e.id === b.employee_id);
                       const isOwn = isOwnBooking(b);
                       const isAssigned = isAssignedBooking(b);
+                      const displayLabel = isClientView
+                        ? service?.name || 'Turno'
+                        : emp?.name || service?.name || 'Turno';
 
                       return (
                         <BookingItem
@@ -1125,6 +1128,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                           canShowDetails={isAdminView || isOwn || (isEmployeeView && isAssigned)}
                           canViewCustomer={isAdminView || isOwn || (isEmployeeView && isAssigned)}
                           customerLabel={isOwn ? 'Tu turno' : 'Turno reservado'}
+                          displayLabel={displayLabel}
+                          compact={isCompactAgenda}
                           onCancel={() => setBookingToCancel({
                             booking: b,
                             service,

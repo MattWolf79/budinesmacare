@@ -6827,6 +6827,46 @@ body {
   }
 }
 
+.agenda-booking-item.agenda-booking-item-compact {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 36px !important;
+  border-radius: 8px !important;
+  padding: 6px 29px 6px 8px !important;
+  line-height: 1.15 !important;
+}
+
+.agenda-booking-item.agenda-booking-item-compact .agenda-booking-icon,
+.agenda-booking-item.agenda-booking-item-compact .agenda-booking-mobile-label {
+  display: none !important;
+}
+
+.agenda-booking-item.agenda-booking-item-compact .agenda-booking-label {
+  display: -webkit-box !important;
+  width: 100%;
+  max-width: 100%;
+  color: #fff;
+  font-size: 11px !important;
+  font-weight: 900;
+  line-height: 1.15 !important;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 1px rgba(15, 23, 42, 0.28);
+  white-space: normal !important;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.agenda-booking-item.agenda-booking-item-compact .agenda-booking-cancel {
+  width: 25px !important;
+  min-width: 25px !important;
+  min-height: 36px !important;
+  border-top-right-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
 /* Cliente - navbar y botones alineados al estilo admin actual */
 .role-workspace-client {
   background: #f2f4f7;

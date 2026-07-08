@@ -13,27 +13,32 @@ export default function BookingItem({
   canCancel = true,
   canShowDetails = true,
   canViewCustomer = true,
-  customerLabel
+  customerLabel,
+  displayLabel,
+  compact = false
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
 
   const startTime = new Date(booking.start_at).toLocaleTimeString([], {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: false
   });
   const endTime = new Date(booking.end_at).toLocaleTimeString([], {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: false
   });
   const customerDetail = booking.customer_name
     ? `${booking.customer_name}${booking.user_email ? ` · ${booking.user_email}` : ''}`
     : booking.user_email;
   const bookingLabel = employee?.name || service?.name || 'Turno';
+  const agendaLabel = displayLabel || bookingLabel;
 
   return (
     <div
-      className="agenda-booking-item"
+      className={`agenda-booking-item${compact ? ' agenda-booking-item-compact' : ''}`}
       onMouseDown={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       onMouseEnter={(event) => {
@@ -54,15 +59,16 @@ export default function BookingItem({
       style={{
         background: service?.color || '#999',
         color: 'white',
-        borderRadius: 999,
-        padding: canCancel ? '2px 30px 2px 27px' : '2px 8px 2px 27px',
-        fontSize: 10,
+        borderRadius: compact ? 8 : 999,
+        padding: compact ? (canCancel ? '6px 29px 6px 8px' : '6px 8px') : (canCancel ? '2px 30px 2px 27px' : '2px 8px 2px 27px'),
+        fontSize: compact ? 11 : 10,
         marginBottom: 1,
         position: 'relative',
         zIndex: isHovered ? 20 : 1,
         overflow: 'visible',
-        minHeight: 21,
+        minHeight: compact ? 46 : 21,
         display: 'flex',
+        flexDirection: compact ? 'column' : 'row',
         alignItems: 'center',
         justifyContent: 'center'
       }}
@@ -74,7 +80,7 @@ export default function BookingItem({
           left: 4,
           top: '50%',
           transform: 'translateY(-50%)',
-          display: 'inline-flex'
+          display: compact ? 'none' : 'inline-flex'
         }}
       >
         <ActivityIcon service={service} size="tiny" variant="agenda" />
@@ -82,18 +88,17 @@ export default function BookingItem({
       <span
         className="agenda-booking-label"
         style={{
-          display: 'block',
+          display: compact ? '-webkit-box' : 'block',
           minWidth: 0,
           overflow: 'hidden',
           textAlign: 'center',
           textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
+          whiteSpace: compact ? 'normal' : 'nowrap',
+          WebkitBoxOrient: compact ? 'vertical' : undefined,
+          WebkitLineClamp: compact ? 2 : undefined
         }}
       >
-        {bookingLabel}
-      </span>
-      <span className="agenda-booking-mobile-label">
-        {bookingLabel}
+        {agendaLabel}
       </span>
 
       {canCancel && (
