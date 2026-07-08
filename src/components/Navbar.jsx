@@ -1,3 +1,5 @@
+import turnitosLogo from '../assets/turnitos-logo.svg';
+
 const defaultNavItems = [
   { id: 'agenda', label: 'Agenda', icon: '📅' },
   { id: 'employees', label: 'Empleados', icon: '👥' },
@@ -43,7 +45,7 @@ export default function Navbar({
   return (
     <div className="app-navbar">
       <div className="app-navbar-brand">
-        <span className="app-navbar-mark">Claro</span>
+        <img className="app-navbar-logo" src={turnitosLogo} alt="Turnitos Turnos-app" />
         <div>
           <div className="app-navbar-title">Turnos App</div>
           <div className="app-navbar-subtitle">{getNavbarSubtitle(accessProfile)}</div>

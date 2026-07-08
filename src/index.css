@@ -4480,6 +4480,13 @@ body {
   gap: 14px;
 }
 
+.app-navbar-logo {
+  display: block;
+  width: 86px;
+  height: 58px;
+  object-fit: contain;
+}
+
 .app-navbar-mark {
   width: auto;
   height: auto;
@@ -7753,6 +7760,11 @@ body {
 
   .role-workspace-employee .role-workspace-brand .app-navbar-mark {
     font-size: 22px !important;
+  }
+
+  .role-workspace-employee .role-workspace-brand .app-navbar-logo {
+    width: 72px !important;
+    height: 48px !important;
   }
 
   .role-workspace-employee .app-navbar-title {
