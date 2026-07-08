@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 
 const requestedProfileStorageKey = 'turnos_requested_profile';
+const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 
 const accessOptions = [
   {
@@ -101,7 +102,7 @@ export default function Login({ onInternalAccess }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `${appUrl.replace(/\/$/, '')}/`,
         queryParams: {
           prompt: 'select_account'
         }
