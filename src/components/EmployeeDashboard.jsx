@@ -69,7 +69,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
 
       if (user?.isInternal) {
         const { data, error: workspaceError } = await supabase.rpc('get_internal_employee_workspace', {
-          account_id_value: user.id
+          account_id_value: user.id,
+          session_token_value: user.sessionToken
         });
 
         if (!active) {
@@ -91,7 +92,10 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
       }
 
       const availabilityRequest = user?.isInternal
-        ? supabase.rpc('list_internal_employee_availability', { account_id_value: user.id })
+        ? supabase.rpc('list_internal_employee_availability', {
+            account_id_value: user.id,
+            session_token_value: user.sessionToken
+          })
         : supabase
             .from('employee_availability')
             .select('*')

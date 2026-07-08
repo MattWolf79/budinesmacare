@@ -185,12 +185,16 @@ export default function EmployeeAvailabilityPanel({
     const employeesRequest = isAdminMode
       ? supabase.rpc('get_admin_panel_data', {
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+          session_token_value: user?.isInternal ? user.sessionToken : null,
           request_status_value: null
         })
       : Promise.resolve({ data: employeeId ? [{ id: employeeId, name: employeeName || 'Mi agenda', active: true }] : [], error: null });
 
     const availabilityRequest = !isAdminMode && user?.isInternal
-      ? supabase.rpc('list_internal_employee_availability', { account_id_value: user.id })
+      ? supabase.rpc('list_internal_employee_availability', {
+          account_id_value: user.id,
+          session_token_value: user.sessionToken
+        })
       : isAdminMode
         ? supabase.from('employee_availability').select('*').order('available_date', { ascending: true }).order('start_time', { ascending: true })
         : supabase
@@ -360,7 +364,8 @@ export default function EmployeeAvailabilityPanel({
             start_time_value: startTime,
             end_time_value: endTime,
             active_value: true,
-            account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+            account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+            session_token_value: user?.isInternal ? user.sessionToken : null
           });
 
           if (updateResult.error || !form.splitSchedule) return updateResult;
@@ -372,7 +377,8 @@ export default function EmployeeAvailabilityPanel({
             start_time_value: secondStartTime,
             end_time_value: secondEndTime,
             active_value: true,
-            account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+            account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+            session_token_value: user?.isInternal ? user.sessionToken : null
           });
         }
 
@@ -385,7 +391,8 @@ export default function EmployeeAvailabilityPanel({
               start_time_value: range.startTime,
               end_time_value: range.endTime,
               active_value: true,
-              account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+              account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+              session_token_value: user?.isInternal ? user.sessionToken : null
             });
 
             if (result.error) return result;
@@ -400,6 +407,7 @@ export default function EmployeeAvailabilityPanel({
           const availabilityDate = availabilityDates[0];
           const updateResult = await supabase.rpc('update_internal_employee_availability', {
             account_id_value: user.id,
+            session_token_value: user.sessionToken,
             availability_id_value: String(editingAvailabilityId),
             available_date_value: availabilityDate,
             start_time_value: startTime,
@@ -411,6 +419,7 @@ export default function EmployeeAvailabilityPanel({
 
           return supabase.rpc('create_internal_employee_availability', {
             account_id_value: user.id,
+            session_token_value: user.sessionToken,
             available_date_value: availabilityDate,
             start_time_value: secondStartTime,
             end_time_value: secondEndTime,
@@ -422,6 +431,7 @@ export default function EmployeeAvailabilityPanel({
           for (const range of ranges) {
             const result = await supabase.rpc('create_internal_employee_availability', {
               account_id_value: user.id,
+              session_token_value: user.sessionToken,
               available_date_value: availabilityDate,
               start_time_value: range.startTime,
               end_time_value: range.endTime,
@@ -530,7 +540,8 @@ export default function EmployeeAvailabilityPanel({
     const result = isAdminMode
       ? await supabase.rpc('delete_admin_employee_availability', {
           availability_id_value: String(item.id),
-          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+          session_token_value: user?.isInternal ? user.sessionToken : null
         })
       : !user?.isInternal
         ? await supabase
@@ -540,6 +551,7 @@ export default function EmployeeAvailabilityPanel({
             .eq('employee_id', employeeId)
         : await supabase.rpc('delete_internal_employee_availability', {
           account_id_value: user.id,
+          session_token_value: user.sessionToken,
           availability_id_value: String(item.id)
         });
 

@@ -96,6 +96,7 @@ export default function App() {
   const startInternalSession = (account) => {
     const nextSession = {
       id: account.id,
+      sessionToken: account.session_token || account.sessionToken || null,
       role: account.role,
       displayName: account.display_name,
       username: account.username || null,
@@ -188,6 +189,7 @@ export default function App() {
   if (internalSession) {
     const internalUser = {
       id: internalSession.id,
+      sessionToken: internalSession.sessionToken,
       email: internalSession.displayName,
       role: internalSession.role,
       employeeId: internalSession.employeeId,

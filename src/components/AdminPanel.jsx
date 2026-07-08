@@ -182,6 +182,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
   );
 
   const internalAdminAccountId = user?.isInternal && user?.role === 'admin' ? user.id : null;
+  const internalSessionToken = user?.isInternal ? user.sessionToken : null;
 
   const filteredIconGroups = useMemo(() => {
     const normalizedSearch = normalizeComparableText(emojiSearch);
@@ -200,6 +201,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
     const { data, error } = await supabase.rpc('get_admin_panel_data', {
       account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken,
       request_status_value: view === 'employees' ? 'pending' : null
     });
 
@@ -214,7 +216,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     setEmployeeServices(data?.employeeServices || []);
     setAccessRequests(view === 'employees' ? data?.accessRequests || [] : []);
     setIsLoading(false);
-  }, [internalAdminAccountId, view]);
+  }, [internalAdminAccountId, internalSessionToken, view]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -382,7 +384,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         active_value: payload.active,
         is_admin_value: payload.is_admin,
         service_ids_value: employeeForm.serviceIds,
-        account_id_value: adminAccountId
+        account_id_value: adminAccountId,
+        session_token_value: internalSessionToken
       })
       : await supabase.rpc('create_admin_employee', {
         name_value: payload.name,
@@ -397,7 +400,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         code_value: payload.code,
         service_ids_value: employeeForm.serviceIds,
         is_admin_value: payload.is_admin,
-        account_id_value: adminAccountId
+        account_id_value: adminAccountId,
+        session_token_value: internalSessionToken
       }).single();
 
     if (employeeResult.error) {
@@ -457,7 +461,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
     const employeeResult = await supabase.rpc('delete_admin_employee', {
       employee_id_value: employee.id,
-      account_id_value: internalAdminAccountId
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken
     });
 
     if (employeeResult.error) {
@@ -476,7 +481,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
     const { data, error } = await supabase.rpc('reset_admin_employee_password', {
       employee_id_value: employee.id,
-      account_id_value: internalAdminAccountId
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken
     }).single();
 
     if (error) {
@@ -524,7 +530,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       color_value: payload.color,
       default_duration_value: payload.default_duration,
       active_value: payload.active,
-      account_id_value: internalAdminAccountId
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken
     }).single();
 
     if (serviceResult.error) {
@@ -571,7 +578,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       color_value: service.color,
       default_duration_value: service.default_duration,
       active_value: nextActive,
-      account_id_value: internalAdminAccountId
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken
     }).single();
 
     if (error) {
@@ -610,7 +618,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
     const serviceResult = await supabase.rpc('delete_admin_service', {
       service_id_value: service.id,
-      account_id_value: internalAdminAccountId
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken
     });
 
     if (serviceResult.error) {
@@ -629,7 +638,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     const { error } = await supabase.rpc('approve_internal_registration', {
       request_id_value: request.id,
       employee_id_value: null,
-      account_id_value: internalAdminAccountId
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken
     });
 
     if (error) {
@@ -651,7 +661,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
     const { error } = await supabase.rpc('reject_internal_registration', {
       request_id_value: request.id,
-      account_id_value: internalAdminAccountId
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken
     });
 
     if (error) {

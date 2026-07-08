@@ -305,11 +305,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const adminDataRequest = isAdminView
       ? supabase.rpc('get_admin_panel_data', {
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+          session_token_value: user?.isInternal ? user.sessionToken : null,
           request_status_value: null
         })
       : Promise.resolve({ data: null, error: null });
     const internalEmployeeDataRequest = isEmployeeView && user?.isInternal
-      ? supabase.rpc('get_internal_employee_workspace', { account_id_value: user.id })
+      ? supabase.rpc('get_internal_employee_workspace', {
+          account_id_value: user.id,
+          session_token_value: user.sessionToken
+        })
       : Promise.resolve({ data: null, error: null });
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
 
@@ -604,7 +608,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     const { error } = await supabase.rpc('cancel_booking', {
       booking_id_value: booking.id,
-      account_id_value: user?.isInternal ? user.id : null
+      account_id_value: user?.isInternal ? user.id : null,
+      session_token_value: user?.isInternal ? user.sessionToken : null
     });
 
     if (error) {
@@ -791,7 +796,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           end_at_value: range.end_at,
           customer_name_value: customerName || null,
           customer_email_value: customerEmail || null,
-          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+          session_token_value: user?.isInternal ? user.sessionToken : null
         })
       : user?.isInternal && isEmployeeView
         ? await supabase.rpc('create_internal_employee_booking', {
@@ -801,7 +807,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           end_at_value: range.end_at,
           customer_name_value: customerName || null,
           customer_email_value: customerEmail || null,
-          account_id_value: user.id
+          account_id_value: user.id,
+          session_token_value: user.sessionToken
         })
       : await supabase.from('bookings').insert({
           user_id: isClientView ? user.id : null,
@@ -920,7 +927,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       ? await supabase.rpc('assign_admin_booking_employee', {
           booking_id_value: assignmentRequest.booking.id,
           employee_id_value: employee.id,
-          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+          session_token_value: user?.isInternal ? user.sessionToken : null
         })
       : await supabase
           .from('bookings')
