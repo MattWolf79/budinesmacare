@@ -49,6 +49,7 @@ where not exists (
 );
 
 drop function if exists public.get_admin_panel_data(uuid, text);
+drop function if exists public.get_internal_employee_workspace(uuid);
 drop function if exists public.create_admin_employee(text, text, text, date, text, text, text, text, text, text, text[]);
 drop function if exists public.create_admin_employee(text, text, text, date, text, text, text, text, text, text, text[], boolean, uuid);
 drop function if exists public.update_admin_employee(uuid, text, text, text, date, text, text, text, text, text, text, boolean, boolean, text[], uuid);
@@ -58,6 +59,12 @@ drop function if exists public.reject_internal_registration(uuid);
 drop function if exists public.reject_internal_registration(uuid, uuid);
 drop function if exists public.delete_admin_employee(uuid);
 drop function if exists public.delete_admin_employee(uuid, uuid);
+drop function if exists public.reset_admin_employee_password(uuid, uuid);
+drop function if exists public.save_admin_employee_availability(text, uuid, date, time without time zone, time without time zone, boolean, uuid);
+drop function if exists public.delete_admin_employee_availability(text, uuid);
+drop function if exists public.create_admin_booking(bigint, uuid, timestamp without time zone, timestamp without time zone, text, text, uuid);
+drop function if exists public.cancel_booking(uuid, uuid);
+drop function if exists public.assign_admin_booking_employee(uuid, uuid, uuid);
 
 create or replace function public.get_admin_panel_data(
   account_id_value uuid default null,
@@ -76,6 +83,10 @@ begin
   end if;
 
   select jsonb_build_object(
+    'bookings', coalesce((
+      select jsonb_agg(to_jsonb(booking_rows) order by booking_rows.start_at)
+      from (select * from public.bookings order by start_at) booking_rows
+    ), '[]'::jsonb),
     'employees', coalesce((
       select jsonb_agg(to_jsonb(employee_rows) order by employee_rows.name)
       from (
@@ -121,6 +132,88 @@ begin
         from public.internal_registration_requests requests
         where request_status_value is null or requests.status = request_status_value
       ) request_rows
+    ), '[]'::jsonb)
+  ) into payload;
+
+  return payload;
+end;
+$$;
+
+create or replace function public.get_internal_employee_workspace(
+  account_id_value uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  account_record public.internal_accounts%rowtype;
+  payload jsonb;
+begin
+  select *
+  into account_record
+  from public.internal_accounts accounts
+  where accounts.id = account_id_value
+    and accounts.active = true
+    and accounts.employee_id is not null
+  limit 1;
+
+  if account_record.id is null then
+    raise exception 'La cuenta interna no esta vinculada a un empleado activo.';
+  end if;
+
+  select jsonb_build_object(
+    'employee', coalesce((
+      select to_jsonb(employees)
+      from public.employees employees
+      where employees.id = account_record.employee_id
+        and employees.deleted_at is null
+      limit 1
+    ), 'null'::jsonb),
+    'employees', coalesce((
+      select jsonb_agg(to_jsonb(employee_rows) order by employee_rows.name)
+      from (
+        select *
+        from public.employees employees
+        where employees.deleted_at is null
+      ) employee_rows
+    ), '[]'::jsonb),
+    'bookings', coalesce((
+      select jsonb_agg(to_jsonb(booking_rows) order by booking_rows.start_at)
+      from (
+        select *
+        from public.bookings bookings
+        where bookings.status in ('reserved', 'confirmed', 'pending_assignment')
+        order by bookings.start_at
+      ) booking_rows
+    ), '[]'::jsonb),
+    'services', coalesce((
+      select jsonb_agg(to_jsonb(service_rows) order by service_rows.id)
+      from (select * from public.services order by id) service_rows
+    ), '[]'::jsonb),
+    'employeeServices', coalesce((
+      select jsonb_agg(to_jsonb(relation_rows))
+      from (
+        select * from public.employee_services
+      ) relation_rows
+    ), '[]'::jsonb),
+    'availability', coalesce((
+      select jsonb_agg(to_jsonb(availability_rows) order by availability_rows.available_date, availability_rows.start_time)
+      from (
+        select *
+        from public.employee_availability availability
+        where availability.employee_id = account_record.employee_id
+        order by availability.available_date, availability.start_time
+      ) availability_rows
+    ), '[]'::jsonb),
+    'agendaAvailability', coalesce((
+      select jsonb_agg(to_jsonb(availability_rows) order by availability_rows.available_date, availability_rows.start_time)
+      from (
+        select *
+        from public.employee_availability availability
+        order by availability.available_date, availability.start_time
+      ) availability_rows
     ), '[]'::jsonb)
   ) into payload;
 
@@ -648,6 +741,57 @@ begin
 end;
 $$;
 
+create or replace function public.reset_admin_employee_password(
+  employee_id_value uuid,
+  account_id_value uuid default null
+)
+returns table (
+  username text,
+  temporary_password text,
+  must_change_password boolean
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  account_record public.internal_accounts%rowtype;
+begin
+  if not public.is_admin() and not public.is_internal_admin(account_id_value) then
+    raise exception 'Solo un administrador puede resetear contraseñas.';
+  end if;
+
+  if employee_id_value is null then
+    raise exception 'El empleado es invalido.';
+  end if;
+
+  select *
+  into account_record
+  from public.internal_accounts accounts
+  where accounts.employee_id = employee_id_value
+    and accounts.active = true
+  order by accounts.created_at asc
+  limit 1;
+
+  if account_record.id is null then
+    raise exception 'El empleado no tiene una cuenta interna activa.';
+  end if;
+
+  update public.internal_accounts
+  set password_hash = extensions.crypt('123456', extensions.gen_salt('bf')),
+      must_change_password = true,
+      updated_at = now()
+  where internal_accounts.id = account_record.id
+  returning * into account_record;
+
+  return query
+  select
+    account_record.username,
+    '123456'::text,
+    account_record.must_change_password;
+end;
+$$;
+
 create or replace function public.save_admin_service(
   service_id_value bigint,
   name_value text,
@@ -697,6 +841,8 @@ begin
       coalesce(active_value, true)
     )
     returning services.id, services.name, services.icon, services.color, services.default_duration, services.active;
+
+    return;
   end if;
 
   return query
@@ -750,14 +896,507 @@ begin
 end;
 $$;
 
+create or replace function public.save_admin_employee_availability(
+  availability_id_value text,
+  employee_id_value uuid,
+  available_date_value date,
+  start_time_value time without time zone,
+  end_time_value time without time zone,
+  active_value boolean default true,
+  account_id_value uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  saved_availability public.employee_availability%rowtype;
+begin
+  if not public.is_admin() and not public.is_internal_admin(account_id_value) then
+    raise exception 'Solo un administrador puede guardar disponibilidad.';
+  end if;
+
+  if employee_id_value is null then
+    raise exception 'Seleccioná un empleado.';
+  end if;
+
+  if available_date_value is null then
+    raise exception 'La fecha de disponibilidad es invalida.';
+  end if;
+
+  if available_date_value < current_date then
+    raise exception 'No se puede crear disponibilidad en fechas pasadas.';
+  end if;
+
+  if end_time_value <= start_time_value then
+    raise exception 'La hora fin debe ser posterior a la hora inicio.';
+  end if;
+
+  if availability_id_value is null then
+    insert into public.employee_availability (employee_id, available_date, weekday, start_time, end_time, active)
+    values (employee_id_value, available_date_value, extract(dow from available_date_value)::smallint, start_time_value, end_time_value, coalesce(active_value, true))
+    returning * into saved_availability;
+
+    return to_jsonb(saved_availability);
+  end if;
+
+  update public.employee_availability
+  set employee_id = employee_id_value,
+      available_date = available_date_value,
+      weekday = extract(dow from available_date_value)::smallint,
+      start_time = start_time_value,
+      end_time = end_time_value,
+      active = coalesce(active_value, true),
+      updated_at = now()
+  where employee_availability.id::text = availability_id_value
+  returning * into saved_availability;
+
+  if saved_availability.id is null then
+    raise exception 'La disponibilidad no existe.';
+  end if;
+
+  return to_jsonb(saved_availability);
+end;
+$$;
+
+create or replace function public.delete_admin_employee_availability(
+  availability_id_value text,
+  account_id_value uuid default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  availability_record public.employee_availability%rowtype;
+begin
+  if not public.is_admin() and not public.is_internal_admin(account_id_value) then
+    raise exception 'Solo un administrador puede eliminar disponibilidad.';
+  end if;
+
+  select *
+  into availability_record
+  from public.employee_availability
+  where employee_availability.id::text = availability_id_value
+  limit 1;
+
+  if availability_record.id is null then
+    raise exception 'La disponibilidad no existe.';
+  end if;
+
+  if exists (
+    select 1
+    from public.bookings bookings
+    where bookings.employee_id = availability_record.employee_id
+      and bookings.status in ('reserved', 'confirmed')
+      and bookings.start_at < (availability_record.available_date::text || ' ' || availability_record.end_time::text)::timestamp without time zone
+      and bookings.end_at > (availability_record.available_date::text || ' ' || availability_record.start_time::text)::timestamp without time zone
+    limit 1
+  ) then
+    raise exception 'No se puede eliminar una disponibilidad con turnos asignados. Cancelá o reasigná esos turnos primero.';
+  end if;
+
+  delete from public.employee_availability
+  where employee_availability.id = availability_record.id;
+end;
+$$;
+
+create or replace function public.create_admin_booking(
+  service_id_value bigint,
+  employee_id_value uuid,
+  start_at_value timestamp without time zone,
+  end_at_value timestamp without time zone,
+  customer_name_value text default null,
+  customer_email_value text default null,
+  account_id_value uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  saved_booking public.bookings%rowtype;
+begin
+  if not public.is_admin() and not public.is_internal_admin(account_id_value) then
+    raise exception 'Solo un administrador puede crear turnos.';
+  end if;
+
+  if service_id_value is null or employee_id_value is null or start_at_value is null or end_at_value is null then
+    raise exception 'Faltan datos para crear el turno.';
+  end if;
+
+  if end_at_value <= start_at_value then
+    raise exception 'El horario del turno es invalido.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employees employees
+    where employees.id = employee_id_value
+      and employees.active = true
+      and employees.deleted_at is null
+  ) then
+    raise exception 'El empleado no esta activo.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employee_services relations
+    where relations.employee_id = employee_id_value
+      and relations.service_id = service_id_value
+  ) then
+    raise exception 'El empleado no esta vinculado a esa actividad.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employee_availability availability
+    where availability.employee_id = employee_id_value
+      and availability.active = true
+      and availability.available_date = start_at_value::date
+      and availability.start_time <= start_at_value::time
+      and availability.end_time >= end_at_value::time
+  ) then
+    raise exception 'El empleado no tiene disponibilidad configurada para ese horario.';
+  end if;
+
+  if exists (
+    select 1
+    from public.bookings bookings
+    where bookings.employee_id = employee_id_value
+      and bookings.status in ('reserved', 'confirmed', 'pending_assignment')
+      and bookings.start_at < end_at_value
+      and bookings.end_at > start_at_value
+    limit 1
+  ) then
+    raise exception 'El empleado ya tiene un turno en ese horario.';
+  end if;
+
+  if nullif(trim(coalesce(customer_email_value, '')), '') is not null and exists (
+    select 1
+    from public.bookings bookings
+    where lower(coalesce(bookings.user_email, '')) = lower(trim(customer_email_value))
+      and bookings.status in ('reserved', 'confirmed', 'pending_assignment')
+      and bookings.start_at < end_at_value
+      and bookings.end_at > start_at_value
+    limit 1
+  ) then
+    raise exception 'Ese cliente ya tiene un turno en ese horario.';
+  end if;
+
+  insert into public.bookings (
+    user_id,
+    user_email,
+    customer_name,
+    service,
+    employee_id,
+    start_at,
+    end_at,
+    status
+  ) values (
+    null,
+    nullif(trim(coalesce(customer_email_value, '')), ''),
+    nullif(trim(coalesce(customer_name_value, '')), ''),
+    service_id_value,
+    employee_id_value,
+    start_at_value,
+    end_at_value,
+    'confirmed'
+  )
+  returning * into saved_booking;
+
+  return to_jsonb(saved_booking);
+end;
+$$;
+
+create or replace function public.create_internal_employee_booking(
+  service_id_value bigint,
+  employee_id_value uuid,
+  start_at_value timestamp without time zone,
+  end_at_value timestamp without time zone,
+  customer_name_value text default null,
+  customer_email_value text default null,
+  account_id_value uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  account_record public.internal_accounts%rowtype;
+  saved_booking public.bookings%rowtype;
+begin
+  select *
+  into account_record
+  from public.internal_accounts accounts
+  where accounts.id = account_id_value
+    and accounts.role = 'employee'::public.app_role
+    and accounts.active = true
+    and accounts.employee_id is not null
+  limit 1;
+
+  if account_record.id is null then
+    raise exception 'Solo un empleado interno activo puede crear turnos.';
+  end if;
+
+  if service_id_value is null or employee_id_value is null or start_at_value is null or end_at_value is null then
+    raise exception 'Faltan datos para crear el turno.';
+  end if;
+
+  if end_at_value <= start_at_value then
+    raise exception 'El horario del turno es invalido.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employees employees
+    where employees.id = employee_id_value
+      and employees.active = true
+      and employees.deleted_at is null
+  ) then
+    raise exception 'El empleado no esta activo.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employee_services relations
+    where relations.employee_id = employee_id_value
+      and relations.service_id = service_id_value
+  ) then
+    raise exception 'El empleado no esta vinculado a esa actividad.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employee_availability availability
+    where availability.employee_id = employee_id_value
+      and availability.active = true
+      and availability.available_date = start_at_value::date
+      and availability.start_time <= start_at_value::time
+      and availability.end_time >= end_at_value::time
+  ) then
+    raise exception 'El empleado no tiene disponibilidad configurada para ese horario.';
+  end if;
+
+  if exists (
+    select 1
+    from public.bookings bookings
+    where bookings.employee_id = employee_id_value
+      and bookings.status in ('reserved', 'confirmed', 'pending_assignment')
+      and bookings.start_at < end_at_value
+      and bookings.end_at > start_at_value
+    limit 1
+  ) then
+    raise exception 'El empleado ya tiene un turno en ese horario.';
+  end if;
+
+  if nullif(trim(coalesce(customer_email_value, '')), '') is not null and exists (
+    select 1
+    from public.bookings bookings
+    where lower(coalesce(bookings.user_email, '')) = lower(trim(customer_email_value))
+      and bookings.status in ('reserved', 'confirmed', 'pending_assignment')
+      and bookings.start_at < end_at_value
+      and bookings.end_at > start_at_value
+    limit 1
+  ) then
+    raise exception 'Ese cliente ya tiene un turno en ese horario.';
+  end if;
+
+  insert into public.bookings (
+    user_id,
+    user_email,
+    customer_name,
+    service,
+    employee_id,
+    start_at,
+    end_at,
+    status
+  ) values (
+    null,
+    nullif(trim(coalesce(customer_email_value, '')), ''),
+    nullif(trim(coalesce(customer_name_value, '')), ''),
+    service_id_value,
+    employee_id_value,
+    start_at_value,
+    end_at_value,
+    'confirmed'
+  )
+  returning * into saved_booking;
+
+  return to_jsonb(saved_booking);
+end;
+$$;
+
+create or replace function public.cancel_booking(
+  booking_id_value uuid,
+  account_id_value uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  booking_record public.bookings%rowtype;
+  saved_booking public.bookings%rowtype;
+  internal_employee_id uuid := null;
+begin
+  if booking_id_value is null then
+    raise exception 'El turno es invalido.';
+  end if;
+
+  select *
+  into booking_record
+  from public.bookings bookings
+  where bookings.id = booking_id_value
+  for update;
+
+  if booking_record.id is null then
+    raise exception 'El turno no existe.';
+  end if;
+
+  if booking_record.start_at <= localtimestamp then
+    raise exception 'No se pueden cancelar turnos de días pasados.';
+  end if;
+
+  select accounts.employee_id
+  into internal_employee_id
+  from public.internal_accounts accounts
+  where accounts.id = account_id_value
+    and accounts.role = 'employee'::public.app_role
+    and accounts.active = true
+    and accounts.employee_id is not null
+  limit 1;
+
+  if not public.is_admin()
+    and not public.is_internal_admin(account_id_value)
+    and not coalesce(internal_employee_id is not null and booking_record.employee_id = internal_employee_id, false)
+    and not coalesce(booking_record.user_id = auth.uid(), false)
+    and not coalesce(public.is_employee_for(booking_record.employee_id), false) then
+    raise exception 'No tenés permisos para cancelar este turno.';
+  end if;
+
+  update public.bookings
+  set status = 'cancelled',
+      updated_at = now()
+  where bookings.id = booking_record.id
+  returning * into saved_booking;
+
+  return to_jsonb(saved_booking);
+end;
+$$;
+
+create or replace function public.assign_admin_booking_employee(
+  booking_id_value uuid,
+  employee_id_value uuid,
+  account_id_value uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  booking_record public.bookings%rowtype;
+  saved_booking public.bookings%rowtype;
+begin
+  if not public.is_admin() and not public.is_internal_admin(account_id_value) then
+    raise exception 'Solo un administrador puede asignar empleados.';
+  end if;
+
+  if booking_id_value is null or employee_id_value is null then
+    raise exception 'Faltan datos para asignar el empleado.';
+  end if;
+
+  select *
+  into booking_record
+  from public.bookings bookings
+  where bookings.id = booking_id_value
+  for update;
+
+  if booking_record.id is null then
+    raise exception 'El turno no existe.';
+  end if;
+
+  if booking_record.employee_id is not null and booking_record.employee_id <> employee_id_value then
+    raise exception 'El turno ya tiene un empleado asignado.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employees employees
+    where employees.id = employee_id_value
+      and employees.active = true
+      and employees.deleted_at is null
+  ) then
+    raise exception 'El empleado no esta activo.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employee_services relations
+    where relations.employee_id = employee_id_value
+      and relations.service_id = booking_record.service
+  ) then
+    raise exception 'El empleado no esta vinculado a esa actividad.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employee_availability availability
+    where availability.employee_id = employee_id_value
+      and availability.active = true
+      and availability.available_date = booking_record.start_at::date
+      and availability.start_time <= booking_record.start_at::time
+      and availability.end_time >= booking_record.end_at::time
+  ) then
+    raise exception 'El empleado no tiene disponibilidad configurada para ese horario.';
+  end if;
+
+  if exists (
+    select 1
+    from public.bookings bookings
+    where bookings.id <> booking_record.id
+      and bookings.employee_id = employee_id_value
+      and bookings.status in ('reserved', 'confirmed', 'pending_assignment')
+      and bookings.start_at < booking_record.end_at
+      and bookings.end_at > booking_record.start_at
+    limit 1
+  ) then
+    raise exception 'El empleado ya tiene un turno en ese horario.';
+  end if;
+
+  update public.bookings
+  set employee_id = employee_id_value,
+      status = 'confirmed',
+      updated_at = now()
+  where bookings.id = booking_record.id
+  returning * into saved_booking;
+
+  return to_jsonb(saved_booking);
+end;
+$$;
+
 grant execute on function public.is_internal_admin(uuid) to anon, authenticated;
 grant execute on function public.get_admin_panel_data(uuid, text) to anon, authenticated;
+grant execute on function public.get_internal_employee_workspace(uuid) to anon, authenticated;
 grant execute on function public.create_admin_employee(text, text, text, date, text, text, text, text, text, text, text[], boolean, uuid) to anon, authenticated;
 grant execute on function public.update_admin_employee(uuid, text, text, text, date, text, text, text, text, text, text, boolean, boolean, text[], uuid) to anon, authenticated;
 grant execute on function public.approve_internal_registration(uuid, uuid, uuid) to anon, authenticated;
 grant execute on function public.reject_internal_registration(uuid, uuid) to anon, authenticated;
 grant execute on function public.delete_admin_employee(uuid, uuid) to anon, authenticated;
+grant execute on function public.reset_admin_employee_password(uuid, uuid) to anon, authenticated;
 grant execute on function public.save_admin_service(bigint, text, text, text, integer, boolean, uuid) to anon, authenticated;
 grant execute on function public.delete_admin_service(bigint, uuid) to anon, authenticated;
+grant execute on function public.save_admin_employee_availability(text, uuid, date, time without time zone, time without time zone, boolean, uuid) to anon, authenticated;
+grant execute on function public.delete_admin_employee_availability(text, uuid) to anon, authenticated;
+grant execute on function public.create_admin_booking(bigint, uuid, timestamp without time zone, timestamp without time zone, text, text, uuid) to anon, authenticated;
+grant execute on function public.create_internal_employee_booking(bigint, uuid, timestamp without time zone, timestamp without time zone, text, text, uuid) to anon, authenticated;
+grant execute on function public.cancel_booking(uuid, uuid) to anon, authenticated;
+grant execute on function public.assign_admin_booking_employee(uuid, uuid, uuid) to anon, authenticated;
 
 commit;

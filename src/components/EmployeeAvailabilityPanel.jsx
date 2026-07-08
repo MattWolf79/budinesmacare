@@ -183,7 +183,10 @@ export default function EmployeeAvailabilityPanel({
     setLoadError('');
 
     const employeesRequest = isAdminMode
-      ? supabase.from('employees').select('*').is('deleted_at', null).order('name', { ascending: true })
+      ? supabase.rpc('get_admin_panel_data', {
+          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+          request_status_value: null
+        })
       : Promise.resolve({ data: employeeId ? [{ id: employeeId, name: employeeName || 'Mi agenda', active: true }] : [], error: null });
 
     const availabilityRequest = !isAdminMode && user?.isInternal
@@ -206,12 +209,16 @@ export default function EmployeeAvailabilityPanel({
       return;
     }
 
-    const nextEmployees = employeesResult.data || [];
+    const nextEmployees = isAdminMode
+      ? employeesResult.data?.employees || []
+      : employeesResult.data || [];
     setEmployees(nextEmployees);
     setAvailability(availabilityResult.data || []);
     setForm((current) => ({
       ...current,
-      employeeId: current.employeeId || employeeId || nextEmployees[0]?.id || ''
+      employeeId: nextEmployees.some((employee) => String(employee.id) === String(current.employeeId))
+        ? current.employeeId
+        : employeeId || nextEmployees[0]?.id || ''
     }));
     setIsLoading(false);
   }, [employeeId, employeeName, isAdminMode, user]);
@@ -342,12 +349,52 @@ export default function EmployeeAvailabilityPanel({
 
     setIsSaving(true);
 
-    const basePayload = {
-      employee_id: employeeIdValue,
-      active: true
-    };
-
     const runResult = async () => {
+      if (isAdminMode) {
+        if (editingAvailabilityId) {
+          const availabilityDate = availabilityDates[0];
+          const updateResult = await supabase.rpc('save_admin_employee_availability', {
+            availability_id_value: String(editingAvailabilityId),
+            employee_id_value: employeeIdValue,
+            available_date_value: availabilityDate,
+            start_time_value: startTime,
+            end_time_value: endTime,
+            active_value: true,
+            account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+          });
+
+          if (updateResult.error || !form.splitSchedule) return updateResult;
+
+          return supabase.rpc('save_admin_employee_availability', {
+            availability_id_value: null,
+            employee_id_value: employeeIdValue,
+            available_date_value: availabilityDate,
+            start_time_value: secondStartTime,
+            end_time_value: secondEndTime,
+            active_value: true,
+            account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+          });
+        }
+
+        for (const availabilityDate of availabilityDates) {
+          for (const range of ranges) {
+            const result = await supabase.rpc('save_admin_employee_availability', {
+              availability_id_value: null,
+              employee_id_value: employeeIdValue,
+              available_date_value: availabilityDate,
+              start_time_value: range.startTime,
+              end_time_value: range.endTime,
+              active_value: true,
+              account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+            });
+
+            if (result.error) return result;
+          }
+        }
+
+        return { error: null };
+      }
+
       if (!isAdminMode && user?.isInternal) {
         if (editingAvailabilityId) {
           const availabilityDate = availabilityDates[0];
@@ -387,6 +434,11 @@ export default function EmployeeAvailabilityPanel({
 
         return { error: null };
       }
+
+      const basePayload = {
+        employee_id: employeeIdValue,
+        active: true
+      };
 
       if (editingAvailabilityId) {
         const availabilityDate = availabilityDates[0];
@@ -446,26 +498,28 @@ export default function EmployeeAvailabilityPanel({
   };
 
   const deleteAvailability = async (item) => {
-    const availabilityStart = toBookingTimestamp(item.available_date, item.start_time);
-    const availabilityEnd = toBookingTimestamp(item.available_date, item.end_time);
+    if (!isAdminMode) {
+      const availabilityStart = toBookingTimestamp(item.available_date, item.start_time);
+      const availabilityEnd = toBookingTimestamp(item.available_date, item.end_time);
 
-    const { data: existingBookings, error: bookingError } = await supabase
-      .from('bookings')
-      .select('id')
-      .eq('employee_id', item.employee_id)
-      .in('status', ['reserved', 'confirmed'])
-      .lt('start_at', availabilityEnd)
-      .gt('end_at', availabilityStart)
-      .limit(1);
+      const { data: existingBookings, error: bookingError } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('employee_id', item.employee_id)
+        .in('status', ['reserved', 'confirmed'])
+        .lt('start_at', availabilityEnd)
+        .gt('end_at', availabilityStart)
+        .limit(1);
 
-    if (bookingError) {
-      alert('No se pudo validar si la disponibilidad tiene turnos asignados. Intentá nuevamente.');
-      return;
-    }
+      if (bookingError) {
+        alert('No se pudo validar si la disponibilidad tiene turnos asignados. Intentá nuevamente.');
+        return;
+      }
 
-    if (existingBookings?.length) {
-      alert('No se puede eliminar una disponibilidad con turnos asignados. Cancelá o reasigná esos turnos primero.');
-      return;
+      if (existingBookings?.length) {
+        alert('No se puede eliminar una disponibilidad con turnos asignados. Cancelá o reasigná esos turnos primero.');
+        return;
+      }
     }
 
     const shouldDelete = window.confirm(`¿Eliminar la disponibilidad de ${formatDateLabel(item.available_date, item.weekday)} ${formatTime(item.start_time)}-${formatTime(item.end_time)}?`);
@@ -473,16 +527,21 @@ export default function EmployeeAvailabilityPanel({
 
     setIsSaving(true);
 
-    const result = !isAdminMode && user?.isInternal
-      ? await supabase.rpc('delete_internal_employee_availability', {
+    const result = isAdminMode
+      ? await supabase.rpc('delete_admin_employee_availability', {
+          availability_id_value: String(item.id),
+          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+        })
+      : !user?.isInternal
+        ? await supabase
+            .from('employee_availability')
+            .delete()
+            .eq('id', item.id)
+            .eq('employee_id', employeeId)
+        : await supabase.rpc('delete_internal_employee_availability', {
           account_id_value: user.id,
           availability_id_value: String(item.id)
-        })
-      : await supabase
-          .from('employee_availability')
-          .delete()
-          .eq('id', item.id)
-          .eq('employee_id', isAdminMode ? item.employee_id : employeeId);
+        });
 
     if (result.error) {
       alert(`No se pudo eliminar la disponibilidad: ${result.error.message}`);

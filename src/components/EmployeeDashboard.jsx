@@ -67,6 +67,29 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
       setIsLoading(true);
       setError('');
 
+      if (user?.isInternal) {
+        const { data, error: workspaceError } = await supabase.rpc('get_internal_employee_workspace', {
+          account_id_value: user.id
+        });
+
+        if (!active) {
+          return;
+        }
+
+        setIsLoading(false);
+
+        if (workspaceError) {
+          setError(workspaceError.message || 'No se pudo cargar la información del empleado.');
+          return;
+        }
+
+        setEmployee(data?.employee || null);
+        setBookings((data?.bookings || []).filter((booking) => String(booking.employee_id) === String(employeeId)));
+        setServices(data?.services || []);
+        setAvailability(data?.availability || []);
+        return;
+      }
+
       const availabilityRequest = user?.isInternal
         ? supabase.rpc('list_internal_employee_availability', { account_id_value: user.id })
         : supabase

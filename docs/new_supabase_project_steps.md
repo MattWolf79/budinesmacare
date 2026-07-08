@@ -14,8 +14,11 @@ En SQL Editor, ejecutar en este orden:
 
 1. `database/000_full_schema_migration.sql`
 2. `database/011_internal_admin_employee_management.sql`
+3. `database/012_internal_sessions_booking_cancellation_fix.sql` si la base ya tenia un `011` anterior o si se quiere reforzar explicitamente las ultimas correcciones.
 
-La migracion `000` crea la estructura completa actual hasta solicitudes pendientes sin empleado asignado. La migracion `011` agrega la cuenta admin interna inicial y las RPCs para que admins internos administren empleados y otros administradores.
+La migracion `000` crea la estructura completa actual hasta solicitudes pendientes sin empleado asignado. La migracion `011` agrega la cuenta admin interna inicial y las RPCs para que admins internos administren empleados, actividades, disponibilidad, turnos y otros administradores. La migracion `012` es un parche idempotente para bases existentes que corrige la agenda de empleados internos, la creacion de turnos desde empleado para otros empleados disponibles y la cancelacion segura por perfil.
+
+Para una base nueva creada desde estos archivos actuales, `000` + `011` deja el schema completo. Ejecutar `012` despues no rompe nada y sirve como red de seguridad.
 
 ## 3. Obtener credenciales publicas
 
@@ -62,3 +65,17 @@ Desde el panel admin, cargar:
 2. Empleados.
 3. Marcar `Administrador` en empleados que tambien deban administrar.
 4. Disponibilidad por empleado.
+
+## 7. Validaciones finales obligatorias
+
+Antes de dar por terminada la migracion, probar:
+
+1. Admin interno `admin` / `123456`: login y cambio de clave inicial.
+2. Admin: crear/editar empleados, marcar un empleado como admin y resetear clave.
+3. Admin: crear/editar actividades y asignarlas a empleados.
+4. Admin: cargar disponibilidad por fecha para al menos dos empleados.
+5. Empleado interno: ver agenda completa y reservar un turno para un cliente con otro empleado disponible.
+6. Empleado interno: cancelar solo turnos asignados a su propio empleado.
+7. Admin: cancelar turnos de cualquier empleado.
+8. Cliente Google: solicitar turno sin ver el nombre del empleado asignado.
+9. Mobile: agenda de 3 dias paginada, turnos visibles y seleccion de rango por tap.

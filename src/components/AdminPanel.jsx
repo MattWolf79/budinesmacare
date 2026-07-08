@@ -470,6 +470,24 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     onDataChanged?.();
   };
 
+  const resetEmployeePassword = async (employee) => {
+    const shouldReset = window.confirm(`¿Resetear la contraseña de ${employee.name} a 123456? Se le pedirá cambiarla al ingresar.`);
+    if (!shouldReset) return;
+
+    const { data, error } = await supabase.rpc('reset_admin_employee_password', {
+      employee_id_value: employee.id,
+      account_id_value: internalAdminAccountId
+    }).single();
+
+    if (error) {
+      alert(`No se pudo resetear la contraseña. ${formatSupabaseError(error)}`);
+      return;
+    }
+
+    alert(`Contraseña reseteada. Usuario: ${data.username}. Clave temporal: ${data.temporary_password}. Se le pedirá cambiarla al ingresar.`);
+    await loadAdminData();
+  };
+
   const saveService = async (event) => {
     event.preventDefault();
 
@@ -875,6 +893,10 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                   <button className="agenda-close-button employee-list-action" type="button" onClick={() => editEmployee(employee)} aria-label="Editar empleado" title="Editar empleado">
                     <span className="employee-list-action-full">Editar</span>
                     <span className="employee-list-action-icon" aria-hidden="true">✏️</span>
+                  </button>
+                  <button className="agenda-option-button employee-list-action" type="button" onClick={() => resetEmployeePassword(employee)} aria-label="Resetear contraseña" title="Resetear contraseña">
+                    <span className="employee-list-action-full">Reset clave</span>
+                    <span className="employee-list-action-icon" aria-hidden="true">🔑</span>
                   </button>
                   <button className="agenda-danger-button employee-list-action" type="button" onClick={() => deleteEmployee(employee)} aria-label="Eliminar empleado" title="Eliminar empleado">
                     <span className="employee-list-action-full">Eliminar</span>

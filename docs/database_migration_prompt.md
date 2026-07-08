@@ -408,10 +408,12 @@ Policies principales:
 2. Configurar Auth provider Google en Supabase.
 3. Abrir SQL Editor.
 4. Ejecutar completo `database/000_full_schema_migration.sql`.
-5. Verificar que no haya errores por extensions, constraints o policies.
-6. Levantar la app apuntando al nuevo `supabaseUrl` y `supabaseKey` en `src/api/supabaseClient.js`.
-7. Iniciar sesion una vez con Google usando la cuenta que sera admin.
-8. Promover esa cuenta a admin:
+5. Ejecutar completo `database/011_internal_admin_employee_management.sql`.
+6. Si la base ya tenia un `011` viejo, o para reforzar las ultimas correcciones, ejecutar `database/012_internal_sessions_booking_cancellation_fix.sql`.
+7. Verificar que no haya errores por extensions, constraints, functions, grants o policies.
+8. Levantar la app apuntando al nuevo `supabaseUrl` y `supabaseKey` en `src/api/supabaseClient.js`.
+9. Opcional: iniciar sesion una vez con Google usando la cuenta que sera admin.
+10. Opcional: promover esa cuenta a admin si tambien se usara admin Google/Auth:
 
 ```sql
 update public.profiles
@@ -419,7 +421,7 @@ set role = 'admin', updated_at = now()
 where email = 'tu-email@gmail.com';
 ```
 
-9. Desde la app admin:
+11. Desde la app admin interna o Auth:
    - crear actividades;
    - crear empleados;
    - asignar actividades a empleados;
@@ -427,6 +429,12 @@ where email = 'tu-email@gmail.com';
    - aprobar solicitudes internas.
 
 Para actualizar una base existente ya migrada con `004_employee_availability_dates.sql`, ejecutar tambien `database/005_internal_user_profiles.sql` antes de probar nuevos registros internos.
+
+Para actualizar una base existente que ya tenia `011_internal_admin_employee_management.sql`, ejecutar `database/012_internal_sessions_booking_cancellation_fix.sql`. Ese parche agrega/actualiza:
+
+- `get_internal_employee_workspace(account_id_value)` con `agendaAvailability` para que la agenda de empleado interno pueda evaluar disponibilidad de todos los empleados sin mezclar la pantalla de disponibilidad propia.
+- `create_internal_employee_booking(...)` para que un empleado interno reserve para un cliente con cualquier empleado activo, vinculado y disponible.
+- `cancel_booking(booking_id_value, account_id_value)` para cancelar por RPC con permisos correctos: admin cancela todos; empleado solo sus turnos; cliente solo los propios.
 
 ## Validaciones post-migracion
 
@@ -485,6 +493,11 @@ where nspname = 'public'
     'request_internal_registration',
     'verify_internal_login',
     'approve_internal_registration',
+    'get_admin_panel_data',
+    'get_internal_employee_workspace',
+    'create_admin_booking',
+    'create_internal_employee_booking',
+    'cancel_booking',
     'list_internal_employee_availability',
     'create_internal_employee_availability',
     'update_internal_employee_availability',
@@ -511,7 +524,11 @@ order by proname;
 14. Aprobar solicitud desde admin.
 15. Login interno empleado.
 16. Crear/editar/eliminar disponibilidad propia.
-17. En celular, probar cancelar turno desde la grilla y confirmar que no abre seleccion nueva.
+17. Empleado interno: desde agenda, reservar un turno para un cliente con otro empleado disponible.
+18. Empleado interno: verificar que puede cancelar solo turnos asignados a su propio empleado.
+19. Admin interno/Auth: verificar que puede cancelar turnos de todos los empleados.
+20. Cliente Google: verificar que puede solicitar y cancelar solo turnos propios, sin ver el nombre del empleado.
+21. En celular, probar agenda de 3 dias paginada, turnos visibles, seleccion por tap y que cancelar no abre seleccion nueva.
 
 ## Datos que no migra automaticamente este SQL
 
@@ -537,11 +554,13 @@ Advertencia sobre `auth.users`:
 
 - Las sesiones internas actuales viven en `sessionStorage`; no son sesiones Supabase Auth.
 - Las escrituras directas protegidas por `auth.uid()` funcionan para usuarios Auth, no para sesiones internas puras.
-- Por eso existen RPCs `security definer` para disponibilidad interna de empleados.
-- Si en el futuro se quiere que admin interno maneje todo sin Google/Auth, crear RPCs administrativas para ABM y reservas.
+- Por eso existen RPCs `security definer` para disponibilidad interna de empleados, administracion interna, reservas internas y cancelacion.
+- Admin interno puede administrar empleados, actividades, disponibilidad, reservas y cancelaciones mediante RPCs.
+- Empleado interno puede ver la agenda completa y reservar para otro empleado disponible, pero solo puede cancelar turnos de su propio `employee_id`.
+- Cliente no debe ver el nombre del empleado asignado; en vista cliente los turnos muestran actividad/estado.
 - Las exclusion constraints pueden fallar si se importan datos con solapamientos. Limpiar conflictos antes de aplicar constraints o importar datos ya saneados.
 - Mantener `extensions.crypt` y `extensions.gen_salt`, no `crypt` sin schema, porque en Supabase puede depender del `search_path`.
 
 ## Prompt corto para otro asistente
 
-Necesito migrar/recrear la base de datos de Turnos App en un nuevo Supabase. Usa `database/000_full_schema_migration.sql` como fuente principal. Debe incluir extensiones `pgcrypto` y `btree_gist`, enum `app_role`, tablas `employees`, `services`, `employee_services`, `bookings`, `employee_availability`, `profiles`, `internal_accounts`, `internal_registration_requests`, triggers, funciones helper, RPCs internas, grants, RLS policies y exclusion constraints contra solapamientos de empleados, usuarios, emails de clientes y disponibilidad por fecha. Mantener `timestamp without time zone` y formato local para turnos, `date` para la fecha disponible, y `time without time zone` para los rangos horarios de disponibilidad. Despues de ejecutar, configurar Google OAuth, hacer login con la cuenta admin y promoverla en `profiles` con rol `admin`. Validar con consultas a tablas, constraints, policies y RPCs, y probar alta de actividad, empleado, disponibilidad, reserva, login interno y cancelacion movil.
+Necesito migrar/recrear la base de datos de Turnos App en un nuevo Supabase. Ejecuta `database/000_full_schema_migration.sql`, luego `database/011_internal_admin_employee_management.sql`; si la base ya tenia un 011 anterior, ejecuta tambien `database/012_internal_sessions_booking_cancellation_fix.sql`. Debe incluir extensiones `pgcrypto` y `btree_gist`, enum `app_role`, tablas `employees`, `services`, `employee_services`, `bookings`, `employee_availability`, `profiles`, `internal_accounts`, `internal_registration_requests`, triggers, funciones helper, RPCs internas, grants, RLS policies y exclusion constraints contra solapamientos de empleados, usuarios, emails de clientes y disponibilidad por fecha. Mantener `timestamp without time zone` y formato local para turnos, `date` para la fecha disponible, y `time without time zone` para rangos de disponibilidad. La app usa sesiones internas en `sessionStorage`, por eso admin/empleado interno dependen de RPCs `security definer`: admin interno administra todo; empleado interno puede reservar para otro empleado disponible pero solo cancelar turnos de su propio empleado; cliente Google no debe ver nombre de empleado y solo cancela sus turnos. Validar alta de actividad, empleado/admin interno, disponibilidad, reserva cliente, reserva empleado para otro empleado, cancelacion admin global, cancelacion empleado propia, bloqueo de cancelacion empleado ajena y agenda mobile de 3 dias.

@@ -193,7 +193,7 @@ const employeeHasAvailability = (availability, employeeId, range, skipAvailabili
 const getVisibleDayCount = () => {
   if (typeof window === 'undefined') return 7;
   if (window.innerWidth <= 640) return 3;
-  if (window.innerWidth <= 900) return 5;
+  if (window.innerWidth <= 900) return 3;
   return 7;
 };
 
@@ -227,6 +227,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [employeeServices, setEmployeeServices] = useState([]);
   const [employeeAvailability, setEmployeeAvailability] = useState([]);
   const [availabilityLoadFailed, setAvailabilityLoadFailed] = useState(false);
 
@@ -237,6 +238,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [selection, setSelection] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
   const [availableEmployees, setAvailableEmployees] = useState([]);
+  const [availableEmployeesMessage, setAvailableEmployeesMessage] = useState('No hay empleados disponibles para ese horario.');
   const [isLoadingAvailableEmployees, setIsLoadingAvailableEmployees] = useState(false);
   const [pendingEmployee, setPendingEmployee] = useState(null);
   const [bookingToCancel, setBookingToCancel] = useState(null);
@@ -248,6 +250,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [dragEnd, setDragEnd] = useState(null);
   const [mobileRangeStart, setMobileRangeStart] = useState(null);
   const touchTapRef = useRef(null);
+  const handledTouchTapRef = useRef(false);
   const isAdminView = accessProfile === 'admin';
   const isEmployeeView = accessProfile === 'employee';
   const isClientView = accessProfile === 'client';
@@ -299,19 +302,37 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   }, []);
 
   const fetchAll = async () => {
+    const adminDataRequest = isAdminView
+      ? supabase.rpc('get_admin_panel_data', {
+          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+          request_status_value: null
+        })
+      : Promise.resolve({ data: null, error: null });
+    const internalEmployeeDataRequest = isEmployeeView && user?.isInternal
+      ? supabase.rpc('get_internal_employee_workspace', { account_id_value: user.id })
+      : Promise.resolve({ data: null, error: null });
+    const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
+
     return Promise.all([
-      supabase.from('bookings').select('*'),
-      supabase.from('services').select('*'),
-      supabase.from('employees').select('*').is('deleted_at', null),
-      supabase.from('employee_availability').select('*')
+      isAdminView || usesInternalEmployeeData ? Promise.resolve({ data: null, error: null }) : supabase.from('bookings').select('*'),
+      isAdminView || usesInternalEmployeeData ? Promise.resolve({ data: null, error: null }) : supabase.from('services').select('*'),
+      isAdminView || usesInternalEmployeeData ? Promise.resolve({ data: null, error: null }) : supabase.from('employees').select('*').is('deleted_at', null),
+      usesInternalEmployeeData ? Promise.resolve({ data: null, error: null }) : supabase.from('employee_availability').select('*'),
+      adminDataRequest,
+      internalEmployeeDataRequest
     ]);
   };
 
-  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}]) => {
-    setBookings(bk || []);
-    setServices(srv || []);
-    setEmployees(emp || []);
-    setEmployeeAvailability(availabilityResult.data || []);
+  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}, adminDataResult = {}, internalEmployeeDataResult = {}]) => {
+    const adminData = adminDataResult.data || {};
+    const internalEmployeeData = internalEmployeeDataResult.data || {};
+    const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
+
+    setBookings(isAdminView ? adminData.bookings || [] : usesInternalEmployeeData ? internalEmployeeData.bookings || [] : bk || []);
+    setServices(isAdminView ? adminData.services || [] : usesInternalEmployeeData ? internalEmployeeData.services || [] : srv || []);
+    setEmployees(isAdminView ? adminData.employees || [] : usesInternalEmployeeData ? internalEmployeeData.employees || [] : emp || []);
+    setEmployeeServices(isAdminView ? adminData.employeeServices || [] : usesInternalEmployeeData ? internalEmployeeData.employeeServices || [] : []);
+    setEmployeeAvailability(usesInternalEmployeeData ? internalEmployeeData.agendaAvailability || internalEmployeeData.availability || [] : availabilityResult.data || []);
     setAvailabilityLoadFailed(Boolean(availabilityResult.error));
   };
 
@@ -336,47 +357,74 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
      EMPLOYEES BY SERVICE
   ========================= */
 
+  const shouldLoadAvailableEmployees = Boolean(selectedService?.id && selection);
+
   useEffect(() => {
-    if (!selectedService?.id || !selection) {
-      setIsLoadingAvailableEmployees(false);
-      return;
-    }
+    if (!shouldLoadAvailableEmployees) return;
 
     let active = true;
 
     const load = async () => {
       setIsLoadingAvailableEmployees(true);
-      const { data: rel } = await supabase
-        .from('employee_services')
-        .select('employee_id')
-        .eq('service_id', selectedService.id);
+      const usesLoadedEmployeeData = isAdminView || (isEmployeeView && user?.isInternal);
+      const rel = usesLoadedEmployeeData
+        ? employeeServices.filter((relation) => Number(relation.service_id) === Number(selectedService.id))
+        : (await supabase
+            .from('employee_services')
+            .select('employee_id')
+            .eq('service_id', selectedService.id)).data;
 
       const ids = rel?.map(r => r.employee_id) || [];
-      const filteredIds = isEmployeeView && employeeId
-        ? ids.filter((id) => String(id) === String(employeeId))
-        : ids;
+      const filteredIds = ids;
 
       if (!filteredIds.length) {
         if (active) {
           setAvailableEmployees([]);
+          setAvailableEmployeesMessage('No hay empleados vinculados a esta actividad.');
           setIsLoadingAvailableEmployees(false);
         }
         return;
       }
 
-      const { data: emp } = await supabase
-        .from('employees')
-        .select('*')
-        .is('deleted_at', null)
-        .in('id', filteredIds);
+      const emp = usesLoadedEmployeeData
+        ? employees.filter((employee) => filteredIds.some((id) => String(id) === String(employee.id)))
+        : (await supabase
+            .from('employees')
+            .select('*')
+            .is('deleted_at', null)
+            .in('id', filteredIds)).data;
 
       if (!active) return;
 
-      const available = (emp || []).filter((employee) =>
+      const serviceEmployees = emp || [];
+      const activeEmployees = serviceEmployees.filter((employee) => employee.active !== false);
+      const available = activeEmployees.filter((employee) =>
         employee.active !== false &&
         employeeHasAvailability(employeeAvailability, employee.id, selectedRange, availabilityLoadFailed) &&
         !employeeHasBookingConflict(bookings, employee.id, selectedRange)
       );
+
+      const inactiveCount = serviceEmployees.length - activeEmployees.length;
+      const activeWithAvailability = activeEmployees.filter((employee) =>
+        employeeHasAvailability(employeeAvailability, employee.id, selectedRange, availabilityLoadFailed)
+      );
+      const conflictCount = activeWithAvailability.filter((employee) =>
+        employeeHasBookingConflict(bookings, employee.id, selectedRange)
+      ).length;
+
+      if (!available.length) {
+        if (!serviceEmployees.length) {
+          setAvailableEmployeesMessage('No hay empleados vinculados a esta actividad.');
+        } else if (!activeEmployees.length && inactiveCount > 0) {
+          setAvailableEmployeesMessage('Los empleados vinculados a esta actividad estan inactivos. Activalos desde Empleados para asignar turnos.');
+        } else if (!activeWithAvailability.length) {
+          setAvailableEmployeesMessage('Los empleados activos de esta actividad no tienen disponibilidad para este horario.');
+        } else if (conflictCount > 0) {
+          setAvailableEmployeesMessage('Los empleados disponibles ya tienen un turno en este horario.');
+        } else {
+          setAvailableEmployeesMessage('No hay empleados disponibles para ese horario.');
+        }
+      }
 
       setAvailableEmployees(available);
       setIsLoadingAvailableEmployees(false);
@@ -387,7 +435,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     return () => {
       active = false;
     };
-  }, [selectedService, selection, bookings, employeeAvailability, availabilityLoadFailed, offset, selectedRange, isEmployeeView, employeeId]);
+  }, [shouldLoadAvailableEmployees, selectedService, bookings, employeeAvailability, availabilityLoadFailed, offset, selectedRange, isEmployeeView, employeeId, isAdminView, user?.isInternal, employeeServices, employees]);
 
   /* =========================
      SELECTION
@@ -504,6 +552,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
       if (touchTap?.pointerId === event.pointerId && !touchTap.moved) {
         selectMobileRangePoint(touchTap.dayIndex, touchTap.slotIndex);
+        handledTouchTapRef.current = true;
       }
 
       return;
@@ -530,6 +579,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setDragEnd(null);
     setMobileRangeStart(null);
     touchTapRef.current = null;
+    handledTouchTapRef.current = false;
   };
 
   const isOwnBooking = (booking) => String(booking.user_id) === String(user?.id);
@@ -552,18 +602,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    let deleteQuery = supabase
-      .from('bookings')
-      .delete()
-      .eq('id', booking.id);
-
-    if (isEmployeeView) {
-      deleteQuery = deleteQuery.eq('employee_id', employeeId);
-    } else if (!isAdminView) {
-      deleteQuery = deleteQuery.eq('user_id', user.id);
-    }
-
-    const { error } = await deleteQuery;
+    const { error } = await supabase.rpc('cancel_booking', {
+      booking_id_value: booking.id,
+      account_id_value: user?.isInternal ? user.id : null
+    });
 
     if (error) {
       alert('No se pudo cancelar el turno. Intentá nuevamente.');
@@ -677,14 +719,17 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    const { data: conflicts, error: conflictError } = await supabase
-      .from('bookings')
-      .select('id, employee_id')
-      .in('status', ['confirmed', 'reserved'])
-      .eq('employee_id', employee.id)
-      .lt('start_at', range.end_at)
-      .gt('end_at', range.start_at)
-      .limit(1);
+    const shouldValidateWithRpc = user?.isInternal && (isAdminView || isEmployeeView);
+    const { data: conflicts, error: conflictError } = shouldValidateWithRpc
+      ? { data: [], error: null }
+      : await supabase
+          .from('bookings')
+          .select('id, employee_id')
+          .in('status', ['confirmed', 'reserved'])
+          .eq('employee_id', employee.id)
+          .lt('start_at', range.end_at)
+          .gt('end_at', range.start_at)
+          .limit(1);
 
     if (conflictError) {
       alert('No se pudo validar la disponibilidad. Intentá nuevamente.');
@@ -697,13 +742,13 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    if (!availabilityLoadFailed) {
-      const weekday = range.startLocal.getDay();
+    if (!availabilityLoadFailed && !shouldValidateWithRpc) {
+      const availableDate = formatDateOnlyForDb(range.startLocal);
       const { data: availabilityRows, error: availabilityError } = await supabase
         .from('employee_availability')
         .select('*')
         .eq('employee_id', employee.id)
-        .eq('weekday', weekday)
+        .eq('available_date', availableDate)
         .eq('active', true);
 
       if (availabilityError) {
@@ -718,12 +763,14 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       }
     }
 
-    const { data: clientConflicts, error: clientConflictError } = await supabase
-      .from('bookings')
-      .select('id, user_id, user_email, status, start_at, end_at')
-      .in('status', ['confirmed', 'reserved'])
-      .lt('start_at', range.end_at)
-      .gt('end_at', range.start_at);
+    const { data: clientConflicts, error: clientConflictError } = shouldValidateWithRpc
+      ? { data: [], error: null }
+      : await supabase
+          .from('bookings')
+          .select('id, user_id, user_email, status, start_at, end_at')
+          .in('status', ['confirmed', 'reserved'])
+          .lt('start_at', range.end_at)
+          .gt('end_at', range.start_at);
 
     if (clientConflictError) {
       alert('No se pudo validar la disponibilidad del cliente. Intentá nuevamente.');
@@ -736,18 +783,36 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    const bookingPayload = {
-      user_id: isClientView ? user.id : null,
-      user_email: customerEmail,
-      customer_name: customerName || null,
-      service: selectedService.id,
-      employee_id: employee.id,
-      start_at: range.start_at,
-      end_at: range.end_at,
-      status: 'confirmed'
-    };
-
-    const { error } = await supabase.from('bookings').insert(bookingPayload);
+    const { error } = isAdminView
+      ? await supabase.rpc('create_admin_booking', {
+          service_id_value: selectedService.id,
+          employee_id_value: employee.id,
+          start_at_value: range.start_at,
+          end_at_value: range.end_at,
+          customer_name_value: customerName || null,
+          customer_email_value: customerEmail || null,
+          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+        })
+      : user?.isInternal && isEmployeeView
+        ? await supabase.rpc('create_internal_employee_booking', {
+          service_id_value: selectedService.id,
+          employee_id_value: employee.id,
+          start_at_value: range.start_at,
+          end_at_value: range.end_at,
+          customer_name_value: customerName || null,
+          customer_email_value: customerEmail || null,
+          account_id_value: user.id
+        })
+      : await supabase.from('bookings').insert({
+          user_id: isClientView ? user.id : null,
+          user_email: customerEmail,
+          customer_name: customerName || null,
+          service: selectedService.id,
+          employee_id: employee.id,
+          start_at: range.start_at,
+          end_at: range.end_at,
+          status: 'confirmed'
+        });
 
     if (error) {
       alert('No se pudo reservar ese horario. Es posible que ya exista una reserva superpuesta.');
@@ -772,10 +837,16 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setAssignmentEmployees([]);
     setIsLoadingAssignmentEmployees(true);
 
-    const { data: rel, error: relError } = await supabase
-      .from('employee_services')
-      .select('employee_id')
-      .eq('service_id', booking.service);
+    const relResult = isAdminView
+      ? { data: employeeServices.filter((relation) => Number(relation.service_id) === Number(booking.service)), error: null }
+      : user?.isInternal && isEmployeeView
+        ? { data: employeeServices.filter((relation) => Number(relation.service_id) === Number(booking.service)), error: null }
+      : await supabase
+          .from('employee_services')
+          .select('employee_id')
+          .eq('service_id', booking.service);
+
+    const { data: rel, error: relError } = relResult;
 
     if (relError) {
       alert('No se pudieron consultar empleados para esa actividad.');
@@ -791,11 +862,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    const { data: emp, error: empError } = await supabase
-      .from('employees')
-      .select('*')
-      .is('deleted_at', null)
-      .in('id', ids);
+    const empResult = isAdminView || (user?.isInternal && isEmployeeView)
+      ? { data: employees.filter((employee) => ids.some((id) => String(id) === String(employee.id))), error: null }
+      : await supabase
+          .from('employees')
+          .select('*')
+          .is('deleted_at', null)
+          .in('id', ids);
+
+    const { data: emp, error: empError } = empResult;
 
     if (empError) {
       alert('No se pudieron consultar empleados disponibles.');
@@ -841,14 +916,20 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    const { error } = await supabase
-      .from('bookings')
-      .update({
-        employee_id: employee.id,
-        status: 'confirmed'
-      })
-      .eq('id', assignmentRequest.booking.id)
-      .is('employee_id', null);
+    const { error } = isAdminView
+      ? await supabase.rpc('assign_admin_booking_employee', {
+          booking_id_value: assignmentRequest.booking.id,
+          employee_id_value: employee.id,
+          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null
+        })
+      : await supabase
+          .from('bookings')
+          .update({
+            employee_id: employee.id,
+            status: 'confirmed'
+          })
+          .eq('id', assignmentRequest.booking.id)
+          .is('employee_id', null);
 
     if (error) {
       alert(`No se pudo asignar el empleado: ${error.message}`);
@@ -994,6 +1075,14 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                   data-slot-index={slotIndex}
                   onPointerDown={(event) => startPointerSelection(event, dayIndex, slotIndex)}
                   onPointerEnter={() => move(dayIndex, slotIndex)}
+                  onClick={() => {
+                    if (handledTouchTapRef.current) {
+                      handledTouchTapRef.current = false;
+                      return;
+                    }
+
+                    if (isCompactAgenda) selectMobileRangePoint(dayIndex, slotIndex);
+                  }}
                   style={{
                     border: '1px solid #edf1f5',
                     minHeight: rowHeight,
@@ -1097,6 +1186,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           employees={availableEmployees}
           rangeLabel={selectedRangeLabel}
           selectedService={selectedService}
+          emptyMessage={availableEmployeesMessage}
           onClose={close}
           onReserve={chooseEmployeeForReservation}
         />

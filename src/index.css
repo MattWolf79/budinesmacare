@@ -6580,7 +6580,7 @@ body {
   min-width: 640px !important;
   padding: 14px 18px 18px;
   background: #fff;
-  touch-action: pan-x;
+  touch-action: manipulation;
 }
 
 .agenda-week-nav {
@@ -6743,7 +6743,15 @@ body {
   .agenda-grid {
     min-width: 0 !important;
     padding: 10px;
-    touch-action: auto;
+    touch-action: manipulation;
+  }
+
+  .agenda-row {
+    min-width: 0;
+  }
+
+  .agenda-slot-cell {
+    min-height: 44px !important;
   }
 
   .agenda-mobile-range-hint {
@@ -6788,18 +6796,27 @@ body {
   }
 
   .agenda-booking-item {
-    min-height: 24px !important;
+    min-height: 28px !important;
     border-radius: 999px !important;
-    padding: 3px 25px 3px 6px !important;
-    font-size: 9px !important;
-    pointer-events: none !important;
+    padding: 4px 27px 4px 27px !important;
+    font-size: 10px !important;
+    pointer-events: auto !important;
   }
 
   .agenda-booking-cancel {
-    width: 23px !important;
-    min-width: 23px !important;
-    min-height: 24px !important;
+    width: 25px !important;
+    min-width: 25px !important;
+    min-height: 28px !important;
     font-size: 11px !important;
+  }
+
+  .agenda-booking-icon {
+    display: inline-flex !important;
+  }
+
+  .agenda-booking-label {
+    display: block !important;
+    font-size: 10px !important;
   }
 }
 
