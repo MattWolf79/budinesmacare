@@ -14,6 +14,7 @@ const emptyEmployee = {
   photo_url: '',
   code: '',
   active: true,
+  is_admin: false,
   serviceIds: []
 };
 
@@ -111,13 +112,6 @@ const employeeMatchesPayload = (employee, payload) =>
   (employee.code || null) === payload.code &&
   employee.active === payload.active;
 
-const sameServiceIds = (leftIds, rightIds) => {
-  const left = [...leftIds].map(String).sort();
-  const right = [...rightIds].map(String).sort();
-
-  return left.length === right.length && left.every((id, index) => id === right[index]);
-};
-
 const pad = (value) => String(value).padStart(2, '0');
 
 const formatRequestDate = (value) => {
@@ -151,11 +145,6 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-const getAdminLoadError = (results) => {
-  const failedResult = results.find((result) => result.error);
-  return failedResult ? `${failedResult.label}: ${failedResult.error.message}` : null;
-};
-
 const formatSupabaseError = (error) => [
   error.message,
   error.code ? `Código: ${error.code}` : '',
@@ -163,7 +152,7 @@ const formatSupabaseError = (error) => [
   error.hint ? `Ayuda: ${error.hint}` : ''
 ].filter(Boolean).join('\n');
 
-export default function AdminPanel({ view, onDataChanged }) {
+export default function AdminPanel({ view, user, onDataChanged }) {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
   const [employeeServices, setEmployeeServices] = useState([]);
@@ -192,6 +181,8 @@ export default function AdminPanel({ view, onDataChanged }) {
     [editingEmployeeId, employeeForm.first_name, employeeForm.last_name, employeeForm.name]
   );
 
+  const internalAdminAccountId = user?.isInternal && user?.role === 'admin' ? user.id : null;
+
   const filteredIconGroups = useMemo(() => {
     const normalizedSearch = normalizeComparableText(emojiSearch);
     if (!normalizedSearch) return serviceIconGroups;
@@ -207,34 +198,23 @@ export default function AdminPanel({ view, onDataChanged }) {
   const loadAdminData = useCallback(async () => {
     setIsLoading(true);
 
-    const [employeeResult, serviceResult, relationResult, accessResult] = await Promise.all([
-      supabase.from('employees').select('*').is('deleted_at', null).order('name', { ascending: true }),
-      supabase.from('services').select('*').order('id', { ascending: true }),
-      supabase.from('employee_services').select('*'),
-      view === 'employees'
-        ? supabase.rpc('list_internal_registration_requests', { status_value: 'pending' })
-        : Promise.resolve({ data: [], error: null })
-    ]);
+    const { data, error } = await supabase.rpc('get_admin_panel_data', {
+      account_id_value: internalAdminAccountId,
+      request_status_value: view === 'employees' ? 'pending' : null
+    });
 
-    const loadError = getAdminLoadError([
-      { label: 'Empleados', error: employeeResult.error },
-      { label: 'Actividades', error: serviceResult.error },
-      { label: 'Relaciones empleado-actividad', error: relationResult.error },
-      { label: 'Solicitudes de acceso', error: accessResult.error }
-    ]);
-
-    if (loadError) {
-      alert(`No se pudo cargar la administración. ${loadError}`);
+    if (error) {
+      alert(`No se pudo cargar la administración. ${formatSupabaseError(error)}`);
       setIsLoading(false);
       return;
     }
 
-    setEmployees(employeeResult.data || []);
-    setServices(serviceResult.data || []);
-    setEmployeeServices(relationResult.data || []);
-    setAccessRequests(accessResult.data || []);
+    setEmployees(data?.employees || []);
+    setServices(data?.services || []);
+    setEmployeeServices(data?.employeeServices || []);
+    setAccessRequests(view === 'employees' ? data?.accessRequests || [] : []);
     setIsLoading(false);
-  }, [view]);
+  }, [internalAdminAccountId, view]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -336,6 +316,7 @@ export default function AdminPanel({ view, onDataChanged }) {
       photo_url: employee.photo_url || '',
       code: employee.code || '',
       active: employee.active !== false,
+      is_admin: employee.is_admin === true,
       serviceIds: getEmployeeServiceIds(employee.id, employeeServices)
     });
   };
@@ -350,24 +331,6 @@ export default function AdminPanel({ view, onDataChanged }) {
       default_duration: service.default_duration || 30,
       active: service.active !== false
     });
-  };
-
-  const saveEmployeeRelations = async (employeeId, serviceIds) => {
-    const deleteResult = await supabase
-      .from('employee_services')
-      .delete()
-      .eq('employee_id', employeeId);
-
-    if (deleteResult.error) return deleteResult;
-
-    if (!serviceIds.length) return { error: null };
-
-    return supabase.from('employee_services').insert(
-      serviceIds.map((serviceId) => ({
-        employee_id: employeeId,
-        service_id: Number(serviceId)
-      }))
-    );
   };
 
   const saveEmployee = async (event) => {
@@ -386,7 +349,8 @@ export default function AdminPanel({ view, onDataChanged }) {
       address_locality: employeeForm.address_locality.trim() || null,
       photo_url: employeeForm.photo_url || null,
       code: employeeForm.code.trim() || null,
-      active: editingEmployeeId ? employeeForm.active : true
+      active: editingEmployeeId ? employeeForm.active : true,
+      is_admin: employeeForm.is_admin
     };
 
     if (!editingEmployeeId && (!payload.first_name || !payload.last_name)) {
@@ -401,11 +365,25 @@ export default function AdminPanel({ view, onDataChanged }) {
 
     setIsSaving(true);
 
+    const adminAccountId = user?.isInternal && user?.role === 'admin' ? user.id : null;
     const employeeResult = editingEmployeeId
-      ? await supabase
-          .from('employees')
-          .update(payload)
-          .eq('id', editingEmployeeId)
+      ? await supabase.rpc('update_admin_employee', {
+        employee_id_value: editingEmployeeId,
+        name_value: payload.name,
+        first_name_value: payload.first_name,
+        last_name_value: payload.last_name,
+        birth_date_value: payload.birth_date,
+        phone_value: payload.phone,
+        address_street_value: payload.address_street,
+        address_number_value: payload.address_number,
+        address_locality_value: payload.address_locality,
+        photo_url_value: payload.photo_url,
+        code_value: payload.code,
+        active_value: payload.active,
+        is_admin_value: payload.is_admin,
+        service_ids_value: employeeForm.serviceIds,
+        account_id_value: adminAccountId
+      })
       : await supabase.rpc('create_admin_employee', {
         name_value: payload.name,
         first_name_value: payload.first_name,
@@ -417,7 +395,9 @@ export default function AdminPanel({ view, onDataChanged }) {
         address_locality_value: payload.address_locality,
         photo_url_value: payload.photo_url,
         code_value: payload.code,
-        service_ids_value: employeeForm.serviceIds
+        service_ids_value: employeeForm.serviceIds,
+        is_admin_value: payload.is_admin,
+        account_id_value: adminAccountId
       }).single();
 
     if (employeeResult.error) {
@@ -426,13 +406,7 @@ export default function AdminPanel({ view, onDataChanged }) {
       return;
     }
 
-    const savedEmployee = editingEmployeeId
-      ? await supabase
-          .from('employees')
-          .select('*')
-          .eq('id', editingEmployeeId)
-          .single()
-      : employeeResult;
+    const savedEmployee = employeeResult;
 
     if (savedEmployee.error || !savedEmployee.data) {
       alert(`No se pudo verificar el guardado del empleado: ${savedEmployee.error?.message || 'Supabase no devolvió el empleado.'}`);
@@ -446,56 +420,9 @@ export default function AdminPanel({ view, onDataChanged }) {
       return;
     }
 
-    const relationResult = editingEmployeeId
-      ? await saveEmployeeRelations(savedEmployee.data.id, employeeForm.serviceIds)
-      : { error: null };
-
-    if (relationResult.error) {
-      alert(`El empleado se guardó, pero no se pudieron actualizar sus actividades: ${relationResult.error.message}`);
-      setIsSaving(false);
-      return;
-    }
-
-    const relationCheck = await supabase
-      .from('employee_services')
-      .select('service_id')
-      .eq('employee_id', savedEmployee.data.id);
-
-    if (relationCheck.error) {
-      alert(`No se pudo verificar las actividades del empleado: ${relationCheck.error.message}`);
-      setIsSaving(false);
-      return;
-    }
-
-    const savedServiceIds = (relationCheck.data || []).map((relation) => relation.service_id);
-
-    if (!sameServiceIds(savedServiceIds, employeeForm.serviceIds)) {
-      alert('Supabase guardó el empleado, pero no aplicó todas sus actividades. Revisá las policies de DELETE/INSERT sobre employee_services.');
-      setIsSaving(false);
-      return;
-    }
-
     if (!editingEmployeeId) {
-      alert(`Empleado activo creado. Usuario: ${savedEmployee.data.internal_username}. Contraseña inicial: 123456. Se le pedirá cambiarla en el primer ingreso.`);
+      alert(`${payload.is_admin ? 'Administrador' : 'Empleado'} activo creado. Usuario: ${savedEmployee.data.internal_username}. Contraseña inicial: 123456. Se le pedirá cambiarla en el primer ingreso.`);
     }
-
-    setEmployees((currentEmployees) => {
-      if (editingEmployeeId) {
-        return currentEmployees.map((employee) =>
-          String(employee.id) === String(savedEmployee.data.id) ? savedEmployee.data : employee
-        );
-      }
-
-      return [...currentEmployees, savedEmployee.data];
-    });
-
-    setEmployeeServices((currentRelations) => [
-      ...currentRelations.filter((relation) => relation.employee_id !== savedEmployee.data.id),
-      ...(relationCheck.data || []).map((relation) => ({
-        ...relation,
-        employee_id: savedEmployee.data.id
-      }))
-    ]);
 
     resetEmployeeForm();
     setIsEmployeeFormOpen(false);
@@ -529,7 +456,8 @@ export default function AdminPanel({ view, onDataChanged }) {
     }
 
     const employeeResult = await supabase.rpc('delete_admin_employee', {
-      employee_id_value: employee.id
+      employee_id_value: employee.id,
+      account_id_value: internalAdminAccountId
     });
 
     if (employeeResult.error) {
@@ -571,16 +499,15 @@ export default function AdminPanel({ view, onDataChanged }) {
 
     setIsSaving(true);
 
-    const serviceResult = editingServiceId
-      ? await supabase
-          .from('services')
-          .update(payload)
-          .eq('id', editingServiceId)
-      : await supabase
-          .from('services')
-          .insert(payload)
-          .select('id, name, icon, color, default_duration, active')
-          .single();
+    const serviceResult = await supabase.rpc('save_admin_service', {
+      service_id_value: editingServiceId,
+      name_value: payload.name,
+      icon_value: payload.icon,
+      color_value: payload.color,
+      default_duration_value: payload.default_duration,
+      active_value: payload.active,
+      account_id_value: internalAdminAccountId
+    }).single();
 
     if (serviceResult.error) {
       alert(`No se pudo guardar la actividad: ${serviceResult.error.message}`);
@@ -588,22 +515,14 @@ export default function AdminPanel({ view, onDataChanged }) {
       return;
     }
 
-    const savedService = editingServiceId
-      ? await supabase
-          .from('services')
-          .select('id, name, icon, color, default_duration, active')
-          .eq('id', editingServiceId)
-          .single()
-      : serviceResult;
-
-    if (savedService.error || !savedService.data) {
-      alert(`No se pudo verificar el guardado: ${savedService.error?.message || 'Supabase no devolvió la actividad.'}`);
+    if (!serviceResult.data) {
+      alert('No se pudo verificar el guardado: Supabase no devolvió la actividad.');
       setIsSaving(false);
       return;
     }
 
-    if (!serviceMatchesPayload(savedService.data, payload)) {
-      alert('Supabase recibió el pedido, pero no aplicó los cambios. Revisá las policies de UPDATE sobre la tabla services.');
+    if (!serviceMatchesPayload(serviceResult.data, payload)) {
+      alert('Supabase recibió el pedido, pero no aplicó los cambios.');
       setIsSaving(false);
       return;
     }
@@ -611,11 +530,11 @@ export default function AdminPanel({ view, onDataChanged }) {
     setServices((currentServices) => {
       if (editingServiceId) {
         return currentServices.map((service) =>
-          String(service.id) === String(savedService.data.id) ? savedService.data : service
+          String(service.id) === String(serviceResult.data.id) ? serviceResult.data : service
         );
       }
 
-      return [...currentServices, savedService.data];
+      return [...currentServices, serviceResult.data];
     });
 
     resetServiceForm();
@@ -627,24 +546,23 @@ export default function AdminPanel({ view, onDataChanged }) {
 
   const toggleServiceStatus = async (service) => {
     const nextActive = service.active === false;
-    const { error } = await supabase
-      .from('services')
-      .update({ active: nextActive })
-      .eq('id', service.id);
+    const { data: updatedService, error } = await supabase.rpc('save_admin_service', {
+      service_id_value: service.id,
+      name_value: service.name,
+      icon_value: service.icon,
+      color_value: service.color,
+      default_duration_value: service.default_duration,
+      active_value: nextActive,
+      account_id_value: internalAdminAccountId
+    }).single();
 
     if (error) {
       alert(`No se pudo cambiar el estado de la actividad: ${error.message}`);
       return;
     }
 
-    const { data: updatedService, error: verifyError } = await supabase
-      .from('services')
-      .select('id, active')
-      .eq('id', service.id)
-      .single();
-
-    if (verifyError || updatedService?.active !== nextActive) {
-      alert('Supabase recibió el pedido, pero no cambió el estado. Revisá las policies de UPDATE sobre la tabla services.');
+    if (updatedService?.active !== nextActive) {
+      alert('Supabase recibió el pedido, pero no cambió el estado.');
       return;
     }
 
@@ -672,23 +590,13 @@ export default function AdminPanel({ view, onDataChanged }) {
       return;
     }
 
-    const relationResult = await supabase
-      .from('employee_services')
-      .delete()
-      .eq('service_id', service.id);
-
-    if (relationResult.error) {
-      alert('No se pudieron quitar las asignaciones de la actividad.');
-      return;
-    }
-
-    const serviceResult = await supabase
-      .from('services')
-      .delete()
-      .eq('id', service.id);
+    const serviceResult = await supabase.rpc('delete_admin_service', {
+      service_id_value: service.id,
+      account_id_value: internalAdminAccountId
+    });
 
     if (serviceResult.error) {
-      alert('No se pudo eliminar la actividad.');
+      alert(`No se pudo eliminar la actividad. ${serviceResult.error.message}`);
       return;
     }
 
@@ -702,7 +610,8 @@ export default function AdminPanel({ view, onDataChanged }) {
 
     const { error } = await supabase.rpc('approve_internal_registration', {
       request_id_value: request.id,
-      employee_id_value: null
+      employee_id_value: null,
+      account_id_value: internalAdminAccountId
     });
 
     if (error) {
@@ -723,7 +632,8 @@ export default function AdminPanel({ view, onDataChanged }) {
     setIsSaving(true);
 
     const { error } = await supabase.rpc('reject_internal_registration', {
-      request_id_value: request.id
+      request_id_value: request.id,
+      account_id_value: internalAdminAccountId
     });
 
     if (error) {
@@ -911,6 +821,10 @@ export default function AdminPanel({ view, onDataChanged }) {
                 <input type="checkbox" checked={editingEmployeeId ? employeeForm.active : true} disabled={!editingEmployeeId} onChange={(event) => updateEmployeeField('active', event.target.checked)} />
                 Empleado activo
               </label>
+              <label className="admin-switch-row">
+                <input type="checkbox" checked={employeeForm.is_admin} onChange={(event) => updateEmployeeField('is_admin', event.target.checked)} />
+                Administrador
+              </label>
 
               <div className="admin-fieldset">
                 <div className="admin-fieldset-title">Actividades que atiende</div>
@@ -951,7 +865,7 @@ export default function AdminPanel({ view, onDataChanged }) {
                 </div>
                 <div className="admin-record-main">
                   <div className="admin-record-title">{employee.name}</div>
-                  <div className="admin-record-meta">{employee.code || 'Sin código'} · {employee.active === false ? 'Inactivo' : 'Activo'}</div>
+                  <div className="admin-record-meta">{employee.code || 'Sin código'} · {employee.active === false ? 'Inactivo' : 'Activo'} · {employee.is_admin ? 'Administrador' : 'Empleado'}</div>
                   <div className="admin-record-profile-line">
                     {employee.phone || 'Sin celular'}
                   </div>

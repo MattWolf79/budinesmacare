@@ -199,6 +199,18 @@ export default function App() {
       isInternal: true
     };
 
+    if (internalSession.role === 'admin') {
+      return (
+        <Dashboard
+          user={internalUser}
+          accessProfile="admin"
+          onChangeProfile={changeInternalAccess}
+          canChangeProfile={canChangeProfile}
+          onLogout={logout}
+        />
+      );
+    }
+
     return (
       <RoleAccess
         user={internalUser}

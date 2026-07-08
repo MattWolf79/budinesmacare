@@ -42,8 +42,8 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
             <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} />
           </div>
         )}
-        {activeView === 'employees' && <AdminPanel view="employees" onDataChanged={notifyAdminDataChanged} />}
-        {activeView === 'services' && <AdminPanel view="services" onDataChanged={notifyAdminDataChanged} />}
+        {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} />}
+        {activeView === 'services' && <AdminPanel view="services" user={user} onDataChanged={notifyAdminDataChanged} />}
         {activeView === 'availability' && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} />}
       </Box>
     </Container>
