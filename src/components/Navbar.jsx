@@ -4,7 +4,8 @@ const defaultNavItems = [
   { id: 'agenda', label: 'Agenda', icon: '📅' },
   { id: 'employees', label: 'Empleados', icon: '👥' },
   { id: 'services', label: 'Actividades', icon: '✨' },
-  { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
+  { id: 'availability', label: 'Disponibilidad', icon: '🕒' },
+  { id: 'settings', label: 'Configuración', icon: '⚙' }
 ];
 
 const profileLabels = {

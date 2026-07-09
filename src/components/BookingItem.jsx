@@ -142,6 +142,7 @@ export default function BookingItem({
           <div className="agenda-detail-header">Detalle</div>
           <div className="agenda-detail-body">
             <div className="agenda-detail-title"><ActivityIcon service={service} size="small" /> <b>{service?.name}</b></div>
+            {booking.booking_description && <div>🏷 {booking.booking_description}</div>}
             {employee?.name && <div>👤 {employee.name}</div>}
             <div>🧍 {canViewCustomer ? customerDetail : customerLabel || 'Turno reservado'}</div>
             <div className="agenda-detail-time">

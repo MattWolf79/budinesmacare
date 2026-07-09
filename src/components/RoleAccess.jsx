@@ -118,10 +118,24 @@ function ServiceColorLegend() {
 
 function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canChangeProfile }) {
   const [clientActiveView, setClientActiveView] = useState('home');
+  const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
   const profile = profileOptions[selectedProfile];
   const shouldUseClientPhoto = selectedProfile === 'client' && Boolean(user?.photoUrl);
   const isClientProfile = selectedProfile === 'client';
+
+  const changeClientView = (view) => {
+    setClientActiveView(view);
+
+    if (view !== 'reserve') {
+      setSelectedPromotion(null);
+    }
+  };
+
+  const reservePromotion = (promotion) => {
+    setSelectedPromotion(promotion);
+    setClientActiveView('reserve');
+  };
 
   return (
     <main className={`role-workspace role-workspace-${selectedProfile}`}>
@@ -130,7 +144,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
           user={user}
           activeView={isClientProfile ? clientActiveView : employeeActiveView}
           accessProfile={selectedProfile}
-          onViewChange={isClientProfile ? setClientActiveView : setEmployeeActiveView}
+          onViewChange={isClientProfile ? changeClientView : setEmployeeActiveView}
           onChangeProfile={onChangeProfile}
           onLogout={onLogout}
           showNavigation
@@ -168,11 +182,6 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
                 : 'Seleccioná un horario disponible en la grilla para crear tu próximo turno.'}
             </p>
             <ServiceColorLegend />
-            {clientActiveView === 'home' && (
-              <button className="client-welcome-action" type="button" onClick={() => setClientActiveView('reserve')}>
-                Reservar Turno
-              </button>
-            )}
           </div>
           <span className={`role-workspace-icon ${shouldUseClientPhoto ? 'has-photo' : ''}`} aria-hidden="true">
             <UserPhoto user={shouldUseClientPhoto ? user : null} fallback={profile.icon} />
@@ -192,7 +201,16 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
       )}
 
       {isClientProfile ? (
-        <ClientDashboard user={user} showAgenda={clientActiveView === 'reserve'} />
+        <ClientDashboard
+          user={user}
+          showAgenda={clientActiveView === 'reserve'}
+          selectedPromotion={selectedPromotion}
+          onReservePromotion={reservePromotion}
+          onReserveTurn={() => {
+            setSelectedPromotion(null);
+            setClientActiveView('reserve');
+          }}
+        />
       ) : selectedProfile === 'employee' ? (
         <EmployeeDashboard user={user} activeView={employeeActiveView} />
       ) : (

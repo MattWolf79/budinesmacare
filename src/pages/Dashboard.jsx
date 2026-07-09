@@ -3,6 +3,7 @@ import { Container, Box } from "@mui/material";
 import Navbar from "../components/Navbar";
 import AgendaGrid from "../components/AgendaGrid";
 import AdminPanel from "../components/AdminPanel";
+import AdminSettingsPanel from "../components/AdminSettingsPanel";
 import EmployeeAvailabilityPanel from "../components/EmployeeAvailabilityPanel";
 
 export default function Dashboard({ user, accessProfile, onChangeProfile, onLogout, canChangeProfile = false }) {
@@ -45,6 +46,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} />}
         {activeView === 'services' && <AdminPanel view="services" user={user} onDataChanged={notifyAdminDataChanged} />}
         {activeView === 'availability' && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} />}
+        {activeView === 'settings' && <AdminSettingsPanel user={user} />}
       </Box>
     </Container>
   );
