@@ -830,7 +830,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           customer_name_value: customerName || null,
           customer_email_value: customerEmail || null,
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
-          session_token_value: user?.isInternal ? user.sessionToken : null
+          session_token_value: user?.isInternal ? user.sessionToken : null,
+          ...(selectedService.isPromotion ? { booking_description_value: bookingDescription || null } : {})
         })
       : user?.isInternal && isEmployeeView
         ? await supabase.rpc('create_internal_employee_booking', {
@@ -841,7 +842,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           customer_name_value: customerName || null,
           customer_email_value: customerEmail || null,
           account_id_value: user.id,
-          session_token_value: user.sessionToken
+          session_token_value: user.sessionToken,
+          ...(selectedService.isPromotion ? { booking_description_value: bookingDescription || null } : {})
         })
       : await supabase.from('bookings').insert({
           user_id: isClientView ? user.id : null,
@@ -856,7 +858,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         });
 
     if (error) {
-      alert(isClientView ? `No se pudo solicitar el turno: ${error.message}` : 'No se pudo reservar ese horario. Es posible que ya exista una reserva superpuesta.');
+      alert(isClientView ? `No se pudo solicitar el turno: ${error.message}` : `No se pudo reservar ese horario: ${error.message}`);
       return;
     }
 
