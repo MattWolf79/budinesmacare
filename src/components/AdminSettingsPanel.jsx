@@ -62,6 +62,10 @@ export default function AdminSettingsPanel({ user }) {
   const enabledPromotions = useMemo(() => (
     form.promotions.filter((promotion) => promotion.enabled)
   ), [form.promotions]);
+  const previewBannerImages = useMemo(() => {
+    if (!form.banner_images.length) return [];
+    return Array.from({ length: 4 }, (_, index) => form.banner_images[index % form.banner_images.length]);
+  }, [form.banner_images]);
 
   const applyConfig = (config) => {
     const bannerImages = normalizeBannerImages(config);
@@ -349,14 +353,17 @@ export default function AdminSettingsPanel({ user }) {
                 <span className="role-workspace-icon" aria-hidden="true">🙋</span>
               </section>
 
-              {form.banner_images.length > 0 && (
-                <div className="client-home-banner-carousel settings-preview-carousel">
-                  <div
-                    className="client-home-banner"
-                    role="img"
-                    aria-label="Presentación de la empresa"
-                    style={{ backgroundImage: `url(${form.banner_images[0].dataUrl})` }}
-                  />
+              {previewBannerImages.length > 0 && (
+                <div className="client-home-banner-strip settings-preview-carousel">
+                  {previewBannerImages.map((image, index) => (
+                    <div
+                      className="client-home-banner"
+                      role="img"
+                      aria-label={`Presentación de la empresa ${index + 1}`}
+                      key={`${image.fileName || 'banner'}-${index}`}
+                      style={{ backgroundImage: `url(${image.dataUrl})` }}
+                    />
+                  ))}
                 </div>
               )}
 

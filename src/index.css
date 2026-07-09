@@ -1567,10 +1567,9 @@ code {
   padding: 9px 10px;
 }
 
-.client-home-banner-carousel {
-  position: relative;
+.client-home-banner-strip {
   display: grid;
-  place-items: center;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
   height: 130px;
   overflow: hidden;
@@ -1586,27 +1585,11 @@ code {
   height: 100%;
   background-position: center;
   background-repeat: no-repeat;
-  background-size: contain;
+  background-size: cover;
 }
 
-.client-home-banner-dots {
-  position: absolute;
-  right: 12px;
-  bottom: 10px;
-  display: inline-flex;
-  gap: 5px;
-}
-
-.client-home-banner-dots span {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.34);
-}
-
-.client-home-banner-dots .is-active {
-  width: 16px;
-  background: rgba(15, 23, 42, 0.72);
+.client-home-banner + .client-home-banner {
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .client-home-reserve-action {
@@ -7682,14 +7665,14 @@ body {
   display: none;
 }
 
-.client-home-banner-carousel > .client-home-banner {
+.client-home-banner-strip > .client-home-banner {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
-  background-size: contain !important;
+  background-size: cover !important;
 }
 
 .role-workspace-client .client-summary-panel {

@@ -33,7 +33,6 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [configRefreshKey, setConfigRefreshKey] = useState(0);
-  const [bannerIndex, setBannerIndex] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -132,38 +131,27 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
     return [];
   }, [appConfig]);
 
-  useEffect(() => {
-    if (showAgenda || bannerImages.length <= 1) return undefined;
-
-    const intervalId = window.setInterval(() => {
-      setBannerIndex((current) => (current + 1) % bannerImages.length);
-    }, 4500);
-
-    return () => window.clearInterval(intervalId);
-  }, [bannerImages.length, showAgenda]);
-
   const refreshBookings = () => {
     setRefreshKey((current) => current + 1);
   };
-  const activeBannerIndex = bannerImages.length ? bannerIndex % bannerImages.length : 0;
+  const bannerStripImages = useMemo(() => {
+    if (!bannerImages.length) return [];
+    return Array.from({ length: 4 }, (_, index) => bannerImages[index % bannerImages.length]);
+  }, [bannerImages]);
 
   return (
     <section className="client-dashboard">
-      {!showAgenda && bannerImages.length > 0 && (
-        <div className="client-home-banner-carousel" aria-label="Presentación de la empresa">
-          <div
-            className="client-home-banner"
-            role="img"
-            aria-label="Presentación de la empresa"
-            style={{ backgroundImage: `url(${bannerImages[activeBannerIndex]?.dataUrl})` }}
-          />
-          {bannerImages.length > 1 && (
-            <div className="client-home-banner-dots" aria-hidden="true">
-              {bannerImages.map((_, index) => (
-                <span className={index === activeBannerIndex ? 'is-active' : ''} key={index} />
-              ))}
-            </div>
-          )}
+      {!showAgenda && bannerStripImages.length > 0 && (
+        <div className="client-home-banner-strip" aria-label="Presentación de la empresa">
+          {bannerStripImages.map((image, index) => (
+            <div
+              className="client-home-banner"
+              role="img"
+              aria-label={`Presentación de la empresa ${index + 1}`}
+              key={`${image.fileName || 'banner'}-${index}`}
+              style={{ backgroundImage: `url(${image.dataUrl})` }}
+            />
+          ))}
         </div>
       )}
 
