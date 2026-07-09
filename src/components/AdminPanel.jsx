@@ -12,7 +12,6 @@ const emptyEmployee = {
   address_number: '',
   address_locality: '',
   photo_url: '',
-  code: '',
   active: true,
   is_admin: false,
   serviceIds: [],
@@ -116,7 +115,6 @@ const employeeMatchesPayload = (employee, payload) =>
   (employee.address_number || null) === payload.address_number &&
   (employee.address_locality || null) === payload.address_locality &&
   (employee.photo_url || null) === payload.photo_url &&
-  (employee.code || null) === payload.code &&
   employee.active === payload.active;
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -363,7 +361,6 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       address_number: employee.address_number || '',
       address_locality: employee.address_locality || '',
       photo_url: employee.photo_url || '',
-      code: employee.code || '',
       active: employee.active !== false,
       is_admin: employee.is_admin === true,
       serviceIds: getEmployeeServiceIds(employee.id, employeeServices),
@@ -428,7 +425,6 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       address_number: employeeForm.address_number.trim() || null,
       address_locality: employeeForm.address_locality.trim() || null,
       photo_url: employeeForm.photo_url || null,
-      code: employeeForm.code.trim() || null,
       active: editingEmployeeId ? employeeForm.active : true,
       is_admin: employeeForm.is_admin
     };
@@ -458,7 +454,6 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         address_number_value: payload.address_number,
         address_locality_value: payload.address_locality,
         photo_url_value: payload.photo_url,
-        code_value: payload.code,
         active_value: payload.active,
         is_admin_value: payload.is_admin,
         service_ids_value: employeeForm.serviceIds,
@@ -475,7 +470,6 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         address_number_value: payload.address_number,
         address_locality_value: payload.address_locality,
         photo_url_value: payload.photo_url,
-        code_value: payload.code,
         service_ids_value: employeeForm.serviceIds,
         is_admin_value: payload.is_admin,
         account_id_value: adminAccountId,
@@ -928,10 +922,6 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                 </label>
               </div>
 
-              <label>
-                Código
-                <input value={employeeForm.code} onChange={(event) => updateEmployeeField('code', event.target.value)} placeholder="M3" />
-              </label>
               <label className="admin-switch-row">
                 <input type="checkbox" checked={editingEmployeeId ? employeeForm.active : true} disabled={!editingEmployeeId} onChange={(event) => updateEmployeeField('active', event.target.checked)} />
                 Empleado activo
@@ -993,7 +983,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                 </div>
                 <div className="admin-record-main">
                   <div className="admin-record-title">{employee.name}</div>
-                  <div className="admin-record-meta">{employee.code || 'Sin código'} · {employee.active === false ? 'Inactivo' : 'Activo'} · {employee.is_admin ? 'Administrador' : 'Empleado'}</div>
+                  <div className="admin-record-meta">{employee.active === false ? 'Inactivo' : 'Activo'} · {employee.is_admin ? 'Administrador' : 'Empleado'}</div>
                   <div className="admin-record-profile-line">
                     {employee.phone || 'Sin celular'}
                   </div>

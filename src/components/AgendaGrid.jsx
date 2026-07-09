@@ -58,6 +58,34 @@ const isActiveBooking = (booking) =>
 const isPendingAssignmentBooking = (booking) =>
   isActiveBooking(booking) && (!booking.employee_id || booking.status === 'pending_assignment');
 
+const capitalizeNamePart = (value) => {
+  const cleanValue = String(value || '').trim();
+  if (!cleanValue) return '';
+  return `${cleanValue[0].toUpperCase()}${cleanValue.slice(1)}`;
+};
+
+const formatPersonShortName = (person) => {
+  if (!person) return 'Pendiente';
+
+  const firstName = String(person.first_name || '').trim();
+  const lastName = String(person.last_name || '').trim();
+
+  if (firstName && lastName) return `${capitalizeNamePart(firstName)} ${lastName[0].toUpperCase()}`;
+  if (firstName) return capitalizeNamePart(firstName);
+
+  const nameParts = String(person.name || '').trim().replace(/\s+/g, ' ').split(' ').filter(Boolean);
+  if (nameParts.length >= 2) return `${capitalizeNamePart(nameParts[0])} ${nameParts[1][0].toUpperCase()}`;
+  return capitalizeNamePart(nameParts[0]) || 'Pendiente';
+};
+
+const getBookingActivityLabel = (booking, service) => {
+  if (!booking.service && booking.booking_description) {
+    return String(booking.booking_description).split('·')[0].trim() || 'Promo';
+  }
+
+  return service?.name || 'Turno';
+};
+
 const parseBookingDate = (value) => {
   if (value instanceof Date) return value;
   return new Date(value);
@@ -1028,13 +1056,14 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           <div className="admin-pending-list">
             {pendingAssignmentBookings.map((booking) => {
               const service = services.find((item) => Number(item.id) === Number(booking.service));
+              const assignmentLabel = `${getBookingActivityLabel(booking, service)} / Pendiente`;
 
               return (
                 <article className="admin-record-card booking-assignment-card" key={booking.id} style={{ '--service-chip-color': service?.color || '#15b8c8' }}>
                   <div className="admin-record-main">
                     <span className="booking-assignment-service">
                       <ActivityIcon service={service} size="small" />
-                      <strong>{service?.name || 'Actividad'}</strong>
+                      <strong>{assignmentLabel}</strong>
                     </span>
                     <span className="admin-record-meta booking-assignment-meta">{booking.customer_name || booking.user_email || 'Cliente'} · {formatBookingRangeLabel(booking)}</span>
                   </div>
@@ -1159,12 +1188,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                   <div style={{ flex: '1 1 auto' }}>
                     {slotBookings.map(b => {
                       const service = services.find(s => Number(s.id) === Number(b.service));
-                      const emp = isClientView ? null : employees.find(e => e.id === b.employee_id);
+                      const emp = employees.find(e => e.id === b.employee_id);
                       const isOwn = isOwnBooking(b);
                       const isAssigned = isAssignedBooking(b);
-                      const displayLabel = isClientView
-                        ? b.booking_description || service?.name || 'Turno'
-                        : b.booking_description || emp?.name || service?.name || 'Turno';
+                      const displayLabel = `${getBookingActivityLabel(b, service)} / ${formatPersonShortName(emp)}`;
 
                       return (
                         <BookingItem

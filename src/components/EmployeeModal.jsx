@@ -1,5 +1,30 @@
 import ActivityIcon from './ActivityIcon';
 
+const capitalizeNamePart = (value) => {
+  const cleanValue = String(value || '').trim();
+  if (!cleanValue) return '';
+  return `${cleanValue[0].toUpperCase()}${cleanValue.slice(1)}`;
+};
+
+const formatEmployeeShortName = (employee) => {
+  const firstName = String(employee?.first_name || '').trim();
+  const lastName = String(employee?.last_name || '').trim();
+
+  if (firstName && lastName) return `${capitalizeNamePart(firstName)} ${lastName[0].toUpperCase()}`;
+  if (firstName) return capitalizeNamePart(firstName);
+
+  const nameParts = String(employee?.name || '').trim().replace(/\s+/g, ' ').split(' ').filter(Boolean);
+  if (nameParts.length >= 2) return `${capitalizeNamePart(nameParts[0])} ${nameParts[1][0].toUpperCase()}`;
+  return capitalizeNamePart(nameParts[0]) || 'Empleado';
+};
+
+const getEmployeeInitials = (employee) => {
+  const label = formatEmployeeShortName(employee);
+  const parts = label.split(' ').filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return String(parts[0]?.[0] || 'E').toUpperCase();
+};
+
 export default function EmployeeModal({
   employees,
   rangeLabel,
@@ -29,11 +54,18 @@ export default function EmployeeModal({
             </div>
           ) : (
             <div className="agenda-option-grid">
-              {employees.map(employee => (
-                <button className="agenda-option-button" key={employee.id} onClick={() => onReserve(employee)}>
-                  👤 {employee.name}
-                </button>
-              ))}
+              {employees.map(employee => {
+                const employeeLabel = formatEmployeeShortName(employee);
+
+                return (
+                  <button className="agenda-option-button employee-reservation-option" key={employee.id} onClick={() => onReserve(employee)}>
+                    <span className="employee-reservation-avatar" aria-hidden="true">
+                      {employee.photo_url ? <img src={employee.photo_url} alt="" /> : getEmployeeInitials(employee)}
+                    </span>
+                    <span>{employeeLabel}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
 

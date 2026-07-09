@@ -38,7 +38,7 @@ export default function BookingItem({
   const promotionTitle = isPromotionBooking
     ? String(booking.booking_description || '').split('·')[0].trim()
     : '';
-  const agendaLabel = isPromotionBooking ? promotionTitle || 'Promo' : displayLabel || bookingLabel;
+  const agendaLabel = displayLabel || (isPromotionBooking ? promotionTitle || 'Promo' : bookingLabel);
 
   return (
     <div

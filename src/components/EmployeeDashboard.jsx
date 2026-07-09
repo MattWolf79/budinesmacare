@@ -260,7 +260,6 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
               <p className="admin-kicker">Empleado</p>
               <h2>{employee?.name || user?.email || 'Empleado'}</h2>
               <p>{employee?.active === false ? 'Perfil inactivo' : 'Perfil activo'}</p>
-              {employee?.code && <span className="employee-code">{employee.code}</span>}
             </article>
 
             <article className="employee-card">
