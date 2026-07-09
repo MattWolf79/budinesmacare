@@ -5,7 +5,8 @@ const emptyPromotion = () => ({
   enabled: false,
   title: '',
   description: '',
-  value: ''
+  value: '',
+  employeeIds: []
 });
 
 const normalizePromotions = (promotions) => {
@@ -15,7 +16,8 @@ const normalizePromotions = (promotions) => {
     enabled: Boolean(promotion?.enabled),
     title: String(promotion?.title || ''),
     description: String(promotion?.description || ''),
-    value: String(promotion?.value || '')
+    value: String(promotion?.value || ''),
+    employeeIds: Array.isArray(promotion?.employeeIds) ? promotion.employeeIds.map(String) : []
   }));
 };
 

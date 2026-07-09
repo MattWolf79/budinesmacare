@@ -2772,12 +2772,16 @@ code {
   background: #3fc9d5;
 }
 
-.admin-promotion-service-chip,
-.admin-promotion-service-chip.is-selected {
+.admin-promotion-service-chip {
   color: #0e7490;
   border-color: #67e8f9;
+  background: #f8feff;
+}
+
+.admin-promotion-service-chip.is-selected {
+  color: #0e7490;
+  border-color: #22d3ee;
   background: #cffafe;
-  cursor: default;
 }
 
 .admin-emoji-grid {

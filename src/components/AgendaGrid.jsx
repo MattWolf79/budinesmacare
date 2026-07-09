@@ -336,7 +336,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           session_token_value: user.sessionToken
         })
       : Promise.resolve({ data: null, error: null });
-    const clientBookingOptionsRequest = isClientView
+    const bookingOptionsRequest = isClientView || isAdminView || isEmployeeView
       ? supabase.rpc('get_client_booking_options')
       : Promise.resolve({ data: null, error: null });
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
@@ -348,22 +348,26 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : supabase.from('employee_availability').select('*'),
       adminDataRequest,
       internalEmployeeDataRequest,
-      clientBookingOptionsRequest
+      bookingOptionsRequest
     ]);
   };
 
-  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}, adminDataResult = {}, internalEmployeeDataResult = {}, clientBookingOptionsResult = {}]) => {
+  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}, adminDataResult = {}, internalEmployeeDataResult = {}, bookingOptionsResult = {}]) => {
     const adminData = adminDataResult.data || {};
     const internalEmployeeData = internalEmployeeDataResult.data || {};
-    const clientBookingOptions = clientBookingOptionsResult.data || {};
+    const bookingOptions = bookingOptionsResult.data || {};
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
+    const fallbackServices = bookingOptions.services || [];
+    const fallbackEmployees = bookingOptions.employees || [];
+    const fallbackEmployeeServices = bookingOptions.employeeServices || [];
+    const fallbackAvailability = bookingOptions.employeeAvailability || [];
 
     setBookings(isAdminView ? adminData.bookings || [] : usesInternalEmployeeData ? internalEmployeeData.bookings || [] : bk || []);
-    setServices(isAdminView ? adminData.services || [] : usesInternalEmployeeData ? internalEmployeeData.services || [] : isClientView ? clientBookingOptions.services || [] : srv || []);
-    setEmployees(isAdminView ? adminData.employees || [] : usesInternalEmployeeData ? internalEmployeeData.employees || [] : isClientView ? clientBookingOptions.employees || [] : emp || []);
-    setEmployeeServices(isAdminView ? adminData.employeeServices || [] : usesInternalEmployeeData ? internalEmployeeData.employeeServices || [] : isClientView ? clientBookingOptions.employeeServices || [] : []);
-    setEmployeeAvailability(usesInternalEmployeeData ? internalEmployeeData.agendaAvailability || internalEmployeeData.availability || [] : isClientView ? clientBookingOptions.employeeAvailability || [] : availabilityResult.data || []);
-    setAvailabilityLoadFailed(isClientView ? Boolean(clientBookingOptionsResult.error) : Boolean(availabilityResult.error));
+    setServices(isAdminView ? adminData.services || fallbackServices : usesInternalEmployeeData ? internalEmployeeData.services || fallbackServices : isClientView ? fallbackServices : srv || []);
+    setEmployees(isAdminView ? adminData.employees || fallbackEmployees : usesInternalEmployeeData ? internalEmployeeData.employees || fallbackEmployees : isClientView ? fallbackEmployees : emp || []);
+    setEmployeeServices(isAdminView ? adminData.employeeServices || fallbackEmployeeServices : usesInternalEmployeeData ? internalEmployeeData.employeeServices || fallbackEmployeeServices : isClientView ? fallbackEmployeeServices : []);
+    setEmployeeAvailability(usesInternalEmployeeData ? internalEmployeeData.agendaAvailability || internalEmployeeData.availability || fallbackAvailability : isClientView || isAdminView ? fallbackAvailability : availabilityResult.data || []);
+    setAvailabilityLoadFailed(isClientView || isAdminView || usesInternalEmployeeData ? Boolean(bookingOptionsResult.error) : Boolean(availabilityResult.error));
   };
 
   const loadAll = async () => {
@@ -397,8 +401,13 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const load = async () => {
       setIsLoadingAvailableEmployees(true);
       const usesLoadedEmployeeData = isAdminView || isClientView || (isEmployeeView && user?.isInternal);
+      const assignedPromotionEmployeeIds = Array.isArray(selectedService?.promotion?.employeeIds)
+        ? selectedService.promotion.employeeIds.map(String)
+        : [];
       const rel = selectedService?.isPromotion
-        ? employees.map((employee) => ({ employee_id: employee.id }))
+        ? employees
+            .filter((employee) => assignedPromotionEmployeeIds.some((id) => String(id) === String(employee.id)))
+            .map((employee) => ({ employee_id: employee.id }))
         : usesLoadedEmployeeData
         ? employeeServices.filter((relation) => Number(relation.service_id) === Number(selectedService.id))
         : (await supabase

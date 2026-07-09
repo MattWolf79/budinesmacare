@@ -15,7 +15,8 @@ const emptyEmployee = {
   code: '',
   active: true,
   is_admin: false,
-  serviceIds: []
+  serviceIds: [],
+  promotionIds: []
 };
 
 const emptyService = {
@@ -80,6 +81,12 @@ const getEmployeeServiceIds = (employeeId, links) =>
   links
     .filter((relation) => relation.employee_id === employeeId)
     .map((relation) => String(relation.service_id));
+
+const getEmployeePromotionIds = (employeeId, promotions) =>
+  promotions
+    .map((promotion, index) => ({ promotion, id: `promotion-${index}` }))
+    .filter(({ promotion }) => Array.isArray(promotion?.employeeIds) && promotion.employeeIds.some((id) => String(id) === String(employeeId)))
+    .map(({ id }) => id);
 
 const getServiceNames = (employeeId, links, services) => {
   const serviceIds = new Set(getEmployeeServiceIds(employeeId, links));
@@ -156,6 +163,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
   const [employeeServices, setEmployeeServices] = useState([]);
+  const [appConfig, setAppConfig] = useState(null);
   const [promotions, setPromotions] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
   const [employeeForm, setEmployeeForm] = useState(emptyEmployee);
@@ -236,6 +244,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     setEmployees(data?.employees || []);
     setServices(data?.services || []);
     setEmployeeServices(data?.employeeServices || []);
+    setAppConfig(configResult.data || null);
     setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
     setAccessRequests(view === 'employees' ? data?.accessRequests || [] : []);
     setIsLoading(false);
@@ -326,6 +335,21 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     });
   };
 
+  const toggleEmployeePromotion = (promotionId) => {
+    setEmployeeForm((current) => {
+      const normalizedId = String(promotionId);
+      const hasPromotion = current.promotionIds.includes(normalizedId);
+      const nextPromotionIds = hasPromotion
+        ? current.promotionIds.filter((currentId) => currentId !== normalizedId)
+        : [...current.promotionIds, normalizedId];
+
+      return {
+        ...current,
+        promotionIds: nextPromotionIds
+      };
+    });
+  };
+
   const editEmployee = (employee) => {
     setEditingEmployeeId(employee.id);
     setIsEmployeeFormOpen(true);
@@ -342,7 +366,37 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       code: employee.code || '',
       active: employee.active !== false,
       is_admin: employee.is_admin === true,
-      serviceIds: getEmployeeServiceIds(employee.id, employeeServices)
+      serviceIds: getEmployeeServiceIds(employee.id, employeeServices),
+      promotionIds: getEmployeePromotionIds(employee.id, promotions)
+    });
+  };
+
+  const saveEmployeePromotionAssignments = async (employeeId) => {
+    if (!employeeId) return { error: null };
+
+    const sourceConfig = appConfig || {};
+    const sourcePromotions = Array.isArray(sourceConfig.promotions) ? sourceConfig.promotions : promotions;
+    const nextPromotions = sourcePromotions.map((promotion, index) => {
+      const promotionId = `promotion-${index}`;
+      const currentEmployeeIds = Array.isArray(promotion?.employeeIds) ? promotion.employeeIds.map(String) : [];
+      const nextEmployeeIds = employeeForm.promotionIds.includes(promotionId)
+        ? Array.from(new Set([...currentEmployeeIds, String(employeeId)]))
+        : currentEmployeeIds.filter((currentId) => String(currentId) !== String(employeeId));
+
+      return {
+        ...promotion,
+        employeeIds: nextEmployeeIds
+      };
+    });
+
+    return supabase.rpc('save_admin_app_configuration', {
+      banner_data_url_value: sourceConfig.banner_data_url || null,
+      banner_file_name_value: sourceConfig.banner_file_name || null,
+      banner_mime_type_value: sourceConfig.banner_mime_type || null,
+      promotions_value: nextPromotions,
+      client_can_choose_employee_value: Boolean(sourceConfig.client_can_choose_employee),
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken
     });
   };
 
@@ -449,6 +503,14 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
     if (!editingEmployeeId) {
       alert(`${payload.is_admin ? 'Administrador' : 'Empleado'} activo creado. Usuario: ${savedEmployee.data.internal_username}. Contraseña inicial: 123456. Se le pedirá cambiarla en el primer ingreso.`);
+    }
+
+    const promotionAssignmentResult = await saveEmployeePromotionAssignments(savedEmployee.data.id);
+
+    if (promotionAssignmentResult.error) {
+      alert(`El empleado se guardó, pero no se pudieron guardar sus promociones:\n${formatSupabaseError(promotionAssignmentResult.error)}`);
+      setIsSaving(false);
+      return;
     }
 
     resetEmployeeForm();
@@ -897,9 +959,10 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                     <button
                       key={promotionService.id}
                       type="button"
-                      className="admin-service-chip admin-promotion-service-chip is-selected"
+                      className={`admin-service-chip admin-promotion-service-chip ${employeeForm.promotionIds.includes(promotionService.id) ? 'is-selected' : ''}`}
                       style={{ '--service-chip-color': promotionService.color }}
                       title="Promoción asignable desde la agenda"
+                      onClick={() => toggleEmployeePromotion(promotionService.id)}
                     >
                       <ActivityIcon service={promotionService} size="small" />
                       {promotionService.name}
