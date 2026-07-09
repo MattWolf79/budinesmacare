@@ -1997,6 +1997,14 @@ code {
   align-items: start;
 }
 
+.employee-layout-summary {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.employee-layout-summary .employee-list {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
 .employee-card {
   padding: 16px;
 }
@@ -7949,12 +7957,23 @@ body {
   white-space: nowrap !important;
 }
 
+.agenda-close-button-single.client-request-secondary {
+  display: block !important;
+  width: fit-content !important;
+  min-width: 112px !important;
+  margin: 14px auto 0 !important;
+  text-align: center !important;
+}
+
 .employee-reservation-modal .client-request-actions {
   display: flex !important;
   justify-content: center !important;
+  flex-wrap: wrap !important;
+  justify-items: center !important;
 }
 
 .employee-reservation-modal .client-request-actions .client-request-secondary {
+  flex: 0 0 auto !important;
   width: auto !important;
   min-width: 112px !important;
   max-width: 160px !important;

@@ -401,6 +401,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     });
 
     return supabase.rpc('save_admin_app_configuration', {
+      company_name_value: sourceConfig.company_name || null,
       banner_data_url_value: sourceConfig.banner_data_url || null,
       banner_file_name_value: sourceConfig.banner_file_name || null,
       banner_mime_type_value: sourceConfig.banner_mime_type || null,

@@ -22,6 +22,7 @@ const normalizePromotions = (promotions) => {
 };
 
 const defaultConfig = {
+  company_name: 'Turnos App',
   banner_data_url: '',
   banner_file_name: '',
   banner_mime_type: '',
@@ -71,6 +72,7 @@ export default function AdminSettingsPanel({ user }) {
     const bannerImages = normalizeBannerImages(config);
     const firstBanner = bannerImages[0] || {};
     const nextConfig = {
+      company_name: String(config?.company_name || 'Turnos App').trim() || 'Turnos App',
       banner_data_url: firstBanner.dataUrl || config?.banner_data_url || '',
       banner_file_name: firstBanner.fileName || config?.banner_file_name || '',
       banner_mime_type: firstBanner.mimeType || config?.banner_mime_type || '',
@@ -209,6 +211,7 @@ export default function AdminSettingsPanel({ user }) {
     setIsSaving(true);
 
     const { data, error } = await supabase.rpc('save_admin_app_configuration', {
+      company_name_value: form.company_name.trim() || null,
       banner_data_url_value: form.banner_data_url || null,
       banner_file_name_value: form.banner_file_name || null,
       banner_mime_type_value: form.banner_mime_type || null,
@@ -249,6 +252,22 @@ export default function AdminSettingsPanel({ user }) {
       </div>
 
       <div className="settings-layout">
+        <article className="admin-form-card settings-card">
+          <div className="agenda-modal-header">Nombre de la empresa</div>
+          <div className="agenda-modal-body settings-card-body">
+            <label>
+              Texto del saludo de bienvenida
+              <input
+                value={form.company_name}
+                maxLength={40}
+                placeholder="Masajes Topbody"
+                onChange={(event) => setForm((current) => ({ ...current, company_name: event.target.value }))}
+              />
+            </label>
+            <p className="settings-empty-text">Se va a mostrar como: Bienvenido a {form.company_name.trim() || 'Turnos App'}</p>
+          </div>
+        </article>
+
         <article className="admin-form-card settings-card">
           <div className="agenda-modal-header">Banner de presentación</div>
           <div className="agenda-modal-body settings-card-body">
@@ -347,7 +366,7 @@ export default function AdminSettingsPanel({ user }) {
               <section className="role-workspace-hero client-welcome-hero settings-preview-hero">
                 <div>
                   <p className="admin-kicker">Bienvenida</p>
-                  <h1>Bienvenido a Turnos App</h1>
+                  <h1>Bienvenido a {form.company_name.trim() || 'Turnos App'}</h1>
                   <p>Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.</p>
                 </div>
                 <span className="role-workspace-icon" aria-hidden="true">🙋</span>

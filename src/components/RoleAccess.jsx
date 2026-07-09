@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import Navbar from './Navbar';
+import { supabase } from '../api/supabaseClient';
 import turnosAppLogo from '../assets/turnos-app-navbar-logo.svg';
 import turnosAppIcon from '../assets/turnos-app-icon.svg';
 
@@ -78,9 +79,34 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const [clientActiveView, setClientActiveView] = useState('home');
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
+  const [companyName, setCompanyName] = useState('Turnos App');
   const profile = profileOptions[selectedProfile];
   const shouldUseClientPhoto = selectedProfile === 'client' && Boolean(user?.photoUrl);
   const isClientProfile = selectedProfile === 'client';
+
+  useEffect(() => {
+    let active = true;
+
+    const loadConfiguration = async () => {
+      const { data, error } = await supabase.rpc('get_app_configuration');
+
+      if (!active || error) return;
+
+      setCompanyName(String(data?.company_name || 'Turnos App').trim() || 'Turnos App');
+    };
+
+    const refreshConfiguration = () => {
+      loadConfiguration();
+    };
+
+    loadConfiguration();
+    window.addEventListener('turnos-app-configuration-saved', refreshConfiguration);
+
+    return () => {
+      active = false;
+      window.removeEventListener('turnos-app-configuration-saved', refreshConfiguration);
+    };
+  }, []);
 
   const changeClientView = (view) => {
     setClientActiveView(view);
@@ -133,7 +159,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
         <section className={`role-workspace-hero ${clientActiveView === 'home' ? 'client-welcome-hero' : 'client-reserve-hero'}`}>
           <div>
             <p className="admin-kicker">{clientActiveView === 'home' ? 'Bienvenida' : 'Reserva'}</p>
-            <h1>{clientActiveView === 'home' ? 'Bienvenido a Turnos App' : 'Reservar turno'}</h1>
+            <h1>{clientActiveView === 'home' ? `Bienvenido a ${companyName}` : 'Reservar turno'}</h1>
             <p>
               {clientActiveView === 'home'
                 ? 'Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.'

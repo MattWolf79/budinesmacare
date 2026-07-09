@@ -244,7 +244,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
             </article>
           </div>
 
-          <div className="employee-layout">
+          <div className="employee-layout employee-layout-summary">
             <article className="employee-card">
               <div className="employee-card-header">
                 <div>

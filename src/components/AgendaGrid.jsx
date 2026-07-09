@@ -391,9 +391,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const fallbackAvailability = bookingOptions.employeeAvailability || [];
 
     setBookings(isAdminView ? adminData.bookings || [] : usesInternalEmployeeData ? internalEmployeeData.bookings || [] : bk || []);
-    setServices(isAdminView ? adminData.services || fallbackServices : usesInternalEmployeeData ? internalEmployeeData.services || fallbackServices : isClientView ? fallbackServices : srv || []);
-    setEmployees(isAdminView ? adminData.employees || fallbackEmployees : usesInternalEmployeeData ? internalEmployeeData.employees || fallbackEmployees : isClientView ? fallbackEmployees : emp || []);
-    setEmployeeServices(isAdminView ? adminData.employeeServices || fallbackEmployeeServices : usesInternalEmployeeData ? internalEmployeeData.employeeServices || fallbackEmployeeServices : isClientView ? fallbackEmployeeServices : []);
+    setServices(isAdminView ? adminData.services || fallbackServices : usesInternalEmployeeData ? fallbackServices.length ? fallbackServices : internalEmployeeData.services || [] : isClientView ? fallbackServices : srv || []);
+    setEmployees(isAdminView ? adminData.employees || fallbackEmployees : usesInternalEmployeeData ? fallbackEmployees.length ? fallbackEmployees : internalEmployeeData.employees || [] : isClientView ? fallbackEmployees : emp || []);
+    setEmployeeServices(isAdminView ? adminData.employeeServices || fallbackEmployeeServices : usesInternalEmployeeData ? fallbackEmployeeServices.length ? fallbackEmployeeServices : internalEmployeeData.employeeServices || [] : isClientView ? fallbackEmployeeServices : []);
     setEmployeeAvailability(usesInternalEmployeeData ? internalEmployeeData.agendaAvailability || internalEmployeeData.availability || fallbackAvailability : isClientView || isAdminView ? fallbackAvailability : availabilityResult.data || []);
     setAvailabilityLoadFailed(isClientView || isAdminView || usesInternalEmployeeData ? Boolean(bookingOptionsResult.error) : Boolean(availabilityResult.error));
   };
