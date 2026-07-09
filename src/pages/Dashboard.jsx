@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Container, Box } from "@mui/material";
+import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/Navbar";
 import AgendaGrid from "../components/AgendaGrid";
 import AdminPanel from "../components/AdminPanel";
@@ -10,6 +11,29 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
 
   const [activeView, setActiveView] = useState('agenda');
   const [adminDataVersion, setAdminDataVersion] = useState(0);
+  const [promotions, setPromotions] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadConfiguration = async () => {
+      const { data, error } = await supabase.rpc('get_app_configuration');
+
+      if (!active || error) return;
+
+      setPromotions(Array.isArray(data?.promotions) ? data.promotions : []);
+    };
+
+    loadConfiguration();
+
+    return () => {
+      active = false;
+    };
+  }, [adminDataVersion]);
+
+  const enabledPromotions = useMemo(() => (
+    promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value))
+  ), [promotions]);
 
   const notifyAdminDataChanged = () => {
     setAdminDataVersion((current) => current + 1);
@@ -40,7 +64,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
       <Box className="dashboard-content">
         {activeView === 'agenda' && (
           <div className="agenda-responsive-shell">
-            <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} />
+            <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} />
           </div>
         )}
         {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} />}

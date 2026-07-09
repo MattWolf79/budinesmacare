@@ -5820,12 +5820,9 @@ body {
 }
 
 .service-button-grid .promotion-record-card {
+  grid-template-columns: 4px minmax(0, 1fr) !important;
   border-color: #bae6fd;
   background: linear-gradient(135deg, #ecfeff 0%, #fff 68%);
-}
-
-.promotion-record-actions {
-  justify-content: center !important;
 }
 
 .admin-managed-badge {

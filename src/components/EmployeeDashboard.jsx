@@ -49,6 +49,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
   const [employee, setEmployee] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [availability, setAvailability] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -68,10 +69,15 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
       setError('');
 
       if (user?.isInternal) {
-        const { data, error: workspaceError } = await supabase.rpc('get_internal_employee_workspace', {
-          account_id_value: user.id,
-          session_token_value: user.sessionToken
-        });
+        const [workspaceResult, configResult] = await Promise.all([
+          supabase.rpc('get_internal_employee_workspace', {
+            account_id_value: user.id,
+            session_token_value: user.sessionToken
+          }),
+          supabase.rpc('get_app_configuration')
+        ]);
+
+        const { data, error: workspaceError } = workspaceResult;
 
         if (!active) {
           return;
@@ -87,6 +93,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
         setEmployee(data?.employee || null);
         setBookings((data?.bookings || []).filter((booking) => String(booking.employee_id) === String(employeeId)));
         setServices(data?.services || []);
+        setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
         setAvailability(data?.availability || []);
         return;
       }
@@ -103,7 +110,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
             .order('weekday', { ascending: true })
             .order('start_time', { ascending: true });
 
-      const [employeeResult, bookingsResult, servicesResult, availabilityResult] = await Promise.all([
+      const [employeeResult, bookingsResult, servicesResult, availabilityResult, configResult] = await Promise.all([
         supabase.from('employees').select('*').eq('id', employeeId).is('deleted_at', null).maybeSingle(),
         supabase
           .from('bookings')
@@ -112,7 +119,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
           .in('status', ['confirmed', 'reserved'])
           .order('start_at', { ascending: true }),
         supabase.from('services').select('*'),
-        availabilityRequest
+        availabilityRequest,
+        supabase.rpc('get_app_configuration')
       ]);
 
       if (!active) {
@@ -131,6 +139,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
       setEmployee(employeeResult.data || null);
       setBookings(bookingsResult.data || []);
       setServices(servicesResult.data || []);
+      setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
       setAvailability(availabilityResult.data || []);
     };
 
@@ -161,6 +170,9 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
     () => availability.filter((item) => item.active !== false),
     [availability]
   );
+  const enabledPromotions = useMemo(() => (
+    promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value))
+  ), [promotions]);
 
   const availabilityDayCount = useMemo(
     () => new Set(activeAvailability.map((item) => Number(item.weekday))).size,
@@ -286,6 +298,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
             employeeId={employeeId}
             refreshKey={refreshKey}
             onBookingsChanged={refreshEmployeeWorkspace}
+            promotions={enabledPromotions}
           />
         </article>
       )}

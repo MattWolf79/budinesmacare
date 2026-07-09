@@ -894,15 +894,16 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                     </button>
                   ))}
                   {promotionServices.map((promotionService) => (
-                    <span
+                    <button
                       key={promotionService.id}
+                      type="button"
                       className="admin-service-chip admin-promotion-service-chip is-selected"
                       style={{ '--service-chip-color': promotionService.color }}
                       title="Promoción asignable desde la agenda"
                     >
                       <ActivityIcon service={promotionService} size="small" />
                       {promotionService.name}
-                    </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1133,9 +1134,6 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                 <div className="admin-record-services">
                   {promotionService.promotion?.value || 'Sin valor cargado'} · Se administra desde Configuración
                 </div>
-              </div>
-              <div className="admin-record-actions promotion-record-actions">
-                <span className="admin-managed-badge">Config.</span>
               </div>
             </article>
           ))}
