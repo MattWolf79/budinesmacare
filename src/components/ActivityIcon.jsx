@@ -17,6 +17,7 @@ const getIconType = (service) => {
 
 const getDisplayEmoji = (service) => {
   const icon = String(service?.icon || '').trim();
+  if (icon === 'whatsapp' || icon === 'telegram') return null;
   return icon || null;
 };
 
@@ -59,11 +60,23 @@ const iconPaths = {
       <path d="M18 4.5v3" />
       <path d="M16.5 6h3" />
     </>
+  ),
+  whatsapp: (
+    <>
+      <path d="M4.2 19.8 5.3 16.2a7.2 7.2 0 1 1 2.7 2.6Z" />
+      <path d="M8.7 8.7c.2-.5.4-.6.8-.6h.5c.2 0 .4.1.5.4l.7 1.6c.1.3.1.5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.5-.5c.2-.2.4-.3.7-.1l1.6.7c.3.1.4.3.4.6v.5c0 .4-.2.7-.6.8-.6.2-1.4.1-2.2-.2-2.6-.9-4.6-2.9-5.5-5.5-.3-.8-.3-1.6-.1-2.2Z" />
+    </>
+  ),
+  telegram: (
+    <>
+      <path d="M20 5.2 17.1 19c-.2.9-.8 1.1-1.5.7l-4.2-3.1-2 1.9c-.2.2-.4.4-.9.4l.3-4.3L16.7 7.5c.3-.3-.1-.5-.5-.2l-9.7 6.1-4.2-1.3c-.9-.3-.9-.9.2-1.3l16.3-6.3c.8-.3 1.4.2 1.2.7Z" />
+    </>
   )
 };
 
 export default function ActivityIcon({ service, size = 'medium', variant = 'activity' }) {
-  const iconType = getIconType(service);
+  const customIcon = String(service?.icon || '').trim();
+  const iconType = iconPaths[customIcon] ? customIcon : getIconType(service);
   const displayEmoji = getDisplayEmoji(service);
   const classes = [
     'activity-icon',

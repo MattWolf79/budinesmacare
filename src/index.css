@@ -1827,6 +1827,21 @@ code {
   }
 }
 
+@media (max-width: 640px) {
+  .role-workspace-client .client-promotions-grid,
+  .client-promotions-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .role-workspace-client .client-promotion-card,
+  .client-promotion-card {
+    width: auto !important;
+    min-width: 0 !important;
+  }
+}
+
 .client-selected-promotion {
   display: flex;
   align-items: center;

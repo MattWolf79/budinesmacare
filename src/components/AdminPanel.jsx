@@ -42,6 +42,10 @@ const serviceIconGroups = [
   {
     label: 'Profesiones',
     icons: ['👩‍⚕️', '👨‍⚕️', '👩‍🔬', '👨‍🔬', '👩‍🏫', '👨‍🏫', '👩‍💼', '👨‍💼', '🧑‍🍳', '🧑‍🎨', '🧑‍🔧', '🧑‍💻']
+  },
+  {
+    label: 'Redes',
+    icons: ['whatsapp', 'telegram', '☎️', '💬', '📲', '📩', '📞', '🌐']
   }
 ];
 
@@ -87,13 +91,19 @@ const getEmployeePromotionIds = (employeeId, promotions) =>
     .filter(({ promotion }) => Array.isArray(promotion?.employeeIds) && promotion.employeeIds.some((id) => String(id) === String(employeeId)))
     .map(({ id }) => id);
 
-const getServiceNames = (employeeId, links, services) => {
+const getEmployeeActivityNames = (employeeId, links, services, promotions) => {
   const serviceIds = new Set(getEmployeeServiceIds(employeeId, links));
+  const promotionNames = promotions
+    .filter((promotion) => Array.isArray(promotion?.employeeIds) && promotion.employeeIds.some((id) => String(id) === String(employeeId)))
+    .map((promotion) => promotion.title || promotion.name)
+    .filter(Boolean);
 
-  return services
+  return [
+    ...services
     .filter((service) => serviceIds.has(String(service.id)))
-    .map((service) => service.name)
-    .join(' · ');
+    .map((service) => service.name),
+    ...promotionNames
+  ].join(' · ');
 };
 
 const serviceMatchesPayload = (service, payload) =>
@@ -987,7 +997,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                   <div className="admin-record-profile-line">
                     {employee.phone || 'Sin celular'}
                   </div>
-                  <div className="admin-record-services">{getServiceNames(employee.id, employeeServices, services) || 'Sin actividades asignadas'}</div>
+                  <div className="admin-record-services">{getEmployeeActivityNames(employee.id, employeeServices, services, promotions) || 'Sin actividades asignadas'}</div>
                 </div>
                 <div className="admin-record-actions">
                   <button className="agenda-close-button employee-list-action" type="button" onClick={() => editEmployee(employee)} aria-label="Editar empleado" title="Editar empleado">
@@ -1044,13 +1054,6 @@ export default function AdminPanel({ view, user, onDataChanged }) {
           <strong>{employeeServices.length}</strong>
           <small>Empleado por actividad.</small>
         </article>
-      </div>
-
-      <div className="admin-status-tabs service-status-tabs" aria-label="Estados de referencia">
-        <span className="is-success">Activa</span>
-        <span className="is-info">Editable</span>
-        <span className="is-warning">Pausada</span>
-        <span className="is-danger">Eliminable</span>
       </div>
 
       <div className="admin-hero service-legacy-heading">
@@ -1117,7 +1120,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                                 className={`admin-emoji-button ${serviceForm.icon === icon ? 'is-selected' : ''}`}
                                 onClick={() => selectServiceIcon(icon)}
                               >
-                                {icon}
+                                {icon === 'whatsapp' || icon === 'telegram' ? <ActivityIcon service={{ icon, color: serviceForm.color }} size="small" /> : icon}
                               </button>
                             ))}
                           </div>
