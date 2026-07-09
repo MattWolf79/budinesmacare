@@ -52,12 +52,6 @@ const formatAvailabilityTime = (value) => String(value || '').slice(0, 5);
 
 const getTodayWeekday = () => new Date().getDay();
 
-const getProfileInitials = (label) => {
-  const parts = String(label || 'Empleado').trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  return String(parts[0]?.[0] || 'E').toUpperCase();
-};
-
 export default function EmployeeDashboard({ user, activeView = 'summary' }) {
   const [employee, setEmployee] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -251,17 +245,6 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
           </div>
 
           <div className="employee-layout">
-            <article className="employee-card employee-profile-card">
-              <span className="employee-profile-avatar" aria-hidden="true">
-                {employee?.photo_url || user?.photoUrl ? (
-                  <img src={employee?.photo_url || user?.photoUrl} alt="" />
-                ) : getProfileInitials(employee?.name || user?.displayName || user?.email)}
-              </span>
-              <p className="admin-kicker">Empleado</p>
-              <h2>{employee?.name || user?.email || 'Empleado'}</h2>
-              <p>{employee?.active === false ? 'Perfil inactivo' : 'Perfil activo'}</p>
-            </article>
-
             <article className="employee-card">
               <div className="employee-card-header">
                 <div>

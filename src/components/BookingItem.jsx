@@ -40,6 +40,7 @@ export default function BookingItem({
     ? String(booking.booking_description || '').split('·')[0].trim()
     : '';
   const agendaLabel = displayLabel || (isPromotionBooking ? promotionTitle || 'Promo' : bookingLabel);
+  const [primaryLabel, secondaryLabel] = String(agendaLabel).split(' / ');
 
   return (
     <div
@@ -94,18 +95,18 @@ export default function BookingItem({
       <span
         className="agenda-booking-label"
         style={{
-          display: '-webkit-box',
+          display: 'flex',
+          flexDirection: 'column',
           minWidth: 0,
+          maxWidth: '100%',
           overflow: 'hidden',
           textAlign: 'center',
-          textOverflow: 'ellipsis',
           whiteSpace: 'normal',
-          lineHeight: 1.15,
-          WebkitBoxOrient: 'vertical',
-          WebkitLineClamp: 2
+          lineHeight: 1.08
         }}
       >
-        {agendaLabel}
+        <span className="agenda-booking-label-primary">{primaryLabel}</span>
+        {secondaryLabel && <span className="agenda-booking-label-secondary">{secondaryLabel}</span>}
       </span>
 
       {canCancel && (

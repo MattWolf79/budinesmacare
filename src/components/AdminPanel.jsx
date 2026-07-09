@@ -45,7 +45,11 @@ const serviceIconGroups = [
   },
   {
     label: 'Redes',
-    icons: ['whatsapp', 'telegram', '☎️', '💬', '📲', '📩', '📞', '🌐']
+    icons: ['whatsapp', 'telegram', '☎️', '💬', '💭', '📲', '📱', '📩', '📧', '📞', '📢', '📣', '🔔', '🌐', '🔗', '📍']
+  },
+  {
+    label: 'Comercio',
+    icons: ['🛒', '🛍️', '💳', '💵', '💰', '🧾', '🏷️', '📦', '🚚', '⭐', '✅', '🕒']
   }
 ];
 
