@@ -2048,23 +2048,33 @@ code {
 
 .employee-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .employee-booking-row {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas:
     "icon body"
     "time time";
-  gap: 6px 10px;
+  gap: 5px 8px;
   align-items: center;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  min-height: 82px;
-  padding: 9px;
+  min-height: 70px;
+  padding: 8px 8px 8px 12px;
   background: #f8fafc;
+  overflow: hidden;
+}
+
+.employee-booking-row::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--employee-booking-color, #3fc9d5);
+  content: '';
 }
 
 .employee-booking-row .activity-icon {
@@ -2080,7 +2090,7 @@ code {
   display: block;
   overflow: hidden;
   color: #1f2937;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2090,7 +2100,7 @@ code {
 .employee-booking-row time,
 .employee-empty-line {
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -2110,6 +2120,12 @@ code {
 @media (max-width: 760px) {
   .employee-list {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  .employee-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

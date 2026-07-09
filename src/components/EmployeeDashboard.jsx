@@ -280,7 +280,11 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
                   const bookingLabel = booking.booking_description || service?.name || 'Actividad';
 
                   return (
-                    <div className="employee-booking-row" key={booking.id}>
+                    <div
+                      className="employee-booking-row"
+                      key={booking.id}
+                      style={{ '--employee-booking-color': service?.color || '#3fc9d5' }}
+                    >
                       <ActivityIcon service={service} size="small" />
                       <div>
                         <strong>{bookingLabel}</strong>
