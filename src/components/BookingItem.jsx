@@ -15,6 +15,7 @@ export default function BookingItem({
   canViewCustomer = true,
   customerLabel,
   displayLabel,
+  employeeLabel,
   compact = false
 }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -71,7 +72,7 @@ export default function BookingItem({
         position: 'relative',
         zIndex: isHovered ? 20 : 1,
         overflow: 'visible',
-        minHeight: compact ? 38 : 24,
+        minHeight: compact ? 38 : 34,
         display: 'flex',
         flexDirection: compact ? 'column' : 'row',
         alignItems: 'center',
@@ -93,14 +94,15 @@ export default function BookingItem({
       <span
         className="agenda-booking-label"
         style={{
-          display: compact ? '-webkit-box' : 'block',
+          display: '-webkit-box',
           minWidth: 0,
           overflow: 'hidden',
           textAlign: 'center',
           textOverflow: 'ellipsis',
-          whiteSpace: compact ? 'normal' : 'nowrap',
-          WebkitBoxOrient: compact ? 'vertical' : undefined,
-          WebkitLineClamp: compact ? 2 : undefined
+          whiteSpace: 'normal',
+          lineHeight: 1.15,
+          WebkitBoxOrient: 'vertical',
+          WebkitLineClamp: 2
         }}
       >
         {agendaLabel}
@@ -148,7 +150,7 @@ export default function BookingItem({
           <div className="agenda-detail-body">
             <div className="agenda-detail-title"><ActivityIcon service={service} size="small" /> <b>{service?.name}</b></div>
             {booking.booking_description && <div>🏷 {booking.booking_description}</div>}
-            {employee?.name && <div>👤 {employee.name}</div>}
+            {(employeeLabel || employee?.name) && <div>👤 {employeeLabel || employee.name}</div>}
             <div>🧍 {canViewCustomer ? customerDetail : customerLabel || 'Turno reservado'}</div>
             <div className="agenda-detail-time">
               ⏱ {startTime} - {endTime}

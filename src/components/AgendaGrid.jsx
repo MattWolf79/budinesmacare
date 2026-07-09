@@ -1189,9 +1189,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                     {slotBookings.map(b => {
                       const service = services.find(s => Number(s.id) === Number(b.service));
                       const emp = employees.find(e => e.id === b.employee_id);
+                      const employeeLabel = formatPersonShortName(emp);
                       const isOwn = isOwnBooking(b);
                       const isAssigned = isAssignedBooking(b);
-                      const displayLabel = `${getBookingActivityLabel(b, service)} / ${formatPersonShortName(emp)}`;
+                      const displayLabel = `${getBookingActivityLabel(b, service)} / ${employeeLabel}`;
 
                       return (
                         <BookingItem
@@ -1204,6 +1205,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                           canViewCustomer={isAdminView || isOwn || (isEmployeeView && isAssigned)}
                           customerLabel={isOwn ? 'Tu turno' : 'Turno reservado'}
                           displayLabel={displayLabel}
+                          employeeLabel={employeeLabel}
                           compact={isCompactAgenda}
                           onCancel={() => setBookingToCancel({
                             booking: b,
