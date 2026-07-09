@@ -862,14 +862,26 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   };
 
   const openAssignmentRequest = async (booking) => {
-    const service = services.find((item) => Number(item.id) === Number(booking.service));
+    const isPromotionBooking = !booking.service && Boolean(booking.booking_description);
+    const service = isPromotionBooking
+      ? {
+          id: null,
+          isPromotion: true,
+          name: booking.booking_description,
+          icon: '✨',
+          color: '#67e8f9',
+          active: true
+        }
+      : services.find((item) => Number(item.id) === Number(booking.service));
     const range = buildRangeFromBooking(booking);
 
     setAssignmentRequest({ booking, service, range });
     setAssignmentEmployees([]);
     setIsLoadingAssignmentEmployees(true);
 
-    const relResult = isAdminView
+    const relResult = isPromotionBooking
+      ? { data: employees.map((employee) => ({ employee_id: employee.id })), error: null }
+      : isAdminView
       ? { data: employeeServices.filter((relation) => Number(relation.service_id) === Number(booking.service)), error: null }
       : user?.isInternal && isEmployeeView
         ? { data: employeeServices.filter((relation) => Number(relation.service_id) === Number(booking.service)), error: null }
@@ -1265,7 +1277,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
               {isLoadingAssignmentEmployees ? (
                 <div className="agenda-empty-state">Buscando empleados de esta actividad...</div>
               ) : assignmentEmployees.length === 0 ? (
-                <div className="agenda-empty-state">No hay empleados activos vinculados a esta actividad.</div>
+                <div className="agenda-empty-state">No hay empleados activos disponibles para esta solicitud.</div>
               ) : (
                 <div className="assignment-employee-grid">
                   {assignmentEmployees.map((employee) => {

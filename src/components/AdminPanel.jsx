@@ -156,6 +156,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
   const [employeeServices, setEmployeeServices] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
   const [employeeForm, setEmployeeForm] = useState(emptyEmployee);
   const [serviceForm, setServiceForm] = useState(emptyService);
@@ -172,6 +173,22 @@ export default function AdminPanel({ view, user, onDataChanged }) {
   const activeServices = useMemo(
     () => services.filter((service) => service.active !== false),
     [services]
+  );
+  const enabledPromotions = useMemo(
+    () => promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value)),
+    [promotions]
+  );
+  const promotionServices = useMemo(
+    () => enabledPromotions.map((promotion, index) => ({
+      id: `promotion-${index}`,
+      name: promotion.title || 'Promoción',
+      icon: '✨',
+      color: '#67e8f9',
+      default_duration: 30,
+      active: true,
+      promotion
+    })),
+    [enabledPromotions]
   );
 
   const employeeUsernamePreview = useMemo(
@@ -199,11 +216,16 @@ export default function AdminPanel({ view, user, onDataChanged }) {
   const loadAdminData = useCallback(async () => {
     setIsLoading(true);
 
-    const { data, error } = await supabase.rpc('get_admin_panel_data', {
-      account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken,
-      request_status_value: view === 'employees' ? 'pending' : null
-    });
+    const [adminResult, configResult] = await Promise.all([
+      supabase.rpc('get_admin_panel_data', {
+        account_id_value: internalAdminAccountId,
+        session_token_value: internalSessionToken,
+        request_status_value: view === 'employees' ? 'pending' : null
+      }),
+      supabase.rpc('get_app_configuration')
+    ]);
+
+    const { data, error } = adminResult;
 
     if (error) {
       alert(`No se pudo cargar la administración. ${formatSupabaseError(error)}`);
@@ -214,6 +236,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     setEmployees(data?.employees || []);
     setServices(data?.services || []);
     setEmployeeServices(data?.employeeServices || []);
+    setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
     setAccessRequests(view === 'employees' ? data?.accessRequests || [] : []);
     setIsLoading(false);
   }, [internalAdminAccountId, internalSessionToken, view]);
@@ -870,6 +893,17 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                       {service.name}
                     </button>
                   ))}
+                  {promotionServices.map((promotionService) => (
+                    <span
+                      key={promotionService.id}
+                      className="admin-service-chip admin-promotion-service-chip is-selected"
+                      style={{ '--service-chip-color': promotionService.color }}
+                      title="Promoción asignable desde la agenda"
+                    >
+                      <ActivityIcon service={promotionService} size="small" />
+                      {promotionService.name}
+                    </span>
+                  ))}
                 </div>
               </div>
 
@@ -1084,6 +1118,24 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                 <button className="agenda-danger-button service-card-action" type="button" onClick={() => deleteService(service)} aria-label="Eliminar actividad" title="Eliminar actividad">
                   Eliminar
                 </button>
+              </div>
+            </article>
+          ))}
+          {promotionServices.map((promotionService) => (
+            <article className="admin-record-card service-record-card promotion-record-card" key={promotionService.id}>
+              <div className="admin-record-color" style={{ background: promotionService.color }} />
+              <div className="admin-record-main">
+                <div className="admin-record-title admin-record-title-icon"><ActivityIcon service={promotionService} size="small" /> {promotionService.name}</div>
+                <div className="service-record-badges">
+                  <span>Promo</span>
+                  <span className="is-success">Activa</span>
+                </div>
+                <div className="admin-record-services">
+                  {promotionService.promotion?.value || 'Sin valor cargado'} · Se administra desde Configuración
+                </div>
+              </div>
+              <div className="admin-record-actions promotion-record-actions">
+                <span className="admin-managed-badge">Config.</span>
               </div>
             </article>
           ))}

@@ -2772,6 +2772,14 @@ code {
   background: #3fc9d5;
 }
 
+.admin-promotion-service-chip,
+.admin-promotion-service-chip.is-selected {
+  color: #0e7490;
+  border-color: #67e8f9;
+  background: #cffafe;
+  cursor: default;
+}
+
 .admin-emoji-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -5809,6 +5817,29 @@ body {
 .service-button-grid .service-record-card.is-muted {
   opacity: 1;
   background: #f9fafb;
+}
+
+.service-button-grid .promotion-record-card {
+  border-color: #bae6fd;
+  background: linear-gradient(135deg, #ecfeff 0%, #fff 68%);
+}
+
+.promotion-record-actions {
+  justify-content: center !important;
+}
+
+.admin-managed-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  border: 1px solid #67e8f9;
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: #0e7490;
+  background: #cffafe;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .service-button-grid .admin-record-color {

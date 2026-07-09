@@ -26,7 +26,7 @@ const formatBookingTime = (startValue, endValue) => {
   return `${pad(start.getHours())}:${pad(start.getMinutes())} - ${pad(end.getHours())}:${pad(end.getMinutes())}`;
 };
 
-export default function ClientDashboard({ user, showAgenda = true, selectedPromotion = null, onReservePromotion, onReserveTurn }) {
+export default function ClientDashboard({ user, showAgenda = true, selectedPromotion = null, onReservePromotion, onReserveTurn, activityLegend = null }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [appConfig, setAppConfig] = useState(null);
@@ -130,6 +130,8 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
           Reservar Turno
         </button>
       )}
+
+      {!showAgenda && activityLegend}
 
       {!showAgenda && <div className="client-summary-panel">
         <div className="client-summary-header">

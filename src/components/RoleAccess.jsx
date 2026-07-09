@@ -181,7 +181,6 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
                 ? 'Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.'
                 : 'Seleccioná un horario disponible en la grilla para crear tu próximo turno.'}
             </p>
-            <ServiceColorLegend />
           </div>
           <span className={`role-workspace-icon ${shouldUseClientPhoto ? 'has-photo' : ''}`} aria-hidden="true">
             <UserPhoto user={shouldUseClientPhoto ? user : null} fallback={profile.icon} />
@@ -210,6 +209,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             setSelectedPromotion(null);
             setClientActiveView('reserve');
           }}
+          activityLegend={<ServiceColorLegend />}
         />
       ) : selectedProfile === 'employee' ? (
         <EmployeeDashboard user={user} activeView={employeeActiveView} />
