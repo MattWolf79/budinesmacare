@@ -33,6 +33,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [configRefreshKey, setConfigRefreshKey] = useState(0);
+  const [bannerIndex, setBannerIndex] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -114,15 +115,56 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
   const selectedPromotionLabel = selectedPromotion
     ? [selectedPromotion.title, selectedPromotion.value].filter(Boolean).join(' · ')
     : '';
+  const bannerImages = useMemo(() => {
+    const configuredImages = Array.isArray(appConfig?.banner_images)
+      ? appConfig.banner_images.filter((image) => image?.dataUrl)
+      : [];
+
+    if (configuredImages.length) return configuredImages.slice(0, 4);
+    if (appConfig?.banner_data_url) {
+      return [{
+        dataUrl: appConfig.banner_data_url,
+        fileName: appConfig.banner_file_name || '',
+        mimeType: appConfig.banner_mime_type || ''
+      }];
+    }
+
+    return [];
+  }, [appConfig]);
+
+  useEffect(() => {
+    if (showAgenda || bannerImages.length <= 1) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      setBannerIndex((current) => (current + 1) % bannerImages.length);
+    }, 4500);
+
+    return () => window.clearInterval(intervalId);
+  }, [bannerImages.length, showAgenda]);
 
   const refreshBookings = () => {
     setRefreshKey((current) => current + 1);
   };
+  const activeBannerIndex = bannerImages.length ? bannerIndex % bannerImages.length : 0;
 
   return (
     <section className="client-dashboard">
-      {!showAgenda && appConfig?.banner_data_url && (
-        <img className="client-home-banner" src={appConfig.banner_data_url} alt="Presentación de la empresa" />
+      {!showAgenda && bannerImages.length > 0 && (
+        <div className="client-home-banner-carousel" aria-label="Presentación de la empresa">
+          <div
+            className="client-home-banner"
+            role="img"
+            aria-label="Presentación de la empresa"
+            style={{ backgroundImage: `url(${bannerImages[activeBannerIndex]?.dataUrl})` }}
+          />
+          {bannerImages.length > 1 && (
+            <div className="client-home-banner-dots" aria-hidden="true">
+              {bannerImages.map((_, index) => (
+                <span className={index === activeBannerIndex ? 'is-active' : ''} key={index} />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {!showAgenda && (

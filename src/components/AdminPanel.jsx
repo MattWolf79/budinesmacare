@@ -393,6 +393,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       banner_data_url_value: sourceConfig.banner_data_url || null,
       banner_file_name_value: sourceConfig.banner_file_name || null,
       banner_mime_type_value: sourceConfig.banner_mime_type || null,
+      banner_images_value: Array.isArray(sourceConfig.banner_images) ? sourceConfig.banner_images : [],
       promotions_value: nextPromotions,
       client_can_choose_employee_value: Boolean(sourceConfig.client_can_choose_employee),
       account_id_value: internalAdminAccountId,

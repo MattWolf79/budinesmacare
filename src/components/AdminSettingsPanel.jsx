@@ -25,8 +25,31 @@ const defaultConfig = {
   banner_data_url: '',
   banner_file_name: '',
   banner_mime_type: '',
+  banner_images: [],
   promotions: [emptyPromotion(), emptyPromotion()],
   client_can_choose_employee: false
+};
+
+const normalizeBannerImages = (config) => {
+  const bannerImages = Array.isArray(config?.banner_images) ? config.banner_images : [];
+  const normalizedImages = bannerImages
+    .filter((image) => image?.dataUrl)
+    .slice(0, 4)
+    .map((image) => ({
+      dataUrl: String(image.dataUrl || ''),
+      fileName: String(image.fileName || ''),
+      mimeType: String(image.mimeType || '')
+    }));
+
+  if (!normalizedImages.length && config?.banner_data_url) {
+    return [{
+      dataUrl: String(config.banner_data_url || ''),
+      fileName: String(config.banner_file_name || ''),
+      mimeType: String(config.banner_mime_type || '')
+    }];
+  }
+
+  return normalizedImages;
 };
 
 export default function AdminSettingsPanel({ user }) {
@@ -41,10 +64,13 @@ export default function AdminSettingsPanel({ user }) {
   ), [form.promotions]);
 
   const applyConfig = (config) => {
+    const bannerImages = normalizeBannerImages(config);
+    const firstBanner = bannerImages[0] || {};
     const nextConfig = {
-      banner_data_url: config?.banner_data_url || '',
-      banner_file_name: config?.banner_file_name || '',
-      banner_mime_type: config?.banner_mime_type || '',
+      banner_data_url: firstBanner.dataUrl || config?.banner_data_url || '',
+      banner_file_name: firstBanner.fileName || config?.banner_file_name || '',
+      banner_mime_type: firstBanner.mimeType || config?.banner_mime_type || '',
+      banner_images: bannerImages,
       promotions: normalizePromotions(config?.promotions),
       client_can_choose_employee: Boolean(config?.client_can_choose_employee)
     };
@@ -104,26 +130,60 @@ export default function AdminSettingsPanel({ user }) {
   };
 
   const changeBanner = (event) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files || []);
 
-    if (!file) return;
+    if (!files.length) return;
 
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      alert('El banner debe ser JPG o PNG.');
+    const availableSlots = 4 - form.banner_images.length;
+
+    if (availableSlots <= 0) {
+      alert('El carrusel permite hasta 4 imágenes.');
       event.target.value = '';
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
+    const selectedFiles = files.slice(0, availableSlots);
+
+    if (selectedFiles.some((file) => !['image/jpeg', 'image/png'].includes(file.type))) {
+      alert('Las imágenes del banner deben ser JPG o PNG.');
+      event.target.value = '';
+      return;
+    }
+
+    Promise.all(selectedFiles.map((file) => new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        dataUrl: String(reader.result || ''),
+        fileName: file.name,
+        mimeType: file.type
+      });
+      reader.readAsDataURL(file);
+    }))).then((newImages) => {
       setForm((current) => ({
         ...current,
-        banner_data_url: String(reader.result || ''),
-        banner_file_name: file.name,
-        banner_mime_type: file.type
+        banner_data_url: newImages[0]?.dataUrl || current.banner_data_url,
+        banner_file_name: newImages[0]?.fileName || current.banner_file_name,
+        banner_mime_type: newImages[0]?.mimeType || current.banner_mime_type,
+        banner_images: [...current.banner_images, ...newImages].slice(0, 4)
       }));
-    };
-    reader.readAsDataURL(file);
+    });
+
+    event.target.value = '';
+  };
+
+  const removeBannerImage = (index) => {
+    setForm((current) => {
+      const nextImages = current.banner_images.filter((_, imageIndex) => imageIndex !== index);
+      const firstBanner = nextImages[0] || {};
+
+      return {
+        ...current,
+        banner_data_url: firstBanner.dataUrl || '',
+        banner_file_name: firstBanner.fileName || '',
+        banner_mime_type: firstBanner.mimeType || '',
+        banner_images: nextImages
+      };
+    });
   };
 
   const clearBanner = () => {
@@ -131,7 +191,8 @@ export default function AdminSettingsPanel({ user }) {
       ...current,
       banner_data_url: '',
       banner_file_name: '',
-      banner_mime_type: ''
+      banner_mime_type: '',
+      banner_images: []
     }));
   };
 
@@ -147,6 +208,7 @@ export default function AdminSettingsPanel({ user }) {
       banner_data_url_value: form.banner_data_url || null,
       banner_file_name_value: form.banner_file_name || null,
       banner_mime_type_value: form.banner_mime_type || null,
+      banner_images_value: form.banner_images,
       promotions_value: form.promotions,
       client_can_choose_employee_value: form.client_can_choose_employee,
       account_id_value: user?.isInternal ? user.id : null,
@@ -187,17 +249,22 @@ export default function AdminSettingsPanel({ user }) {
           <div className="agenda-modal-header">Banner de presentación</div>
           <div className="agenda-modal-body settings-card-body">
             <label className="settings-upload-field">
-              <span>Archivo JPG o PNG</span>
-              <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={changeBanner} />
+              <span>Hasta 4 imágenes JPG o PNG</span>
+              <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" multiple onChange={changeBanner} />
             </label>
 
-            {form.banner_data_url ? (
-              <div className="settings-banner-preview">
-                <img src={form.banner_data_url} alt="Banner configurado" />
-                <div>
-                  <strong>{form.banner_file_name || 'Banner cargado'}</strong>
-                  <button className="agenda-option-button" type="button" onClick={clearBanner}>Quitar imagen</button>
-                </div>
+            {form.banner_images.length ? (
+              <div className="settings-banner-preview-grid">
+                {form.banner_images.map((image, index) => (
+                  <div className="settings-banner-preview" key={`${image.fileName}-${index}`}>
+                    <img src={image.dataUrl} alt={`Banner configurado ${index + 1}`} />
+                    <div>
+                      <strong>{image.fileName || `Imagen ${index + 1}`}</strong>
+                      <button className="agenda-option-button" type="button" onClick={() => removeBannerImage(index)}>Quitar</button>
+                    </div>
+                  </div>
+                ))}
+                <button className="agenda-option-button" type="button" onClick={clearBanner}>Quitar todas</button>
               </div>
             ) : (
               <p className="settings-empty-text">Todavía no hay banner cargado.</p>
@@ -282,8 +349,15 @@ export default function AdminSettingsPanel({ user }) {
                 <span className="role-workspace-icon" aria-hidden="true">🙋</span>
               </section>
 
-              {form.banner_data_url && (
-                <img className="client-home-banner" src={form.banner_data_url} alt="Presentación de la empresa" />
+              {form.banner_images.length > 0 && (
+                <div className="client-home-banner-carousel settings-preview-carousel">
+                  <div
+                    className="client-home-banner"
+                    role="img"
+                    aria-label="Presentación de la empresa"
+                    style={{ backgroundImage: `url(${form.banner_images[0].dataUrl})` }}
+                  />
+                </div>
               )}
 
               <div className="client-summary-panel settings-preview-summary">
