@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import Navbar from './Navbar';
-import { supabase } from '../api/supabaseClient';
 import turnosAppLogo from '../assets/turnos-app-navbar-logo.svg';
 import turnosAppIcon from '../assets/turnos-app-icon.svg';
 
@@ -72,47 +71,6 @@ function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
       <span className="profile-card-title">{profile.label}</span>
       <span className="profile-card-copy">{profile.description}</span>
     </button>
-  );
-}
-
-function ServiceColorLegend() {
-  const [services, setServices] = useState([]);
-
-  useEffect(() => {
-    let active = true;
-
-    const timeoutId = window.setTimeout(async () => {
-      const { data, error } = await supabase
-        .from('services')
-        .select('id, name, color, active')
-        .order('id', { ascending: true });
-
-      if (!active) return;
-
-      if (!error) {
-        setServices((data || []).filter((service) => service.active !== false));
-      }
-    }, 0);
-
-    return () => {
-      active = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, []);
-
-  if (!services.length) {
-    return null;
-  }
-
-  return (
-    <div className="service-color-legend" aria-label="Referencias de colores de actividades">
-      {services.map((service) => (
-        <span className="service-color-item" key={service.id} style={{ '--service-chip-color': service.color || '#94a3b8' }}>
-          <span className="service-color-swatch" style={{ background: service.color || '#94a3b8' }} aria-hidden="true" />
-          {service.name}
-        </span>
-      ))}
-    </div>
   );
 }
 
@@ -209,7 +167,6 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             setSelectedPromotion(null);
             setClientActiveView('reserve');
           }}
-          activityLegend={<ServiceColorLegend />}
         />
       ) : selectedProfile === 'employee' ? (
         <EmployeeDashboard user={user} activeView={employeeActiveView} />

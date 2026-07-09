@@ -831,7 +831,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           customer_email_value: customerEmail || null,
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
           session_token_value: user?.isInternal ? user.sessionToken : null,
-          ...(selectedService.isPromotion ? { booking_description_value: bookingDescription || null } : {})
+          booking_description_value: selectedService.isPromotion ? bookingDescription || null : null
         })
       : user?.isInternal && isEmployeeView
         ? await supabase.rpc('create_internal_employee_booking', {
@@ -843,7 +843,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           customer_email_value: customerEmail || null,
           account_id_value: user.id,
           session_token_value: user.sessionToken,
-          ...(selectedService.isPromotion ? { booking_description_value: bookingDescription || null } : {})
+          booking_description_value: selectedService.isPromotion ? bookingDescription || null : null
         })
       : await supabase.from('bookings').insert({
           user_id: isClientView ? user.id : null,

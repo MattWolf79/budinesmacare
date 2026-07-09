@@ -34,11 +34,15 @@ export default function BookingItem({
     ? `${booking.customer_name}${booking.user_email ? ` · ${booking.user_email}` : ''}`
     : booking.user_email;
   const bookingLabel = employee?.name || service?.name || 'Turno';
-  const agendaLabel = displayLabel || bookingLabel;
+  const isPromotionBooking = !booking.service && Boolean(booking.booking_description);
+  const promotionTitle = isPromotionBooking
+    ? String(booking.booking_description || '').split('·')[0].trim()
+    : '';
+  const agendaLabel = isPromotionBooking ? promotionTitle || 'Promo' : displayLabel || bookingLabel;
 
   return (
     <div
-      className={`agenda-booking-item${compact ? ' agenda-booking-item-compact' : ''}`}
+      className={`agenda-booking-item${compact ? ' agenda-booking-item-compact' : ''}${isPromotionBooking ? ' agenda-booking-item-promotion' : ''}`}
       onMouseDown={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       onMouseEnter={(event) => {
@@ -57,16 +61,17 @@ export default function BookingItem({
       }}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        background: service?.color || '#999',
-        color: 'white',
-        borderRadius: compact ? 8 : 999,
-        padding: compact ? (canCancel ? '6px 29px 6px 8px' : '6px 8px') : (canCancel ? '2px 30px 2px 27px' : '2px 8px 2px 27px'),
+        background: isPromotionBooking ? '#e2e8f0' : '#f8fafc',
+        color: '#334155',
+        border: `1px solid ${isPromotionBooking ? '#94a3b8' : '#cbd5e1'}`,
+        borderRadius: 2,
+        padding: compact ? (canCancel ? '5px 27px 5px 29px' : '5px 8px 5px 29px') : (canCancel ? '3px 27px 3px 25px' : '3px 8px 3px 25px'),
         fontSize: compact ? 11 : 10,
         marginBottom: 1,
         position: 'relative',
         zIndex: isHovered ? 20 : 1,
         overflow: 'visible',
-        minHeight: compact ? 46 : 21,
+        minHeight: compact ? 38 : 24,
         display: 'flex',
         flexDirection: compact ? 'column' : 'row',
         alignItems: 'center',
@@ -80,7 +85,7 @@ export default function BookingItem({
           left: 4,
           top: '50%',
           transform: 'translateY(-50%)',
-          display: compact ? 'none' : 'inline-flex'
+          display: 'inline-flex'
         }}
       >
         <ActivityIcon service={service} size="tiny" variant="agenda" />
@@ -118,13 +123,13 @@ export default function BookingItem({
             top: 0,
             right: 0,
             bottom: 0,
-            width: 26,
+            width: 24,
             height: '100%',
             border: 'none',
             borderRadius: 0,
             padding: 0,
-            background: 'rgba(42,42,42,0.78)',
-            color: 'white',
+            background: '#cbd5e1',
+            color: '#334155',
             cursor: 'pointer',
             lineHeight: 1,
             fontSize: 13,
