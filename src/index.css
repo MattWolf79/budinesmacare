@@ -1570,8 +1570,8 @@ code {
 .client-home-banner {
   display: block;
   width: 100%;
-  max-height: 260px;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   border: 1px solid #d8e0eb;
   border-radius: 8px;
   background: #f8fafc;
@@ -2048,18 +2048,32 @@ code {
 
 .employee-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .employee-booking-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "icon body"
+    "time time";
+  gap: 6px 10px;
   align-items: center;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 10px;
+  min-height: 82px;
+  padding: 9px;
   background: #f8fafc;
+}
+
+.employee-booking-row .activity-icon {
+  grid-area: icon;
+}
+
+.employee-booking-row > div {
+  grid-area: body;
+  min-width: 0;
 }
 
 .employee-booking-row strong {
@@ -2081,6 +2095,7 @@ code {
 }
 
 .employee-booking-row time {
+  grid-area: time;
   justify-self: end;
   white-space: nowrap;
 }
@@ -2090,6 +2105,12 @@ code {
   border-radius: 8px;
   padding: 14px;
   text-align: center;
+}
+
+@media (max-width: 760px) {
+  .employee-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .admin-shell {

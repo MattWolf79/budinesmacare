@@ -26,8 +26,21 @@ const isToday = (value) => {
     date.getDate() === today.getDate();
 };
 
-const getServiceForBooking = (booking, services) =>
-  services.find((service) => String(service.id) === String(booking.service));
+const getServiceForBooking = (booking, services) => {
+  const service = services.find((item) => String(item.id) === String(booking.service));
+
+  if (service) return service;
+  if (!booking.service && booking.booking_description) {
+    return {
+      id: null,
+      name: booking.booking_description,
+      icon: '✨',
+      color: '#3fc9d5'
+    };
+  }
+
+  return null;
+};
 
 const getCustomerLabel = (booking) => (
   booking.customer_name
@@ -264,12 +277,13 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
                   <div className="employee-empty-line">No tenés turnos próximos asignados.</div>
                 ) : upcomingBookings.map((booking) => {
                   const service = getServiceForBooking(booking, services);
+                  const bookingLabel = booking.booking_description || service?.name || 'Actividad';
 
                   return (
                     <div className="employee-booking-row" key={booking.id}>
                       <ActivityIcon service={service} size="small" />
                       <div>
-                        <strong>{service?.name || 'Actividad'}</strong>
+                        <strong>{bookingLabel}</strong>
                         <span>{getCustomerLabel(booking)}</span>
                       </div>
                       <time>{formatDate(booking.start_at)} · {formatTime(booking.start_at)} - {formatTime(booking.end_at)}</time>
