@@ -1570,7 +1570,7 @@ code {
 .client-home-banner {
   display: block;
   width: 100%;
-  height: auto;
+  height: 130px;
   object-fit: contain;
   border: 1px solid #d8e0eb;
   border-radius: 8px;
