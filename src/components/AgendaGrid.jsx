@@ -6,6 +6,7 @@ import CustomerModal from './CustomerModal';
 import EmployeeModal from './EmployeeModal';
 import ServiceModal from './ServiceModal';
 import ActivityIcon from './ActivityIcon';
+import { formatDisplayDate } from '../utils/dateFormat';
 
 const SLOT_MINUTES = 30;
 const START_HOUR = 8;
@@ -897,7 +898,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const formatBookingRangeLabel = (booking) => {
     const range = buildRangeFromBooking(booking);
-    return `${range.startLocal.toLocaleDateString('es-AR')} ${formatTime(range.startLocal)} - ${formatTime(range.endLocal)}`;
+    return `${formatDisplayDate(range.startLocal)} ${formatTime(range.startLocal)} - ${formatTime(range.endLocal)}`;
   };
 
   const openAssignmentRequest = async (booking) => {
@@ -1100,8 +1101,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         <div className="agenda-time-header-spacer" />
         {days.map((d, i) => (
           <div className="agenda-day-heading" key={i}>
-            <span className="agenda-day-name">{d.toLocaleDateString('es-AR', { weekday: 'short' })}</span>
-            <span className="agenda-day-date">{d.toLocaleDateString('es-AR')}</span>
+            <span className="agenda-day-name">{formatDisplayDate(d, { weekday: 'short' }).split(',')[0]}</span>
+            <span className="agenda-day-date">{formatDisplayDate(d)}</span>
           </div>
         ))}
       </div>

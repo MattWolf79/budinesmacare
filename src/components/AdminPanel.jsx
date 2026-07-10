@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import ActivityIcon from './ActivityIcon';
+import { formatDisplayDateTime } from '../utils/dateFormat';
 
 const emptyEmployee = {
   name: '',
@@ -131,13 +132,10 @@ const employeeMatchesPayload = (employee, payload) =>
   (employee.photo_url || null) === payload.photo_url &&
   employee.active === payload.active;
 
-const pad = (value) => String(value).padStart(2, '0');
-
 const formatRequestDate = (value) => {
   if (!value) return 'Sin fecha';
 
-  const date = new Date(value);
-  return `${date.toLocaleDateString()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return formatDisplayDateTime(value);
 };
 
 const calculateAge = (birthDateValue) => {

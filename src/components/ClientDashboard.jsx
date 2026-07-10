@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import ActivityIcon from './ActivityIcon';
 import AgendaGrid from './AgendaGrid';
+import { formatDisplayDate } from '../utils/dateFormat';
 
 const ACTIVE_BOOKING_STATUSES = ['confirmed', 'reserved', 'pending_assignment'];
 
@@ -16,8 +17,7 @@ const formatDateForDb = (date) => (
 );
 
 const formatBookingDate = (value) => {
-  const date = new Date(value);
-  return date.toLocaleDateString([], { weekday: 'short', day: '2-digit', month: '2-digit' });
+  return formatDisplayDate(value, { weekday: 'short' });
 };
 
 const formatBookingTime = (startValue, endValue) => {

@@ -3,13 +3,15 @@ import { supabase } from '../api/supabaseClient';
 import ActivityIcon from './ActivityIcon';
 import AgendaGrid from './AgendaGrid';
 import EmployeeAvailabilityPanel from './EmployeeAvailabilityPanel';
+import { formatDisplayDate } from '../utils/dateFormat';
 
 const parseDate = (value) => value instanceof Date ? value : new Date(value);
 
-const formatDate = (value) => parseDate(value).toLocaleDateString([], {
+const formatDate = (value) => formatDisplayDate(value, {
   weekday: 'short',
   day: '2-digit',
-  month: '2-digit'
+  month: '2-digit',
+  year: 'numeric'
 });
 
 const formatTime = (value) => parseDate(value).toLocaleTimeString([], {
@@ -47,6 +49,17 @@ const getCustomerLabel = (booking) => (
     ? `${booking.customer_name}${booking.user_email ? ` · ${booking.user_email}` : ''}`
     : booking.user_email || 'Cliente sin email'
 );
+
+const getBookingLabelLines = (booking, service) => {
+  if (!booking.service && booking.booking_description) {
+    return String(booking.booking_description)
+      .split(' · ')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  return [service?.name || 'Actividad'];
+};
 
 const formatAvailabilityTime = (value) => String(value || '').slice(0, 5);
 
@@ -259,7 +272,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
                   <div className="employee-empty-line">No tenés turnos próximos asignados.</div>
                 ) : upcomingBookings.map((booking) => {
                   const service = getServiceForBooking(booking, services);
-                  const bookingLabel = booking.booking_description || service?.name || 'Actividad';
+                  const bookingLabelLines = getBookingLabelLines(booking, service);
 
                   return (
                     <div
@@ -269,10 +282,17 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
                     >
                       <ActivityIcon service={service} size="small" />
                       <div>
-                        <strong>{bookingLabel}</strong>
+                        <strong>
+                          {bookingLabelLines.map((line, index) => (
+                            <span className="employee-booking-title-line" key={`${line}-${index}`}>{line}</span>
+                          ))}
+                        </strong>
                         <span>{getCustomerLabel(booking)}</span>
                       </div>
-                      <time>{formatDate(booking.start_at)} · {formatTime(booking.start_at)} - {formatTime(booking.end_at)}</time>
+                      <time>
+                        <span>{formatDate(booking.start_at)}</span>
+                        <span>{formatTime(booking.start_at)} - {formatTime(booking.end_at)}</span>
+                      </time>
                     </div>
                   );
                 })}

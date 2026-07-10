@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import { formatDisplayDate } from '../utils/dateFormat';
 
 const weekdayOptions = [
   { value: 1, short: 'Lun', initial: 'L', label: 'Lunes' },
@@ -78,11 +79,12 @@ const formatDateLabel = (value, weekday) => {
   const date = parseDateInput(value);
   if (!date) return getWeekdayLabel(weekday);
 
-  return new Intl.DateTimeFormat('es-AR', {
+  return formatDisplayDate(date, {
     weekday: 'long',
     day: '2-digit',
-    month: '2-digit'
-  }).format(date);
+    month: '2-digit',
+    year: 'numeric'
+  });
 };
 
 const getEmployeeName = (employees, employeeId, fallback = 'Empleado') =>

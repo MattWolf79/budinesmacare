@@ -736,6 +736,33 @@ code {
   gap: 8px;
 }
 
+.cancel-booking-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cancel-booking-header span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.cancel-booking-activity {
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
 .agenda-booking-mobile-label {
   display: none;
 }
@@ -2091,10 +2118,10 @@ code {
     "icon body"
     "time time";
   gap: 5px 8px;
-  align-items: center;
+  align-items: start;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  min-height: 70px;
+  min-height: 96px;
   padding: 8px 8px 8px 12px;
   background: #f8fafc;
   overflow: hidden;
@@ -2119,12 +2146,15 @@ code {
 
 .employee-booking-row strong {
   display: block;
-  overflow: hidden;
   color: #1f2937;
   font-size: 13px;
   font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.employee-booking-title-line {
+  display: block;
 }
 
 .employee-booking-row span,
@@ -2136,8 +2166,11 @@ code {
 }
 
 .employee-booking-row time {
+  display: flex;
+  flex-direction: column;
   grid-area: time;
-  justify-self: end;
+  justify-self: start;
+  gap: 2px;
   white-space: nowrap;
 }
 
