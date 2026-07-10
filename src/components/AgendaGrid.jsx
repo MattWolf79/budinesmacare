@@ -65,6 +65,14 @@ const capitalizeNamePart = (value) => {
   return `${cleanValue[0].toUpperCase()}${cleanValue.slice(1)}`;
 };
 
+const normalizeComparableText = (value) =>
+  String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+
 const formatPersonShortName = (person) => {
   if (!person) return 'Pendiente';
 
@@ -110,6 +118,44 @@ const formatDateOnlyForDb = (date) => {
 
   return `${year}-${month}-${day}`;
 };
+
+const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  maximumFractionDigits: 0
+}).format(Number(value) || 0);
+
+const parseMoney = (value) => {
+  const normalized = String(value || '')
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+
+  return Number(normalized) || 0;
+};
+
+const getDiscountValue = (discount) => Number(discount?.value ?? discount?.percent) || 0;
+
+const getDiscountKey = (discount) => `${discount?.discountType || 'general'}-${discount?.name}-${discount?.valueType || 'percent'}-${getDiscountValue(discount)}`;
+
+const formatDiscountOption = (discount) => `${discount.name} ${discount.valueType === 'amount' ? formatMoney(getDiscountValue(discount)) : `${getDiscountValue(discount)}%`}`;
+
+const getDiscountAmount = (discount, baseAmount) => {
+  const cleanBaseAmount = Math.max(0, Number(baseAmount) || 0);
+  const discountValue = getDiscountValue(discount);
+  if (discount?.valueType === 'amount') return Math.min(cleanBaseAmount, Math.max(0, discountValue));
+  return Math.round(cleanBaseAmount * Math.min(100, Math.max(0, discountValue))) / 100;
+};
+
+const getClientKey = (booking) => {
+  const email = String(booking.user_email || '').trim().toLowerCase();
+  if (email) return `email:${email}`;
+  return `name:${String(booking.customer_name || 'Cliente sin datos').trim().toLowerCase()}`;
+};
+
+const getClientName = (booking) => booking.customer_name || booking.user_email || 'Cliente sin datos';
+
+const getClientEmail = (booking) => booking.user_email || '';
 
 const buildReservationRange = (day, startSlot, endSlot) => {
   const startLocal = buildSlotDate(day, startSlot);
@@ -252,6 +298,169 @@ const isPastDay = (day) => {
    COMPONENT
 ========================= */
 
+function CloseAttentionModal({ bookings, services, employees, promotions, discounts, accessProfile, employeeId, user, onClose, onClosed }) {
+  const todayInput = formatDateOnlyForDb(new Date());
+  const [serviceDate, setServiceDate] = useState(todayInput);
+  const [selectedClientKey, setSelectedClientKey] = useState('');
+  const [selectedBookingIds, setSelectedBookingIds] = useState(null);
+  const [lineDiscounts, setLineDiscounts] = useState({});
+  const [totalDiscountIds, setTotalDiscountIds] = useState([]);
+  const [payments, setPayments] = useState({ cash: '', transfer: '', card: '' });
+  const [isClosing, setIsClosing] = useState(false);
+  const isEmployeeView = accessProfile === 'employee';
+  const activeDiscounts = useMemo(() => (discounts || []).filter((discount) => discount?.enabled !== false && discount?.name && getDiscountValue(discount) > 0), [discounts]);
+  const lineDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'line' || discount.scope === 'both'));
+  const activityDiscountOptions = activeDiscounts.filter((discount) => discount.discountType === 'activity');
+  const totalDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'total' || discount.scope === 'both'));
+  const dayBookings = useMemo(() => bookings
+    .filter((booking) => isActiveBooking(booking))
+    .filter((booking) => formatDateOnlyForDb(parseBookingDate(booking.start_at)) === serviceDate)
+    .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [bookings, serviceDate]);
+  const clients = useMemo(() => {
+    const map = new Map();
+    dayBookings.forEach((booking) => {
+      const key = getClientKey(booking);
+      const current = map.get(key) || { key, name: getClientName(booking), email: getClientEmail(booking), canEmployeeClose: false };
+      if (String(booking.employee_id) === String(employeeId)) current.canEmployeeClose = true;
+      map.set(key, current);
+    });
+    return [...map.values()].filter((client) => !isEmployeeView || client.canEmployeeClose);
+  }, [dayBookings, employeeId, isEmployeeView]);
+
+  const effectiveSelectedClientKey = clients.some((client) => client.key === selectedClientKey) ? selectedClientKey : clients[0]?.key || '';
+  const clientBookings = useMemo(() => dayBookings.filter((booking) => getClientKey(booking) === effectiveSelectedClientKey), [dayBookings, effectiveSelectedClientKey]);
+  const effectiveSelectedBookingIds = useMemo(() => {
+    const availableIds = clientBookings.map((booking) => booking.id);
+    if (!Array.isArray(selectedBookingIds)) return availableIds;
+    return selectedBookingIds.filter((id) => availableIds.includes(id));
+  }, [clientBookings, selectedBookingIds]);
+  const bookingPriceById = useMemo(() => {
+    const prices = new Map();
+    clientBookings.forEach((booking) => {
+      const service = services.find((item) => Number(item.id) === Number(booking.service));
+      if (service?.base_price != null) {
+        prices.set(booking.id, Number(service.base_price) || 0);
+        return;
+      }
+      const promotionTitle = getBookingActivityLabel(booking, service);
+      const promotion = (promotions || []).find((item) => normalizeComparableText(item?.title) === normalizeComparableText(promotionTitle));
+      prices.set(booking.id, Number(promotion?.price) || parseMoney(promotion?.value || booking.booking_description));
+    });
+    return prices;
+  }, [clientBookings, promotions, services]);
+
+  const selectedItems = useMemo(() => clientBookings
+    .filter((booking) => effectiveSelectedBookingIds.includes(booking.id))
+    .map((booking) => {
+      const service = services.find((item) => Number(item.id) === Number(booking.service));
+      const employee = employees.find((item) => String(item.id) === String(booking.employee_id));
+      const basePrice = bookingPriceById.get(booking.id) || 0;
+      const activityDiscount = activityDiscountOptions.find((discount) =>
+        String(discount.id) === String(service?.activity_discount_check_id) ||
+        (discount.serviceIds || []).some((serviceId) => String(serviceId) === String(service?.id))
+      );
+      const availableLineDiscounts = activityDiscount ? [...lineDiscountOptions, activityDiscount] : lineDiscountOptions;
+      const appliedDiscounts = availableLineDiscounts.filter((discount) => (lineDiscounts[booking.id] || []).includes(getDiscountKey(discount)));
+      const lineDiscountTotal = Math.min(basePrice, appliedDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, basePrice), 0));
+      return {
+        booking,
+        serviceName: getBookingActivityLabel(booking, service),
+        employee,
+        employeeName: formatPersonShortName(employee),
+        basePrice,
+        lineDiscountTotal,
+        subtotal: Math.max(0, basePrice - lineDiscountTotal),
+        appliedDiscounts
+      };
+    }), [activityDiscountOptions, bookingPriceById, clientBookings, effectiveSelectedBookingIds, employees, lineDiscountOptions, lineDiscounts, services]);
+  const grossTotal = selectedItems.reduce((total, item) => total + item.basePrice, 0);
+  const lineDiscountTotal = selectedItems.reduce((total, item) => total + item.lineDiscountTotal, 0);
+  const subtotal = selectedItems.reduce((total, item) => total + item.subtotal, 0);
+  const selectedTotalDiscounts = totalDiscountOptions.filter((discount) => totalDiscountIds.includes(getDiscountKey(discount)));
+  const totalDiscountTotal = Math.min(subtotal, selectedTotalDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, subtotal), 0));
+  const finalTotal = Math.max(0, subtotal - totalDiscountTotal);
+  const paidTotal = parseMoney(payments.cash) + parseMoney(payments.transfer) + parseMoney(payments.card);
+  const paymentDifference = Math.round((paidTotal - finalTotal) * 100) / 100;
+
+  const toggleLineDiscount = (bookingId, discountKey) => {
+    setLineDiscounts((current) => {
+      const currentDiscounts = current[bookingId] || [];
+      return { ...current, [bookingId]: currentDiscounts.includes(discountKey) ? currentDiscounts.filter((key) => key !== discountKey) : [...currentDiscounts, discountKey] };
+    });
+  };
+
+  const confirmClosure = async () => {
+    if (!selectedItems.length) return alert('Seleccioná al menos un turno para cerrar.');
+    if (Math.abs(paymentDifference) > 0.01) return alert('La suma de pagos debe coincidir con el total final.');
+    setIsClosing(true);
+    const selectedClient = clients.find((client) => client.key === effectiveSelectedClientKey);
+    const { error } = await supabase.rpc('close_booking_attention', {
+      service_date_value: serviceDate,
+      client_name_value: selectedClient?.name || null,
+      client_email_value: selectedClient?.email || null,
+      booking_ids_value: selectedItems.map((item) => item.booking.id),
+      closure_items_value: selectedItems.map((item) => ({ bookingId: item.booking.id, serviceName: item.serviceName, employeeId: item.employee?.id || item.booking.employee_id || null, employeeName: item.employeeName, basePrice: item.basePrice, lineDiscountTotal: item.lineDiscountTotal, subtotal: item.subtotal, appliedDiscounts: item.appliedDiscounts })),
+      total_discounts_value: selectedTotalDiscounts,
+      gross_total_value: grossTotal,
+      line_discount_total_value: lineDiscountTotal,
+      total_discount_total_value: totalDiscountTotal,
+      final_total_value: finalTotal,
+      cash_amount_value: parseMoney(payments.cash),
+      transfer_amount_value: parseMoney(payments.transfer),
+      card_amount_value: parseMoney(payments.card),
+      account_id_value: user?.isInternal ? user.id : null,
+      session_token_value: user?.isInternal ? user.sessionToken : null
+    });
+    setIsClosing(false);
+    if (error) return alert(`No se pudo cerrar la atención: ${error.message}`);
+    alert('Atención cerrada.');
+    onClosed?.();
+  };
+
+  return (
+    <div className="modal">
+      <div className="agenda-modal-card close-attention-modal">
+        <div className="agenda-modal-header">Cerrar atención</div>
+        <div className="agenda-modal-body close-attention-body">
+          <div className="close-attention-controls">
+            <label>Fecha<input type="date" max={todayInput} value={serviceDate} onChange={(event) => { setServiceDate(event.target.value); setSelectedClientKey(''); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }} /></label>
+            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
+          </div>
+          <div className="close-attention-items">
+            {clientBookings.length ? clientBookings.map((booking) => {
+              const service = services.find((item) => Number(item.id) === Number(booking.service));
+              const employee = employees.find((item) => String(item.id) === String(booking.employee_id));
+              const item = selectedItems.find((selectedItem) => selectedItem.booking.id === booking.id);
+              const isSelected = effectiveSelectedBookingIds.includes(booking.id);
+              const activityDiscount = activityDiscountOptions.find((discount) =>
+                String(discount.id) === String(service?.activity_discount_check_id) ||
+                (discount.serviceIds || []).some((serviceId) => String(serviceId) === String(service?.id))
+              );
+              const availableLineDiscounts = activityDiscount ? [...lineDiscountOptions, activityDiscount] : lineDiscountOptions;
+              return <article className="close-attention-item" key={booking.id}>
+                <label className="settings-check-row close-attention-item-check"><input type="checkbox" checked={isSelected} onChange={() => setSelectedBookingIds((current) => { const currentIds = Array.isArray(current) ? current : clientBookings.map((itemBooking) => itemBooking.id); return currentIds.includes(booking.id) ? currentIds.filter((id) => id !== booking.id) : [...currentIds, booking.id]; })} /><span>{getBookingActivityLabel(booking, service)}</span></label>
+                <div className="close-attention-item-meta">{formatTime(parseBookingDate(booking.start_at))} - {formatTime(parseBookingDate(booking.end_at))} · {formatPersonShortName(employee)}</div>
+                <div className="close-attention-price-row"><span>Base: {formatMoney(item?.basePrice ?? bookingPriceById.get(booking.id) ?? 0)}</span><strong>Subtotal: {formatMoney(item?.subtotal || 0)}</strong></div>
+                {isSelected && availableLineDiscounts.length > 0 && <div className="close-attention-discounts">{availableLineDiscounts.map((discount) => {
+                  const discountKey = getDiscountKey(discount);
+                  return <label className="settings-check-row" key={`${booking.id}-${discountKey}`}><input type="checkbox" checked={(lineDiscounts[booking.id] || []).includes(discountKey)} onChange={() => toggleLineDiscount(booking.id, discountKey)} /><span>{formatDiscountOption(discount)}</span></label>;
+                })}</div>}
+              </article>;
+            }) : <div className="agenda-empty-state">No hay turnos pendientes de cierre.</div>}
+          </div>
+          {totalDiscountOptions.length > 0 && <div className="close-attention-section"><strong>Descuentos sobre total</strong><div className="close-attention-discounts">{totalDiscountOptions.map((discount) => {
+            const discountKey = getDiscountKey(discount);
+            return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} onChange={() => setTotalDiscountIds((current) => current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey])} /><span>{formatDiscountOption(discount)}</span></label>;
+          })}</div></div>}
+          <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => setPayments((current) => ({ ...current, cash: event.target.value }))} placeholder="0" /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => setPayments((current) => ({ ...current, transfer: event.target.value }))} placeholder="0" /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => setPayments((current) => ({ ...current, card: event.target.value }))} placeholder="0" /></label></div>
+          <div className="close-attention-total"><span>Bruto: {formatMoney(grossTotal)}</span><span>Desc. actividades: -{formatMoney(lineDiscountTotal)}</span><span>Desc. total: -{formatMoney(totalDiscountTotal)}</span><strong>Total final: {formatMoney(finalTotal)}</strong><span>Pagado: {formatMoney(paidTotal)}</span>{Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">Diferencia: {formatMoney(Math.abs(paymentDifference))} {paymentDifference > 0 ? 'de más' : 'pendiente'}</span>}</div>
+          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={onClose}>Cerrar</button><button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !selectedItems.length}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [] }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
@@ -274,6 +483,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [assignmentRequest, setAssignmentRequest] = useState(null);
   const [assignmentEmployees, setAssignmentEmployees] = useState([]);
   const [isLoadingAssignmentEmployees, setIsLoadingAssignmentEmployees] = useState(false);
+  const [closeAttentionOpen, setCloseAttentionOpen] = useState(false);
+  const [closureDiscounts, setClosureDiscounts] = useState([]);
+  const [closurePromotions, setClosurePromotions] = useState(promotions);
 
   const [dragStart, setDragStart] = useState(null);
   const [dragEnd, setDragEnd] = useState(null);
@@ -402,6 +614,13 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const loadAll = async () => {
     const results = await fetchAll();
     applyAll(results);
+  };
+
+  const openCloseAttention = async () => {
+    const { data } = await supabase.rpc('get_app_configuration');
+    setClosureDiscounts(Array.isArray(data?.discounts) ? data.discounts : []);
+    setClosurePromotions(Array.isArray(data?.promotions) ? data.promotions : promotions);
+    setCloseAttentionOpen(true);
   };
 
   useEffect(() => {
@@ -1091,6 +1310,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           ←
         </button>
         <button className="agenda-week-button" onClick={() => setOffset(offset + visibleDayCount)} aria-label="Siguientes dias">→</button>
+        {!isClientView && (
+          <button className="agenda-close-attention-button" type="button" onClick={openCloseAttention}>
+            Cerrar atención
+          </button>
+        )}
       </div>
 
       {/* HEADER */}
@@ -1376,6 +1600,25 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           employee={bookingToCancel.employee}
           onClose={() => setBookingToCancel(null)}
           onConfirm={cancelBooking}
+        />
+      )}
+
+      {closeAttentionOpen && (
+        <CloseAttentionModal
+          bookings={bookings}
+          services={services}
+          employees={employees}
+          promotions={closurePromotions}
+          discounts={closureDiscounts}
+          accessProfile={accessProfile}
+          employeeId={employeeId}
+          user={user}
+          onClose={() => setCloseAttentionOpen(false)}
+          onClosed={async () => {
+            setCloseAttentionOpen(false);
+            await loadAll();
+            onBookingsChanged?.();
+          }}
         />
       )}
 

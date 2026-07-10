@@ -222,6 +222,24 @@ code {
   cursor: not-allowed;
 }
 
+.agenda-close-attention-button {
+  min-height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 7px 14px;
+  color: #334155;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.agenda-close-attention-button:hover {
+  border-color: #20c6d4;
+  background: #effbfd;
+}
+
 .agenda-days-header {
   display: grid;
   align-items: stretch;
@@ -315,6 +333,106 @@ code {
 .agenda-modal-card {
   color: #334155;
   text-align: left;
+}
+
+.close-attention-modal {
+  width: min(94vw, 760px);
+  max-width: min(94vw, 760px) !important;
+}
+
+.close-attention-body {
+  display: grid;
+  gap: 12px;
+  max-height: min(78vh, 720px);
+  overflow: auto;
+}
+
+.close-attention-controls,
+.close-attention-payments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.close-attention-controls label,
+.close-attention-payments label {
+  display: grid;
+  gap: 5px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.close-attention-controls input,
+.close-attention-controls select,
+.close-attention-payments input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #334155;
+  background: #fff;
+  font-weight: 800;
+}
+
+.close-attention-items {
+  display: grid;
+  gap: 8px;
+}
+
+.close-attention-item,
+.close-attention-section,
+.close-attention-total {
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.close-attention-item-check span {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.close-attention-item-meta,
+.close-attention-price-row,
+.close-attention-total span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.close-attention-price-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.close-attention-discounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.close-attention-total {
+  display: grid;
+  gap: 4px;
+}
+
+.close-attention-total strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.close-attention-difference {
+  width: fit-content;
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: #991b1b !important;
+  background: #fee2e2;
 }
 
 .agenda-modal-header,
@@ -2283,6 +2401,7 @@ code {
 
 .settings-upload-field input,
 .settings-promotion-card input,
+.settings-promotion-card select,
 .settings-promotion-card textarea {
   width: 100%;
   border: 1px solid #cbd5e1;
@@ -2302,9 +2421,24 @@ code {
 
 .settings-upload-field input:focus,
 .settings-promotion-card input:focus,
+.settings-promotion-card select:focus,
 .settings-promotion-card textarea:focus {
   border-color: #24aebb;
   box-shadow: 0 0 0 3px rgba(63, 201, 213, 0.18);
+}
+
+.settings-activity-discount-list {
+  display: grid;
+  gap: 7px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fbff;
+}
+
+.settings-activity-discount-list strong {
+  color: #334155;
+  font-size: 12px;
 }
 
 .settings-banner-preview {
@@ -2388,6 +2522,102 @@ code {
   border-radius: 8px;
   padding: 11px;
   background: #f8fafc;
+}
+
+.settings-discount-grid {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.settings-discount-card {
+  gap: 7px;
+  padding: 8px;
+}
+
+.settings-discount-card label {
+  gap: 4px;
+  font-size: 11px;
+}
+
+.settings-discount-card input,
+.settings-discount-card select,
+.settings-discount-card textarea {
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+.settings-discount-card textarea {
+  min-height: 54px;
+}
+
+.settings-card .admin-collapsible-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 38px;
+}
+
+.settings-card .admin-collapsible-form-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border: 1px solid #f3c7ca;
+  border-radius: 999px;
+  color: #c73f43;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  transform: rotate(90deg);
+  transition: transform 0.16s ease;
+}
+
+.settings-card .admin-collapsible-form-toggle[aria-expanded='true'] {
+  transform: rotate(-90deg);
+}
+
+.settings-card .admin-collapsible-form-body.is-collapsed {
+  display: none;
+}
+
+.settings-card .admin-collapsible-form-body.is-open {
+  display: grid;
+}
+
+.settings-section-toolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-check-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-top: 1px solid #e2e8f0;
+  padding: 8px 10px;
+  background: #f8fafc;
+}
+
+.settings-check-summary-chip {
+  border: 1px solid #bae6fd;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #0f172a;
+  background: #ecfeff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.settings-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 .settings-actions {
@@ -6096,6 +6326,21 @@ body {
   color: #0f3ea8;
   border-color: #bfdbfe;
   background: #eff6ff;
+}
+
+.service-record-badges .activity-check-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px !important;
+  padding: 0 !important;
+  color: #047857;
+  border-color: #86efac;
+  background: #ecfdf5;
+  font-weight: 900;
 }
 
 .service-button-grid .admin-record-services {

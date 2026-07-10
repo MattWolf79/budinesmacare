@@ -6,8 +6,50 @@ const emptyPromotion = () => ({
   title: '',
   description: '',
   value: '',
+  price: '',
   employeeIds: []
 });
+
+const emptyDiscount = () => ({
+  enabled: true,
+  discountType: 'general',
+  id: '',
+  name: '',
+  description: '',
+  valueType: 'percent',
+  value: '',
+  percent: '',
+  scope: 'both'
+});
+
+const parseMoney = (value) => {
+  const normalized = String(value || '')
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+
+  return Number(normalized) || 0;
+};
+
+const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  maximumFractionDigits: 0
+}).format(Number(value) || 0);
+
+const normalizeCheckName = (value) => String(value || '')
+  .trim()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-zA-Z0-9]+/g, '_')
+  .replace(/^_+|_+$/g, '')
+  .toLowerCase();
+
+const getActivityCheckDisplayId = (discount, activityIndex) => {
+  const baseId = discount?.id || `check_actividad_${String(activityIndex + 1).padStart(2, '0')}`;
+  const namePart = normalizeCheckName(discount?.name);
+  return namePart ? `${baseId}_${namePart}` : baseId;
+};
 
 const normalizePromotions = (promotions) => {
   const source = Array.isArray(promotions) && promotions.length ? promotions : [emptyPromotion(), emptyPromotion()];
@@ -17,7 +59,24 @@ const normalizePromotions = (promotions) => {
     title: String(promotion?.title || ''),
     description: String(promotion?.description || ''),
     value: String(promotion?.value || ''),
+    price: promotion?.price === 0 || promotion?.price ? String(promotion.price) : String(parseMoney(promotion?.value) || ''),
     employeeIds: Array.isArray(promotion?.employeeIds) ? promotion.employeeIds.map(String) : []
+  }));
+};
+
+const normalizeDiscounts = (discounts) => {
+  const source = Array.isArray(discounts) ? discounts : [];
+
+  return source.map((discount) => ({
+    enabled: discount?.enabled !== false,
+    discountType: ['general', 'activity'].includes(discount?.discountType) ? discount.discountType : 'general',
+    id: String(discount?.id || ''),
+    name: String(discount?.name || ''),
+    description: String(discount?.description || ''),
+    valueType: ['percent', 'amount'].includes(discount?.valueType) ? discount.valueType : 'percent',
+    value: discount?.value === 0 || discount?.value ? String(discount.value) : (discount?.percent === 0 || discount?.percent ? String(discount.percent) : ''),
+    percent: discount?.percent === 0 || discount?.percent ? String(discount.percent) : '',
+    scope: ['line', 'total', 'both'].includes(discount?.scope) ? discount.scope : 'both'
   }));
 };
 
@@ -28,6 +87,7 @@ const defaultConfig = {
   banner_mime_type: '',
   banner_images: [],
   promotions: [emptyPromotion(), emptyPromotion()],
+  discounts: [],
   client_can_choose_employee: false
 };
 
@@ -59,6 +119,10 @@ export default function AdminSettingsPanel({ user }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [bannerOpen, setBannerOpen] = useState(false);
+  const [promotionsOpen, setPromotionsOpen] = useState(false);
+  const [discountsOpen, setDiscountsOpen] = useState(false);
+  const [activityChecksOpen, setActivityChecksOpen] = useState(false);
 
   const enabledPromotions = useMemo(() => (
     form.promotions.filter((promotion) => promotion.enabled)
@@ -67,6 +131,8 @@ export default function AdminSettingsPanel({ user }) {
     if (!form.banner_images.length) return [];
     return Array.from({ length: 4 }, (_, index) => form.banner_images[index % form.banner_images.length]);
   }, [form.banner_images]);
+  const generalDiscounts = useMemo(() => form.discounts.map((discount, index) => ({ discount, index })).filter(({ discount }) => discount.discountType !== 'activity'), [form.discounts]);
+  const activityDiscounts = useMemo(() => form.discounts.map((discount, index) => ({ discount, index })).filter(({ discount }) => discount.discountType === 'activity'), [form.discounts]);
 
   const applyConfig = (config) => {
     const bannerImages = normalizeBannerImages(config);
@@ -78,6 +144,7 @@ export default function AdminSettingsPanel({ user }) {
       banner_mime_type: firstBanner.mimeType || config?.banner_mime_type || '',
       banner_images: bannerImages,
       promotions: normalizePromotions(config?.promotions),
+      discounts: normalizeDiscounts(config?.discounts),
       client_can_choose_employee: Boolean(config?.client_can_choose_employee)
     };
 
@@ -124,6 +191,7 @@ export default function AdminSettingsPanel({ user }) {
       ...current,
       promotions: [...current.promotions, emptyPromotion()]
     }));
+    setPromotionsOpen(true);
   };
 
   const removePromotion = (index) => {
@@ -132,6 +200,38 @@ export default function AdminSettingsPanel({ user }) {
       promotions: current.promotions.length > 1
         ? current.promotions.filter((_, promotionIndex) => promotionIndex !== index)
         : [emptyPromotion()]
+    }));
+  };
+
+  const updateDiscount = (index, field, value) => {
+    setForm((current) => ({
+      ...current,
+      discounts: current.discounts.map((discount, discountIndex) => (
+        discountIndex === index ? { ...discount, [field]: value } : discount
+      ))
+    }));
+  };
+
+  const addDiscount = () => {
+    setForm((current) => ({
+      ...current,
+      discounts: [...current.discounts, emptyDiscount()]
+    }));
+    setDiscountsOpen(true);
+  };
+
+  const addActivityDiscount = () => {
+    setForm((current) => ({
+      ...current,
+      discounts: [...current.discounts, { ...emptyDiscount(), discountType: 'activity', scope: 'line' }]
+    }));
+    setActivityChecksOpen(true);
+  };
+
+  const removeDiscount = (index) => {
+    setForm((current) => ({
+      ...current,
+      discounts: current.discounts.filter((_, discountIndex) => discountIndex !== index)
     }));
   };
 
@@ -209,6 +309,36 @@ export default function AdminSettingsPanel({ user }) {
 
   const saveConfig = async () => {
     setIsSaving(true);
+    const promotionsPayload = form.promotions.map((promotion) => ({
+      ...promotion,
+      price: parseMoney(promotion.price)
+    }));
+
+    const invalidPercentDiscount = form.discounts.find((discount) => discount.enabled && discount.valueType === 'percent' && parseMoney(discount.value) > 100);
+    if (invalidPercentDiscount) {
+      alert(`El descuento ${invalidPercentDiscount.name || 'sin nombre'} no puede superar el 100%.`);
+      setIsSaving(false);
+      return;
+    }
+
+    let generalDiscountCounter = 0;
+    let activityDiscountCounter = 0;
+    const discountsPayload = form.discounts.map((discount) => {
+      const isActivityCheck = discount.discountType === 'activity';
+      if (isActivityCheck) activityDiscountCounter += 1;
+      else generalDiscountCounter += 1;
+
+      return {
+        ...discount,
+        id: discount.id || `${isActivityCheck ? 'check_actividad' : 'descuento'}_${String(isActivityCheck ? activityDiscountCounter : generalDiscountCounter).padStart(2, '0')}`,
+        scope: isActivityCheck ? 'line' : discount.scope,
+        value: discount.valueType === 'percent'
+          ? Math.min(100, Math.max(0, parseMoney(discount.value)))
+          : Math.max(0, parseMoney(discount.value)),
+        percent: discount.valueType === 'percent' ? Math.min(100, Math.max(0, parseMoney(discount.value))) : 0,
+        serviceIds: isActivityCheck && Array.isArray(discount.serviceIds) ? discount.serviceIds.map(String) : []
+      };
+    });
 
     const { data, error } = await supabase.rpc('save_admin_app_configuration', {
       company_name_value: form.company_name.trim() || null,
@@ -216,7 +346,8 @@ export default function AdminSettingsPanel({ user }) {
       banner_file_name_value: form.banner_file_name || null,
       banner_mime_type_value: form.banner_mime_type || null,
       banner_images_value: form.banner_images,
-      promotions_value: form.promotions,
+      promotions_value: promotionsPayload,
+      discounts_value: discountsPayload,
       client_can_choose_employee_value: form.client_can_choose_employee,
       account_id_value: user?.isInternal ? user.id : null,
       session_token_value: user?.isInternal ? user.sessionToken : null
@@ -269,8 +400,19 @@ export default function AdminSettingsPanel({ user }) {
         </article>
 
         <article className="admin-form-card settings-card">
-          <div className="agenda-modal-header">Banner de presentación</div>
-          <div className="agenda-modal-body settings-card-body">
+          <div className="agenda-modal-header admin-collapsible-form-header">
+            <span>Banner de presentación</span>
+            <button
+              className="availability-form-toggle admin-collapsible-form-toggle"
+              type="button"
+              onClick={() => setBannerOpen((current) => !current)}
+              aria-expanded={bannerOpen}
+              aria-label={bannerOpen ? 'Ocultar banner de presentación' : 'Mostrar banner de presentación'}
+            >
+              &gt;
+            </button>
+          </div>
+          <div className={`agenda-modal-body settings-card-body admin-collapsible-form-body ${bannerOpen ? 'is-open' : 'is-collapsed'}`}>
             <label className="settings-upload-field">
               <span>Hasta 4 imágenes JPG o PNG</span>
               <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" multiple onChange={changeBanner} />
@@ -310,40 +452,182 @@ export default function AdminSettingsPanel({ user }) {
         </article>
 
         <article className="admin-form-card settings-card settings-promotions-card">
-          <div className="agenda-modal-header settings-section-header">
+          <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
             <span>Promociones</span>
-            <button className="agenda-option-button" type="button" onClick={addPromotion}>Agregar promoción</button>
+            <button
+              className="availability-form-toggle admin-collapsible-form-toggle"
+              type="button"
+              onClick={() => setPromotionsOpen((current) => !current)}
+              aria-expanded={promotionsOpen}
+              aria-label={promotionsOpen ? 'Ocultar promociones' : 'Mostrar promociones'}
+            >
+              &gt;
+            </button>
           </div>
-          <div className="agenda-modal-body settings-promotion-grid">
-            {form.promotions.map((promotion, index) => (
-              <div className="settings-promotion-card" key={index}>
+          <div className={`agenda-modal-body settings-promotion-grid admin-collapsible-form-body ${promotionsOpen ? 'is-open' : 'is-collapsed'}`}>
+            <div className="settings-section-toolbar">
+              <button className="agenda-option-button" type="button" onClick={addPromotion}>Agregar promoción</button>
+            </div>
+            {promotionsOpen && form.promotions.map((promotion, index) => (
+                <div className="settings-promotion-card" key={index}>
+                  <label className="settings-check-row">
+                    <input
+                      type="checkbox"
+                      checked={promotion.enabled}
+                      onChange={(event) => updatePromotion(index, 'enabled', event.target.checked)}
+                    />
+                    <span>Habilitada</span>
+                  </label>
+
+                  <label>
+                    Título
+                    <input value={promotion.title} onChange={(event) => updatePromotion(index, 'title', event.target.value)} />
+                  </label>
+                  <label>
+                    Descripción
+                    <textarea value={promotion.description} onChange={(event) => updatePromotion(index, 'description', event.target.value)} />
+                  </label>
+                  <label>
+                    Valor
+                    <input value={promotion.value} onChange={(event) => updatePromotion(index, 'value', event.target.value)} />
+                  </label>
+                  <label>
+                    Precio numérico
+                    <input type="text" inputMode="decimal" value={promotion.price} onChange={(event) => updatePromotion(index, 'price', event.target.value)} placeholder="40000" />
+                  </label>
+                  <p className="settings-empty-text">Para cierres se usará {formatMoney(parseMoney(promotion.price))}.</p>
+
+                  <button className="agenda-option-button" type="button" onClick={() => removePromotion(index)}>
+                    Eliminar
+                  </button>
+                </div>
+              ))}
+          </div>
+        </article>
+
+        <article className="admin-form-card settings-card settings-promotions-card">
+          <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
+            <span>Descuentos</span>
+            <button
+              className="availability-form-toggle admin-collapsible-form-toggle"
+              type="button"
+              onClick={() => setDiscountsOpen((current) => !current)}
+              aria-expanded={discountsOpen}
+              aria-label={discountsOpen ? 'Ocultar descuentos' : 'Mostrar descuentos'}
+            >
+              &gt;
+            </button>
+          </div>
+          <div className={`agenda-modal-body settings-promotion-grid settings-discount-grid admin-collapsible-form-body ${discountsOpen ? 'is-open' : 'is-collapsed'}`}>
+            <div className="settings-section-toolbar">
+              <button className="agenda-option-button" type="button" onClick={addDiscount}>Agregar descuento</button>
+            </div>
+            {discountsOpen && (generalDiscounts.length === 0 ? (
+              <p className="settings-empty-text">Todavía no hay descuentos generales configurados.</p>
+            ) : generalDiscounts.map(({ discount, index }) => (
+              <div className="settings-promotion-card settings-discount-card" key={index}>
                 <label className="settings-check-row">
                   <input
                     type="checkbox"
-                    checked={promotion.enabled}
-                    onChange={(event) => updatePromotion(index, 'enabled', event.target.checked)}
+                    checked={discount.enabled}
+                    onChange={(event) => updateDiscount(index, 'enabled', event.target.checked)}
                   />
-                  <span>Habilitada</span>
+                  <span>Habilitado</span>
                 </label>
 
                 <label>
-                  Título
-                  <input value={promotion.title} onChange={(event) => updatePromotion(index, 'title', event.target.value)} />
+                  Nombre
+                  <input value={discount.name} onChange={(event) => updateDiscount(index, 'name', event.target.value)} placeholder="Pago en efectivo" />
                 </label>
                 <label>
-                  Descripción
-                  <textarea value={promotion.description} onChange={(event) => updatePromotion(index, 'description', event.target.value)} />
+                  Modo
+                  <select value={discount.valueType} onChange={(event) => updateDiscount(index, 'valueType', event.target.value)}>
+                    <option value="percent">Porcentaje %</option>
+                    <option value="amount">Monto $</option>
+                  </select>
                 </label>
                 <label>
                   Valor
-                  <input value={promotion.value} onChange={(event) => updatePromotion(index, 'value', event.target.value)} />
+                  <input type="text" inputMode="decimal" value={discount.value} onChange={(event) => updateDiscount(index, 'value', event.target.value)} placeholder={discount.valueType === 'amount' ? '5000' : '10'} />
+                </label>
+                <label>
+                  Aplica en
+                  <select value={discount.scope} onChange={(event) => updateDiscount(index, 'scope', event.target.value)}>
+                    <option value="line">Cada actividad</option>
+                    <option value="total">Total del cierre</option>
+                    <option value="both">Ambos</option>
+                  </select>
+                </label>
+                <label>
+                  Motivo
+                  <textarea value={discount.description} onChange={(event) => updateDiscount(index, 'description', event.target.value)} placeholder="Ej: descuento por pago en efectivo" />
                 </label>
 
-                <button className="agenda-option-button" type="button" onClick={() => removePromotion(index)}>
+                <button className="agenda-option-button" type="button" onClick={() => removeDiscount(index)}>
                   Eliminar
                 </button>
               </div>
-            ))}
+            )))}
+          </div>
+        </article>
+
+        <article className="admin-form-card settings-card settings-promotions-card">
+          <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
+            <span>Check actividad</span>
+            <button
+              className="availability-form-toggle admin-collapsible-form-toggle"
+              type="button"
+              onClick={() => setActivityChecksOpen((current) => !current)}
+              aria-expanded={activityChecksOpen}
+              aria-label={activityChecksOpen ? 'Ocultar check actividad' : 'Mostrar check actividad'}
+            >
+              &gt;
+            </button>
+          </div>
+          <div className="settings-check-summary-row">
+            {activityDiscounts.length ? activityDiscounts.map(({ discount }, activityIndex) => (
+              <span className="settings-check-summary-chip" key={`${discount.id || 'check'}-${activityIndex}`}>
+                {getActivityCheckDisplayId(discount, activityIndex)}
+              </span>
+            )) : <span className="settings-empty-text">Sin check_actividad creados.</span>}
+          </div>
+          <div className={`agenda-modal-body settings-promotion-grid settings-discount-grid admin-collapsible-form-body ${activityChecksOpen ? 'is-open' : 'is-collapsed'}`}>
+            <div className="settings-section-toolbar">
+              <button className="agenda-option-button" type="button" onClick={addActivityDiscount}>Agregar check</button>
+            </div>
+              {activityChecksOpen && (activityDiscounts.length === 0 ? (
+                <p className="settings-empty-text">Todavía no hay check_actividad configurados.</p>
+              ) : activityDiscounts.map(({ discount, index }, activityIndex) => (
+                <div className="settings-promotion-card settings-discount-card" key={index}>
+                  <label className="settings-check-row">
+                    <input
+                      type="checkbox"
+                      checked={discount.enabled}
+                      onChange={(event) => updateDiscount(index, 'enabled', event.target.checked)}
+                    />
+                    <span>Habilitado</span>
+                  </label>
+                  <label>
+                    Nombre
+                    <input value={discount.name} onChange={(event) => updateDiscount(index, 'name', event.target.value)} placeholder="Peluquería promo" />
+                  </label>
+                  <label>
+                    Modo
+                    <select value={discount.valueType} onChange={(event) => updateDiscount(index, 'valueType', event.target.value)}>
+                      <option value="percent">Porcentaje %</option>
+                      <option value="amount">Monto $</option>
+                    </select>
+                  </label>
+                  <label>
+                    Valor
+                    <input type="text" inputMode="decimal" value={discount.value} onChange={(event) => updateDiscount(index, 'value', event.target.value)} placeholder={discount.valueType === 'amount' ? '5000' : '10'} />
+                  </label>
+                  <p className="settings-empty-text">Se verá como {getActivityCheckDisplayId(discount, activityIndex)}.</p>
+                  <button className="agenda-option-button" type="button" onClick={() => removeDiscount(index)}>
+                    Eliminar
+                  </button>
+                </div>
+              )))}
           </div>
         </article>
       </div>

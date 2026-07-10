@@ -24,8 +24,29 @@ const emptyService = {
   icon: '✨',
   color: '#42A5F5',
   default_duration: 30,
+  base_price: '',
+  activity_discount_check_id: '',
   active: true
 };
+
+const parseMoney = (value) => {
+  const normalized = String(value || '')
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+
+  return Number(normalized) || 0;
+};
+
+const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  maximumFractionDigits: 0
+}).format(Number(value) || 0);
+
+const getDiscountValue = (discount) => Number(discount?.value ?? discount?.percent) || 0;
+
+const getActivityDiscountLabel = (discount) => `${discount?.id || 'check_actividad'}${discount?.name ? ` · ${discount.name}` : ''} (${discount?.valueType === 'amount' ? formatMoney(getDiscountValue(discount)) : `${getDiscountValue(discount)}%`})`;
 
 const serviceIconGroups = [
   {
@@ -117,6 +138,8 @@ const serviceMatchesPayload = (service, payload) =>
   (service.icon || null) === payload.icon &&
   service.color === payload.color &&
   Number(service.default_duration) === Number(payload.default_duration) &&
+  Number(service.base_price || 0) === Number(payload.base_price || 0) &&
+  (!Object.prototype.hasOwnProperty.call(service, 'activity_discount_check_id') || String(service.activity_discount_check_id || '') === String(payload.activity_discount_check_id || '')) &&
   service.active === payload.active;
 
 const employeeMatchesPayload = (employee, payload) =>
@@ -195,6 +218,11 @@ export default function AdminPanel({ view, user, onDataChanged }) {
   const enabledPromotions = useMemo(
     () => promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value)),
     [promotions]
+  );
+  const activityDiscountChecks = useMemo(
+    () => (Array.isArray(appConfig?.discounts) ? appConfig.discounts : [])
+      .filter((discount) => discount?.enabled !== false && discount?.discountType === 'activity' && discount?.id),
+    [appConfig]
   );
   const promotionServices = useMemo(
     () => enabledPromotions.map((promotion, index) => ({
@@ -360,6 +388,48 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     });
   };
 
+  const getServiceActivityCheckId = (service) => {
+    if (service?.activity_discount_check_id) return service.activity_discount_check_id;
+    const assignedDiscount = (Array.isArray(appConfig?.discounts) ? appConfig.discounts : [])
+      .find((discount) => discount?.discountType === 'activity' && (discount.serviceIds || []).some((serviceId) => String(serviceId) === String(service?.id)));
+    return assignedDiscount?.id || '';
+  };
+
+  const saveServiceActivityCheckAssignment = async (serviceId, checkId) => {
+    if (!serviceId) return { error: null };
+
+    const sourceConfig = appConfig || {};
+    const nextDiscounts = (Array.isArray(sourceConfig.discounts) ? sourceConfig.discounts : []).map((discount) => {
+      if (discount?.discountType !== 'activity') return discount;
+      const currentServiceIds = Array.isArray(discount.serviceIds) ? discount.serviceIds.map(String) : [];
+      const withoutService = currentServiceIds.filter((currentId) => String(currentId) !== String(serviceId));
+
+      return {
+        ...discount,
+        serviceIds: String(discount.id) === String(checkId) ? Array.from(new Set([...withoutService, String(serviceId)])) : withoutService
+      };
+    });
+
+    const result = await supabase.rpc('save_admin_app_configuration', {
+      company_name_value: sourceConfig.company_name || null,
+      banner_data_url_value: sourceConfig.banner_data_url || null,
+      banner_file_name_value: sourceConfig.banner_file_name || null,
+      banner_mime_type_value: sourceConfig.banner_mime_type || null,
+      banner_images_value: Array.isArray(sourceConfig.banner_images) ? sourceConfig.banner_images : [],
+      promotions_value: Array.isArray(sourceConfig.promotions) ? sourceConfig.promotions : promotions,
+      discounts_value: nextDiscounts,
+      client_can_choose_employee_value: Boolean(sourceConfig.client_can_choose_employee),
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken
+    });
+
+    if (!result.error) {
+      setAppConfig(result.data || { ...sourceConfig, discounts: nextDiscounts });
+    }
+
+    return result;
+  };
+
   const editEmployee = (employee) => {
     setEditingEmployeeId(employee.id);
     setIsEmployeeFormOpen(true);
@@ -405,6 +475,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       banner_mime_type_value: sourceConfig.banner_mime_type || null,
       banner_images_value: Array.isArray(sourceConfig.banner_images) ? sourceConfig.banner_images : [],
       promotions_value: nextPromotions,
+      discounts_value: Array.isArray(sourceConfig.discounts) ? sourceConfig.discounts : [],
       client_can_choose_employee_value: Boolean(sourceConfig.client_can_choose_employee),
       account_id_value: internalAdminAccountId,
       session_token_value: internalSessionToken
@@ -419,6 +490,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       icon: service.icon || '✨',
       color: service.color || '#42A5F5',
       default_duration: service.default_duration || 30,
+      base_price: service.base_price === 0 || service.base_price ? String(service.base_price) : '',
+      activity_discount_check_id: getServiceActivityCheckId(service),
       active: service.active !== false
     });
   };
@@ -595,8 +668,16 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       icon: serviceForm.icon.trim() || null,
       color: serviceForm.color || '#42A5F5',
       default_duration: Number(serviceForm.default_duration) || 30,
+      base_price: parseMoney(serviceForm.base_price),
+      activity_discount_check_id: serviceForm.activity_discount_check_id || '',
       active: serviceForm.active
     };
+
+    const selectedActivityCheck = activityDiscountChecks.find((discount) => String(discount.id) === String(payload.activity_discount_check_id));
+    if (selectedActivityCheck?.valueType === 'amount' && Number(selectedActivityCheck.value || 0) > payload.base_price) {
+      alert(`El check ${selectedActivityCheck.name || selectedActivityCheck.id} no puede superar el precio base de la actividad.`);
+      return;
+    }
 
     if (!payload.name) {
       alert('Ingresá el nombre de la actividad.');
@@ -622,6 +703,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       icon_value: payload.icon,
       color_value: payload.color,
       default_duration_value: payload.default_duration,
+      base_price_value: payload.base_price,
       active_value: payload.active,
       account_id_value: internalAdminAccountId,
       session_token_value: internalSessionToken
@@ -645,14 +727,25 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       return;
     }
 
+    const assignmentResult = await saveServiceActivityCheckAssignment(serviceResult.data.id, payload.activity_discount_check_id);
+    if (assignmentResult.error) {
+      alert(`La actividad se guardó, pero no se pudo asignar el check: ${assignmentResult.error.message}`);
+      setIsSaving(false);
+      return;
+    }
+
     setServices((currentServices) => {
+      const serviceWithCheck = {
+        ...serviceResult.data,
+        activity_discount_check_id: payload.activity_discount_check_id || ''
+      };
       if (editingServiceId) {
         return currentServices.map((service) =>
-          String(service.id) === String(serviceResult.data.id) ? serviceResult.data : service
+          String(service.id) === String(serviceResult.data.id) ? serviceWithCheck : service
         );
       }
 
-      return [...currentServices, serviceResult.data];
+      return [...currentServices, serviceWithCheck];
     });
 
     resetServiceForm();
@@ -670,6 +763,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       icon_value: service.icon,
       color_value: service.color,
       default_duration_value: service.default_duration,
+      base_price_value: Number(service.base_price || 0),
       active_value: nextActive,
       account_id_value: internalAdminAccountId,
       session_token_value: internalSessionToken
@@ -1139,6 +1233,23 @@ export default function AdminPanel({ view, user, onDataChanged }) {
               <input type="color" value={serviceForm.color} onChange={(event) => updateServiceField('color', event.target.value)} />
             </label>
 
+            <label>
+              Precio base
+              <input type="text" inputMode="decimal" value={serviceForm.base_price} onChange={(event) => updateServiceField('base_price', event.target.value)} placeholder="20000" />
+            </label>
+
+            {activityDiscountChecks.length > 0 && (
+              <label>
+                Check actividad
+                <select value={serviceForm.activity_discount_check_id} onChange={(event) => updateServiceField('activity_discount_check_id', event.target.value)}>
+                  <option value="">Sin check</option>
+                  {activityDiscountChecks.map((discount) => (
+                    <option value={discount.id} key={discount.id}>{getActivityDiscountLabel(discount)}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             <label className="admin-switch-row">
               <input type="checkbox" checked={serviceForm.active} onChange={(event) => updateServiceField('active', event.target.checked)} />
               Actividad activa
@@ -1158,30 +1269,36 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         </form>
 
         <div className="admin-list service-record-list service-button-grid">
-          {services.map((service) => (
-            <article className={`admin-record-card service-record-card ${service.active === false ? 'is-muted' : ''}`} key={service.id}>
-              <div className="admin-record-color" style={{ background: service.color || '#94a3b8' }} />
-              <div className="admin-record-main">
-                <div className="admin-record-title admin-record-title-icon"><ActivityIcon service={service} size="small" /> {service.name}</div>
-                <div className="service-record-badges">
-                  <span>{service.default_duration || 30} min</span>
-                  <span className={service.active === false ? 'is-warning' : 'is-success'}>{service.active === false ? 'Pausada' : 'Activa'}</span>
+          {services.map((service) => {
+            const activityCheckId = getServiceActivityCheckId(service);
+
+            return (
+              <article className={`admin-record-card service-record-card ${service.active === false ? 'is-muted' : ''}`} key={service.id}>
+                <div className="admin-record-color" style={{ background: service.color || '#94a3b8' }} />
+                <div className="admin-record-main">
+                  <div className="admin-record-title admin-record-title-icon"><ActivityIcon service={service} size="small" /> {service.name}</div>
+                  <div className="service-record-badges">
+                    <span>{service.default_duration || 30} min</span>
+                    <span>{formatMoney(service.base_price)}</span>
+                    {activityCheckId && <span className="activity-check-badge" title={activityCheckId}>✓</span>}
+                    <span className={service.active === false ? 'is-warning' : 'is-success'}>{service.active === false ? 'Pausada' : 'Activa'}</span>
+                  </div>
+                  <div className="admin-record-services">{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length} empleado(s) asignado(s)</div>
                 </div>
-                <div className="admin-record-services">{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length} empleado(s) asignado(s)</div>
-              </div>
-              <div className="admin-record-actions">
-                <button className="agenda-close-button service-card-action" type="button" onClick={() => editService(service)} aria-label="Editar actividad" title="Editar actividad">
-                  Editar
-                </button>
-                <button className="agenda-option-button service-card-action" type="button" onClick={() => toggleServiceStatus(service)} aria-label={service.active === false ? 'Activar actividad' : 'Desactivar actividad'} title={service.active === false ? 'Activar actividad' : 'Desactivar actividad'}>
-                  {service.active === false ? 'Activar' : 'Pausar'}
-                </button>
-                <button className="agenda-danger-button service-card-action" type="button" onClick={() => deleteService(service)} aria-label="Eliminar actividad" title="Eliminar actividad">
-                  Eliminar
-                </button>
-              </div>
-            </article>
-          ))}
+                <div className="admin-record-actions">
+                  <button className="agenda-close-button service-card-action" type="button" onClick={() => editService(service)} aria-label="Editar actividad" title="Editar actividad">
+                    Editar
+                  </button>
+                  <button className="agenda-option-button service-card-action" type="button" onClick={() => toggleServiceStatus(service)} aria-label={service.active === false ? 'Activar actividad' : 'Desactivar actividad'} title={service.active === false ? 'Activar actividad' : 'Desactivar actividad'}>
+                    {service.active === false ? 'Activar' : 'Pausar'}
+                  </button>
+                  <button className="agenda-danger-button service-card-action" type="button" onClick={() => deleteService(service)} aria-label="Eliminar actividad" title="Eliminar actividad">
+                    Eliminar
+                  </button>
+                </div>
+              </article>
+            );
+          })}
           {promotionServices.map((promotionService) => (
             <article className="admin-record-card service-record-card promotion-record-card" key={promotionService.id}>
               <div className="admin-record-color" style={{ background: promotionService.color }} />
@@ -1192,7 +1309,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                   <span className="is-success">Activa</span>
                 </div>
                 <div className="admin-record-services">
-                  {promotionService.promotion?.value || 'Sin valor cargado'} · Se administra desde Configuración
+                  {formatMoney(promotionService.promotion?.price)} · Se administra desde Configuración
                 </div>
               </div>
             </article>
