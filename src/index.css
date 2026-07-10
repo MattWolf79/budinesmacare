@@ -2281,6 +2281,14 @@ code {
   display: block;
 }
 
+.employee-booking-row .employee-booking-closed-amount {
+  display: block;
+  margin-top: 4px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .employee-booking-row span,
 .employee-booking-row time,
 .employee-empty-line {
