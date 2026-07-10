@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Arquitectura multiempresa - Turnos App</title>
+  <style>
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      color: #1f2937;
+      line-height: 1.45;
+      margin: 40px;
+    }
+    h1 {
+      color: #0f172a;
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+    h2 {
+      color: #0f3ea8;
+      font-size: 20px;
+      margin-top: 28px;
+      border-bottom: 1px solid #d8e0eb;
+      padding-bottom: 4px;
+    }
+    h3 {
+      color: #334155;
+      font-size: 16px;
+      margin-top: 18px;
+    }
+    p, li {
+      font-size: 12pt;
+    }
+    code, pre {
+      font-family: Consolas, monospace;
+      font-size: 10pt;
+    }
+    pre {
+      background: #f8fafc;
+      border: 1px solid #d8e0eb;
+      padding: 10px;
+      white-space: pre-wrap;
+    }
+    .note {
+      background: #eef5ff;
+      border-left: 4px solid #0f3ea8;
+      padding: 10px 12px;
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Arquitectura multiempresa para Turnos App</h1>
+  <p><strong>Objetivo:</strong> convertir la aplicacion actual en un producto que pueda venderse a distintas empresas, manteniendo datos, configuracion, agenda, empleados y metricas separados por empresa.</p>
+
+  <h2>Resumen ejecutivo</h2>
+  <p>Para vender la aplicacion a distintas companias, el cambio principal es pasar de una app de una sola empresa a una arquitectura <strong>multi-tenant</strong>. Una misma aplicacion sirve a muchas empresas, pero cada dato queda asociado a una empresa o tenant.</p>
+  <p>Hoy la aplicacion parece tener configuracion global unica, por ejemplo <code>app_configuration</code> con <code>id = true</code>. Eso funciona para una sola empresa. Para convertirla en producto SaaS, esa configuracion debe pasar a ser por empresa.</p>
+
+  <h2>Arquitectura recomendada</h2>
+  <p>La opcion mas practica para este proyecto seria:</p>
+  <pre>Una app React/Vercel
+Una base Supabase
+Muchas empresas dentro de la misma base
+Todos los datos con company_id / tenant_id
+RLS fuerte para aislar datos</pre>
+  <p>Esto se llama multi-tenant en una base compartida. Es mas simple de operar, mas barato y mas facil de mantener que crear una base Supabase por cliente.</p>
+  <p>Solo usaria una base por empresa si se venden planes grandes, clientes corporativos, aislamiento contractual fuerte o requisitos especiales de seguridad.</p>
+
+  <h2>Cambios principales en la base</h2>
+  <h3>Tabla de empresas</h3>
+  <pre>create table public.companies (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text unique not null,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);</pre>
+
+  <h3>Agregar company_id a tablas operativas</h3>
+  <p>Casi todas las tablas de negocio deberian tener <code>company_id</code>:</p>
+  <ul>
+    <li><code>employees.company_id</code></li>
+    <li><code>services.company_id</code></li>
+    <li><code>bookings.company_id</code></li>
+    <li><code>employee_services.company_id</code></li>
+    <li><code>employee_availability.company_id</code></li>
+    <li><code>internal_accounts.company_id</code></li>
+    <li><code>internal_registration_requests.company_id</code></li>
+    <li><code>booking_closures.company_id</code></li>
+    <li><code>booking_closure_items.company_id</code></li>
+    <li><code>app_configuration.company_id</code></li>
+  </ul>
+
+  <h3>Configuracion por empresa</h3>
+  <p>La tabla <code>app_configuration</code> deberia dejar de ser singleton.</p>
+  <pre>app_configuration (
+  company_id uuid primary key references companies(id),
+  company_name text,
+  business_hours_text text,
+  welcome_background_data_url text,
+  banner_images jsonb,
+  promotions jsonb,
+  discounts jsonb,
+  client_can_choose_employee boolean,
+  ...
+)</pre>
+  <p>Asi cada empresa tiene su propio nombre, fondo, banners, horarios, promociones, descuentos, actividades, empleados y agenda.</p>
+
+  <h2>RLS y seguridad</h2>
+  <p>Supabase debe impedir que una empresa vea datos de otra. Para eso cada politica debe filtrar por <code>company_id</code>.</p>
+  <pre>create policy "company_members_can_read_bookings"
+on public.bookings
+for select
+using (
+  company_id in (
+    select company_id
+    from public.company_members
+    where user_id = auth.uid()
+  )
+);</pre>
+
+  <h3>Membresias</h3>
+  <p>Conviene agregar una tabla que relacione usuarios con empresas y roles.</p>
+  <pre>create table public.company_members (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id),
+  user_id uuid not null references auth.users(id),
+  role text not null check (role in ('owner', 'admin', 'employee', 'client')),
+  employee_id uuid null,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique(company_id, user_id)
+);</pre>
+  <p>Como la app ya tiene cuentas internas para admin y empleado, se puede mantener <code>internal_accounts</code>, pero agregandole <code>company_id</code>.</p>
+
+  <h2>Cambios en las RPC</h2>
+  <p>Todas las funciones importantes deberian saber para que empresa trabajan:</p>
+  <ul>
+    <li><code>get_app_configuration</code></li>
+    <li><code>save_admin_app_configuration</code></li>
+    <li><code>get_admin_panel_data</code></li>
+    <li><code>get_internal_employee_workspace</code></li>
+    <li><code>close_booking_attention</code></li>
+  </ul>
+  <p>Hay tres formas de resolver la empresa:</p>
+  <ol>
+    <li>Pasar <code>company_id_value</code> como parametro.</li>
+    <li>Resolverlo desde la sesion interna.</li>
+    <li>Resolverlo por dominio, subdominio o slug.</li>
+  </ol>
+  <p>Para admin y empleado interno, la sesion deberia tener <code>company_id</code>, asi el frontend no puede elegir libremente otra empresa.</p>
+
+  <h2>Frontend</h2>
+  <p>La app debe detectar la empresa actual antes de cargar configuracion, servicios, agenda o promociones.</p>
+
+  <h3>Opcion 1: subdominios</h3>
+  <pre>empresa1.turnosapp.com
+empresa2.turnosapp.com
+jardindelosmasajes.turnosapp.com</pre>
+  <p>El frontend lee el subdominio, busca la empresa por <code>slug</code> y carga su configuracion.</p>
+
+  <h3>Opcion 2: URL con slug</h3>
+  <pre>turnosapp.com/jardindelosmasajes
+turnosapp.com/empresa2</pre>
+  <p>Es mas simple, aunque menos profesional para vender como producto.</p>
+
+  <h3>Opcion 3: dominios personalizados</h3>
+  <pre>turnos.eljardindelosmasajes.com
+reservas.otraempresa.com</pre>
+  <p>Es una opcion mas avanzada. Requiere gestionar dominios en Vercel y una tabla de dominios.</p>
+  <pre>company_domains (
+  company_id uuid,
+  domain text unique,
+  verified boolean
+)</pre>
+
+  <h2>Login y usuarios</h2>
+  <p>Hay que definir estas reglas:</p>
+  <ul>
+    <li>Un mismo cliente puede reservar en varias empresas.</li>
+    <li>Un empleado/admin pertenece a una empresa concreta.</li>
+    <li>Un duenio puede administrar una o varias empresas.</li>
+  </ul>
+  <p>Con <code>company_members</code> eso queda bien modelado.</p>
+
+  <h2>Reservas</h2>
+  <p><code>bookings</code> deberia tener siempre:</p>
+  <pre>company_id
+user_id
+employee_id
+service
+start_at
+end_at
+status</pre>
+  <p>Cada consulta del calendario debe filtrar por <code>company_id</code>. Sin esto, distintas empresas podrian compartir agenda, empleados o actividades por error.</p>
+
+  <h2>Actividades, promociones y descuentos</h2>
+  <p>Todo eso debe ser por empresa.</p>
+  <p>Hoy <code>services</code> parece global. En SaaS deberia tener:</p>
+  <pre>services.company_id
+services.name
+services.price
+services.duration
+services.color
+services.icon</pre>
+  <p>Promociones y descuentos pueden seguir como JSON dentro de <code>app_configuration</code> al principio. Para crecer como producto, eventualmente conviene normalizarlos en tablas como <code>promotions</code>, <code>discount_rules</code> y <code>activity_checks</code>.</p>
+
+  <h2>Metricas</h2>
+  <p>Para metricas por empresa, turno, empleado, descuentos y cierres, todo debe tener <code>company_id</code>.</p>
+  <p>Especialmente:</p>
+  <pre>booking_closures.company_id
+booking_closure_items.company_id
+booking_closure_items.employee_id
+booking_closure_items.discount_type / discount_label / discount_amount</pre>
+  <p>Si mas adelante se quieren reportes de facturacion mensual, facturacion por empleado, descuentos por amigo/tio/promo, cantidad de turnos cerrados, promedio por cliente o ranking de servicios, el cierre debe guardar snapshots claros.</p>
+  <pre>booking_closure_items (
+  id uuid,
+  company_id uuid,
+  closure_id uuid,
+  booking_id uuid,
+  employee_id uuid,
+  service_id integer,
+  service_name text,
+  base_price numeric,
+  discount_label text,
+  discount_type text,
+  discount_amount numeric,
+  final_amount numeric,
+  created_at timestamptz
+)</pre>
+  <p>Asi, si en el futuro cambia el nombre de un descuento, los reportes historicos no se rompen.</p>
+
+  <h2>Plan de migracion recomendado</h2>
+  <h3>Fase 1: preparar multiempresa</h3>
+  <ul>
+    <li>Crear <code>companies</code>.</li>
+    <li>Crear una empresa inicial para el negocio actual.</li>
+    <li>Agregar <code>company_id</code> a tablas principales.</li>
+    <li>Poblar todos los datos existentes con esa empresa inicial.</li>
+    <li>Cambiar <code>app_configuration</code> para usar <code>company_id</code>.</li>
+  </ul>
+
+  <h3>Fase 2: seguridad</h3>
+  <ul>
+    <li>Ajustar RPCs para validar empresa.</li>
+    <li>Agregar RLS por <code>company_id</code>.</li>
+    <li>Asegurar que admin/empleado solo acceden a su empresa.</li>
+  </ul>
+
+  <h3>Fase 3: frontend</h3>
+  <ul>
+    <li>Resolver empresa por slug/subdominio.</li>
+    <li>Cargar configuracion por empresa.</li>
+    <li>Filtrar agenda, servicios, promociones, disponibilidad y cierres por empresa.</li>
+  </ul>
+
+  <h3>Fase 4: onboarding</h3>
+  <ul>
+    <li>Pantalla para crear empresa.</li>
+    <li>Crear owner/admin inicial.</li>
+    <li>Configuracion inicial de nombre, horarios, servicios y empleados.</li>
+  </ul>
+
+  <h3>Fase 5: producto SaaS</h3>
+  <ul>
+    <li>Planes de pago.</li>
+    <li>Limites por empresa: empleados, turnos, imagenes y administradores.</li>
+    <li>Dominio personalizado.</li>
+    <li>Backoffice interno para administrar empresas.</li>
+  </ul>
+
+  <h2>Prioridades</h2>
+  <div class="note">
+    <p><strong>Lo imprescindible:</strong></p>
+    <ol>
+      <li><code>companies</code></li>
+      <li><code>company_id</code> en todas las tablas de negocio</li>
+      <li><code>app_configuration</code> por <code>company_id</code>, no singleton</li>
+      <li>RPCs filtradas por <code>company_id</code></li>
+      <li>RLS por <code>company_id</code></li>
+      <li>Frontend resolviendo la empresa actual</li>
+    </ol>
+  </div>
+
+  <p>Recomendacion final: antes de seguir agregando muchas funciones nuevas, conviene hacer esta base multiempresa si realmente se quiere vender la aplicacion como producto. Cuanto mas crezca el modelo single-company, mas costoso sera migrarlo despues.</p>
+</body>
+</html>

@@ -4,6 +4,11 @@ import turnosAppIcon from '../assets/turnos-app-icon.svg';
 
 const requestedProfileStorageKey = 'turnos_requested_profile';
 const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+const inAppBrowserPattern = /Instagram|FBAN|FBAV|FB_IAB|FB4A|FBIOS/i;
+
+const getAppLink = () => `${appUrl.replace(/\/$/, '')}/`;
+
+const isInAppBrowser = () => inAppBrowserPattern.test(window.navigator.userAgent || '');
 
 const accessOptions = [
   {
@@ -88,6 +93,8 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
 
 export default function Login({ onInternalAccess, onLocalClientAccess }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
+  const [inAppBrowserNoticeOpen, setInAppBrowserNoticeOpen] = useState(false);
+  const [copyLinkStatus, setCopyLinkStatus] = useState('');
   const [internalAccessMode, setInternalAccessMode] = useState('login');
   const [registrationForm, setRegistrationForm] = useState(emptyRegistrationForm);
   const [registrationError, setRegistrationError] = useState('');
@@ -103,7 +110,7 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${appUrl.replace(/\/$/, '')}/`,
+        redirectTo: getAppLink(),
         queryParams: {
           prompt: 'select_account'
         }
@@ -112,6 +119,17 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
 
     if (error) {
       alert('No se pudo iniciar sesión. Intentá nuevamente.');
+    }
+  };
+
+  const copyAppLink = async () => {
+    const link = getAppLink();
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopyLinkStatus('Link copiado. Abrilo desde Chrome o Safari.');
+    } catch {
+      setCopyLinkStatus(link);
     }
   };
 
@@ -362,6 +380,13 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
 
   const handleAccessOption = (profileId) => {
     if (profileId === 'client') {
+      if (isInAppBrowser()) {
+        sessionStorage.setItem(requestedProfileStorageKey, profileId);
+        setCopyLinkStatus('');
+        setInAppBrowserNoticeOpen(true);
+        return;
+      }
+
       handleLogin(profileId);
       return;
     }
@@ -671,6 +696,25 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
               </div>
             </div>
           </form>
+        </div>
+      )}
+
+      {inAppBrowserNoticeOpen && (
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Abrir en navegador">
+          <div className="agenda-modal-card login-browser-modal">
+            <div className="agenda-modal-header">Abrir en navegador</div>
+            <div className="agenda-modal-body login-browser-modal-body">
+              <p>
+                Instagram puede bloquear el inicio de sesión con Google. Para entrar como cliente, abrí esta página en Chrome o Safari.
+              </p>
+              <div className="login-browser-link">{getAppLink()}</div>
+              {copyLinkStatus && <p className="login-browser-status">{copyLinkStatus}</p>}
+            </div>
+            <div className="agenda-modal-actions">
+              <button className="agenda-option-button" type="button" onClick={() => setInAppBrowserNoticeOpen(false)}>Cerrar</button>
+              <button className="agenda-close-button" type="button" onClick={copyAppLink}>Copiar link</button>
+            </div>
+          </div>
         </div>
       )}
     </main>

@@ -1240,6 +1240,39 @@ code {
   background: #eef5ff;
 }
 
+.login-browser-modal {
+  width: min(92vw, 420px);
+}
+
+.login-browser-modal-body {
+  display: grid;
+  gap: 12px;
+}
+
+.login-browser-modal-body p {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.login-browser-link {
+  overflow-wrap: anywhere;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  padding: 10px;
+  color: #0f3ea8;
+  background: #f8fbff;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.login-browser-status {
+  color: #047857 !important;
+}
+
 .login-google-icon {
   display: inline-flex;
   align-items: center;
