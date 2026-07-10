@@ -44,6 +44,8 @@ const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0
 }).format(Number(value) || 0);
 
+const getCurrentMonthName = () => new Intl.DateTimeFormat('es-AR', { month: 'long' }).format(new Date()).toUpperCase();
+
 const getDiscountValue = (discount) => Number(discount?.value ?? discount?.percent) || 0;
 
 const getActivityDiscountLabel = (discount) => `${String(discount?.name || '').trim() || 'Check actividad'} (${discount?.valueType === 'amount' ? formatMoney(getDiscountValue(discount)) : `${getDiscountValue(discount)}%`})`;
@@ -239,6 +241,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
   const [employeeServices, setEmployeeServices] = useState([]);
   const [appConfig, setAppConfig] = useState(null);
   const [promotions, setPromotions] = useState([]);
+  const [currentMonthClosureSummary, setCurrentMonthClosureSummary] = useState({ bookingCount: 0, total: 0 });
   const [accessRequests, setAccessRequests] = useState([]);
   const [employeeForm, setEmployeeForm] = useState(emptyEmployee);
   const [serviceForm, setServiceForm] = useState(emptyService);
@@ -325,6 +328,10 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     setEmployeeServices(data?.employeeServices || []);
     setAppConfig(configResult.data || null);
     setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
+    setCurrentMonthClosureSummary({
+      bookingCount: Number(data?.currentMonthClosureSummary?.booking_count || data?.currentMonthClosureSummary?.bookingCount || 0),
+      total: Number(data?.currentMonthClosureSummary?.total || 0)
+    });
     setAccessRequests(view === 'employees' ? data?.accessRequests || [] : []);
     setIsLoading(false);
   }, [internalAdminAccountId, internalSessionToken, view]);
@@ -1193,6 +1200,11 @@ export default function AdminPanel({ view, user, onDataChanged }) {
           <span>Asignaciones</span>
           <strong>{employeeServices.length}</strong>
           <small>Empleado por actividad.</small>
+        </article>
+        <article className="admin-metric-card admin-metric-card-monthly-closures">
+          <span>{getCurrentMonthName()}</span>
+          <strong>{formatMoney(currentMonthClosureSummary.total)}</strong>
+          <small>{currentMonthClosureSummary.bookingCount} turno(s) cerrados.</small>
         </article>
       </div>
 

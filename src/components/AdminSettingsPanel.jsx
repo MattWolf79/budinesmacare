@@ -71,6 +71,9 @@ const normalizeDiscounts = (discounts) => {
 
 const defaultConfig = {
   company_name: 'Turnos App',
+  welcome_background_data_url: '',
+  welcome_background_file_name: '',
+  welcome_background_mime_type: '',
   banner_data_url: '',
   banner_file_name: '',
   banner_mime_type: '',
@@ -132,6 +135,9 @@ export default function AdminSettingsPanel({ user }) {
     const firstBanner = bannerImages[0] || {};
     const nextConfig = {
       company_name: String(config?.company_name || 'Turnos App').trim() || 'Turnos App',
+      welcome_background_data_url: String(config?.welcome_background_data_url || ''),
+      welcome_background_file_name: String(config?.welcome_background_file_name || ''),
+      welcome_background_mime_type: String(config?.welcome_background_mime_type || ''),
       banner_data_url: firstBanner.dataUrl || config?.banner_data_url || '',
       banner_file_name: firstBanner.fileName || config?.banner_file_name || '',
       banner_mime_type: firstBanner.mimeType || config?.banner_mime_type || '',
@@ -273,6 +279,42 @@ export default function AdminSettingsPanel({ user }) {
     event.target.value = '';
   };
 
+  const changeWelcomeBackground = async (event) => {
+    const [file] = Array.from(event.target.files || []);
+
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      alert('El fondo de bienvenida debe ser JPG o PNG.');
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setForm((current) => ({
+          ...current,
+          welcome_background_data_url: String(reader.result || ''),
+          welcome_background_file_name: file.name,
+          welcome_background_mime_type: file.type
+        }));
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const clearWelcomeBackground = () => {
+    setForm((current) => ({
+      ...current,
+      welcome_background_data_url: '',
+      welcome_background_file_name: '',
+      welcome_background_mime_type: ''
+    }));
+  };
+
   const removeBannerImage = (index) => {
     setForm((current) => {
       const nextImages = current.banner_images.filter((_, imageIndex) => imageIndex !== index);
@@ -338,6 +380,9 @@ export default function AdminSettingsPanel({ user }) {
 
     const { data, error } = await supabase.rpc('save_admin_app_configuration', {
       company_name_value: form.company_name.trim() || null,
+      welcome_background_data_url_value: form.welcome_background_data_url || null,
+      welcome_background_file_name_value: form.welcome_background_file_name || null,
+      welcome_background_mime_type_value: form.welcome_background_mime_type || null,
       banner_data_url_value: form.banner_data_url || null,
       banner_file_name_value: form.banner_file_name || null,
       banner_mime_type_value: form.banner_mime_type || null,
@@ -467,6 +512,23 @@ export default function AdminSettingsPanel({ user }) {
               />
             </label>
             <p className="settings-empty-text">Se va a mostrar como: Bienvenido a {form.company_name.trim() || 'Turnos App'}</p>
+
+            <label className="settings-upload-field">
+              <span>Fondo de bienvenida JPG o PNG</span>
+              <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={changeWelcomeBackground} />
+            </label>
+
+            {form.welcome_background_data_url ? (
+              <div className="settings-banner-preview settings-welcome-background-preview">
+                <img src={form.welcome_background_data_url} alt="Fondo de bienvenida configurado" />
+                <div>
+                  <strong>{form.welcome_background_file_name || 'Fondo cargado'}</strong>
+                  <button className="agenda-option-button" type="button" onClick={clearWelcomeBackground}>Quitar</button>
+                </div>
+              </div>
+            ) : (
+              <p className="settings-empty-text">Todavía no hay fondo cargado.</p>
+            )}
           </div>
         </article>
 
@@ -661,10 +723,13 @@ export default function AdminSettingsPanel({ user }) {
               <button className="agenda-option-button" type="button" onClick={() => setPreviewOpen(false)}>Cerrar</button>
             </div>
             <div className="agenda-modal-body settings-preview-body">
-              <section className="role-workspace-hero client-welcome-hero settings-preview-hero">
+              <section
+                className={`role-workspace-hero client-welcome-hero settings-preview-hero ${form.welcome_background_data_url ? 'has-custom-background' : ''}`}
+                style={form.welcome_background_data_url ? { backgroundImage: `url(${form.welcome_background_data_url})` } : undefined}
+              >
                 <div>
                   <p className="admin-kicker">Bienvenida</p>
-                  <h1>Bienvenido a {form.company_name.trim() || 'Turnos App'}</h1>
+                  <h1><span className="client-welcome-prefix">Bienvenido a</span><span className="client-welcome-name">{form.company_name.trim() || 'Turnos App'}</span></h1>
                   <p>Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.</p>
                 </div>
                 <span className="role-workspace-icon" aria-hidden="true">🙋</span>

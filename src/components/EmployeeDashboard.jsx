@@ -74,6 +74,26 @@ const getTodayWeekday = () => new Date().getDay();
 const isClosedBooking = (booking) =>
   ['completed', 'closed'].includes(String(booking?.status || '').trim().toLowerCase());
 
+const startOfWeek = (date) => {
+  const weekStart = new Date(date);
+  const day = weekStart.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() + diff);
+  return weekStart;
+};
+
+const addDays = (date, days) => {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+};
+
+const isDateInRange = (value, start, end) => {
+  const date = parseDate(value);
+  return date >= start && date < end;
+};
+
 const buildClosedBookingAmounts = (employeeBookings, closureItems = [], closures = []) => {
   const closedBookingIds = new Set(employeeBookings.filter(isClosedBooking).map((booking) => String(booking.id)));
   const closuresById = new Map((closures || []).map((closure) => [String(closure.id), closure]));
@@ -290,6 +310,27 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
       .join(' · ');
   }, [activeAvailability]);
 
+  const weeklyClosedSummary = useMemo(() => {
+    const currentWeekStart = startOfWeek(now);
+    const nextWeekStart = addDays(currentWeekStart, 7);
+    const previousWeekStart = addDays(currentWeekStart, -7);
+    const closedBookings = bookings.filter(isClosedBooking);
+
+    const buildSummary = (start, end) => closedBookings.reduce((summary, booking) => {
+      if (!isDateInRange(booking.start_at, start, end)) return summary;
+
+      return {
+        count: summary.count + 1,
+        total: summary.total + Number(closedBookingAmounts[booking.id] || 0)
+      };
+    }, { count: 0, total: 0 });
+
+    return {
+      current: buildSummary(currentWeekStart, nextWeekStart),
+      previous: buildSummary(previousWeekStart, currentWeekStart)
+    };
+  }, [bookings, closedBookingAmounts, now]);
+
   if (!employeeId) {
     return (
       <section className="employee-panel employee-panel-empty">
@@ -335,6 +376,21 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
               <span>Disponibilidad</span>
               <strong>{availabilityDayCount}</strong>
               <p>{todayAvailabilityLabel}</p>
+            </article>
+            <article className="employee-summary-card employee-summary-card-closed-weeks">
+              <span>Recaudación</span>
+              <div className="employee-closed-week-lines">
+                <div className="employee-closed-week-row is-current">
+                  <span>Esta semana</span>
+                  <strong>{formatMoney(weeklyClosedSummary.current.total)}</strong>
+                  <small>{weeklyClosedSummary.current.count} turnos</small>
+                </div>
+                <div className="employee-closed-week-row">
+                  <span>Semana anterior</span>
+                  <strong>{formatMoney(weeklyClosedSummary.previous.total)}</strong>
+                  <small>{weeklyClosedSummary.previous.count} turnos</small>
+                </div>
+              </div>
             </article>
           </div>
 

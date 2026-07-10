@@ -2090,7 +2090,7 @@ code {
 
 .employee-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -2133,6 +2133,99 @@ code {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.employee-summary-card-closed-weeks {
+  position: relative;
+  overflow: hidden;
+  border-color: #123d45;
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgba(63, 201, 213, 0.34), rgba(18, 61, 69, 0) 44%),
+    linear-gradient(145deg, #14242d 0%, #173a42 58%, #0f2930 100%);
+}
+
+.employee-summary-card-closed-weeks::after {
+  position: absolute;
+  top: -46px;
+  right: -38px;
+  width: 118px;
+  height: 118px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  content: '';
+}
+
+.employee-summary-card-closed-weeks > span,
+.employee-summary-card-closed-weeks > strong,
+.employee-summary-card-closed-weeks .employee-closed-week-lines {
+  position: relative;
+  z-index: 1;
+}
+
+.employee-summary-card-closed-weeks > span {
+  color: #7ddbe4;
+}
+
+.employee-summary-card-closed-weeks > strong {
+  display: block;
+  margin-top: 6px;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1.05;
+}
+
+.employee-closed-week-lines {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.employee-closed-week-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label amount"
+    "count amount";
+  gap: 3px 10px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px 9px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.employee-closed-week-row.is-current {
+  border-color: rgba(125, 219, 228, 0.36);
+  background: rgba(63, 201, 213, 0.14);
+}
+
+.employee-closed-week-row span {
+  grid-area: label;
+  color: #d7f7fb;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.employee-closed-week-row strong {
+  grid-area: amount;
+  margin-top: 0;
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.employee-closed-week-row small {
+  grid-area: count;
+  color: #a7d7df;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
 }
 
 .employee-layout {
@@ -2314,6 +2407,10 @@ code {
 }
 
 @media (max-width: 760px) {
+  .employee-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .employee-list {
     grid-template-columns: 1fr;
   }
@@ -2493,6 +2590,10 @@ code {
   border: 1px solid #d8e0eb;
   border-radius: 8px;
   background: #f8fafc;
+}
+
+.settings-welcome-background-preview img {
+  aspect-ratio: 16 / 6;
 }
 
 .settings-banner-preview div {
@@ -6264,6 +6365,7 @@ body {
 }
 
 .service-admin-manager .service-metric-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px !important;
   margin-bottom: 18px !important;
 }
@@ -8027,6 +8129,47 @@ body {
   align-items: center;
 }
 
+.role-workspace-client .client-welcome-hero.has-custom-background,
+.settings-preview-hero.has-custom-background {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.role-workspace-client .client-welcome-hero.has-custom-background::before,
+.settings-preview-hero.has-custom-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.74), rgba(15, 23, 42, 0.34));
+}
+
+.role-workspace-client .client-welcome-hero.has-custom-background > *,
+.settings-preview-hero.has-custom-background > * {
+  position: relative;
+  z-index: 1;
+}
+
+.role-workspace-client .client-welcome-hero.has-custom-background .admin-kicker,
+.role-workspace-client .client-welcome-hero.has-custom-background h1,
+.role-workspace-client .client-welcome-hero.has-custom-background p:not(.admin-kicker),
+.settings-preview-hero.has-custom-background .admin-kicker,
+.settings-preview-hero.has-custom-background h1,
+.settings-preview-hero.has-custom-background p:not(.admin-kicker) {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.36);
+}
+
+.role-workspace-client .client-welcome-hero.has-custom-background .role-workspace-icon,
+.settings-preview-hero.has-custom-background .role-workspace-icon {
+  border-color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+}
+
 .role-workspace-client .client-welcome-hero > div {
   display: contents;
 }
@@ -8043,6 +8186,27 @@ body {
   grid-column: 2;
   grid-row: 1 / span 4;
   align-self: center;
+}
+
+.role-workspace-client .client-welcome-hero h1 span,
+.settings-preview-hero h1 span {
+  display: block;
+}
+
+.role-workspace-client .client-welcome-hero .client-welcome-prefix,
+.settings-preview-hero .client-welcome-prefix {
+  margin-bottom: 2px;
+  font-size: 0.5em;
+  font-weight: 750;
+  line-height: 1.05;
+  opacity: 0.86;
+}
+
+.role-workspace-client .client-welcome-hero .client-welcome-name,
+.settings-preview-hero .client-welcome-name {
+  font-size: 1.12em;
+  font-weight: 950;
+  line-height: 0.98;
 }
 
 .client-welcome-action {
@@ -8696,6 +8860,265 @@ body {
   background: #16a34a !important;
 }
 
+/* Unified dashboard highlight cards */
+.admin-metric-card,
+.employee-summary-card {
+  position: relative !important;
+  overflow: hidden !important;
+  border-color: color-mix(in srgb, var(--dashboard-card-accent, #3fc9d5) 34%, #153640) !important;
+  color: #fff !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.2), transparent 29%),
+    linear-gradient(135deg, color-mix(in srgb, var(--dashboard-card-accent, #3fc9d5) 35%, transparent), transparent 43%),
+    linear-gradient(145deg, #14242d 0%, #173a42 58%, #0f2930 100%) !important;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18) !important;
+}
+
+.admin-metric-card::after,
+.employee-summary-card::after {
+  position: absolute !important;
+  right: -34px !important;
+  bottom: -44px !important;
+  width: 112px !important;
+  height: 112px !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  content: '' !important;
+}
+
+.admin-metric-card > *,
+.employee-summary-card > * {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.admin-metric-card span,
+.employee-summary-card > span {
+  color: color-mix(in srgb, var(--dashboard-card-accent, #7ddbe4) 78%, #fff) !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.04em !important;
+}
+
+.admin-metric-card strong,
+.employee-summary-card > strong {
+  display: block !important;
+  margin-top: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-bottom: 0 !important;
+  border-radius: 8px 8px 0 0 !important;
+  padding: 8px 9px 2px !important;
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  font-weight: 950 !important;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.32) !important;
+}
+
+.admin-metric-card small,
+.employee-summary-card p {
+  display: block !important;
+  margin-top: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 8px 8px !important;
+  padding: 1px 9px 8px !important;
+  color: #b8d5dc !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  font-weight: 850 !important;
+}
+
+.admin-metric-card:nth-child(2) strong,
+.admin-metric-card:nth-child(2) small,
+.employee-summary-card:nth-child(2) > strong,
+.employee-summary-card:nth-child(2) p {
+  background: rgba(125, 211, 111, 0.12) !important;
+  border-color: rgba(125, 211, 111, 0.25) !important;
+}
+
+.admin-metric-card:nth-child(3) strong,
+.admin-metric-card:nth-child(3) small,
+.employee-summary-card:nth-child(3) > strong,
+.employee-summary-card:nth-child(3) p {
+  background: rgba(242, 184, 75, 0.12) !important;
+  border-color: rgba(242, 184, 75, 0.25) !important;
+}
+
+.admin-metric-card:nth-child(4) strong,
+.admin-metric-card:nth-child(4) small,
+.employee-summary-card:nth-child(4) > strong,
+.employee-summary-card:nth-child(4) p {
+  background: rgba(140, 200, 255, 0.12) !important;
+  border-color: rgba(140, 200, 255, 0.25) !important;
+}
+
+.admin-metric-card:nth-child(1),
+.employee-summary-card:nth-child(1) {
+  --dashboard-card-accent: #3fc9d5;
+}
+
+.admin-metric-card:nth-child(2),
+.employee-summary-card:nth-child(2) {
+  --dashboard-card-accent: #7dd36f;
+}
+
+.admin-metric-card:nth-child(3),
+.employee-summary-card:nth-child(3) {
+  --dashboard-card-accent: #f2b84b;
+}
+
+.admin-metric-card:nth-child(4),
+.employee-summary-card:nth-child(4) {
+  --dashboard-card-accent: #8cc8ff;
+}
+
+.admin-metric-card:nth-child(5) {
+  --dashboard-card-accent: #f58cc6;
+}
+
+.employee-summary-card-closed-weeks {
+  --dashboard-card-accent: #3fc9d5;
+}
+
+.employee-admin-manager .employee-metric-grid .admin-metric-card,
+.service-admin-manager .service-metric-grid .admin-metric-card,
+.dashboard-shell .employee-admin-manager .employee-metric-grid .admin-metric-card,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card {
+  position: relative !important;
+  overflow: hidden !important;
+  border-color: color-mix(in srgb, var(--dashboard-card-accent, #3fc9d5) 34%, #153640) !important;
+  color: #fff !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.2), transparent 29%),
+    linear-gradient(135deg, color-mix(in srgb, var(--dashboard-card-accent, #3fc9d5) 35%, transparent), transparent 43%),
+    linear-gradient(145deg, #14242d 0%, #173a42 58%, #0f2930 100%) !important;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18) !important;
+}
+
+.employee-admin-manager .employee-metric-grid .admin-metric-card span,
+.service-admin-manager .service-metric-grid .admin-metric-card span,
+.dashboard-shell .employee-admin-manager .employee-metric-grid .admin-metric-card span,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card span {
+  color: color-mix(in srgb, var(--dashboard-card-accent, #7ddbe4) 78%, #fff) !important;
+}
+
+.employee-admin-manager .employee-metric-grid .admin-metric-card strong,
+.service-admin-manager .service-metric-grid .admin-metric-card strong,
+.dashboard-shell .employee-admin-manager .employee-metric-grid .admin-metric-card strong,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card strong {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.employee-admin-manager .employee-metric-grid .admin-metric-card small,
+.service-admin-manager .service-metric-grid .admin-metric-card small,
+.dashboard-shell .employee-admin-manager .employee-metric-grid .admin-metric-card small,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card small {
+  color: #b8d5dc !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.service-admin-manager .service-metric-grid,
+.dashboard-shell .service-admin-manager .service-metric-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+.service-admin-manager .service-metric-grid .admin-metric-card,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card {
+  min-height: 78px !important;
+  padding: 9px 10px !important;
+}
+
+.service-admin-manager .service-metric-grid .admin-metric-card span,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card span {
+  font-size: 8px !important;
+  line-height: 1 !important;
+}
+
+.service-admin-manager .service-metric-grid .admin-metric-card strong,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card strong {
+  margin-top: 5px !important;
+  padding: 5px 7px 1px !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
+.service-admin-manager .service-metric-grid .admin-metric-card small,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card small {
+  padding: 1px 7px 5px !important;
+  font-size: 8px !important;
+  line-height: 1.15 !important;
+}
+
+.client-summary-panel,
+.client-promotions-panel,
+.role-action-card {
+  position: relative;
+  overflow: hidden;
+  border-color: #123d45 !important;
+  background:
+    linear-gradient(135deg, rgba(63, 201, 213, 0.18), rgba(18, 61, 69, 0) 44%),
+    linear-gradient(145deg, #14242d 0%, #173a42 58%, #0f2930 100%) !important;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16) !important;
+}
+
+.client-summary-panel::after,
+.client-promotions-panel::after,
+.role-action-card::after {
+  position: absolute;
+  top: -42px;
+  right: -36px;
+  width: 118px;
+  height: 118px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  content: '';
+  pointer-events: none;
+}
+
+.client-summary-panel > *,
+.client-promotions-panel > *,
+.role-action-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.client-summary-header h2,
+.client-promotions-panel h2,
+.role-action-card strong {
+  color: #fff !important;
+}
+
+.client-summary-empty,
+.role-action-card p {
+  color: #b8d5dc !important;
+}
+
+.client-booking-card,
+.client-promotion-card {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(4px);
+}
+
+.client-booking-card strong,
+.client-promotion-card strong {
+  color: #fff !important;
+}
+
+.client-booking-card span,
+.client-booking-card time,
+.client-promotion-card p {
+  color: #c7e6ec !important;
+}
+
+.client-promotion-card span {
+  color: #0f2930 !important;
+  background: #7ddbe4 !important;
+}
+
 @media (max-width: 560px) {
   .agenda-customer-card {
     width: min(92vw, 360px) !important;
@@ -8836,6 +9259,16 @@ body {
     grid-template-columns: 1fr !important;
     align-items: stretch !important;
     padding: 9px !important;
+  }
+
+  .service-admin-manager .service-metric-grid,
+  .dashboard-shell .service-admin-manager .service-metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .service-admin-manager .service-metric-grid .admin-metric-card,
+  .dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card {
+    min-height: 82px !important;
   }
 
   .booking-assignment-card .admin-record-main {
@@ -9040,7 +9473,7 @@ body {
 
   .role-workspace-employee .employee-summary-grid {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 6px !important;
     margin-bottom: 8px !important;
   }
@@ -9073,6 +9506,46 @@ body {
 
   .role-workspace-employee .employee-summary-card-availability p {
     white-space: normal !important;
+  }
+
+  .role-workspace-employee .employee-closed-week-lines {
+    gap: 4px !important;
+    margin-top: 6px !important;
+  }
+
+  .role-workspace-employee .employee-summary-card-closed-weeks > strong {
+    font-size: 12px !important;
+  }
+
+  .role-workspace-employee .employee-closed-week-row {
+    grid-template-columns: minmax(44px, 1fr) auto !important;
+    gap: 2px 6px !important;
+    padding: 5px 6px !important;
+  }
+
+  .role-workspace-employee .employee-closed-week-row span {
+    font-size: 7px !important;
+  }
+
+  .role-workspace-employee .employee-closed-week-row strong {
+    font-size: 10px !important;
+  }
+
+  .role-workspace-employee .employee-closed-week-row small {
+    font-size: 8px !important;
+    white-space: nowrap !important;
+  }
+
+  .role-workspace-employee .employee-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .role-workspace-employee .employee-summary-card {
+    min-height: 92px !important;
+  }
+
+  .role-workspace-employee .employee-closed-week-row strong {
+    font-size: 11px !important;
   }
 
   .role-workspace-employee .employee-layout {

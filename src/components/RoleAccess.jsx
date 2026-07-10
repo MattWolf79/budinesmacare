@@ -80,9 +80,11 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
   const [companyName, setCompanyName] = useState('Turnos App');
+  const [welcomeBackground, setWelcomeBackground] = useState(null);
   const profile = profileOptions[selectedProfile];
   const shouldUseClientPhoto = selectedProfile === 'client' && Boolean(user?.photoUrl);
   const isClientProfile = selectedProfile === 'client';
+  const shouldUseWelcomeBackground = isClientProfile && clientActiveView === 'home' && Boolean(welcomeBackground?.dataUrl);
 
   useEffect(() => {
     let active = true;
@@ -93,6 +95,11 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
       if (!active || error) return;
 
       setCompanyName(String(data?.company_name || 'Turnos App').trim() || 'Turnos App');
+      setWelcomeBackground(data?.welcome_background_data_url ? {
+        dataUrl: data.welcome_background_data_url,
+        fileName: data.welcome_background_file_name || '',
+        mimeType: data.welcome_background_mime_type || ''
+      } : null);
     };
 
     const refreshConfiguration = () => {
@@ -156,10 +163,13 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
       )}
 
       {isClientProfile ? (
-        <section className={`role-workspace-hero ${clientActiveView === 'home' ? 'client-welcome-hero' : 'client-reserve-hero'}`}>
+        <section
+          className={`role-workspace-hero ${clientActiveView === 'home' ? 'client-welcome-hero' : 'client-reserve-hero'} ${shouldUseWelcomeBackground ? 'has-custom-background' : ''}`}
+          style={shouldUseWelcomeBackground ? { backgroundImage: `url(${welcomeBackground.dataUrl})` } : undefined}
+        >
           <div>
             <p className="admin-kicker">{clientActiveView === 'home' ? 'Bienvenida' : 'Reserva'}</p>
-            <h1>{clientActiveView === 'home' ? `Bienvenido a ${companyName}` : 'Reservar turno'}</h1>
+            <h1>{clientActiveView === 'home' ? <><span className="client-welcome-prefix">Bienvenido a</span><span className="client-welcome-name">{companyName}</span></> : 'Reservar turno'}</h1>
             <p>
               {clientActiveView === 'home'
                 ? 'Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.'
