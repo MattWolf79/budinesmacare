@@ -2245,6 +2245,12 @@ code {
   overflow: hidden;
 }
 
+.employee-booking-row.is-closed {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  filter: grayscale(1);
+}
+
 .employee-booking-row::before {
   position: absolute;
   inset: 0 auto 0 0;

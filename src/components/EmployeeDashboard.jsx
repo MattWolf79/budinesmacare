@@ -65,6 +65,9 @@ const formatAvailabilityTime = (value) => String(value || '').slice(0, 5);
 
 const getTodayWeekday = () => new Date().getDay();
 
+const isClosedBooking = (booking) =>
+  ['completed', 'closed'].includes(String(booking?.status || '').trim().toLowerCase());
+
 export default function EmployeeDashboard({ user, activeView = 'summary' }) {
   const [employee, setEmployee] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -136,7 +139,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
           .from('bookings')
           .select('*')
           .eq('employee_id', employeeId)
-          .in('status', ['confirmed', 'reserved'])
+          .in('status', ['confirmed', 'reserved', 'completed'])
           .order('start_at', { ascending: true }),
         supabase.from('services').select('*'),
         availabilityRequest,
@@ -177,7 +180,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
   const now = useMemo(() => new Date(), []);
 
   const upcomingBookings = useMemo(
-    () => bookings.filter((booking) => parseDate(booking.end_at) >= now),
+    () => bookings.filter((booking) => parseDate(booking.end_at) >= now || isClosedBooking(booking)),
     [bookings, now]
   );
 
@@ -248,7 +251,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
             <article className="employee-summary-card">
               <span>Próximos</span>
               <strong>{upcomingBookings.length}</strong>
-              <p>turno(s) activos</p>
+              <p>turno(s) visibles</p>
             </article>
             <article className="employee-summary-card employee-summary-card-availability">
               <span>Disponibilidad</span>
@@ -273,12 +276,13 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
                 ) : upcomingBookings.map((booking) => {
                   const service = getServiceForBooking(booking, services);
                   const bookingLabelLines = getBookingLabelLines(booking, service);
+                  const isClosed = isClosedBooking(booking);
 
                   return (
                     <div
-                      className="employee-booking-row"
+                      className={`employee-booking-row${isClosed ? ' is-closed' : ''}`}
                       key={booking.id}
-                      style={{ '--employee-booking-color': service?.color || '#3fc9d5' }}
+                      style={{ '--employee-booking-color': isClosed ? '#94a3b8' : service?.color || '#3fc9d5' }}
                     >
                       <ActivityIcon service={service} size="small" />
                       <div>
