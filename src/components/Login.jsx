@@ -86,7 +86,7 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export default function Login({ onInternalAccess }) {
+export default function Login({ onInternalAccess, onLocalClientAccess }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
   const [internalAccessMode, setInternalAccessMode] = useState('login');
   const [registrationForm, setRegistrationForm] = useState(emptyRegistrationForm);
@@ -398,6 +398,12 @@ export default function Login({ onInternalAccess }) {
             </button>
           ))}
         </div>
+
+        {onLocalClientAccess && (
+          <button className="login-local-client-button" type="button" onClick={onLocalClientAccess}>
+            Entrar como cliente local
+          </button>
+        )}
 
       </section>
 

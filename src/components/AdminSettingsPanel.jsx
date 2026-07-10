@@ -511,7 +511,7 @@ export default function AdminSettingsPanel({ user }) {
                 onChange={(event) => setForm((current) => ({ ...current, company_name: event.target.value }))}
               />
             </label>
-            <p className="settings-empty-text">Se va a mostrar como: Bienvenido a {form.company_name.trim() || 'Turnos App'}</p>
+            <p className="settings-empty-text">Se va a mostrar debajo de BIENVENIDA como: {form.company_name.trim() || 'Turnos App'}</p>
 
             <label className="settings-upload-field">
               <span>Fondo de bienvenida JPG o PNG</span>
@@ -729,10 +729,9 @@ export default function AdminSettingsPanel({ user }) {
               >
                 <div>
                   <p className="admin-kicker">Bienvenida</p>
-                  <h1><span className="client-welcome-prefix">Bienvenido a</span><span className="client-welcome-name">{form.company_name.trim() || 'Turnos App'}</span></h1>
+                  <h1><span className="client-welcome-name">{form.company_name.trim() || 'Turnos App'}</span></h1>
                   <p>Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.</p>
                 </div>
-                <span className="role-workspace-icon" aria-hidden="true">🙋</span>
               </section>
 
               {previewBannerImages.length > 0 && (

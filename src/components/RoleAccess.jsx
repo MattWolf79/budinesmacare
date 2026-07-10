@@ -82,7 +82,6 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const [companyName, setCompanyName] = useState('Turnos App');
   const [welcomeBackground, setWelcomeBackground] = useState(null);
   const profile = profileOptions[selectedProfile];
-  const shouldUseClientPhoto = selectedProfile === 'client' && Boolean(user?.photoUrl);
   const isClientProfile = selectedProfile === 'client';
   const shouldUseWelcomeBackground = isClientProfile && clientActiveView === 'home' && Boolean(welcomeBackground?.dataUrl);
 
@@ -169,16 +168,13 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
         >
           <div>
             <p className="admin-kicker">{clientActiveView === 'home' ? 'Bienvenida' : 'Reserva'}</p>
-            <h1>{clientActiveView === 'home' ? <><span className="client-welcome-prefix">Bienvenido a</span><span className="client-welcome-name">{companyName}</span></> : 'Reservar turno'}</h1>
+            <h1>{clientActiveView === 'home' ? <span className="client-welcome-name">{companyName}</span> : 'Reservar turno'}</h1>
             <p>
               {clientActiveView === 'home'
                 ? 'Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.'
                 : 'Seleccioná un horario disponible en la grilla para crear tu próximo turno.'}
             </p>
           </div>
-          <span className={`role-workspace-icon ${shouldUseClientPhoto ? 'has-photo' : ''}`} aria-hidden="true">
-            <UserPhoto user={shouldUseClientPhoto ? user : null} fallback={profile.icon} />
-          </span>
         </section>
       ) : (
         <section className="role-workspace-hero">

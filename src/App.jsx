@@ -8,6 +8,19 @@ const validProfiles = ['client', 'employee', 'admin'];
 const profileStorageKey = 'turnos_access_profile';
 const requestedProfileStorageKey = 'turnos_requested_profile';
 const internalSessionStorageKey = 'turnos_internal_session';
+const localClientSessionStorageKey = 'turnos_local_client_session';
+const canUseLocalClientAccess = import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+const createLocalClientSession = () => ({
+  id: '00000000-0000-4000-8000-000000000001',
+  email: 'cliente.local@turnos.app',
+  role: 'client',
+  displayName: 'Cliente local',
+  photoUrl: null,
+  employeeId: null,
+  isInternal: false,
+  isLocalClient: true
+});
 
 const getAvailableProfiles = (role) => {
   if (role === 'admin') return ['admin'];
@@ -49,6 +62,26 @@ const loadStoredInternalSession = () => {
   }
 };
 
+const loadStoredLocalClientSession = () => {
+  if (!canUseLocalClientAccess) {
+    sessionStorage.removeItem(localClientSessionStorageKey);
+    return null;
+  }
+
+  const storedSession = sessionStorage.getItem(localClientSessionStorageKey);
+
+  if (!storedSession) return null;
+
+  try {
+    const parsedSession = JSON.parse(storedSession);
+
+    return parsedSession?.role === 'client' ? parsedSession : null;
+  } catch {
+    sessionStorage.removeItem(localClientSessionStorageKey);
+    return null;
+  }
+};
+
 const getStoredProfile = () => {
   const requestedProfile = sessionStorage.getItem(requestedProfileStorageKey);
   const storedProfile = sessionStorage.getItem(profileStorageKey);
@@ -63,10 +96,13 @@ export default function App() {
 
   const [session, setSession] = useState(null);
   const [internalSession, setInternalSession] = useState(loadStoredInternalSession);
+  const [localClientSession, setLocalClientSession] = useState(loadStoredLocalClientSession);
   const [accessProfile, setAccessProfile] = useState(null);
   const [authProfile, setAuthProfile] = useState(null);
 
-  const availableProfiles = internalSession
+  const availableProfiles = localClientSession
+    ? ['client']
+    : internalSession
     ? getAvailableProfiles(internalSession.role)
     : getAvailableProfiles(authProfile?.role || accessProfile);
   const canChangeProfile = availableProfiles.length > 1;
@@ -79,8 +115,10 @@ export default function App() {
   const clearAccessProfile = () => {
     setAccessProfile(null);
     setAuthProfile(null);
+    setLocalClientSession(null);
     sessionStorage.removeItem(profileStorageKey);
     sessionStorage.removeItem(requestedProfileStorageKey);
+    sessionStorage.removeItem(localClientSessionStorageKey);
   };
 
   const clearInternalSession = () => {
@@ -110,6 +148,15 @@ export default function App() {
     setAccessProfile(account.role);
     sessionStorage.setItem(internalSessionStorageKey, JSON.stringify(nextSession));
     sessionStorage.setItem(profileStorageKey, account.role);
+  };
+
+  const startLocalClientSession = () => {
+    const nextSession = createLocalClientSession();
+
+    setLocalClientSession(nextSession);
+    setAccessProfile('client');
+    sessionStorage.setItem(localClientSessionStorageKey, JSON.stringify(nextSession));
+    sessionStorage.setItem(profileStorageKey, 'client');
   };
 
   const logout = async () => {
@@ -182,8 +229,22 @@ export default function App() {
 
   }, [applyAuthSession]);
 
-  if (!session && !internalSession) {
-    return <Login onInternalAccess={startInternalSession} />;
+  if (!session && !internalSession && !localClientSession) {
+    return <Login onInternalAccess={startInternalSession} onLocalClientAccess={canUseLocalClientAccess ? startLocalClientSession : null} />;
+  }
+
+  if (localClientSession) {
+    return (
+      <RoleAccess
+        user={localClientSession}
+        selectedProfile="client"
+        onSelectProfile={selectAccessProfile}
+        onChangeProfile={clearAccessProfile}
+        availableProfiles={availableProfiles}
+        canChangeProfile={canChangeProfile}
+        onLogout={logout}
+      />
+    );
   }
 
   if (internalSession) {

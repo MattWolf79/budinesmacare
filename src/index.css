@@ -1221,6 +1221,25 @@ code {
   background: #24aebb;
 }
 
+.login-local-client-button {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 14px;
+  border: 1px dashed #b9cdfd;
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #0f3ea8;
+  background: #f8fbff;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.login-local-client-button:hover {
+  border-style: solid;
+  background: #eef5ff;
+}
+
 .login-google-icon {
   display: inline-flex;
   align-items: center;
@@ -1877,14 +1896,15 @@ code {
 .client-promotions-panel {
   width: 100%;
   max-width: 100%;
-  padding: 0;
+  padding: 9px 10px;
   text-align: left;
 }
 
 .client-promotions-panel h2 {
-  margin: 0 0 9px;
+  margin: 0 0 8px;
   color: #1f2937;
   font-size: 16px;
+  font-weight: 900;
   line-height: 1.2;
   letter-spacing: 0;
 }
@@ -8124,9 +8144,9 @@ body {
 }
 
 .role-workspace-client .client-welcome-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  display: block;
+  color: #1f2937;
+  background: #fff;
 }
 
 .role-workspace-client .client-welcome-hero.has-custom-background,
@@ -8171,21 +8191,7 @@ body {
 }
 
 .role-workspace-client .client-welcome-hero > div {
-  display: contents;
-}
-
-.role-workspace-client .client-welcome-hero .admin-kicker,
-.role-workspace-client .client-welcome-hero h1,
-.role-workspace-client .client-welcome-hero p:not(.admin-kicker),
-.role-workspace-client .client-welcome-hero .client-welcome-action {
-  grid-column: 1;
-  justify-self: start;
-}
-
-.role-workspace-client .client-welcome-hero .role-workspace-icon {
-  grid-column: 2;
-  grid-row: 1 / span 4;
-  align-self: center;
+  max-width: 680px;
 }
 
 .role-workspace-client .client-welcome-hero h1 span,
@@ -8204,9 +8210,14 @@ body {
 
 .role-workspace-client .client-welcome-hero .client-welcome-name,
 .settings-preview-hero .client-welcome-name {
-  font-size: 1.12em;
+  font-size: 1.18em;
   font-weight: 950;
   line-height: 0.98;
+}
+
+.role-workspace-client .client-welcome-hero .admin-kicker,
+.settings-preview-hero .admin-kicker {
+  font-size: 13px;
 }
 
 .client-welcome-action {
@@ -8366,28 +8377,28 @@ body {
 }
 
 .role-workspace-client .client-summary-panel {
-  padding: 18px;
+  padding: 9px 10px;
 }
 
 .role-workspace-client .client-summary-header {
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .role-workspace-client .client-summary-header h2 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 900;
 }
 
 .role-workspace-client .client-summary-refresh {
-  color: #047857;
-  border-color: #99f6d0;
-  background: #ecfdf5;
+  color: #475569;
+  border-color: #d8e0eb;
+  background: #fff;
 }
 
 .role-workspace-client .client-summary-refresh:hover {
-  color: #fff;
-  border-color: #16a34a;
-  background: #16a34a;
+  color: #1f2937;
+  border-color: #cbd5e1;
+  background: #f8fafc;
 }
 
 .role-workspace-client .client-booking-card {
@@ -9051,72 +9062,49 @@ body {
 }
 
 .client-summary-panel,
-.client-promotions-panel,
-.role-action-card {
+.client-promotions-panel {
   position: relative;
   overflow: hidden;
-  border-color: #123d45 !important;
-  background:
-    linear-gradient(135deg, rgba(63, 201, 213, 0.18), rgba(18, 61, 69, 0) 44%),
-    linear-gradient(145deg, #14242d 0%, #173a42 58%, #0f2930 100%) !important;
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16) !important;
-}
-
-.client-summary-panel::after,
-.client-promotions-panel::after,
-.role-action-card::after {
-  position: absolute;
-  top: -42px;
-  right: -36px;
-  width: 118px;
-  height: 118px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
-  content: '';
-  pointer-events: none;
-}
-
-.client-summary-panel > *,
-.client-promotions-panel > *,
-.role-action-card > * {
-  position: relative;
-  z-index: 1;
+  border: 1px solid #d8e0eb !important;
+  border-radius: 8px !important;
+  border-color: #d8e0eb !important;
+  background: #fff !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
 }
 
 .client-summary-header h2,
-.client-promotions-panel h2,
-.role-action-card strong {
-  color: #fff !important;
+.client-promotions-panel h2 {
+  color: #1f2937 !important;
+  font-weight: 900 !important;
 }
 
-.client-summary-empty,
-.role-action-card p {
-  color: #b8d5dc !important;
+.client-summary-empty {
+  color: #64748b !important;
 }
 
 .client-booking-card,
 .client-promotion-card {
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  background: rgba(255, 255, 255, 0.09) !important;
-  box-shadow: none !important;
-  backdrop-filter: blur(4px);
+  border-color: #d8e0eb !important;
+  background: #fff !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+  backdrop-filter: none !important;
 }
 
 .client-booking-card strong,
 .client-promotion-card strong {
-  color: #fff !important;
+  color: #1f2937 !important;
 }
 
 .client-booking-card span,
 .client-booking-card time,
 .client-promotion-card p {
-  color: #c7e6ec !important;
+  color: #64748b !important;
 }
 
 .client-promotion-card span {
-  color: #0f2930 !important;
-  background: #7ddbe4 !important;
+  border: 1px solid #e2e8f0;
+  color: #475569 !important;
+  background: #f8fafc !important;
 }
 
 @media (max-width: 560px) {
