@@ -80,6 +80,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
   const [companyName, setCompanyName] = useState('Turnos App');
+  const [businessHoursText, setBusinessHoursText] = useState('');
   const [welcomeBackground, setWelcomeBackground] = useState(null);
   const profile = profileOptions[selectedProfile];
   const isClientProfile = selectedProfile === 'client';
@@ -94,6 +95,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
       if (!active || error) return;
 
       setCompanyName(String(data?.company_name || 'Turnos App').trim() || 'Turnos App');
+  setBusinessHoursText(String(data?.business_hours_text || '').trim());
       setWelcomeBackground(data?.welcome_background_data_url ? {
         dataUrl: data.welcome_background_data_url,
         fileName: data.welcome_background_file_name || '',
@@ -174,6 +176,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
                 ? 'Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.'
                 : 'Seleccioná un horario disponible en la grilla para crear tu próximo turno.'}
             </p>
+            {clientActiveView === 'home' && businessHoursText && <p className="client-business-hours-text">{businessHoursText}</p>}
           </div>
         </section>
       ) : (

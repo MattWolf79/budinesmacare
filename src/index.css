@@ -2539,6 +2539,7 @@ code {
 }
 
 .settings-upload-field,
+.settings-textarea-field,
 .settings-promotion-card label {
   display: grid;
   gap: 6px;
@@ -2549,6 +2550,7 @@ code {
 }
 
 .settings-upload-field input,
+.settings-textarea-field textarea,
 .settings-promotion-card input,
 .settings-promotion-card select,
 .settings-promotion-card textarea {
@@ -2568,7 +2570,13 @@ code {
   resize: vertical;
 }
 
+.settings-textarea-field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
 .settings-upload-field input:focus,
+.settings-textarea-field textarea:focus,
 .settings-promotion-card input:focus,
 .settings-promotion-card select:focus,
 .settings-promotion-card textarea:focus {
@@ -2706,6 +2714,11 @@ code {
 .settings-activity-check-card {
   grid-column: 2;
   grid-row: 1 / span 3;
+}
+
+.settings-business-hours-card {
+  grid-column: 2;
+  grid-row: 4;
 }
 
 .settings-activity-check-grid {
@@ -8213,6 +8226,12 @@ body {
   font-size: 1.18em;
   font-weight: 950;
   line-height: 0.98;
+}
+
+.client-business-hours-text {
+  margin-top: 12px;
+  max-width: 680px;
+  white-space: pre-line;
 }
 
 .role-workspace-client .client-welcome-hero .admin-kicker,

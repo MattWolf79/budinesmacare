@@ -71,6 +71,7 @@ const normalizeDiscounts = (discounts) => {
 
 const defaultConfig = {
   company_name: 'Turnos App',
+  business_hours_text: '',
   welcome_background_data_url: '',
   welcome_background_file_name: '',
   welcome_background_mime_type: '',
@@ -111,7 +112,10 @@ export default function AdminSettingsPanel({ user }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [companyOpen, setCompanyOpen] = useState(false);
   const [bannerOpen, setBannerOpen] = useState(false);
+  const [bookingPreferencesOpen, setBookingPreferencesOpen] = useState(false);
+  const [businessHoursOpen, setBusinessHoursOpen] = useState(false);
   const [promotionsOpen, setPromotionsOpen] = useState(false);
   const [discountsOpen, setDiscountsOpen] = useState(false);
   const [activityChecksOpen, setActivityChecksOpen] = useState(false);
@@ -135,6 +139,7 @@ export default function AdminSettingsPanel({ user }) {
     const firstBanner = bannerImages[0] || {};
     const nextConfig = {
       company_name: String(config?.company_name || 'Turnos App').trim() || 'Turnos App',
+      business_hours_text: String(config?.business_hours_text || ''),
       welcome_background_data_url: String(config?.welcome_background_data_url || ''),
       welcome_background_file_name: String(config?.welcome_background_file_name || ''),
       welcome_background_mime_type: String(config?.welcome_background_mime_type || ''),
@@ -380,6 +385,7 @@ export default function AdminSettingsPanel({ user }) {
 
     const { data, error } = await supabase.rpc('save_admin_app_configuration', {
       company_name_value: form.company_name.trim() || null,
+      business_hours_text_value: form.business_hours_text.trim(),
       welcome_background_data_url_value: form.welcome_background_data_url || null,
       welcome_background_file_name_value: form.welcome_background_file_name || null,
       welcome_background_mime_type_value: form.welcome_background_mime_type || null,
@@ -491,7 +497,6 @@ export default function AdminSettingsPanel({ user }) {
       <div className="admin-hero settings-hero">
         <div>
           <p className="admin-kicker">Configuración</p>
-          <h1>Inicio del cliente</h1>
         </div>
         <button className="agenda-close-button admin-refresh-button" type="button" onClick={() => setPreviewOpen(true)}>
           Vista previa
@@ -500,8 +505,19 @@ export default function AdminSettingsPanel({ user }) {
 
       <div className="settings-layout">
         <article className="admin-form-card settings-card settings-company-card">
-          <div className="agenda-modal-header">Nombre de la empresa</div>
-          <div className="agenda-modal-body settings-card-body">
+          <div className="agenda-modal-header admin-collapsible-form-header">
+            <span>Nombre de la empresa</span>
+            <button
+              className="availability-form-toggle admin-collapsible-form-toggle"
+              type="button"
+              onClick={() => setCompanyOpen((current) => !current)}
+              aria-expanded={companyOpen}
+              aria-label={companyOpen ? 'Ocultar nombre de la empresa' : 'Mostrar nombre de la empresa'}
+            >
+              &gt;
+            </button>
+          </div>
+          <div className={`agenda-modal-body settings-card-body admin-collapsible-form-body ${companyOpen ? 'is-open' : 'is-collapsed'}`}>
             <label>
               Texto del saludo de bienvenida
               <input
@@ -571,8 +587,19 @@ export default function AdminSettingsPanel({ user }) {
         </article>
 
         <article className="admin-form-card settings-card settings-booking-preferences-card">
-          <div className="agenda-modal-header">Preferencias de reserva</div>
-          <div className="agenda-modal-body settings-card-body">
+          <div className="agenda-modal-header admin-collapsible-form-header">
+            <span>Preferencias de reserva</span>
+            <button
+              className="availability-form-toggle admin-collapsible-form-toggle"
+              type="button"
+              onClick={() => setBookingPreferencesOpen((current) => !current)}
+              aria-expanded={bookingPreferencesOpen}
+              aria-label={bookingPreferencesOpen ? 'Ocultar preferencias de reserva' : 'Mostrar preferencias de reserva'}
+            >
+              &gt;
+            </button>
+          </div>
+          <div className={`agenda-modal-body settings-card-body admin-collapsible-form-body ${bookingPreferencesOpen ? 'is-open' : 'is-collapsed'}`}>
             <label className="settings-check-row">
               <input
                 type="checkbox"
@@ -585,6 +612,33 @@ export default function AdminSettingsPanel({ user }) {
         </article>
 
         {activityChecksSection}
+
+        <article className="admin-form-card settings-card settings-business-hours-card">
+          <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
+            <span>Horario de atención</span>
+            <button
+              className="availability-form-toggle admin-collapsible-form-toggle"
+              type="button"
+              onClick={() => setBusinessHoursOpen((current) => !current)}
+              aria-expanded={businessHoursOpen}
+              aria-label={businessHoursOpen ? 'Ocultar horario de atención' : 'Mostrar horario de atención'}
+            >
+              &gt;
+            </button>
+          </div>
+          <div className={`agenda-modal-body settings-card-body admin-collapsible-form-body ${businessHoursOpen ? 'is-open' : 'is-collapsed'}`}>
+            <label className="settings-textarea-field">
+              Texto visible en el banner de bienvenida
+              <textarea
+                value={form.business_hours_text}
+                maxLength={500}
+                placeholder="Abrimos de martes a viernes de 9 a 18 hs y sábados de 9 a 14 hs."
+                onChange={(event) => setForm((current) => ({ ...current, business_hours_text: event.target.value }))}
+              />
+            </label>
+            <p className="settings-empty-text">Se verá completo debajo del mensaje de bienvenida.</p>
+          </div>
+        </article>
 
         <article className="admin-form-card settings-card settings-promotions-card">
           <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
@@ -731,6 +785,7 @@ export default function AdminSettingsPanel({ user }) {
                   <p className="admin-kicker">Bienvenida</p>
                   <h1><span className="client-welcome-name">{form.company_name.trim() || 'Turnos App'}</span></h1>
                   <p>Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.</p>
+                  {form.business_hours_text.trim() && <p className="client-business-hours-text">{form.business_hours_text.trim()}</p>}
                 </div>
               </section>
 
