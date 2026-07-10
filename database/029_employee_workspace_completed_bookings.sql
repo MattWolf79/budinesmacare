@@ -52,6 +52,25 @@ begin
         order by bookings.start_at
       ) booking_rows
     ), '[]'::jsonb),
+    'bookingClosureItems', coalesce((
+      select jsonb_agg(to_jsonb(closure_item_rows) order by closure_item_rows.created_at)
+      from (
+        select closure_items.*
+        from public.booking_closure_items closure_items
+        join public.bookings bookings on bookings.id = closure_items.booking_id
+        where bookings.status = 'completed'
+      ) closure_item_rows
+    ), '[]'::jsonb),
+    'bookingClosures', coalesce((
+      select jsonb_agg(to_jsonb(closure_rows) order by closure_rows.created_at)
+      from (
+        select distinct closures.*
+        from public.booking_closures closures
+        join public.booking_closure_items closure_items on closure_items.closure_id = closures.id
+        join public.bookings bookings on bookings.id = closure_items.booking_id
+        where bookings.status = 'completed'
+      ) closure_rows
+    ), '[]'::jsonb),
     'services', coalesce((
       select jsonb_agg(to_jsonb(service_rows) order by service_rows.id)
       from (select * from public.services order by id) service_rows

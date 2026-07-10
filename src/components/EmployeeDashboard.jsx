@@ -74,6 +74,28 @@ const getTodayWeekday = () => new Date().getDay();
 const isClosedBooking = (booking) =>
   ['completed', 'closed'].includes(String(booking?.status || '').trim().toLowerCase());
 
+const buildClosedBookingAmounts = (employeeBookings, closureItems = [], closures = []) => {
+  const closedBookingIds = new Set(employeeBookings.filter(isClosedBooking).map((booking) => String(booking.id)));
+  const closuresById = new Map((closures || []).map((closure) => [String(closure.id), closure]));
+  const subtotalByClosure = (closureItems || []).reduce((map, item) => {
+    const closureId = String(item.closure_id || '');
+    map.set(closureId, (map.get(closureId) || 0) + Number(item.subtotal || 0));
+    return map;
+  }, new Map());
+
+  return (closureItems || []).reduce((map, item) => {
+    if (!closedBookingIds.has(String(item.booking_id))) return map;
+
+    const closure = closuresById.get(String(item.closure_id || ''));
+    const itemSubtotal = Number(item.subtotal || 0);
+    const closureSubtotal = subtotalByClosure.get(String(item.closure_id || '')) || 0;
+    const closureTotalDiscount = Number(closure?.total_discount_total || 0);
+    const proportionalDiscount = closureSubtotal > 0 ? (itemSubtotal / closureSubtotal) * closureTotalDiscount : 0;
+    map[item.booking_id] = Math.max(0, itemSubtotal - proportionalDiscount);
+    return map;
+  }, {});
+};
+
 export default function EmployeeDashboard({ user, activeView = 'summary' }) {
   const [employee, setEmployee] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -105,45 +127,34 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
           return;
         }
 
-        const { data: closureItems, error: closureItemsError } = await supabase
+        const { data: ownClosureItems, error: closureItemsError } = await supabase
           .from('booking_closure_items')
           .select('booking_id, closure_id, subtotal')
           .in('booking_id', closedBookingIds);
 
-        if (closureItemsError || !closureItems?.length) {
+        if (closureItemsError || !ownClosureItems?.length) {
           setClosedBookingAmounts({});
           return;
         }
 
-        const closureIds = [...new Set(closureItems.map((item) => item.closure_id).filter(Boolean))];
-        const { data: closures, error: closuresError } = await supabase
-          .from('booking_closures')
-          .select('id, final_total, total_discount_total')
-          .in('id', closureIds);
+        const closureIds = [...new Set(ownClosureItems.map((item) => item.closure_id).filter(Boolean))];
+        const [closureItemsResult, closuresResult] = await Promise.all([
+          supabase
+            .from('booking_closure_items')
+            .select('booking_id, closure_id, subtotal')
+            .in('closure_id', closureIds),
+          supabase
+            .from('booking_closures')
+            .select('id, final_total, total_discount_total')
+            .in('id', closureIds)
+        ]);
 
-        if (closuresError) {
+        if (closureItemsResult.error || closuresResult.error) {
           setClosedBookingAmounts({});
           return;
         }
 
-        const closuresById = new Map((closures || []).map((closure) => [String(closure.id), closure]));
-        const subtotalByClosure = closureItems.reduce((map, item) => {
-          const closureId = String(item.closure_id || '');
-          map.set(closureId, (map.get(closureId) || 0) + Number(item.subtotal || 0));
-          return map;
-        }, new Map());
-
-        const amounts = closureItems.reduce((map, item) => {
-          const closure = closuresById.get(String(item.closure_id || ''));
-          const itemSubtotal = Number(item.subtotal || 0);
-          const closureSubtotal = subtotalByClosure.get(String(item.closure_id || '')) || 0;
-          const closureTotalDiscount = Number(closure?.total_discount_total || 0);
-          const proportionalDiscount = closureSubtotal > 0 ? (itemSubtotal / closureSubtotal) * closureTotalDiscount : 0;
-          map[item.booking_id] = Math.max(0, itemSubtotal - proportionalDiscount);
-          return map;
-        }, {});
-
-        setClosedBookingAmounts(amounts);
+        setClosedBookingAmounts(buildClosedBookingAmounts(employeeBookings, closureItemsResult.data || [], closuresResult.data || []));
       };
 
       if (user?.isInternal) {
@@ -174,7 +185,11 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
         setServices(data?.services || []);
         setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
         setAvailability(data?.availability || []);
-        await loadClosedBookingAmounts(employeeBookings);
+        if (Array.isArray(data?.bookingClosureItems) && Array.isArray(data?.bookingClosures)) {
+          setClosedBookingAmounts(buildClosedBookingAmounts(employeeBookings, data.bookingClosureItems, data.bookingClosures));
+        } else {
+          await loadClosedBookingAmounts(employeeBookings);
+        }
         return;
       }
 
