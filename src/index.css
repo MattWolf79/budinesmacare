@@ -2380,6 +2380,24 @@ code {
   min-width: 0;
 }
 
+.settings-company-card,
+.settings-booking-preferences-card,
+.settings-banner-card {
+  grid-column: 1;
+}
+
+.settings-company-card {
+  grid-row: 1;
+}
+
+.settings-booking-preferences-card {
+  grid-row: 2;
+}
+
+.settings-banner-card {
+  grid-row: 3;
+}
+
 .settings-promotions-card {
   grid-column: 1 / -1;
 }
@@ -2550,6 +2568,53 @@ code {
   min-height: 54px;
 }
 
+.settings-activity-check-card {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+}
+
+.settings-activity-check-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.settings-activity-check-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+
+.settings-activity-check-form label,
+.settings-activity-check-form .settings-empty-text,
+.settings-activity-check-form .agenda-option-button {
+  min-width: 0;
+}
+
+.settings-activity-check-enabled {
+  align-self: center;
+  margin-bottom: 2px;
+}
+
+.settings-activity-check-preview {
+  align-self: center;
+  margin: 0;
+}
+
+@media (min-width: 1180px) {
+  .settings-activity-check-form {
+    grid-template-columns: minmax(110px, 0.7fr) minmax(170px, 1.2fr) minmax(140px, 1fr) minmax(110px, 0.8fr);
+  }
+
+  .settings-activity-check-preview,
+  .settings-activity-check-actions {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-activity-check-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .settings-card .admin-collapsible-form-header {
   display: flex;
   align-items: center;
@@ -2604,6 +2669,9 @@ code {
 }
 
 .settings-check-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #bae6fd;
   border-radius: 999px;
   padding: 4px 8px;
@@ -2611,6 +2679,24 @@ code {
   background: #ecfeff;
   font-size: 11px;
   font-weight: 900;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.settings-check-summary-chip.is-selected {
+  border-color: #24aebb;
+  box-shadow: 0 0 0 3px rgba(36, 174, 187, 0.14);
+}
+
+.settings-activity-check-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.settings-activity-check-actions .agenda-option-button,
+.settings-activity-check-actions .agenda-close-button {
+  width: 100%;
 }
 
 .settings-header-actions {
@@ -3702,6 +3788,14 @@ code {
 
   .settings-layout {
     grid-template-columns: 1fr;
+  }
+
+  .settings-company-card,
+  .settings-booking-preferences-card,
+  .settings-banner-card,
+  .settings-activity-check-card {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .settings-banner-preview {

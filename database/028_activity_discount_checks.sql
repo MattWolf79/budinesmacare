@@ -6,6 +6,8 @@ begin;
 alter table public.services
   add column if not exists activity_discount_check_id text;
 
+drop function if exists public.save_admin_service(bigint, text, text, text, integer, numeric, boolean, uuid, text);
+
 create or replace function public.save_admin_service(
   service_id_value bigint,
   name_value text,

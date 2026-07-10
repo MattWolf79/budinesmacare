@@ -46,7 +46,48 @@ const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
 
 const getDiscountValue = (discount) => Number(discount?.value ?? discount?.percent) || 0;
 
-const getActivityDiscountLabel = (discount) => `${discount?.id || 'check_actividad'}${discount?.name ? ` · ${discount.name}` : ''} (${discount?.valueType === 'amount' ? formatMoney(getDiscountValue(discount)) : `${getDiscountValue(discount)}%`})`;
+const getActivityDiscountLabel = (discount) => `${String(discount?.name || '').trim() || 'Check actividad'} (${discount?.valueType === 'amount' ? formatMoney(getDiscountValue(discount)) : `${getDiscountValue(discount)}%`})`;
+
+const isMissingSaveServiceSignatureError = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+  return error?.code === 'PGRST202' || message.includes('schema cache') || message.includes('could not find the function');
+};
+
+const saveAdminServiceRecord = async ({
+  serviceId,
+  name,
+  icon,
+  color,
+  defaultDuration,
+  basePrice,
+  active,
+  accountId,
+  sessionToken,
+  activityDiscountCheckId
+}) => {
+  const baseArgs = {
+    service_id_value: serviceId,
+    name_value: name,
+    icon_value: icon,
+    color_value: color,
+    default_duration_value: defaultDuration,
+    base_price_value: basePrice,
+    active_value: active,
+    account_id_value: accountId,
+    session_token_value: sessionToken
+  };
+
+  const resultWithCheck = await supabase.rpc('save_admin_service', {
+    ...baseArgs,
+    activity_discount_check_id_value: activityDiscountCheckId || null
+  }).single();
+
+  if (!resultWithCheck.error || !isMissingSaveServiceSignatureError(resultWithCheck.error)) {
+    return resultWithCheck;
+  }
+
+  return supabase.rpc('save_admin_service', baseArgs).single();
+};
 
 const serviceIconGroups = [
   {
@@ -697,17 +738,18 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
     setIsSaving(true);
 
-    const serviceResult = await supabase.rpc('save_admin_service', {
-      service_id_value: editingServiceId,
-      name_value: payload.name,
-      icon_value: payload.icon,
-      color_value: payload.color,
-      default_duration_value: payload.default_duration,
-      base_price_value: payload.base_price,
-      active_value: payload.active,
-      account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken
-    }).single();
+    const serviceResult = await saveAdminServiceRecord({
+      serviceId: editingServiceId,
+      name: payload.name,
+      icon: payload.icon,
+      color: payload.color,
+      defaultDuration: payload.default_duration,
+      basePrice: payload.base_price,
+      active: payload.active,
+      accountId: internalAdminAccountId,
+      sessionToken: internalSessionToken,
+      activityDiscountCheckId: payload.activity_discount_check_id
+    });
 
     if (serviceResult.error) {
       alert(`No se pudo guardar la actividad: ${serviceResult.error.message}`);
@@ -757,17 +799,18 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
   const toggleServiceStatus = async (service) => {
     const nextActive = service.active === false;
-    const { data: updatedService, error } = await supabase.rpc('save_admin_service', {
-      service_id_value: service.id,
-      name_value: service.name,
-      icon_value: service.icon,
-      color_value: service.color,
-      default_duration_value: service.default_duration,
-      base_price_value: Number(service.base_price || 0),
-      active_value: nextActive,
-      account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken
-    }).single();
+    const { data: updatedService, error } = await saveAdminServiceRecord({
+      serviceId: service.id,
+      name: service.name,
+      icon: service.icon,
+      color: service.color,
+      defaultDuration: service.default_duration,
+      basePrice: Number(service.base_price || 0),
+      active: nextActive,
+      accountId: internalAdminAccountId,
+      sessionToken: internalSessionToken,
+      activityDiscountCheckId: getServiceActivityCheckId(service)
+    });
 
     if (error) {
       alert(`No se pudo cambiar el estado de la actividad: ${error.message}`);
@@ -1271,6 +1314,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         <div className="admin-list service-record-list service-button-grid">
           {services.map((service) => {
             const activityCheckId = getServiceActivityCheckId(service);
+            const activityCheck = activityDiscountChecks.find((discount) => String(discount.id) === String(activityCheckId));
 
             return (
               <article className={`admin-record-card service-record-card ${service.active === false ? 'is-muted' : ''}`} key={service.id}>
@@ -1280,8 +1324,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                   <div className="service-record-badges">
                     <span>{service.default_duration || 30} min</span>
                     <span>{formatMoney(service.base_price)}</span>
-                    {activityCheckId && <span className="activity-check-badge" title={activityCheckId}>✓</span>}
                     <span className={service.active === false ? 'is-warning' : 'is-success'}>{service.active === false ? 'Pausada' : 'Activa'}</span>
+                    {activityCheckId && <span className="activity-check-badge" title={activityCheck?.name || 'Check actividad'}>✓</span>}
                   </div>
                   <div className="admin-record-services">{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length} empleado(s) asignado(s)</div>
                 </div>

@@ -11,6 +11,7 @@ export default function BookingItem({
   employee,
   onCancel,
   canCancel = true,
+  isClosed = false,
   canShowDetails = true,
   canViewCustomer = true,
   customerLabel,
@@ -67,7 +68,7 @@ export default function BookingItem({
         color: '#334155',
         border: `1px solid ${isPromotionBooking ? '#94a3b8' : '#cbd5e1'}`,
         borderRadius: 2,
-        padding: compact ? (canCancel ? '5px 27px 5px 29px' : '5px 8px 5px 29px') : (canCancel ? '3px 27px 3px 25px' : '3px 8px 3px 25px'),
+        padding: compact ? (canCancel || isClosed ? '5px 27px 5px 29px' : '5px 8px 5px 29px') : (canCancel || isClosed ? '3px 27px 3px 25px' : '3px 8px 3px 25px'),
         fontSize: compact ? 11 : 10,
         marginBottom: 1,
         position: 'relative',
@@ -143,6 +144,32 @@ export default function BookingItem({
         >
           🗑
         </button>
+      )}
+
+      {!canCancel && isClosed && (
+        <span
+          className="agenda-booking-lock"
+          title="Turno cerrado"
+          aria-label="Turno cerrado"
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: 24,
+            height: '100%',
+            borderRadius: 0,
+            background: '#e2e8f0',
+            color: '#475569',
+            lineHeight: 1,
+            fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          🔒
+        </span>
       )}
 
       {isHovered && canShowDetails && (

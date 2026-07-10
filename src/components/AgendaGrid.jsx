@@ -56,6 +56,12 @@ const rangesOverlap = (startA, endA, startB, endB) =>
 const isActiveBooking = (booking) =>
   ACTIVE_BOOKING_STATUSES.has(String(booking.status || '').trim().toLowerCase());
 
+const isClosedBooking = (booking) =>
+  ['completed', 'closed'].includes(String(booking?.status || '').trim().toLowerCase());
+
+const isVisibleGridBooking = (booking) =>
+  isActiveBooking(booking) || isClosedBooking(booking);
+
 const isPendingAssignmentBooking = (booking) =>
   isActiveBooking(booking) && (!booking.employee_id || booking.status === 'pending_assignment');
 
@@ -119,6 +125,27 @@ const formatDateOnlyForDb = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+const formatDateInputForDisplay = (value) => {
+  const [year, month, day] = String(value || '').split('-');
+  if (!year || !month || !day) return '';
+  return `${day}/${month}/${year}`;
+};
+
+const parseDisplayDateInput = (value) => {
+  const match = String(value || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) return '';
+
+  const [, dayValue, monthValue, yearValue] = match;
+  const day = Number(dayValue);
+  const month = Number(monthValue);
+  const year = Number(yearValue);
+  const date = new Date(year, month - 1, day);
+
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return '';
+
+  return `${yearValue}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
 const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',
@@ -139,6 +166,8 @@ const getDiscountValue = (discount) => Number(discount?.value ?? discount?.perce
 const getDiscountKey = (discount) => `${discount?.discountType || 'general'}-${discount?.name}-${discount?.valueType || 'percent'}-${getDiscountValue(discount)}`;
 
 const formatDiscountOption = (discount) => `${discount.name} ${discount.valueType === 'amount' ? formatMoney(getDiscountValue(discount)) : `${getDiscountValue(discount)}%`}`;
+
+const isCashPaymentDiscount = (discount) => normalizeComparableText(discount?.name).includes('efectivo');
 
 const getDiscountAmount = (discount, baseAmount) => {
   const cleanBaseAmount = Math.max(0, Number(baseAmount) || 0);
@@ -301,6 +330,7 @@ const isPastDay = (day) => {
 function CloseAttentionModal({ bookings, services, employees, promotions, discounts, accessProfile, employeeId, user, onClose, onClosed }) {
   const todayInput = formatDateOnlyForDb(new Date());
   const [serviceDate, setServiceDate] = useState(todayInput);
+  const [serviceDateInput, setServiceDateInput] = useState(formatDateInputForDisplay(todayInput));
   const [selectedClientKey, setSelectedClientKey] = useState('');
   const [selectedBookingIds, setSelectedBookingIds] = useState(null);
   const [lineDiscounts, setLineDiscounts] = useState({});
@@ -377,9 +407,14 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const lineDiscountTotal = selectedItems.reduce((total, item) => total + item.lineDiscountTotal, 0);
   const subtotal = selectedItems.reduce((total, item) => total + item.subtotal, 0);
   const selectedTotalDiscounts = totalDiscountOptions.filter((discount) => totalDiscountIds.includes(getDiscountKey(discount)));
-  const totalDiscountTotal = Math.min(subtotal, selectedTotalDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, subtotal), 0));
+  const cashPaymentAmount = parseMoney(payments.cash);
+  const totalDiscountTotal = Math.min(subtotal, selectedTotalDiscounts.reduce((total, discount) => {
+    const discountBaseAmount = isCashPaymentDiscount(discount) ? cashPaymentAmount : subtotal;
+    return total + getDiscountAmount(discount, discountBaseAmount);
+  }, 0));
   const finalTotal = Math.max(0, subtotal - totalDiscountTotal);
-  const paidTotal = parseMoney(payments.cash) + parseMoney(payments.transfer) + parseMoney(payments.card);
+  const totalSavings = Math.max(0, grossTotal - finalTotal);
+  const paidTotal = cashPaymentAmount + parseMoney(payments.transfer) + parseMoney(payments.card);
   const paymentDifference = Math.round((paidTotal - finalTotal) * 100) / 100;
 
   const toggleLineDiscount = (bookingId, discountKey) => {
@@ -387,6 +422,20 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       const currentDiscounts = current[bookingId] || [];
       return { ...current, [bookingId]: currentDiscounts.includes(discountKey) ? currentDiscounts.filter((key) => key !== discountKey) : [...currentDiscounts, discountKey] };
     });
+  };
+
+  const updateServiceDateInput = (value) => {
+    setServiceDateInput(value);
+    const parsedDate = parseDisplayDateInput(value);
+
+    if (!parsedDate || parsedDate > todayInput) return;
+
+    setServiceDate(parsedDate);
+    setSelectedClientKey('');
+    setSelectedBookingIds(null);
+    setLineDiscounts({});
+    setTotalDiscountIds([]);
+    setPayments({ cash: '', transfer: '', card: '' });
   };
 
   const confirmClosure = async () => {
@@ -423,7 +472,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         <div className="agenda-modal-header">Cerrar atención</div>
         <div className="agenda-modal-body close-attention-body">
           <div className="close-attention-controls">
-            <label>Fecha<input type="date" max={todayInput} value={serviceDate} onChange={(event) => { setServiceDate(event.target.value); setSelectedClientKey(''); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }} /></label>
+            <label>Fecha<input type="text" inputMode="numeric" value={serviceDateInput} onChange={(event) => updateServiceDateInput(event.target.value)} placeholder="DD/MM/AAAA" /></label>
             <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
           </div>
           <div className="close-attention-items">
@@ -453,7 +502,15 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
             return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} onChange={() => setTotalDiscountIds((current) => current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey])} /><span>{formatDiscountOption(discount)}</span></label>;
           })}</div></div>}
           <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => setPayments((current) => ({ ...current, cash: event.target.value }))} placeholder="0" /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => setPayments((current) => ({ ...current, transfer: event.target.value }))} placeholder="0" /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => setPayments((current) => ({ ...current, card: event.target.value }))} placeholder="0" /></label></div>
-          <div className="close-attention-total"><span>Bruto: {formatMoney(grossTotal)}</span><span>Desc. actividades: -{formatMoney(lineDiscountTotal)}</span><span>Desc. total: -{formatMoney(totalDiscountTotal)}</span><strong>Total final: {formatMoney(finalTotal)}</strong><span>Pagado: {formatMoney(paidTotal)}</span>{Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">Diferencia: {formatMoney(Math.abs(paymentDifference))} {paymentDifference > 0 ? 'de más' : 'pendiente'}</span>}</div>
+          <div className="close-attention-total">
+            <span>Bruto: {formatMoney(grossTotal)}</span>
+            <span>Desc. actividades: -{formatMoney(lineDiscountTotal)}</span>
+            <span>Desc. total: -{formatMoney(totalDiscountTotal)}</span>
+            <span>Ahorro: {formatMoney(totalSavings)}</span>
+            <strong>Total final: {formatMoney(finalTotal)}</strong>
+            <span>Pagado: {formatMoney(paidTotal)}</span>
+            {Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">Diferencia: {formatMoney(Math.abs(paymentDifference))} {paymentDifference > 0 ? 'de más' : 'pendiente'}</span>}
+          </div>
           <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={onClose}>Cerrar</button><button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !selectedItems.length}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button></div>
         </div>
       </div>
@@ -875,6 +932,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const isAssignedBooking = (booking) => String(booking.employee_id) === String(employeeId);
 
   const canCancelBooking = (booking) =>
+    !isClosedBooking(booking) &&
     !isPastDay(parseBookingDate(booking.start_at)) &&
     (isAdminView || isOwnBooking(booking) || (isEmployeeView && isAssignedBooking(booking)));
 
@@ -1344,7 +1402,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           const slotTime = buildSlotDate(day, slotIndex);
 
           return bookings.filter((booking) =>
-            isActiveBooking(booking) && isBooked(booking, slotTime)
+            isVisibleGridBooking(booking) && isBooked(booking, slotTime)
           );
         });
         const rowMaxBookings = Math.max(0, ...rowSlotBookings.map((slotBookings) => slotBookings.length));
@@ -1417,6 +1475,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       const employeeLabel = formatPersonShortName(emp);
                       const isOwn = isOwnBooking(b);
                       const isAssigned = isAssignedBooking(b);
+                      const isClosed = isClosedBooking(b);
                       const displayLabel = `${getBookingActivityLabel(b, service)} / ${employeeLabel}`;
 
                       return (
@@ -1426,6 +1485,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                           service={service}
                           employee={emp}
                           canCancel={canCancelBooking(b)}
+                          isClosed={isClosed}
                           canShowDetails={isAdminView || isOwn || (isEmployeeView && isAssigned)}
                           canViewCustomer={isAdminView || isOwn || (isEmployeeView && isAssigned)}
                           customerLabel={isOwn ? 'Tu turno' : 'Turno reservado'}

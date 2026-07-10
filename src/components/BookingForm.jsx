@@ -4,6 +4,7 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import 'dayjs/locale/es';
 import { supabase } from '../api/supabaseClient';
 
 export default function BookingForm({ user, refresh }) {
@@ -34,12 +35,13 @@ export default function BookingForm({ user, refresh }) {
           Reservar turno
         </Typography>
 
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
           
           <DatePicker
             label="Seleccionar fecha"
             value={date}
             onChange={(newValue) => setDate(newValue)}
+            format="DD/MM/YYYY"
             sx={{ mt: 2 }}
           />
 
@@ -47,6 +49,7 @@ export default function BookingForm({ user, refresh }) {
             label="Seleccionar horario"
             value={time}
             onChange={(newValue) => setTime(newValue)}
+            ampm={false}
             sx={{ mt: 2 }}
           />
 

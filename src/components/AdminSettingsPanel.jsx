@@ -37,19 +37,7 @@ const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0
 }).format(Number(value) || 0);
 
-const normalizeCheckName = (value) => String(value || '')
-  .trim()
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .replace(/[^a-zA-Z0-9]+/g, '_')
-  .replace(/^_+|_+$/g, '')
-  .toLowerCase();
-
-const getActivityCheckDisplayId = (discount, activityIndex) => {
-  const baseId = discount?.id || `check_actividad_${String(activityIndex + 1).padStart(2, '0')}`;
-  const namePart = normalizeCheckName(discount?.name);
-  return namePart ? `${baseId}_${namePart}` : baseId;
-};
+const getActivityCheckDisplayName = (discount, activityIndex) => String(discount?.name || '').trim() || `Check ${activityIndex + 1}`;
 
 const normalizePromotions = (promotions) => {
   const source = Array.isArray(promotions) && promotions.length ? promotions : [emptyPromotion(), emptyPromotion()];
@@ -76,7 +64,8 @@ const normalizeDiscounts = (discounts) => {
     valueType: ['percent', 'amount'].includes(discount?.valueType) ? discount.valueType : 'percent',
     value: discount?.value === 0 || discount?.value ? String(discount.value) : (discount?.percent === 0 || discount?.percent ? String(discount.percent) : ''),
     percent: discount?.percent === 0 || discount?.percent ? String(discount.percent) : '',
-    scope: ['line', 'total', 'both'].includes(discount?.scope) ? discount.scope : 'both'
+    scope: ['line', 'total', 'both'].includes(discount?.scope) ? discount.scope : 'both',
+    serviceIds: Array.isArray(discount?.serviceIds) ? discount.serviceIds.map(String) : []
   }));
 };
 
@@ -123,6 +112,7 @@ export default function AdminSettingsPanel({ user }) {
   const [promotionsOpen, setPromotionsOpen] = useState(false);
   const [discountsOpen, setDiscountsOpen] = useState(false);
   const [activityChecksOpen, setActivityChecksOpen] = useState(false);
+  const [selectedActivityCheckIndex, setSelectedActivityCheckIndex] = useState(null);
 
   const enabledPromotions = useMemo(() => (
     form.promotions.filter((promotion) => promotion.enabled)
@@ -133,6 +123,9 @@ export default function AdminSettingsPanel({ user }) {
   }, [form.banner_images]);
   const generalDiscounts = useMemo(() => form.discounts.map((discount, index) => ({ discount, index })).filter(({ discount }) => discount.discountType !== 'activity'), [form.discounts]);
   const activityDiscounts = useMemo(() => form.discounts.map((discount, index) => ({ discount, index })).filter(({ discount }) => discount.discountType === 'activity'), [form.discounts]);
+  const selectedActivityCheck = useMemo(() => (
+    activityDiscounts.find(({ index }) => index === selectedActivityCheckIndex) || activityDiscounts[0] || null
+  ), [activityDiscounts, selectedActivityCheckIndex]);
 
   const applyConfig = (config) => {
     const bannerImages = normalizeBannerImages(config);
@@ -150,6 +143,7 @@ export default function AdminSettingsPanel({ user }) {
 
     setSavedConfig(nextConfig);
     setForm(nextConfig);
+    setSelectedActivityCheckIndex(null);
   };
 
   useEffect(() => {
@@ -225,6 +219,7 @@ export default function AdminSettingsPanel({ user }) {
       ...current,
       discounts: [...current.discounts, { ...emptyDiscount(), discountType: 'activity', scope: 'line' }]
     }));
+    setSelectedActivityCheckIndex(form.discounts.length);
     setActivityChecksOpen(true);
   };
 
@@ -233,6 +228,7 @@ export default function AdminSettingsPanel({ user }) {
       ...current,
       discounts: current.discounts.filter((_, discountIndex) => discountIndex !== index)
     }));
+    if (selectedActivityCheckIndex === index) setSelectedActivityCheckIndex(null);
   };
 
   const changeBanner = (event) => {
@@ -366,6 +362,81 @@ export default function AdminSettingsPanel({ user }) {
     alert('Configuración guardada.');
   };
 
+  const activityChecksSection = (
+    <article className="admin-form-card settings-card settings-activity-check-card">
+      <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
+        <span>Check actividad</span>
+        <button
+          className="availability-form-toggle admin-collapsible-form-toggle"
+          type="button"
+          onClick={() => setActivityChecksOpen((current) => !current)}
+          aria-expanded={activityChecksOpen}
+          aria-label={activityChecksOpen ? 'Ocultar check actividad' : 'Mostrar check actividad'}
+        >
+          &gt;
+        </button>
+      </div>
+      <div className="settings-check-summary-row">
+        {activityDiscounts.length ? activityDiscounts.map(({ discount, index }, activityIndex) => (
+          <button
+            className={`settings-check-summary-chip ${selectedActivityCheck?.index === index ? 'is-selected' : ''}`}
+            type="button"
+            onClick={() => {
+              setSelectedActivityCheckIndex(index);
+              setActivityChecksOpen(true);
+            }}
+            key={`${discount.id || 'check'}-${activityIndex}`}
+          >
+            {getActivityCheckDisplayName(discount, activityIndex)}
+          </button>
+        )) : <span className="settings-empty-text">Sin checks creados.</span>}
+      </div>
+      <div className={`agenda-modal-body settings-promotion-grid settings-discount-grid settings-activity-check-grid admin-collapsible-form-body ${activityChecksOpen ? 'is-open' : 'is-collapsed'}`}>
+        <div className="settings-section-toolbar">
+          <button className="agenda-option-button" type="button" onClick={addActivityDiscount}>Agregar check</button>
+        </div>
+        {activityChecksOpen && (activityDiscounts.length === 0 ? (
+          <p className="settings-empty-text">Todavía no hay checks configurados.</p>
+        ) : selectedActivityCheck && (
+          <div className="settings-promotion-card settings-discount-card settings-activity-check-form" key={selectedActivityCheck.index}>
+            <label className="settings-check-row settings-activity-check-enabled">
+              <input
+                type="checkbox"
+                checked={selectedActivityCheck.discount.enabled}
+                onChange={(event) => updateDiscount(selectedActivityCheck.index, 'enabled', event.target.checked)}
+              />
+              <span>Habilitado</span>
+            </label>
+            <label>
+              Nombre
+              <input value={selectedActivityCheck.discount.name} onChange={(event) => updateDiscount(selectedActivityCheck.index, 'name', event.target.value)} placeholder="Peluqueria" />
+            </label>
+            <label>
+              Modo
+              <select value={selectedActivityCheck.discount.valueType} onChange={(event) => updateDiscount(selectedActivityCheck.index, 'valueType', event.target.value)}>
+                <option value="percent">Porcentaje %</option>
+                <option value="amount">Monto $</option>
+              </select>
+            </label>
+            <label>
+              Valor
+              <input type="text" inputMode="decimal" value={selectedActivityCheck.discount.value} onChange={(event) => updateDiscount(selectedActivityCheck.index, 'value', event.target.value)} placeholder={selectedActivityCheck.discount.valueType === 'amount' ? '5000' : '10'} />
+            </label>
+            <p className="settings-empty-text settings-activity-check-preview">Se verá como {getActivityCheckDisplayName(selectedActivityCheck.discount, activityDiscounts.findIndex(({ index }) => index === selectedActivityCheck.index))}.</p>
+            <div className="settings-activity-check-actions">
+              <button className="agenda-option-button" type="button" onClick={() => removeDiscount(selectedActivityCheck.index)}>
+                Eliminar
+              </button>
+              <button className="agenda-close-button" type="button" onClick={saveConfig} disabled={isSaving}>
+                {isSaving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+
   if (isLoading) {
     return <div className="admin-loading-card settings-loading-card">Cargando configuración...</div>;
   }
@@ -383,7 +454,7 @@ export default function AdminSettingsPanel({ user }) {
       </div>
 
       <div className="settings-layout">
-        <article className="admin-form-card settings-card">
+        <article className="admin-form-card settings-card settings-company-card">
           <div className="agenda-modal-header">Nombre de la empresa</div>
           <div className="agenda-modal-body settings-card-body">
             <label>
@@ -399,7 +470,7 @@ export default function AdminSettingsPanel({ user }) {
           </div>
         </article>
 
-        <article className="admin-form-card settings-card">
+        <article className="admin-form-card settings-card settings-banner-card">
           <div className="agenda-modal-header admin-collapsible-form-header">
             <span>Banner de presentación</span>
             <button
@@ -437,7 +508,7 @@ export default function AdminSettingsPanel({ user }) {
           </div>
         </article>
 
-        <article className="admin-form-card settings-card">
+        <article className="admin-form-card settings-card settings-booking-preferences-card">
           <div className="agenda-modal-header">Preferencias de reserva</div>
           <div className="agenda-modal-body settings-card-body">
             <label className="settings-check-row">
@@ -450,6 +521,8 @@ export default function AdminSettingsPanel({ user }) {
             </label>
           </div>
         </article>
+
+        {activityChecksSection}
 
         <article className="admin-form-card settings-card settings-promotions-card">
           <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
@@ -571,65 +644,6 @@ export default function AdminSettingsPanel({ user }) {
           </div>
         </article>
 
-        <article className="admin-form-card settings-card settings-promotions-card">
-          <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
-            <span>Check actividad</span>
-            <button
-              className="availability-form-toggle admin-collapsible-form-toggle"
-              type="button"
-              onClick={() => setActivityChecksOpen((current) => !current)}
-              aria-expanded={activityChecksOpen}
-              aria-label={activityChecksOpen ? 'Ocultar check actividad' : 'Mostrar check actividad'}
-            >
-              &gt;
-            </button>
-          </div>
-          <div className="settings-check-summary-row">
-            {activityDiscounts.length ? activityDiscounts.map(({ discount }, activityIndex) => (
-              <span className="settings-check-summary-chip" key={`${discount.id || 'check'}-${activityIndex}`}>
-                {getActivityCheckDisplayId(discount, activityIndex)}
-              </span>
-            )) : <span className="settings-empty-text">Sin check_actividad creados.</span>}
-          </div>
-          <div className={`agenda-modal-body settings-promotion-grid settings-discount-grid admin-collapsible-form-body ${activityChecksOpen ? 'is-open' : 'is-collapsed'}`}>
-            <div className="settings-section-toolbar">
-              <button className="agenda-option-button" type="button" onClick={addActivityDiscount}>Agregar check</button>
-            </div>
-              {activityChecksOpen && (activityDiscounts.length === 0 ? (
-                <p className="settings-empty-text">Todavía no hay check_actividad configurados.</p>
-              ) : activityDiscounts.map(({ discount, index }, activityIndex) => (
-                <div className="settings-promotion-card settings-discount-card" key={index}>
-                  <label className="settings-check-row">
-                    <input
-                      type="checkbox"
-                      checked={discount.enabled}
-                      onChange={(event) => updateDiscount(index, 'enabled', event.target.checked)}
-                    />
-                    <span>Habilitado</span>
-                  </label>
-                  <label>
-                    Nombre
-                    <input value={discount.name} onChange={(event) => updateDiscount(index, 'name', event.target.value)} placeholder="Peluquería promo" />
-                  </label>
-                  <label>
-                    Modo
-                    <select value={discount.valueType} onChange={(event) => updateDiscount(index, 'valueType', event.target.value)}>
-                      <option value="percent">Porcentaje %</option>
-                      <option value="amount">Monto $</option>
-                    </select>
-                  </label>
-                  <label>
-                    Valor
-                    <input type="text" inputMode="decimal" value={discount.value} onChange={(event) => updateDiscount(index, 'value', event.target.value)} placeholder={discount.valueType === 'amount' ? '5000' : '10'} />
-                  </label>
-                  <p className="settings-empty-text">Se verá como {getActivityCheckDisplayId(discount, activityIndex)}.</p>
-                  <button className="agenda-option-button" type="button" onClick={() => removeDiscount(index)}>
-                    Eliminar
-                  </button>
-                </div>
-              )))}
-          </div>
-        </article>
       </div>
 
       <div className="settings-actions">
