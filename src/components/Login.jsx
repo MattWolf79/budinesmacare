@@ -45,6 +45,7 @@ const emptyRegistrationForm = {
   lastName: '',
   birthDate: '',
   phone: '',
+  email: '',
   addressStreet: '',
   addressNumber: '',
   addressLocality: '',
@@ -66,6 +67,7 @@ const emptyPasswordChangeForm = {
 
 const isAlphanumeric = (value) => /^[a-z0-9]+$/i.test(value);
 const isUsername = (value) => /^[a-z0-9._-]+$/i.test(value);
+const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
 
 const calculateAge = (birthDateValue) => {
   if (!birthDateValue) return '';
@@ -235,6 +237,11 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
         setRegistrationError('Ingresá un celular de contacto.');
         return;
       }
+
+      if (!isEmail(registrationForm.email)) {
+        setRegistrationError('Ingresá un mail válido para recibir notificaciones.');
+        return;
+      }
     }
 
     if (password.length < 6) {
@@ -262,6 +269,7 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
         last_name_value: lastName,
         birth_date_value: registrationForm.birthDate || null,
         phone_value: registrationForm.phone.trim() || null,
+        email_value: registrationForm.email.trim().toLowerCase() || null,
         address_street_value: registrationForm.addressStreet.trim() || null,
         address_number_value: registrationForm.addressNumber.trim() || null,
         address_locality_value: registrationForm.addressLocality.trim() || null,
@@ -588,6 +596,18 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
                       autoComplete="tel"
                       placeholder="Ej: 11 5555 5555"
                       onChange={(event) => updateRegistrationField('phone', event.target.value)}
+                    />
+                  </label>
+
+                  <label className="internal-register-field">
+                    Mail
+                    <input
+                      type="email"
+                      value={registrationForm.email}
+                      maxLength="120"
+                      autoComplete="email"
+                      placeholder="martina@correo.com"
+                      onChange={(event) => updateRegistrationField('email', event.target.value)}
                     />
                   </label>
 

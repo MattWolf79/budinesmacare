@@ -9,6 +9,7 @@ const emptyEmployee = {
   last_name: '',
   birth_date: '',
   phone: '',
+  email: '',
   address_street: '',
   address_number: '',
   address_locality: '',
@@ -140,6 +141,8 @@ const normalizeComparableText = (value) =>
 const normalizeUsernamePart = (value) =>
   normalizeComparableText(value).replace(/[^a-z0-9]/g, '');
 
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+
 const generateEmployeeUsername = (firstName, lastName) => {
   const normalizedFirstName = normalizeUsernamePart(firstName);
   const normalizedLastName = normalizeUsernamePart(lastName);
@@ -196,6 +199,7 @@ const employeeMatchesPayload = (employee, payload) =>
   (employee.address_number || null) === payload.address_number &&
   (employee.address_locality || null) === payload.address_locality &&
   (employee.photo_url || null) === payload.photo_url &&
+  (employee.email || null) === payload.email &&
   employee.active === payload.active;
 
 const formatRequestDate = (value) => {
@@ -487,6 +491,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       last_name: employee.last_name || '',
       birth_date: employee.birth_date || '',
       phone: employee.phone || '',
+      email: employee.email || '',
       address_street: employee.address_street || '',
       address_number: employee.address_number || '',
       address_locality: employee.address_locality || '',
@@ -555,6 +560,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       last_name: employeeForm.last_name.trim() || null,
       birth_date: employeeForm.birth_date || null,
       phone: employeeForm.phone.trim() || null,
+      email: employeeForm.email.trim().toLowerCase() || null,
       address_street: employeeForm.address_street.trim() || null,
       address_number: employeeForm.address_number.trim() || null,
       address_locality: employeeForm.address_locality.trim() || null,
@@ -573,6 +579,11 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       return;
     }
 
+    if (!payload.email || !isValidEmail(payload.email)) {
+      alert('Ingresá un mail válido para notificar al empleado.');
+      return;
+    }
+
     setIsSaving(true);
 
     const adminAccountId = user?.isInternal && user?.role === 'admin' ? user.id : null;
@@ -584,6 +595,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         last_name_value: payload.last_name,
         birth_date_value: payload.birth_date,
         phone_value: payload.phone,
+        email_value: payload.email,
         address_street_value: payload.address_street,
         address_number_value: payload.address_number,
         address_locality_value: payload.address_locality,
@@ -600,6 +612,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         last_name_value: payload.last_name,
         birth_date_value: payload.birth_date,
         phone_value: payload.phone,
+        email_value: payload.email,
         address_street_value: payload.address_street,
         address_number_value: payload.address_number,
         address_locality_value: payload.address_locality,
@@ -1044,6 +1057,11 @@ export default function AdminPanel({ view, user, onDataChanged }) {
               </div>
 
               <label>
+                Mail para notificaciones
+                <input type="email" value={employeeForm.email} onChange={(event) => updateEmployeeField('email', event.target.value)} placeholder="empleado@correo.com" />
+              </label>
+
+              <label>
                 Usuario
                 <input value={employeeUsernamePreview} disabled placeholder="mlobo" />
               </label>
@@ -1143,6 +1161,9 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                   <div className="admin-record-meta">{employee.active === false ? 'Inactivo' : 'Activo'} · {employee.is_admin ? 'Administrador' : 'Empleado'}</div>
                   <div className="admin-record-profile-line">
                     {employee.phone || 'Sin celular'}
+                  </div>
+                  <div className="admin-record-profile-line">
+                    {employee.email || 'Sin mail'}
                   </div>
                   <div className="admin-record-services">{getEmployeeActivityNames(employee.id, employeeServices, services, promotions) || 'Sin actividades asignadas'}</div>
                 </div>
