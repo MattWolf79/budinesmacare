@@ -1,4 +1,4 @@
--- Employee emails and automatic mail notifications through FormSubmit.
+-- Employee emails and automatic mail notifications through Resend.
 -- Run after 032_business_hours_configuration.sql on existing databases.
 
 begin;
@@ -36,7 +36,27 @@ create index if not exists employees_email_idx
   on public.employees(lower(email))
   where email is not null;
 
-create or replace function public.send_formsubmit_email(
+create table if not exists public.mail_settings (
+  id boolean primary key default true,
+  resend_api_key text,
+  from_email text not null default 'noresponder@turnos-app.com',
+  from_name text not null default 'Turnos App - No responder',
+  active boolean not null default true,
+  created_at timestamp without time zone not null default now(),
+  updated_at timestamp without time zone not null default now(),
+  constraint mail_settings_singleton_chk check (id = true),
+  constraint mail_settings_from_email_chk check (public.is_valid_email(from_email))
+);
+
+insert into public.mail_settings (id)
+values (true)
+on conflict (id) do nothing;
+
+revoke all on public.mail_settings from public;
+revoke all on public.mail_settings from anon;
+revoke all on public.mail_settings from authenticated;
+
+create or replace function public.send_resend_email(
   to_email_value text,
   subject_value text,
   message_value text,
@@ -50,25 +70,41 @@ set search_path = public
 as $$
 declare
   clean_to_email text := lower(trim(coalesce(to_email_value, '')));
-  no_reply_email text := 'noresponder@turnos-app.com';
+  settings public.mail_settings%rowtype;
+  sender_name text;
 begin
   if not public.is_valid_email(clean_to_email) then
     return;
   end if;
 
+  select * into settings
+  from public.mail_settings
+  where id = true
+    and active = true
+    and nullif(trim(coalesce(resend_api_key, '')), '') is not null
+  limit 1;
+
+  if settings.id is null then
+    return;
+  end if;
+
+  sender_name := nullif(trim(coalesce(from_name_value, '')), '');
+  if sender_name is null then
+    sender_name := settings.from_name;
+  end if;
+
   perform net.http_post(
-    url := 'https://formsubmit.co/ajax/' || clean_to_email,
+    url := 'https://api.resend.com/emails',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Accept', 'application/json'
+      'Authorization', 'Bearer ' || settings.resend_api_key
     ),
     body := jsonb_build_object(
-      '_subject', subject_value,
-      '_template', 'box',
-      'name', from_name_value,
-      'email', no_reply_email,
-      'reply_to', no_reply_email,
-      'message', message_value
+      'from', sender_name || ' <' || settings.from_email || '>',
+      'to', jsonb_build_array(clean_to_email),
+      'subject', subject_value,
+      'text', message_value,
+      'reply_to', settings.from_email
     ),
     timeout_milliseconds := 5000
   );
@@ -95,7 +131,7 @@ begin
       and employees.deleted_at is null
       and public.is_valid_email(employees.email)
   loop
-    perform public.send_formsubmit_email(admin_email, subject_value, message_value, 'Turnos App', reply_to_value);
+    perform public.send_resend_email(admin_email, subject_value, message_value, 'Turnos App - No responder', reply_to_value);
   end loop;
 end;
 $$;
@@ -149,11 +185,11 @@ begin
     client_message := public.format_booking_notification_message(NEW, 'Recibimos tu reserva.');
 
     if public.is_valid_email(NEW.user_email) then
-      perform public.send_formsubmit_email(
+      perform public.send_resend_email(
         NEW.user_email,
         'Recibimos tu reserva',
         client_message,
-        'Turnos App'
+        'Turnos App - No responder'
       );
     end if;
 
@@ -169,7 +205,7 @@ begin
       where employees.id = NEW.employee_id;
 
       employee_message := public.format_booking_notification_message(NEW, 'Tenés un nuevo turno asignado.');
-      perform public.send_formsubmit_email(employee_email, 'Tenés un nuevo turno asignado', employee_message, coalesce(employee_name, 'Turnos App'), NEW.user_email);
+      perform public.send_resend_email(employee_email, 'Tenés un nuevo turno asignado', employee_message, 'Turnos App - No responder', NEW.user_email);
     end if;
   end if;
 
@@ -183,7 +219,7 @@ begin
     where employees.id = NEW.employee_id;
 
     employee_message := public.format_booking_notification_message(NEW, 'Tenés un nuevo turno asignado.');
-    perform public.send_formsubmit_email(employee_email, 'Tenés un nuevo turno asignado', employee_message, coalesce(employee_name, 'Turnos App'), NEW.user_email);
+    perform public.send_resend_email(employee_email, 'Tenés un nuevo turno asignado', employee_message, 'Turnos App - No responder', NEW.user_email);
   end if;
 
   if TG_OP = 'UPDATE'
@@ -196,7 +232,7 @@ begin
     where employees.id = NEW.employee_id;
 
     employee_message := public.format_booking_notification_message(NEW, 'Se canceló este turno.');
-    perform public.send_formsubmit_email(employee_email, 'Se canceló un turno', employee_message, coalesce(employee_name, 'Turnos App'), NEW.user_email);
+    perform public.send_resend_email(employee_email, 'Se canceló un turno', employee_message, 'Turnos App - No responder', NEW.user_email);
   end if;
 
   return NEW;
@@ -287,6 +323,7 @@ declare
   created_employee record;
   saved_employee public.employees%rowtype;
   clean_email text := lower(nullif(trim(coalesce(email_value, '')), ''));
+  welcome_message text;
 begin
   if not public.is_admin() then
     perform public.validate_internal_session(account_id_value, session_token_value, 'admin'::public.app_role);
@@ -305,6 +342,21 @@ begin
         updated_at = now()
     where employees.id = created_employee.id
     returning * into saved_employee;
+
+    welcome_message := concat_ws(E'\n',
+      'Tu acceso interno fue creado.',
+      'Usuario: ' || created_employee.internal_username,
+      'Contraseña inicial: 123456',
+      'Al ingresar se te va a pedir cambiar la contraseña.',
+      'Este es un mensaje automático, no respondas este mail.'
+    );
+
+    perform public.send_resend_email(
+      clean_email,
+      'Tu acceso interno fue creado',
+      welcome_message,
+      'Turnos App - No responder'
+    );
 
     return query
     select
@@ -600,7 +652,7 @@ as $$
   )
 $$;
 
-revoke execute on function public.send_formsubmit_email(text, text, text, text, text) from public;
+revoke execute on function public.send_resend_email(text, text, text, text, text) from public;
 revoke execute on function public.notify_admin_emails(text, text, text) from public;
 grant execute on function public.create_admin_employee(text, text, text, date, text, text, text, text, text, text, text[], boolean, uuid, text, text) to anon, authenticated;
 grant execute on function public.update_admin_employee(uuid, text, text, text, date, text, text, text, text, text, text, boolean, boolean, text[], uuid, text, text) to anon, authenticated;

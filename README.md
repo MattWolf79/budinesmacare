@@ -18,10 +18,18 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Notificaciones por mail
 
-La app usa FormSubmit desde Supabase (`pg_net`), sin variables de entorno ni claves de API. Ejecutá la migración `database/033_employee_email_notifications.sql` en Supabase.
+La app usa Resend desde Supabase (`pg_net`). Ejecutá la migración `database/033_employee_email_notifications.sql` en Supabase y cargá una API key gratuita de Resend en `mail_settings`.
+
+```sql
+update public.mail_settings
+set resend_api_key = 're_xxxxxxxxx',
+	from_email = 'noresponder@tu-dominio.com',
+	from_name = 'Turnos App - No responder',
+	active = true,
+	updated_at = now()
+where id = true;
+```
 
 Cada empleado debe tener un mail cargado. Los administradores que deban recibir avisos también tienen que estar creados como empleados administradores con mail.
 
-Los avisos se envían como mensajes de tipo no responder (`noresponder@turnos-app.com`).
-
-FormSubmit pide confirmar cada casilla destino la primera vez que recibe un envío. El primer mail puede llegar como activación; después de confirmar, los siguientes avisos salen automáticamente.
+Los avisos se envían como mensajes de tipo no responder. Resend exige verificar el dominio usado en `from_email`; para pruebas iniciales podés usar el remitente de prueba que te habilite Resend.
