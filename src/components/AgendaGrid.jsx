@@ -833,6 +833,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
     if (event.pointerType === 'touch') {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
       touchTapRef.current = {
         pointerId: event.pointerId,
         dayIndex,
@@ -905,6 +906,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     }
 
     end();
+  };
+
+  const finishCellPointerSelection = (event) => {
+    if (event.pointerType !== 'touch') return;
+
+    finishPointerSelection(event);
   };
 
   const cancelPointerSelection = (event) => {
@@ -1442,6 +1449,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                   data-day-index={dayIndex}
                   data-slot-index={slotIndex}
                   onPointerDown={(event) => startPointerSelection(event, dayIndex, slotIndex)}
+                  onPointerUp={finishCellPointerSelection}
+                  onLostPointerCapture={finishCellPointerSelection}
                   onPointerEnter={() => move(dayIndex, slotIndex)}
                   onClick={() => {
                     if (handledTouchTapRef.current) {

@@ -39,7 +39,7 @@ create index if not exists employees_email_idx
 create table if not exists public.mail_settings (
   id boolean primary key default true,
   resend_api_key text,
-  from_email text not null default 'noresponder@turnosapp.ar',
+  from_email text not null default 'noresponder@quieroturnoapp.com.ar',
   from_name text not null default 'Turnos App - No responder',
   active boolean not null default true,
   created_at timestamp without time zone not null default now(),
@@ -53,7 +53,7 @@ values (true)
 on conflict (id) do nothing;
 
 update public.mail_settings
-set from_email = 'noresponder@turnosapp.ar',
+set from_email = 'noresponder@quieroturnoapp.com.ar',
     from_name = 'Turnos App - No responder',
     updated_at = now()
 where id = true;

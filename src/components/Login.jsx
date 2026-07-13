@@ -93,7 +93,7 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export default function Login({ onInternalAccess, onLocalClientAccess }) {
+export default function Login({ onInternalAccess }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
   const [inAppBrowserNoticeOpen, setInAppBrowserNoticeOpen] = useState(false);
   const [copyLinkStatus, setCopyLinkStatus] = useState('');
@@ -109,10 +109,11 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
   const handleLogin = async (profileId) => {
     sessionStorage.setItem(requestedProfileStorageKey, profileId);
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: getAppLink(),
+        skipBrowserRedirect: true,
         queryParams: {
           prompt: 'select_account'
         }
@@ -121,6 +122,11 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
 
     if (error) {
       alert('No se pudo iniciar sesión. Intentá nuevamente.');
+      return;
+    }
+
+    if (data?.url) {
+      window.location.assign(data.url);
     }
   };
 
@@ -431,12 +437,6 @@ export default function Login({ onInternalAccess, onLocalClientAccess }) {
             </button>
           ))}
         </div>
-
-        {onLocalClientAccess && (
-          <button className="login-local-client-button" type="button" onClick={onLocalClientAccess}>
-            Entrar como cliente local
-          </button>
-        )}
 
       </section>
 

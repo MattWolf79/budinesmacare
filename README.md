@@ -23,15 +23,13 @@ La app usa Resend desde Supabase (`pg_net`). Ejecutá la migración `database/03
 ```sql
 update public.mail_settings
 set resend_api_key = 're_xxxxxxxxx',
-	from_email = 'noresponder@turnosapp.ar',
+	from_email = 'noresponder@quieroturnoapp.com.ar',
 	from_name = 'Turnos App - No responder',
 	active = true,
 	updated_at = now()
 where id = true;
 ```
 
-Cada empleado debe tener un mail cargado. Los administradores que deban recibir avisos también tienen que estar creados como empleados administradores con mail.
+Para `quieroturnoapp.com.ar`, verificá el dominio en Resend y cargá en NIC.ar los registros DNS que Resend te indique para SPF/DKIM. Hasta que Resend marque el dominio como verificado, puede rechazar envíos con `from_email = noresponder@quieroturnoapp.com.ar`.
 
 Los avisos se envían como mensajes de tipo no responder. Resend exige verificar el dominio usado en `from_email`; para pruebas iniciales podés usar el remitente de prueba que te habilite Resend.
-
-Para `turnosapp.ar`, verificá el dominio en Resend y cargá en NIC.ar los registros DNS que Resend te indique para SPF/DKIM. Hasta que Resend marque el dominio como verificado, puede rechazar envíos con `from_email = noresponder@turnosapp.ar`.
