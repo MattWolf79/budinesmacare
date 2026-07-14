@@ -1374,16 +1374,8 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                 <div className="admin-record-main admin-management-card-main">
                   <div className="admin-management-card-fields">
                     <div className="admin-management-card-field">
-                      <span>Duración</span>
-                      <strong>{service.default_duration || 30} min</strong>
-                    </div>
-                    <div className="admin-management-card-field">
                       <span>Precio</span>
                       <strong>{formatMoney(service.base_price)}</strong>
-                    </div>
-                    <div className="admin-management-card-field">
-                      <span>Estado</span>
-                      <strong className={service.active === false ? 'is-muted' : 'is-active'}>{service.active === false ? 'Pausada' : 'Activa'}</strong>
                     </div>
                     <div className="admin-management-card-field">
                       <span>Asignados</span>
@@ -1395,6 +1387,10 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                         <strong>{activityCheck?.name || 'Configurado'}</strong>
                       </div>
                     )}
+                    <div className="admin-management-card-field admin-management-card-field-wide admin-management-card-status-row">
+                      <span>Estado</span>
+                      <strong className={service.active === false ? 'is-muted' : 'is-active'}>{service.active === false ? 'Pausada' : 'Activa'}</strong>
+                    </div>
                   </div>
                 </div>
                 <div className="admin-record-actions admin-management-card-actions">
@@ -1423,10 +1419,6 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                     <span>Tipo</span>
                     <strong>Promo</strong>
                   </div>
-                  <div className="admin-management-card-field">
-                    <span>Estado</span>
-                    <strong className="is-active">Activa</strong>
-                  </div>
                   <div className="admin-management-card-field admin-management-card-field-wide">
                     <span>Precio</span>
                     <strong>{formatMoney(promotionService.promotion?.price)}</strong>
@@ -1434,6 +1426,10 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                   <div className="admin-management-card-field admin-management-card-field-wide">
                     <span>Administración</span>
                     <strong>Desde Configuración</strong>
+                  </div>
+                  <div className="admin-management-card-field admin-management-card-field-wide admin-management-card-status-row">
+                    <span>Estado</span>
+                    <strong className="is-active">Activa</strong>
                   </div>
                 </div>
               </div>

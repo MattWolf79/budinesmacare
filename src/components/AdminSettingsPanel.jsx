@@ -658,7 +658,10 @@ export default function AdminSettingsPanel({ user }) {
               <button className="agenda-option-button" type="button" onClick={addPromotion}>Agregar promoción</button>
             </div>
             {promotionsOpen && form.promotions.map((promotion, index) => (
-                <div className="settings-promotion-card" key={index}>
+                <div className="settings-promotion-card settings-management-card" key={index}>
+                  <div className="settings-management-card-header">
+                    <strong>{promotion.title || `Promoción ${index + 1}`}</strong>
+                  </div>
                   <label className="settings-check-row">
                     <input
                       type="checkbox"
@@ -714,7 +717,10 @@ export default function AdminSettingsPanel({ user }) {
             {discountsOpen && (generalDiscounts.length === 0 ? (
               <p className="settings-empty-text">Todavía no hay descuentos generales configurados.</p>
             ) : generalDiscounts.map(({ discount, index }) => (
-              <div className="settings-promotion-card settings-discount-card" key={index}>
+              <div className="settings-promotion-card settings-discount-card settings-management-card" key={index}>
+                <div className="settings-management-card-header">
+                  <strong>{discount.name || `Descuento ${index + 1}`}</strong>
+                </div>
                 <label className="settings-check-row">
                   <input
                     type="checkbox"
