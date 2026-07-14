@@ -16,8 +16,9 @@ const formatDate = (value) => formatDisplayDate(value, {
 
 const formatTime = (value) => parseDate(value).toLocaleTimeString([], {
   hour: '2-digit',
-  minute: '2-digit'
-});
+  minute: '2-digit',
+  hour12: false
+}).replace(/^24:/, '00:') + ' hs';
 
 const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -50,21 +51,20 @@ const getServiceForBooking = (booking, services) => {
   return null;
 };
 
-const getCustomerLabel = (booking) => (
-  booking.customer_name
-    ? `${booking.customer_name}${booking.user_email ? ` · ${booking.user_email}` : ''}`
-    : booking.user_email || 'Cliente sin email'
-);
+const getCustomerFields = (booking) => ({
+  name: booking.customer_name || 'Cliente sin nombre',
+  email: booking.user_email || 'Sin email'
+});
 
-const getBookingLabelLines = (booking, service) => {
+const getBookingTitle = (booking, service) => {
   if (!booking.service && booking.booking_description) {
     return String(booking.booking_description)
       .split(' · ')
       .map((part) => part.trim())
-      .filter(Boolean);
+      .filter(Boolean)[0] || 'Servicio';
   }
 
-  return [service?.name || 'Servicio'];
+  return service?.name || 'Servicio';
 };
 
 const formatAvailabilityTime = (value) => String(value || '').slice(0, 5);
@@ -409,10 +409,10 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
                   <div className="employee-empty-line">No tenés turnos próximos asignados.</div>
                 ) : visibleUpcomingBookings.map((booking) => {
                   const service = getServiceForBooking(booking, services);
-                  const bookingLabelLines = getBookingLabelLines(booking, service);
+                  const bookingTitle = getBookingTitle(booking, service);
                   const isClosed = isClosedBooking(booking);
                   const closedAmount = closedBookingAmounts[booking.id];
-                  const customerLabel = getCustomerLabel(booking);
+                  const customerFields = getCustomerFields(booking);
                   const statusLabel = isClosed ? 'Cerrado' : 'Asignado';
 
                   return (
@@ -423,17 +423,17 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
                     >
                       <div className="employee-booking-form-header">
                         <ActivityIcon service={service} size="small" />
-                        <strong>
-                          {bookingLabelLines.map((line, index) => (
-                            <span className="employee-booking-title-line" key={`${line}-${index}`}>{line}</span>
-                          ))}
-                        </strong>
+                        <strong>{bookingTitle}</strong>
                       </div>
 
                       <div className="employee-booking-form-grid">
                         <div className="employee-booking-field employee-booking-field-wide">
                           <span>Cliente</span>
-                          <strong>{customerLabel}</strong>
+                          <strong>{customerFields.name}</strong>
+                        </div>
+                        <div className="employee-booking-field employee-booking-field-wide">
+                          <span>Correo</span>
+                          <strong>{customerFields.email}</strong>
                         </div>
                         <div className="employee-booking-field">
                           <span>Fecha</span>
@@ -441,7 +441,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
                         </div>
                         <div className="employee-booking-field">
                           <span>Horario</span>
-                          <strong>{formatTime(booking.start_at)} - {formatTime(booking.end_at)}</strong>
+                          <strong>{formatTime(booking.start_at)}-{formatTime(booking.end_at)}</strong>
                         </div>
                         <div className="employee-booking-field">
                           <span>Estado</span>

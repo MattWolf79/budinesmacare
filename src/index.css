@@ -2306,7 +2306,7 @@ code {
 }
 
 .employee-layout-summary .employee-list {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
 }
 
 .employee-card {
@@ -2383,19 +2383,19 @@ code {
 
 .employee-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .employee-booking-row {
   position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 14px;
-  min-height: 220px;
+  gap: 10px;
+  min-height: 184px;
   border: 1px solid #d7dde3;
   border-radius: 10px;
-  padding: 0 16px 16px;
+  padding: 0 12px 12px;
   background: #ffffff;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
   overflow: hidden;
@@ -2417,10 +2417,10 @@ code {
   justify-content: center;
   gap: 10px;
   min-width: 0;
-  margin: 0 -16px;
+  margin: 0 -12px;
   width: auto;
-  border-radius: 0 0 7px 7px;
-  padding: 10px 14px;
+  border-radius: 0 0 6px 6px;
+  padding: 8px 12px;
   color: #ffffff;
   background: var(--employee-booking-color, #174c55);
   text-align: center;
@@ -2441,26 +2441,22 @@ code {
   display: block;
   min-width: 0;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 950;
   line-height: 1.16;
   overflow-wrap: anywhere;
 }
 
-.employee-booking-title-line {
-  display: block;
-}
-
 .employee-booking-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
 .employee-booking-field {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   align-content: start;
   min-width: 0;
 }
@@ -2471,7 +2467,7 @@ code {
 
 .employee-booking-field > span {
   color: #596574;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 950;
   line-height: 1;
   text-transform: uppercase;
@@ -2480,14 +2476,14 @@ code {
 .employee-booking-field > strong {
   display: flex;
   align-items: center;
-  min-height: 34px;
+  min-height: 30px;
   min-width: 0;
   border: 1px solid #cfd6dd;
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 7px;
+  padding: 7px 9px;
   color: #26313a;
   background: #fbfcfd;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   line-height: 1.25;
   overflow-wrap: anywhere;
