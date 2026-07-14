@@ -412,29 +412,48 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
                   const bookingLabelLines = getBookingLabelLines(booking, service);
                   const isClosed = isClosedBooking(booking);
                   const closedAmount = closedBookingAmounts[booking.id];
+                  const customerLabel = getCustomerLabel(booking);
+                  const statusLabel = isClosed ? 'Cerrado' : 'Asignado';
 
                   return (
                     <div
                       className={`employee-booking-row${isClosed ? ' is-closed' : ''}`}
                       key={booking.id}
-                      style={{ '--employee-booking-color': isClosed ? '#94a3b8' : service?.color || '#3fc9d5' }}
+                      style={{ '--employee-booking-color': isClosed ? '#94a3b8' : '#174c55' }}
                     >
-                      <ActivityIcon service={service} size="small" />
-                      <div>
+                      <div className="employee-booking-form-header">
+                        <ActivityIcon service={service} size="small" />
                         <strong>
                           {bookingLabelLines.map((line, index) => (
                             <span className="employee-booking-title-line" key={`${line}-${index}`}>{line}</span>
                           ))}
                         </strong>
-                        <span>{getCustomerLabel(booking)}</span>
+                      </div>
+
+                      <div className="employee-booking-form-grid">
+                        <div className="employee-booking-field employee-booking-field-wide">
+                          <span>Cliente</span>
+                          <strong>{customerLabel}</strong>
+                        </div>
+                        <div className="employee-booking-field">
+                          <span>Fecha</span>
+                          <strong>{formatDate(booking.start_at)}</strong>
+                        </div>
+                        <div className="employee-booking-field">
+                          <span>Horario</span>
+                          <strong>{formatTime(booking.start_at)} - {formatTime(booking.end_at)}</strong>
+                        </div>
+                        <div className="employee-booking-field">
+                          <span>Estado</span>
+                          <strong className={isClosed ? 'is-muted' : 'is-active'}>{statusLabel}</strong>
+                        </div>
                         {isClosed && closedAmount !== undefined && (
-                          <span className="employee-booking-closed-amount">Cobrado: {formatMoney(closedAmount)}</span>
+                          <div className="employee-booking-field">
+                            <span>Cobrado</span>
+                            <strong>{formatMoney(closedAmount)}</strong>
+                          </div>
                         )}
                       </div>
-                      <time>
-                        <span>{formatDate(booking.start_at)}</span>
-                        <span>{formatTime(booking.start_at)} - {formatTime(booking.end_at)}</span>
-                      </time>
                     </div>
                   );
                 })}

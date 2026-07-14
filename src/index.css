@@ -2306,7 +2306,7 @@ code {
 }
 
 .employee-layout-summary .employee-list {
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .employee-card {
@@ -2384,55 +2384,66 @@ code {
 .employee-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
 
 .employee-booking-row {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas:
-    "icon body"
-    "time time";
-  gap: 5px 8px;
-  align-items: start;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  min-height: 96px;
-  padding: 8px 8px 8px 12px;
-  background: #f8fafc;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  min-height: 220px;
+  border: 1px solid #d7dde3;
+  border-radius: 10px;
+  padding: 0 16px 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
   overflow: hidden;
 }
 
 .employee-booking-row.is-closed {
-  border-color: #cbd5e1;
-  background: #f1f5f9;
-  filter: grayscale(1);
+  border-color: #d5dbe1;
+  background: #f7f8fa;
+  box-shadow: none;
 }
 
 .employee-booking-row::before {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--employee-booking-color, #3fc9d5);
-  content: '';
+  display: none;
 }
 
-.employee-booking-row .activity-icon {
-  grid-area: icon;
-}
-
-.employee-booking-row > div {
-  grid-area: body;
+.employee-booking-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   min-width: 0;
+  margin: 0 -16px;
+  width: auto;
+  border-radius: 0 0 7px 7px;
+  padding: 10px 14px;
+  color: #ffffff;
+  background: var(--employee-booking-color, #174c55);
+  text-align: center;
 }
 
-.employee-booking-row strong {
+.employee-booking-row.is-closed .employee-booking-form-header {
+  background: #6b7280;
+}
+
+.employee-booking-form-header .activity-icon {
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  box-shadow: none;
+  filter: saturate(0.76);
+}
+
+.employee-booking-form-header strong {
   display: block;
-  color: #1f2937;
-  font-size: 13px;
-  font-weight: 900;
-  line-height: 1.2;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.16;
   overflow-wrap: anywhere;
 }
 
@@ -2440,29 +2451,63 @@ code {
   display: block;
 }
 
-.employee-booking-row .employee-booking-closed-amount {
-  display: block;
-  margin-top: 4px;
-  color: #334155;
-  font-size: 11px;
-  font-weight: 900;
+.employee-booking-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
 }
 
-.employee-booking-row span,
-.employee-booking-row time,
-.employee-empty-line {
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 800;
+.employee-booking-field {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
 }
 
-.employee-booking-row time {
+.employee-booking-field-wide {
+  grid-column: 1 / -1;
+}
+
+.employee-booking-field > span {
+  color: #596574;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.employee-booking-field > strong {
   display: flex;
-  flex-direction: column;
-  grid-area: time;
-  justify-self: start;
-  gap: 2px;
-  white-space: nowrap;
+  align-items: center;
+  min-height: 34px;
+  min-width: 0;
+  border: 1px solid #cfd6dd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #26313a;
+  background: #fbfcfd;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.employee-booking-field > strong.is-active {
+  border-color: #2a6570;
+  color: #174c55;
+  background: #edf9fa;
+}
+
+.employee-booking-field > strong.is-muted {
+  color: #47515d;
+  background: #eef1f4;
+}
+
+.employee-empty-line {
+  color: #66717f;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .employee-empty-line {
@@ -4954,6 +4999,12 @@ code {
     flex-direction: column;
   }
 
+  .employee-card-header > span {
+    align-self: flex-start;
+    min-width: 34px;
+    padding: 0 10px;
+  }
+
   .login-access-title-row,
   .profile-select-footer {
     align-items: flex-start;
@@ -4967,12 +5018,16 @@ code {
   }
 
   .employee-booking-row {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    min-height: auto;
   }
 
-  .employee-booking-row time {
-    grid-column: 1 / -1;
-    justify-self: start;
+  .employee-booking-form-header {
+    width: auto;
+  }
+
+  .employee-booking-form-grid {
+    grid-template-columns: 1fr;
   }
 }
 
