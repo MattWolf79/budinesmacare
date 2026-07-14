@@ -1153,21 +1153,37 @@ export default function AdminPanel({ view, user, onDataChanged }) {
           <div className="admin-list employee-record-list employee-button-list">
             {employees.map((employee) => (
               <article className={`admin-record-card admin-record-card-plain employee-record-card ${employee.active === false ? 'is-muted' : ''}`} key={employee.id}>
-                <div className="admin-record-avatar" aria-hidden="true">
-                  {employee.photo_url ? <img src={employee.photo_url} alt="" /> : (employee.name || 'E').slice(0, 1).toUpperCase()}
+                <div className="admin-management-card-header">
+                  <span className="admin-record-avatar" aria-hidden="true">
+                    {employee.photo_url ? <img src={employee.photo_url} alt="" /> : (employee.name || 'E').slice(0, 1).toUpperCase()}
+                  </span>
+                  <strong>{employee.name}</strong>
                 </div>
-                <div className="admin-record-main">
-                  <div className="admin-record-title">{employee.name}</div>
-                  <div className="admin-record-meta">{employee.active === false ? 'Inactivo' : 'Activo'} · {employee.is_admin ? 'Administrador' : 'Empleado'}</div>
-                  <div className="admin-record-profile-line">
-                    {employee.phone || 'Sin celular'}
+                <div className="admin-record-main admin-management-card-main">
+                  <div className="admin-management-card-fields">
+                    <div className="admin-management-card-field">
+                      <span>Estado</span>
+                      <strong className={employee.active === false ? 'is-muted' : 'is-active'}>{employee.active === false ? 'Inactivo' : 'Activo'}</strong>
+                    </div>
+                    <div className="admin-management-card-field">
+                      <span>Perfil</span>
+                      <strong>{employee.is_admin ? 'Administrador' : 'Empleado'}</strong>
+                    </div>
+                    <div className="admin-management-card-field admin-management-card-field-wide">
+                      <span>Celular</span>
+                      <strong>{employee.phone || 'Sin celular'}</strong>
+                    </div>
+                    <div className="admin-management-card-field admin-management-card-field-wide">
+                      <span>Correo</span>
+                      <strong>{employee.email || 'Sin mail'}</strong>
+                    </div>
+                    <div className="admin-management-card-field admin-management-card-field-wide">
+                      <span>Servicios</span>
+                      <strong>{getEmployeeActivityNames(employee.id, employeeServices, services, promotions) || 'Sin servicios asignados'}</strong>
+                    </div>
                   </div>
-                  <div className="admin-record-profile-line">
-                    {employee.email || 'Sin mail'}
-                  </div>
-                  <div className="admin-record-services">{getEmployeeActivityNames(employee.id, employeeServices, services, promotions) || 'Sin servicios asignados'}</div>
                 </div>
-                <div className="admin-record-actions">
+                <div className="admin-record-actions admin-management-card-actions">
                   <button className="agenda-close-button employee-list-action" type="button" onClick={() => editEmployee(employee)} aria-label="Editar empleado" title="Editar empleado">
                     <span className="employee-list-action-full">Editar</span>
                     <span className="employee-list-action-icon" aria-hidden="true">✏️</span>
@@ -1351,18 +1367,37 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
             return (
               <article className={`admin-record-card service-record-card ${service.active === false ? 'is-muted' : ''}`} key={service.id}>
-                <div className="admin-record-color" style={{ background: service.color || '#94a3b8' }} />
-                <div className="admin-record-main">
-                  <div className="admin-record-title admin-record-title-icon"><ActivityIcon service={service} size="small" /> {service.name}</div>
-                  <div className="service-record-badges">
-                    <span>{service.default_duration || 30} min</span>
-                    <span>{formatMoney(service.base_price)}</span>
-                    <span className={service.active === false ? 'is-warning' : 'is-success'}>{service.active === false ? 'Pausada' : 'Activa'}</span>
-                    {activityCheckId && <span className="activity-check-badge" title={activityCheck?.name || 'Check servicio'}>✓</span>}
-                  </div>
-                  <div className="admin-record-services">{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length} empleado(s) asignado(s)</div>
+                <div className="admin-management-card-header" style={{ '--admin-management-card-color': service.color || '#174c55' }}>
+                  <ActivityIcon service={service} size="small" />
+                  <strong>{service.name}</strong>
                 </div>
-                <div className="admin-record-actions">
+                <div className="admin-record-main admin-management-card-main">
+                  <div className="admin-management-card-fields">
+                    <div className="admin-management-card-field">
+                      <span>Duración</span>
+                      <strong>{service.default_duration || 30} min</strong>
+                    </div>
+                    <div className="admin-management-card-field">
+                      <span>Precio</span>
+                      <strong>{formatMoney(service.base_price)}</strong>
+                    </div>
+                    <div className="admin-management-card-field">
+                      <span>Estado</span>
+                      <strong className={service.active === false ? 'is-muted' : 'is-active'}>{service.active === false ? 'Pausada' : 'Activa'}</strong>
+                    </div>
+                    <div className="admin-management-card-field">
+                      <span>Asignados</span>
+                      <strong>{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length}</strong>
+                    </div>
+                    {activityCheckId && (
+                      <div className="admin-management-card-field admin-management-card-field-wide">
+                        <span>Check servicio</span>
+                        <strong>{activityCheck?.name || 'Configurado'}</strong>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="admin-record-actions admin-management-card-actions">
                   <button className="agenda-close-button service-card-action" type="button" onClick={() => editService(service)} aria-label="Editar servicio" title="Editar servicio">
                     Editar
                   </button>
@@ -1378,15 +1413,28 @@ export default function AdminPanel({ view, user, onDataChanged }) {
           })}
           {promotionServices.map((promotionService) => (
             <article className="admin-record-card service-record-card promotion-record-card" key={promotionService.id}>
-              <div className="admin-record-color" style={{ background: promotionService.color }} />
-              <div className="admin-record-main">
-                <div className="admin-record-title admin-record-title-icon"><ActivityIcon service={promotionService} size="small" /> {promotionService.name}</div>
-                <div className="service-record-badges">
-                  <span>Promo</span>
-                  <span className="is-success">Activa</span>
-                </div>
-                <div className="admin-record-services">
-                  {formatMoney(promotionService.promotion?.price)} · Se administra desde Configuración
+              <div className="admin-management-card-header" style={{ '--admin-management-card-color': promotionService.color || '#174c55' }}>
+                <ActivityIcon service={promotionService} size="small" />
+                <strong>{promotionService.name}</strong>
+              </div>
+              <div className="admin-record-main admin-management-card-main">
+                <div className="admin-management-card-fields">
+                  <div className="admin-management-card-field">
+                    <span>Tipo</span>
+                    <strong>Promo</strong>
+                  </div>
+                  <div className="admin-management-card-field">
+                    <span>Estado</span>
+                    <strong className="is-active">Activa</strong>
+                  </div>
+                  <div className="admin-management-card-field admin-management-card-field-wide">
+                    <span>Precio</span>
+                    <strong>{formatMoney(promotionService.promotion?.price)}</strong>
+                  </div>
+                  <div className="admin-management-card-field admin-management-card-field-wide">
+                    <span>Administración</span>
+                    <strong>Desde Configuración</strong>
+                  </div>
                 </div>
               </div>
             </article>

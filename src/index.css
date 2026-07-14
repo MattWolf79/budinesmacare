@@ -7628,21 +7628,23 @@ body {
 
 .availability-card-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 9px !important;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px !important;
 }
 
 .availability-card-grid .availability-card {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 86px !important;
-  align-items: center !important;
-  gap: 0 !important;
-  min-height: 112px;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-items: stretch !important;
+  gap: 10px !important;
+  min-height: 0;
   overflow: hidden;
-  border: 1px solid #e0e5ec;
-  border-radius: 8px;
+  border: 1px solid #d7dde3;
+  border-radius: 10px;
+  padding: 0 12px 12px;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
   transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
 
@@ -7658,78 +7660,113 @@ body {
 }
 
 .availability-card-accent {
-  grid-column: 1 / -1;
-  width: 100%;
-  min-height: 4px;
-  background: #3fc4ce;
+  display: none;
 }
 
-.availability-card.is-muted .availability-card-accent {
-  background: #f59e0b;
+.availability-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0 -12px;
+  border-radius: 0 0 6px 6px;
+  padding: 8px 12px;
+  color: #fff;
+  background: #174c55;
+  text-align: center;
+}
+
+.availability-card.is-muted .availability-card-header {
+  background: #6b7280;
 }
 
 .availability-card-grid .availability-date-badge {
-  grid-column: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: fit-content;
+  flex: 0 0 auto;
   min-width: 36px;
   height: 22px;
-  margin: 10px 12px 0;
-  border: 1px solid #99f6d0;
+  border: 1px solid rgba(255, 255, 255, 0.52);
   border-radius: 999px;
   padding: 0 10px;
-  color: #047857;
-  background: #ecfdf5;
+  color: #174c55;
+  background: #d8fbf5;
   font-size: 11px;
   font-weight: 900;
 }
 
-.availability-card-grid .availability-card-main {
-  grid-column: 1;
-  display: grid;
-  align-content: start;
-  gap: 4px;
-  min-height: 0;
-  padding: 8px 12px 10px !important;
+.availability-card-header strong {
+  display: block;
+  min-width: 0;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.16;
+  overflow-wrap: anywhere;
 }
 
-.availability-card-grid .admin-record-title {
-  color: #1f2937;
-  font-size: 14px !important;
+.availability-card-grid .availability-card-main {
+  display: grid;
+  align-content: stretch;
+  gap: 0;
+  min-height: 0;
+  padding: 0 !important;
+}
+
+.availability-card-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  min-width: 0;
+}
+
+.availability-card-field {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.availability-card-field-wide {
+  grid-column: 1 / -1;
+}
+
+.availability-card-field > span {
+  color: #596574;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.availability-card-field > strong {
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+  min-width: 0;
+  border: 1px solid #cfd6dd;
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: #26313a;
+  background: #fbfcfd;
+  font-size: 11px;
   font-weight: 900;
   line-height: 1.25;
-  text-transform: capitalize;
-}
-
-.availability-card-grid .admin-record-meta,
-.availability-card-grid time {
-  margin-top: 0 !important;
-  overflow: hidden;
-  color: #697386;
-  font-size: 11px !important;
-  font-weight: 800;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.availability-card-grid time {
-  color: #0f3ea8;
+  overflow-wrap: anywhere;
 }
 
 .availability-card-grid .availability-card-actions {
-  grid-column: 2;
-  grid-row: 2 / span 2;
-  display: flex !important;
-  flex-direction: column;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   flex-wrap: nowrap;
   align-items: stretch;
-  align-self: stretch;
-  justify-content: center;
+  align-self: auto;
+  justify-content: stretch;
   gap: 5px !important;
-  padding: 10px 10px 10px 0 !important;
+  padding: 0 !important;
 }
 
 .availability-card-grid .availability-card-action,
@@ -7766,9 +7803,205 @@ body {
   display: none;
 }
 
+.employee-button-list,
+.service-button-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px !important;
+}
+
+.employee-button-list .employee-record-card,
+.service-button-grid .service-record-card,
+.service-button-grid .promotion-record-card {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-items: stretch !important;
+  gap: 10px !important;
+  min-height: 0 !important;
+  overflow: hidden;
+  border: 1px solid #d7dde3;
+  border-radius: 10px !important;
+  padding: 0 12px 12px !important;
+  background: #fff !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+.employee-button-list .employee-record-card.is-muted,
+.service-button-grid .service-record-card.is-muted {
+  background: #f7f8fa !important;
+}
+
+.admin-management-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0 -12px;
+  border-radius: 0 0 6px 6px;
+  padding: 8px 12px;
+  color: #fff;
+  background: var(--admin-management-card-color, #174c55);
+  text-align: center;
+}
+
+.employee-record-card.is-muted .admin-management-card-header,
+.service-record-card.is-muted .admin-management-card-header {
+  background: #6b7280;
+}
+
+.admin-management-card-header .activity-icon,
+.admin-management-card-header .admin-record-avatar {
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  box-shadow: none;
+}
+
+.admin-management-card-header .admin-record-avatar {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  border-radius: 7px !important;
+  color: #174c55 !important;
+  background: #d8fbf5 !important;
+  font-size: 12px !important;
+  font-weight: 950;
+  overflow: hidden;
+}
+
+.admin-management-card-header .admin-record-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-management-card-header strong {
+  display: block;
+  min-width: 0;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+}
+
+.employee-button-list .admin-management-card-main,
+.service-button-grid .admin-management-card-main {
+  display: grid !important;
+  align-content: stretch;
+  gap: 0 !important;
+  min-height: 0;
+  padding: 0 !important;
+}
+
+.admin-management-card-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  min-width: 0;
+}
+
+.admin-management-card-field {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-management-card-field-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-management-card-field > span {
+  color: #596574;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.admin-management-card-field > strong {
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+  min-width: 0;
+  border: 1px solid #cfd6dd;
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: #26313a;
+  background: #fbfcfd;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.admin-management-card-field > strong.is-active {
+  border-color: #2a6570;
+  color: #174c55;
+  background: #edf9fa;
+}
+
+.admin-management-card-field > strong.is-muted {
+  color: #47515d;
+  background: #eef1f4;
+}
+
+.employee-button-list .admin-management-card-actions,
+.service-button-grid .admin-management-card-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch !important;
+  align-self: auto !important;
+  justify-content: stretch !important;
+  gap: 5px !important;
+  padding: 0 !important;
+}
+
+.employee-button-list .employee-list-action,
+.employee-button-list .admin-management-card-actions .agenda-close-button,
+.employee-button-list .admin-management-card-actions .agenda-danger-button,
+.employee-button-list .admin-management-card-actions .agenda-option-button,
+.service-button-grid .service-card-action,
+.service-button-grid .admin-management-card-actions .agenda-close-button,
+.service-button-grid .admin-management-card-actions .agenda-danger-button,
+.service-button-grid .admin-management-card-actions .agenda-option-button {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  border-radius: 7px !important;
+  padding: 5px 7px !important;
+  font-size: 10px !important;
+  font-weight: 900;
+  line-height: 1 !important;
+}
+
+.employee-button-list .employee-list-action-full,
+.service-button-grid .admin-action-label-full {
+  display: inline !important;
+}
+
+.employee-button-list .employee-list-action-icon {
+  display: none !important;
+}
+
 @media (max-width: 1080px) {
   .employee-availability-manager .admin-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .availability-card-field,
+  .admin-management-card-field {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }
 
@@ -8453,6 +8686,65 @@ body {
   color: #0f172a !important;
   border-color: #94a3b8 !important;
   background: #e2e8f0 !important;
+}
+
+.dashboard-shell .employee-button-list .employee-record-card,
+.dashboard-shell .service-button-grid .service-record-card,
+.dashboard-shell .service-button-grid .promotion-record-card {
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  min-height: 0 !important;
+  padding: 0 12px 12px !important;
+}
+
+.dashboard-shell .employee-button-list .admin-management-card-header,
+.dashboard-shell .service-button-grid .admin-management-card-header {
+  grid-column: 1 !important;
+  grid-row: auto !important;
+  width: auto !important;
+  margin: 0 -12px !important;
+}
+
+.dashboard-shell .employee-button-list .admin-management-card-main,
+.dashboard-shell .service-button-grid .admin-management-card-main {
+  grid-column: 1 !important;
+  grid-row: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+.dashboard-shell .employee-button-list .admin-management-card-actions,
+.dashboard-shell .service-button-grid .admin-management-card-actions {
+  grid-column: 1 !important;
+  grid-row: auto !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  align-self: auto !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  gap: 5px !important;
+  padding: 0 !important;
+}
+
+.dashboard-shell .employee-button-list .employee-list-action,
+.dashboard-shell .employee-button-list .admin-management-card-actions .agenda-close-button,
+.dashboard-shell .employee-button-list .admin-management-card-actions .agenda-danger-button,
+.dashboard-shell .employee-button-list .admin-management-card-actions .agenda-option-button,
+.dashboard-shell .service-button-grid .service-card-action,
+.dashboard-shell .service-button-grid .admin-management-card-actions .agenda-close-button,
+.dashboard-shell .service-button-grid .admin-management-card-actions .agenda-danger-button,
+.dashboard-shell .service-button-grid .admin-management-card-actions .agenda-option-button {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 5px 7px !important;
+  font-size: 10px !important;
 }
 
 .admin-status-tabs .is-success,
@@ -9902,35 +10194,36 @@ body {
   }
 
   .role-workspace-employee .availability-card-grid {
-    gap: 5px !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
   }
 
   .role-workspace-employee .availability-card-grid .availability-card {
-    grid-template-columns: minmax(0, 1fr) 74px !important;
-    align-items: center !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    align-items: stretch !important;
+    gap: 10px !important;
     min-height: 0 !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
+    padding: 0 12px 12px !important;
   }
 
   .role-workspace-employee .availability-card-grid .availability-card-accent {
-    grid-column: 1 / -1 !important;
-    min-height: 3px !important;
+    display: none !important;
   }
 
   .role-workspace-employee .availability-card-grid .availability-date-badge {
-    grid-column: 1 !important;
-    height: 20px !important;
-    min-width: 32px !important;
-    margin: 6px 8px 0 !important;
-    padding: 0 9px !important;
-    font-size: 10px !important;
+    height: 22px !important;
+    min-width: 36px !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
   }
 
   .role-workspace-employee .availability-card-grid .availability-card-main {
-    grid-column: 1 !important;
-    gap: 2px !important;
+    gap: 0 !important;
     min-height: 0 !important;
-    padding: 5px 8px 7px !important;
+    padding: 0 !important;
   }
 
   .role-workspace-employee .availability-card-grid .admin-record-title {
@@ -9953,14 +10246,15 @@ body {
   }
 
   .role-workspace-employee .availability-card-grid .availability-card-actions {
-    grid-column: 2 !important;
-    grid-row: 2 / span 2 !important;
-    flex-direction: column !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
     align-items: stretch !important;
-    align-self: stretch !important;
-    justify-content: center !important;
-    gap: 4px !important;
-    padding: 6px 8px 7px 0 !important;
+    align-self: auto !important;
+    justify-content: stretch !important;
+    gap: 5px !important;
+    padding: 0 !important;
   }
 
   .role-workspace-employee .availability-card-grid .availability-card-action,

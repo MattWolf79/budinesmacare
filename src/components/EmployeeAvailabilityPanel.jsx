@@ -753,12 +753,25 @@ export default function EmployeeAvailabilityPanel({
             <div className="availability-card-grid" aria-label="Horarios disponibles">
               {sortedAvailability.map((item) => (
                 <article className={`admin-record-card availability-card ${item.active === false ? 'is-muted' : ''}`} key={item.id}>
-                  <div className="availability-card-accent" aria-hidden="true" />
-                  <div className="availability-date-badge" aria-hidden="true">{getWeekdayShort(item.weekday)}</div>
+                  <div className="availability-card-header">
+                    <span className="availability-date-badge" aria-hidden="true">{getWeekdayShort(item.weekday)}</span>
+                    <strong>Disponibilidad</strong>
+                  </div>
                   <div className="admin-record-main availability-card-main">
-                    <strong className="admin-record-title">{formatDateLabel(item.available_date, item.weekday)}</strong>
-                    <span className="admin-record-meta">{getEmployeeName(employees, item.employee_id, employeeName || 'Empleado')}</span>
-                    <time>{formatTime(item.start_time)} - {formatTime(item.end_time)}</time>
+                    <div className="availability-card-fields">
+                      <div className="availability-card-field availability-card-field-wide">
+                        <span>Fecha</span>
+                        <strong>{formatDateLabel(item.available_date, item.weekday)}</strong>
+                      </div>
+                      <div className="availability-card-field availability-card-field-wide">
+                        <span>Empleado</span>
+                        <strong>{getEmployeeName(employees, item.employee_id, employeeName || 'Empleado')}</strong>
+                      </div>
+                      <div className="availability-card-field availability-card-field-wide">
+                        <span>Horario</span>
+                        <strong>{formatTime(item.start_time)} hs-{formatTime(item.end_time)} hs</strong>
+                      </div>
+                    </div>
                   </div>
                   <div className="admin-record-actions availability-card-actions">
                     <button className="agenda-close-button availability-card-action" type="button" onClick={() => editAvailability(item)} disabled={isSaving}>
