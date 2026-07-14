@@ -416,13 +416,13 @@ export default function AdminSettingsPanel({ user }) {
   const activityChecksSection = (
     <article className="admin-form-card settings-card settings-activity-check-card">
       <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
-        <span>Check actividad</span>
+        <span>Check servicio</span>
         <button
           className="availability-form-toggle admin-collapsible-form-toggle"
           type="button"
           onClick={() => setActivityChecksOpen((current) => !current)}
           aria-expanded={activityChecksOpen}
-          aria-label={activityChecksOpen ? 'Ocultar check actividad' : 'Mostrar check actividad'}
+          aria-label={activityChecksOpen ? 'Ocultar check servicio' : 'Mostrar check servicio'}
         >
           &gt;
         </button>
@@ -742,7 +742,7 @@ export default function AdminSettingsPanel({ user }) {
                 <label>
                   Aplica en
                   <select value={discount.scope} onChange={(event) => updateDiscount(index, 'scope', event.target.value)}>
-                    <option value="line">Cada actividad</option>
+                    <option value="line">Cada servicio</option>
                     <option value="total">Total del cierre</option>
                     <option value="both">Ambos</option>
                   </select>
@@ -784,7 +784,7 @@ export default function AdminSettingsPanel({ user }) {
                 <div>
                   <p className="admin-kicker">Bienvenida</p>
                   <h1><span className="client-welcome-name">{form.company_name.trim() || 'Turnos App'}</span></h1>
-                  <p>Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.</p>
+                  <p>Consultá tus próximos turnos y elegí un servicio cuando quieras reservar.</p>
                   {form.business_hours_text.trim() && <p className="client-business-hours-text">{form.business_hours_text.trim()}</p>}
                 </div>
               </section>
@@ -807,7 +807,7 @@ export default function AdminSettingsPanel({ user }) {
                 <div className="client-summary-header"><h2>Próximos turnos</h2></div>
                 <div className="client-booking-list">
                   <article className="client-booking-card settings-preview-booking">
-                    <div><strong>Actividad ejemplo</strong><span>Turno confirmado · jue 09/07</span></div>
+                    <div><strong>Servicio ejemplo</strong><span>Turno confirmado · jue 09/07</span></div>
                     <time>10:00 - 10:30</time>
                   </article>
                 </div>

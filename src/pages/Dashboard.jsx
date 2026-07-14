@@ -7,11 +7,34 @@ import AdminPanel from "../components/AdminPanel";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
 import EmployeeAvailabilityPanel from "../components/EmployeeAvailabilityPanel";
 
+const getAdminViewFromHash = () => {
+  const hash = window.location.hash.replace(/^#/, '');
+
+  if (hash === 'admin-agenda' || hash === 'assign-booking') return 'agenda';
+  if (hash === 'admin-employees') return 'employees';
+
+  return 'agenda';
+};
+
 export default function Dashboard({ user, accessProfile, onChangeProfile, onLogout, canChangeProfile = false }) {
 
-  const [activeView, setActiveView] = useState('agenda');
+  const [activeView, setActiveView] = useState(getAdminViewFromHash);
   const [adminDataVersion, setAdminDataVersion] = useState(0);
   const [promotions, setPromotions] = useState([]);
+
+  useEffect(() => {
+    const applyHashView = () => {
+      setActiveView(getAdminViewFromHash());
+      setAdminDataVersion((current) => current + 1);
+    };
+
+    applyHashView();
+    window.addEventListener('hashchange', applyHashView);
+
+    return () => {
+      window.removeEventListener('hashchange', applyHashView);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;

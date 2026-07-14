@@ -6,12 +6,12 @@ export default function ServiceModal({ services, rangeLabel, onClose, onSelectSe
   return (
     <div className="modal">
       <div className="agenda-modal-card">
-        <div className="agenda-modal-header">Actividades</div>
+        <div className="agenda-modal-header">Servicios</div>
 
         <div className="agenda-modal-body">
           {activeServices.length === 0 ? (
             <div className="agenda-empty-state">
-              No hay actividades disponibles para reservar.
+              No hay servicios disponibles para reservar.
             </div>
           ) : (
             <div className="agenda-option-grid">

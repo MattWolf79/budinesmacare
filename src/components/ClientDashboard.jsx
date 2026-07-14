@@ -181,7 +181,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
               <article className="client-booking-card" key={booking.id}>
                 <ActivityIcon service={service} size="small" variant="summary" />
                 <div>
-                  <strong>{booking.booking_description || service?.name || 'Actividad'}</strong>
+                  <strong>{booking.booking_description || service?.name || 'Servicio'}</strong>
                   <span>{getBookingStatusLabel(booking)} · {formatBookingDate(booking.start_at)}</span>
                 </div>
                 <time>{formatBookingTime(booking.start_at, booking.end_at)}</time>

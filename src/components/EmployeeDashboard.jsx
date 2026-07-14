@@ -64,7 +64,7 @@ const getBookingLabelLines = (booking, service) => {
       .filter(Boolean);
   }
 
-  return [service?.name || 'Actividad'];
+  return [service?.name || 'Servicio'];
 };
 
 const formatAvailabilityTime = (value) => String(value || '').slice(0, 5);

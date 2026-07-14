@@ -28,8 +28,8 @@ const profileOptions = {
     eyebrow: 'Gestión completa',
     icon: '🛠️',
     title: 'Administración general',
-    description: 'Mantiene la agenda completa actual con empleados, actividades, disponibilidad y reservas.',
-    actions: ['Gestionar agenda', 'Administrar empleados', 'Configurar actividades']
+    description: 'Mantiene la agenda completa actual con empleados, servicios, disponibilidad y reservas.',
+    actions: ['Gestionar agenda', 'Administrar empleados', 'Configurar servicios']
   }
 };
 
@@ -45,6 +45,15 @@ const clientNavItems = [
   { id: 'home', label: 'Inicio', icon: '⌂' },
   { id: 'reserve', label: 'Reservar Turno', icon: '+' }
 ];
+
+const getRoleViewFromHash = (selectedProfile) => {
+  const hash = window.location.hash.replace(/^#/, '');
+
+  if (selectedProfile === 'employee' && hash === 'employee-agenda') return 'agenda';
+  if (selectedProfile === 'client' && hash === 'client-reserve') return 'reserve';
+
+  return null;
+};
 
 function UserPhoto({ user, fallback }) {
   if (user?.photoUrl) {
@@ -85,6 +94,28 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const profile = profileOptions[selectedProfile];
   const isClientProfile = selectedProfile === 'client';
   const shouldUseWelcomeBackground = isClientProfile && clientActiveView === 'home' && Boolean(welcomeBackground?.dataUrl);
+
+  useEffect(() => {
+    const applyHashView = () => {
+      const hashView = getRoleViewFromHash(selectedProfile);
+
+      if (selectedProfile === 'employee' && hashView) {
+        setEmployeeActiveView(hashView);
+      }
+
+      if (selectedProfile === 'client' && hashView) {
+        setClientActiveView(hashView);
+        if (hashView !== 'reserve') setSelectedPromotion(null);
+      }
+    };
+
+    applyHashView();
+    window.addEventListener('hashchange', applyHashView);
+
+    return () => {
+      window.removeEventListener('hashchange', applyHashView);
+    };
+  }, [selectedProfile]);
 
   useEffect(() => {
     let active = true;
@@ -173,7 +204,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             <h1>{clientActiveView === 'home' ? <span className="client-welcome-name">{companyName}</span> : 'Reservar turno'}</h1>
             <p>
               {clientActiveView === 'home'
-                ? 'Consultá tus próximos turnos y elegí una actividad cuando quieras reservar.'
+                ? 'Consultá tus próximos turnos y elegí un servicio cuando quieras reservar.'
                 : 'Seleccioná un horario disponible en la grilla para crear tu próximo turno.'}
             </p>
             {clientActiveView === 'home' && businessHoursText && <p className="client-business-hours-text">{businessHoursText}</p>}

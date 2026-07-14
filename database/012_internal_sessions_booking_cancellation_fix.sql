@@ -141,7 +141,7 @@ begin
     where relations.employee_id = employee_id_value
       and relations.service_id = service_id_value
   ) then
-    raise exception 'El empleado no esta vinculado a esa actividad.';
+    raise exception 'El empleado no esta vinculado a ese servicio.';
   end if;
 
   if not exists (

@@ -34,7 +34,7 @@ begin
   end if;
 
   if service_id_value is null and nullif(trim(coalesce(booking_description_value, '')), '') is null then
-    raise exception 'Seleccioná una actividad o promoción.';
+    raise exception 'Seleccioná un servicio o promoción.';
   end if;
 
   if service_id_value is not null and not exists (
@@ -43,7 +43,7 @@ begin
     where services.id = service_id_value
       and services.active is not false
   ) then
-    raise exception 'La actividad seleccionada no está disponible.';
+    raise exception 'El servicio seleccionado no está disponible.';
   end if;
 
   if exists (
@@ -81,7 +81,7 @@ begin
       where relations.employee_id = employee_id_value
         and relations.service_id = service_id_value
     ) then
-      raise exception 'El empleado no está vinculado a esa actividad.';
+      raise exception 'El empleado no está vinculado a ese servicio.';
     end if;
 
     if not exists (

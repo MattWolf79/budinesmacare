@@ -504,7 +504,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
           <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => setPayments((current) => ({ ...current, cash: event.target.value }))} placeholder="0" /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => setPayments((current) => ({ ...current, transfer: event.target.value }))} placeholder="0" /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => setPayments((current) => ({ ...current, card: event.target.value }))} placeholder="0" /></label></div>
           <div className="close-attention-total">
             <span>Bruto: {formatMoney(grossTotal)}</span>
-            <span>Desc. actividades: -{formatMoney(lineDiscountTotal)}</span>
+            <span>Desc. servicios: -{formatMoney(lineDiscountTotal)}</span>
             <span>Desc. total: -{formatMoney(totalDiscountTotal)}</span>
             <span>Ahorro: {formatMoney(totalSavings)}</span>
             <strong>Total final: {formatMoney(finalTotal)}</strong>
@@ -726,7 +726,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       if (!filteredIds.length) {
         if (active) {
           setAvailableEmployees([]);
-          setAvailableEmployeesMessage('No hay empleados vinculados a esta actividad.');
+          setAvailableEmployeesMessage('No hay empleados vinculados a este servicio.');
           setIsLoadingAvailableEmployees(false);
         }
         return;
@@ -760,11 +760,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
       if (!available.length) {
         if (!serviceEmployees.length) {
-          setAvailableEmployeesMessage('No hay empleados vinculados a esta actividad.');
+          setAvailableEmployeesMessage('No hay empleados vinculados a este servicio.');
         } else if (!activeEmployees.length && inactiveCount > 0) {
-          setAvailableEmployeesMessage('Los empleados vinculados a esta actividad estan inactivos. Activalos desde Empleados para asignar turnos.');
+          setAvailableEmployeesMessage('Los empleados vinculados a este servicio estan inactivos. Activalos desde Empleados para asignar turnos.');
         } else if (!activeWithAvailability.length) {
-          setAvailableEmployeesMessage('Los empleados activos de esta actividad no tienen disponibilidad para este horario.');
+          setAvailableEmployeesMessage('Los empleados activos de este servicio no tienen disponibilidad para este horario.');
         } else if (conflictCount > 0) {
           setAvailableEmployeesMessage('Los empleados disponibles ya tienen un turno en este horario.');
         } else {
@@ -1008,7 +1008,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     }
 
     if (!selectedService?.isPromotion && !availabilityLoadFailed && !availableEmployees.length) {
-      alert('No hay disponibilidad para esa actividad en ese horario. Probá con otro horario.');
+      alert('No hay disponibilidad para ese servicio en ese horario. Probá con otro horario.');
       return;
     }
 
@@ -1217,7 +1217,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const { data: rel, error: relError } = relResult;
 
     if (relError) {
-      alert('No se pudieron consultar empleados para esa actividad.');
+      alert('No se pudieron consultar empleados para ese servicio.');
       setIsLoadingAssignmentEmployees(false);
       return;
     }
@@ -1603,13 +1603,13 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
               <div className="assignment-service-summary">
                 <span className="assignment-service-chip">
                   <ActivityIcon service={assignmentRequest.service} size="small" />
-                  <strong>{assignmentRequest.service?.name || 'Actividad'}</strong>
+                  <strong>{assignmentRequest.service?.name || 'Servicio'}</strong>
                 </span>
                 <span>{formatBookingRangeLabel(assignmentRequest.booking)}</span>
               </div>
 
               {isLoadingAssignmentEmployees ? (
-                <div className="agenda-empty-state">Buscando empleados de esta actividad...</div>
+                <div className="agenda-empty-state">Buscando empleados de este servicio...</div>
               ) : assignmentEmployees.length === 0 ? (
                 <div className="agenda-empty-state">No hay empleados activos disponibles para esta solicitud.</div>
               ) : (

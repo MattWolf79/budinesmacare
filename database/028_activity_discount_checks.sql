@@ -46,11 +46,11 @@ begin
   end if;
 
   if clean_name is null then
-    raise exception 'Ingresa el nombre de la actividad.';
+    raise exception 'Ingresa el nombre del servicio.';
   end if;
 
   if clean_duration <= 0 then
-    raise exception 'La duracion de la actividad debe ser mayor a cero.';
+    raise exception 'La duracion del servicio debe ser mayor a cero.';
   end if;
 
   if clean_base_price < 0 then
@@ -87,7 +87,7 @@ begin
   returning services.id, services.name, services.icon, services.color, services.default_duration, services.base_price, services.active, services.activity_discount_check_id;
 
   if not found then
-    raise exception 'La actividad no existe.';
+    raise exception 'El servicio no existe.';
   end if;
 end;
 $$;

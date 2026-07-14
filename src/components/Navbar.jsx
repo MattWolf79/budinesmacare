@@ -3,7 +3,7 @@ import turnosAppLogo from '../assets/turnos-app-navbar-logo.svg';
 const defaultNavItems = [
   { id: 'agenda', label: 'Agenda', icon: '📅' },
   { id: 'employees', label: 'Empleados', icon: '👥' },
-  { id: 'services', label: 'Actividades', icon: '✨' },
+  { id: 'services', label: 'Servicios', icon: '✨' },
   { id: 'availability', label: 'Disponibilidad', icon: '🕒' },
   { id: 'settings', label: 'Configuración', icon: '⚙' }
 ];

@@ -26,7 +26,7 @@ const getCustomerDetails = (booking) => ({
 
 const formatActivityName = (value) => {
   const cleanValue = String(value || '').trim();
-  if (!cleanValue) return 'Actividad';
+  if (!cleanValue) return 'Servicio';
 
   return cleanValue
     .split(/\s+/)
@@ -37,7 +37,7 @@ const formatActivityName = (value) => {
 const getActivityLabel = (booking, service) => {
   if (service?.name) return formatActivityName(service.name);
   if (booking.booking_description) return formatActivityName(String(booking.booking_description).split('·')[0]);
-  return 'Actividad';
+  return 'Servicio';
 };
 
 export default function CancelBookingModal({ booking, service, employee, onClose, onConfirm }) {

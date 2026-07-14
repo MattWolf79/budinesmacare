@@ -4,7 +4,7 @@ Usa este prompt para continuar, recrear o explicar la aplicacion Turnos App en o
 
 ## Contexto general
 
-Turnos App es una aplicacion web React/Vite conectada a Supabase para gestionar reservas de turnos entre clientes, empleados y administradores. La app esta pensada para negocios que ofrecen actividades o servicios por empleado, con agenda semanal, seleccion por rango horario, colores por actividad, disponibilidad por fecha y control de accesos por rol.
+Turnos App es una aplicacion web React/Vite conectada a Supabase para gestionar reservas de turnos entre clientes, empleados y administradores. La app esta pensada para negocios que ofrecen servicios por empleado, con agenda semanal, seleccion por rango horario, colores por servicio, disponibilidad por fecha y control de accesos por rol.
 
 La aplicacion debe mantener semantica horaria local. Los turnos se guardan como `timestamp without time zone` en formato local `YYYY-MM-DD HH:mm:ss`. No se debe usar `toISOString()` para persistir horarios de agenda porque introduce drift UTC.
 
@@ -27,7 +27,7 @@ La aplicacion debe mantener semantica horaria local. Los turnos se guardan como 
 - Puede ver sus proximos turnos.
 - Puede reservar turnos en la agenda.
 - Puede cancelar turnos propios futuros.
-- La app muestra una leyenda de colores de actividades.
+- La app muestra una leyenda de colores de servicios.
 
 ### Empleado
 
@@ -41,10 +41,10 @@ La aplicacion debe mantener semantica horaria local. Los turnos se guardan como 
 ### Administrador
 
 - Recomendado operativo: usuario Supabase Auth con perfil `admin` en `profiles`.
-- Ve panel completo con navbar: agenda, empleados, actividades y disponibilidad.
+- Ve panel completo con navbar: agenda, empleados, servicios y disponibilidad.
 - Puede crear, editar, activar/desactivar y eliminar empleados si no tienen turnos.
-- Puede crear, editar, activar/desactivar y eliminar actividades si no tienen turnos.
-- Puede vincular empleados con actividades mediante `employee_services`.
+- Puede crear, editar, activar/desactivar y eliminar servicios si no tienen turnos.
+- Puede vincular empleados con servicios mediante `employee_services`.
 - Puede configurar la disponibilidad por fecha o rango de fechas corridas de cada empleado, por ejemplo del 2026-07-06 al 2026-07-10 de 08:00-12:00 y 14:00-18:00.
 - Puede aprobar o rechazar solicitudes internas de empleados/admin.
 
@@ -85,12 +85,12 @@ Campos principales:
 
 ### `services`
 
-Actividades/servicios configurables por el admin.
+Servicios configurables por el admin.
 
 Campos principales:
 - `id bigint`
 - `name text`
-- `icon text`: emoji para representar la actividad.
+- `icon text`: emoji para representar el servicio.
 - `color text`: color usado en la agenda y referencias visuales.
 - `default_duration integer`
 - `active boolean`
@@ -98,7 +98,7 @@ Campos principales:
 
 ### `employee_services`
 
-Relacion N a N entre empleados y actividades que atienden.
+Relacion N a N entre empleados y servicios que atienden.
 
 Campos:
 - `employee_id uuid`
@@ -190,8 +190,8 @@ Campos principales:
 - No se pueden seleccionar dias pasados.
 - El usuario selecciona un rango arrastrando con mouse o touch sobre los cuadros horarios. La grilla usa eventos `pointer` para soportar celular.
 - Al terminar seleccion:
-  1. Se abre modal de actividad.
-  2. Se abre modal de empleado disponible para esa actividad y para ese rango segun `employee_availability`.
+  1. Se abre modal de servicio.
+  2. Se abre modal de empleado disponible para ese servicio y para ese rango segun `employee_availability`.
   3. Si agenda cliente, se reserva directamente para el usuario autenticado.
   4. Si agenda admin/empleado, se abre modal para ingresar nombre y email del cliente real.
 - En celular la grilla es compacta: celdas mas bajas, columna horaria mas angosta y turnos reducidos.
@@ -205,7 +205,7 @@ La app valida conflictos en frontend y la base los refuerza con exclusion constr
 - Un empleado no puede tener dos turnos activos superpuestos.
 - Un empleado no puede recibir turnos dentro de un bloqueo superpuesto.
 - Un empleado solo puede recibir turnos dentro de un rango de `employee_availability` que cubra completamente la seleccion para esa fecha.
-- Un cliente/persona no puede tener dos turnos activos superpuestos, aunque sean con empleados o actividades distintas.
+- Un cliente/persona no puede tener dos turnos activos superpuestos, aunque sean con empleados o servicios distintos.
 - Para clientes autenticados se valida por `user_id`.
 - Para reservas creadas por admin/empleado se valida por `user_email` normalizado.
 - Los estados activos son `confirmed` y `reserved`.
@@ -266,8 +266,8 @@ No usar `toISOString()` para `start_at` o `end_at`.
 ### `ClientDashboard.jsx`
 
 - Muestra `Proximos turnos` del cliente autenticado.
-- Renderiza tarjetas con icono/emoji de actividad, empleado, fecha y horario.
-- En celular, `Proximos turnos` se reduce a actividad + horario para ocupar menos alto/ancho.
+- Renderiza tarjetas con icono/emoji de servicio, empleado, fecha y horario.
+- En celular, `Proximos turnos` se reduce a servicio + horario para ocupar menos alto/ancho.
 - Incluye `AgendaGrid` para reservar.
 
 ### `AgendaGrid.jsx`
@@ -286,7 +286,7 @@ No usar `toISOString()` para `start_at` o `end_at`.
 ### `BookingItem.jsx`
 
 - Renderiza cada reserva dentro de la grilla.
-- En escritorio muestra icono de actividad, empleado, boton de cancelar y popover de detalle al hover.
+- En escritorio muestra icono de servicio, empleado, boton de cancelar y popover de detalle al hover.
 - En celular usa `.agenda-booking-mobile-label` para mostrar solo empleado dentro del bloque de color.
 - En celular mantiene visible `.agenda-booking-cancel` como boton tactil compacto.
 - El contenedor del turno y el boton cancelar frenan `onPointerDown` para que tocar cancelar no inicie seleccion de un turno nuevo.
@@ -294,7 +294,7 @@ No usar `toISOString()` para `start_at` o `end_at`.
 ### `AdminPanel.jsx`
 
 - ABM empleados.
-- ABM actividades.
+- ABM servicios.
 - Gestion de disponibilidad por fecha de empleados desde vista `Disponibilidad`.
 - Aprobacion/rechazo de solicitudes internas.
 - Verifica que Supabase realmente haya aplicado inserts/updates para detectar problemas de RLS.
@@ -329,11 +329,11 @@ No usar `toISOString()` para `start_at` o `end_at`.
 
 - Estilo principal en `src/index.css`.
 - Agenda con encabezado semanal y botones de navegacion.
-- Tarjetas de proximos turnos compactas; en celular se muestran como lista vertical con solo actividad y horario.
-- Iconos por actividad con fondo del color del servicio.
+- Tarjetas de proximos turnos compactas; en celular se muestran como lista vertical con solo servicio y horario.
+- Iconos por servicio con fondo del color del servicio.
 - En `Proximos turnos`, el glyph del emoji se centra absoluto y se agranda sin modificar el recuadro.
 - La grilla de agenda conserva iconos pequenos para no romper densidad visual.
-- En celular, la grilla no muestra iconos de actividad dentro del turno; muestra solo empleado y boton cancelar.
+- En celular, la grilla no muestra iconos de servicio dentro del turno; muestra solo empleado y boton cancelar.
 - El navbar movil esta compactado: menos padding, subtitulo oculto, badge de perfil oculto y acciones reducidas.
 - Los modales en celular funcionan como panel inferior con ancho completo y scroll interno.
 - La app es responsive por breakpoint:
@@ -365,7 +365,7 @@ set role = 'admin', updated_at = now()
 where email = 'tu-email@gmail.com';
 ```
 
-5. Desde la app, crear actividades, empleados y asignaciones.
+5. Desde la app, crear servicios, empleados y asignaciones.
 6. Aprobar solicitudes internas si se van a usar empleados internos.
 
 Para bases existentes que ya tenian disponibilidad por fecha, ejecutar tambien `database/005_internal_user_profiles.sql` para habilitar usuario unico, datos personales y foto de perfil en accesos internos.
@@ -390,10 +390,10 @@ npm.cmd run build
 - No permitir doble reserva de la misma persona.
 - Permitir turnos superpuestos de empleados distintos si son clientes/personas distintas.
 - Permitir que admin/empleado reserven para terceros ingresando nombre y email del cliente real.
-- Mantener ABM de empleados, actividades y disponibilidad.
+- Mantener ABM de empleados, servicios y disponibilidad.
 - Mantener aprobacion de registros internos.
-- Mantener leyenda de colores de actividades.
+- Mantener leyenda de colores de servicios.
 - Mantener la grilla densa y legible.
 - Mantener responsive real para celulares: agenda de 3 dias, celdas compactas, navbar chico, proximos turnos reducidos.
-- En celular, dentro de la grilla mostrar color + empleado + boton cancelar; no mostrar horario ni icono de actividad.
+- En celular, dentro de la grilla mostrar color + empleado + boton cancelar; no mostrar horario ni icono de servicio.
 - El boton cancelar movil no debe disparar seleccion de turno nuevo; debe detener `pointerDown` y `click`.

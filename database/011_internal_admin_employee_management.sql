@@ -819,15 +819,15 @@ declare
   clean_duration integer := coalesce(default_duration_value, 30);
 begin
   if not public.is_admin() and not public.is_internal_admin(account_id_value) then
-    raise exception 'Solo un administrador puede guardar actividades.';
+    raise exception 'Solo un administrador puede guardar servicios.';
   end if;
 
   if clean_name is null then
-    raise exception 'Ingresá el nombre de la actividad.';
+    raise exception 'Ingresá el nombre del servicio.';
   end if;
 
   if clean_duration <= 0 then
-    raise exception 'La duración de la actividad debe ser mayor a cero.';
+    raise exception 'La duración del servicio debe ser mayor a cero.';
   end if;
 
   if service_id_value is null then
@@ -856,7 +856,7 @@ begin
   returning services.id, services.name, services.icon, services.color, services.default_duration, services.active;
 
   if not found then
-    raise exception 'La actividad no existe.';
+    raise exception 'El servicio no existe.';
   end if;
 end;
 $$;
@@ -872,7 +872,7 @@ set search_path = public
 as $$
 begin
   if not public.is_admin() and not public.is_internal_admin(account_id_value) then
-    raise exception 'Solo un administrador puede eliminar actividades.';
+    raise exception 'Solo un administrador puede eliminar servicios.';
   end if;
 
   if exists (
@@ -881,7 +881,7 @@ begin
     where bookings.service = service_id_value
     limit 1
   ) then
-    raise exception 'No se puede eliminar una actividad con turnos cargados. Podés desactivarla para que no se ofrezca más.';
+    raise exception 'No se puede eliminar un servicio con turnos cargados. Podés desactivarlo para que no se ofrezca más.';
   end if;
 
   delete from public.employee_services
@@ -891,7 +891,7 @@ begin
   where services.id = service_id_value;
 
   if not found then
-    raise exception 'La actividad no existe.';
+    raise exception 'El servicio no existe.';
   end if;
 end;
 $$;
@@ -1048,7 +1048,7 @@ begin
     where relations.employee_id = employee_id_value
       and relations.service_id = service_id_value
   ) then
-    raise exception 'El empleado no esta vinculado a esa actividad.';
+    raise exception 'El empleado no esta vinculado a ese servicio.';
   end if;
 
   if not exists (
@@ -1167,7 +1167,7 @@ begin
     where relations.employee_id = employee_id_value
       and relations.service_id = service_id_value
   ) then
-    raise exception 'El empleado no esta vinculado a esa actividad.';
+    raise exception 'El empleado no esta vinculado a ese servicio.';
   end if;
 
   if not exists (
@@ -1342,7 +1342,7 @@ begin
     where relations.employee_id = employee_id_value
       and relations.service_id = booking_record.service
   ) then
-    raise exception 'El empleado no esta vinculado a esa actividad.';
+    raise exception 'El empleado no esta vinculado a ese servicio.';
   end if;
 
   if not exists (

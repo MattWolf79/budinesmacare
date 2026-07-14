@@ -49,7 +49,7 @@ const getCurrentMonthName = () => new Intl.DateTimeFormat('es-AR', { month: 'lon
 
 const getDiscountValue = (discount) => Number(discount?.value ?? discount?.percent) || 0;
 
-const getActivityDiscountLabel = (discount) => `${String(discount?.name || '').trim() || 'Check actividad'} (${discount?.valueType === 'amount' ? formatMoney(getDiscountValue(discount)) : `${getDiscountValue(discount)}%`})`;
+const getActivityDiscountLabel = (discount) => `${String(discount?.name || '').trim() || 'Check servicio'} (${discount?.valueType === 'amount' ? formatMoney(getDiscountValue(discount)) : `${getDiscountValue(discount)}%`})`;
 
 const isMissingSaveServiceSignatureError = (error) => {
   const message = String(error?.message || '').toLowerCase();
@@ -736,12 +736,12 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
     const selectedActivityCheck = activityDiscountChecks.find((discount) => String(discount.id) === String(payload.activity_discount_check_id));
     if (selectedActivityCheck?.valueType === 'amount' && Number(selectedActivityCheck.value || 0) > payload.base_price) {
-      alert(`El check ${selectedActivityCheck.name || selectedActivityCheck.id} no puede superar el precio base de la actividad.`);
+      alert(`El check ${selectedActivityCheck.name || selectedActivityCheck.id} no puede superar el precio base del servicio.`);
       return;
     }
 
     if (!payload.name) {
-      alert('Ingresá el nombre de la actividad.');
+      alert('Ingresá el nombre del servicio.');
       return;
     }
 
@@ -752,7 +752,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     );
 
     if (duplicatedService) {
-      alert(`Ya existe una actividad llamada ${duplicatedService.name}. Revisá mayúsculas, acentos o tildes antes de crear otra.`);
+      alert(`Ya existe un servicio llamado ${duplicatedService.name}. Revisá mayúsculas, acentos o tildes antes de crear otro.`);
       return;
     }
 
@@ -772,13 +772,13 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     });
 
     if (serviceResult.error) {
-      alert(`No se pudo guardar la actividad: ${serviceResult.error.message}`);
+      alert(`No se pudo guardar el servicio: ${serviceResult.error.message}`);
       setIsSaving(false);
       return;
     }
 
     if (!serviceResult.data) {
-      alert('No se pudo verificar el guardado: Supabase no devolvió la actividad.');
+      alert('No se pudo verificar el guardado: Supabase no devolvió el servicio.');
       setIsSaving(false);
       return;
     }
@@ -791,7 +791,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
     const assignmentResult = await saveServiceActivityCheckAssignment(serviceResult.data.id, payload.activity_discount_check_id);
     if (assignmentResult.error) {
-      alert(`La actividad se guardó, pero no se pudo asignar el check: ${assignmentResult.error.message}`);
+      alert(`El servicio se guardó, pero no se pudo asignar el check: ${assignmentResult.error.message}`);
       setIsSaving(false);
       return;
     }
@@ -833,7 +833,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     });
 
     if (error) {
-      alert(`No se pudo cambiar el estado de la actividad: ${error.message}`);
+      alert(`No se pudo cambiar el estado del servicio: ${error.message}`);
       return;
     }
 
@@ -847,7 +847,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
   };
 
   const deleteService = async (service) => {
-    const shouldDelete = window.confirm(`¿Eliminar la actividad ${service.name}?`);
+    const shouldDelete = window.confirm(`¿Eliminar el servicio ${service.name}?`);
     if (!shouldDelete) return;
 
     const { data: existingBookings, error: bookingError } = await supabase
@@ -857,12 +857,12 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       .limit(1);
 
     if (bookingError) {
-      alert('No se pudo validar si la actividad tiene turnos.');
+      alert('No se pudo validar si el servicio tiene turnos.');
       return;
     }
 
     if (existingBookings?.length) {
-      alert('No se puede eliminar una actividad con turnos cargados. Podés desactivarla para que no se ofrezca más.');
+      alert('No se puede eliminar un servicio con turnos cargados. Podés desactivarlo para que no se ofrezca más.');
       return;
     }
 
@@ -873,7 +873,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     });
 
     if (serviceResult.error) {
-      alert(`No se pudo eliminar la actividad. ${serviceResult.error.message}`);
+      alert(`No se pudo eliminar el servicio. ${serviceResult.error.message}`);
       return;
     }
 
@@ -943,7 +943,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         <div className="admin-page-heading">
           <div>
             <h1>Administración de empleados</h1>
-            <p>Gestioná perfiles internos, actividades asignadas y datos de contacto.</p>
+            <p>Gestioná perfiles internos, servicios asignados y datos de contacto.</p>
           </div>
           <button className="admin-link-button" type="button" onClick={loadAdminData}>
             Actualizar
@@ -967,7 +967,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
             <small>Solicitudes de acceso.</small>
           </article>
           <article className="admin-metric-card">
-            <span>Actividades</span>
+            <span>Servicios</span>
             <strong>{activeServices.length}</strong>
             <small>Servicios asignables.</small>
           </article>
@@ -1107,7 +1107,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
               </label>
 
               <div className="admin-fieldset">
-                <div className="admin-fieldset-title">Actividades que atiende</div>
+                <div className="admin-fieldset-title">Servicios que atiende</div>
                 <div className="admin-chip-grid">
                   {activeServices.map((service) => (
                     <button
@@ -1165,7 +1165,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                   <div className="admin-record-profile-line">
                     {employee.email || 'Sin mail'}
                   </div>
-                  <div className="admin-record-services">{getEmployeeActivityNames(employee.id, employeeServices, services, promotions) || 'Sin actividades asignadas'}</div>
+                  <div className="admin-record-services">{getEmployeeActivityNames(employee.id, employeeServices, services, promotions) || 'Sin servicios asignados'}</div>
                 </div>
                 <div className="admin-record-actions">
                   <button className="agenda-close-button employee-list-action" type="button" onClick={() => editEmployee(employee)} aria-label="Editar empleado" title="Editar empleado">
@@ -1193,7 +1193,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
     <section className="admin-shell service-admin-manager">
       <div className="admin-page-heading">
         <div>
-          <h1>Administración de actividades</h1>
+          <h1>Administración de servicios</h1>
           <p>Configurá servicios, colores y disponibilidad operativa.</p>
         </div>
         <button className="admin-link-button" type="button" onClick={loadAdminData}>
@@ -1201,9 +1201,9 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         </button>
       </div>
 
-      <div className="admin-metric-grid service-metric-grid" aria-label="Resumen de actividades">
+      <div className="admin-metric-grid service-metric-grid" aria-label="Resumen de servicios">
         <article className="admin-metric-card">
-          <span>Actividades</span>
+          <span>Servicios</span>
           <strong>{services.length}</strong>
           <small>Total configuradas.</small>
         </article>
@@ -1220,7 +1220,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         <article className="admin-metric-card">
           <span>Asignaciones</span>
           <strong>{employeeServices.length}</strong>
-          <small>Empleado por actividad.</small>
+          <small>Empleado por servicio.</small>
         </article>
         <article className="admin-metric-card admin-metric-card-monthly-closures">
           <span>{getCurrentMonthName()}</span>
@@ -1232,20 +1232,20 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       <div className="admin-hero service-legacy-heading">
         <div>
           <span className="admin-kicker">ABM</span>
-          <h1>Actividades</h1>
+          <h1>Servicios</h1>
         </div>
       </div>
 
       <div className="admin-layout">
         <form className="agenda-modal-card admin-form-card service-form-card" onSubmit={saveService}>
           <div className="agenda-modal-header admin-collapsible-form-header">
-            <span>{editingServiceId ? 'Editar actividad' : 'Nueva actividad'}</span>
+            <span>{editingServiceId ? 'Editar servicio' : 'Nuevo servicio'}</span>
             <button
               className="availability-form-toggle admin-collapsible-form-toggle"
               type="button"
               onClick={() => setIsServiceFormOpen((current) => !current)}
               aria-expanded={isServiceFormOpen}
-              aria-label={isServiceFormOpen ? 'Ocultar formulario de actividad' : 'Mostrar formulario de actividad'}
+              aria-label={isServiceFormOpen ? 'Ocultar formulario de servicio' : 'Mostrar formulario de servicio'}
             >
               &gt;
             </button>
@@ -1316,7 +1316,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
             {activityDiscountChecks.length > 0 && (
               <label>
-                Check actividad
+                Check servicio
                 <select value={serviceForm.activity_discount_check_id} onChange={(event) => updateServiceField('activity_discount_check_id', event.target.value)}>
                   <option value="">Sin check</option>
                   {activityDiscountChecks.map((discount) => (
@@ -1328,11 +1328,11 @@ export default function AdminPanel({ view, user, onDataChanged }) {
 
             <label className="admin-switch-row">
               <input type="checkbox" checked={serviceForm.active} onChange={(event) => updateServiceField('active', event.target.checked)} />
-              Actividad activa
+              Servicio activo
             </label>
 
             <div className="admin-actions">
-              <button className="agenda-close-button" type="submit" disabled={isSaving} aria-label={editingServiceId ? 'Guardar actividad' : 'Crear actividad'} title={editingServiceId ? 'Guardar actividad' : 'Crear actividad'}>
+              <button className="agenda-close-button" type="submit" disabled={isSaving} aria-label={editingServiceId ? 'Guardar servicio' : 'Crear servicio'} title={editingServiceId ? 'Guardar servicio' : 'Crear servicio'}>
                 {editingServiceId ? 'Guardar' : 'Crear'}
               </button>
               {editingServiceId && (
@@ -1358,18 +1358,18 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                     <span>{service.default_duration || 30} min</span>
                     <span>{formatMoney(service.base_price)}</span>
                     <span className={service.active === false ? 'is-warning' : 'is-success'}>{service.active === false ? 'Pausada' : 'Activa'}</span>
-                    {activityCheckId && <span className="activity-check-badge" title={activityCheck?.name || 'Check actividad'}>✓</span>}
+                    {activityCheckId && <span className="activity-check-badge" title={activityCheck?.name || 'Check servicio'}>✓</span>}
                   </div>
                   <div className="admin-record-services">{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length} empleado(s) asignado(s)</div>
                 </div>
                 <div className="admin-record-actions">
-                  <button className="agenda-close-button service-card-action" type="button" onClick={() => editService(service)} aria-label="Editar actividad" title="Editar actividad">
+                  <button className="agenda-close-button service-card-action" type="button" onClick={() => editService(service)} aria-label="Editar servicio" title="Editar servicio">
                     Editar
                   </button>
-                  <button className="agenda-option-button service-card-action" type="button" onClick={() => toggleServiceStatus(service)} aria-label={service.active === false ? 'Activar actividad' : 'Desactivar actividad'} title={service.active === false ? 'Activar actividad' : 'Desactivar actividad'}>
+                  <button className="agenda-option-button service-card-action" type="button" onClick={() => toggleServiceStatus(service)} aria-label={service.active === false ? 'Activar servicio' : 'Desactivar servicio'} title={service.active === false ? 'Activar servicio' : 'Desactivar servicio'}>
                     {service.active === false ? 'Activar' : 'Pausar'}
                   </button>
-                  <button className="agenda-danger-button service-card-action" type="button" onClick={() => deleteService(service)} aria-label="Eliminar actividad" title="Eliminar actividad">
+                  <button className="agenda-danger-button service-card-action" type="button" onClick={() => deleteService(service)} aria-label="Eliminar servicio" title="Eliminar servicio">
                     Eliminar
                   </button>
                 </div>

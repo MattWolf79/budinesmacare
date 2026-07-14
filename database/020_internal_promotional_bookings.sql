@@ -32,7 +32,7 @@ begin
   end if;
 
   if service_id_value is null and not is_promotional_booking then
-    raise exception 'Seleccioná una actividad o promoción.';
+    raise exception 'Seleccioná un servicio o promoción.';
   end if;
 
   if end_at_value <= start_at_value then
@@ -55,7 +55,7 @@ begin
     where relations.employee_id = employee_id_value
       and relations.service_id = service_id_value
   ) then
-    raise exception 'El empleado no esta vinculado a esa actividad.';
+    raise exception 'El empleado no esta vinculado a ese servicio.';
   end if;
 
   if not exists (
@@ -148,7 +148,7 @@ begin
   end if;
 
   if service_id_value is null and not is_promotional_booking then
-    raise exception 'Seleccioná una actividad o promoción.';
+    raise exception 'Seleccioná un servicio o promoción.';
   end if;
 
   if end_at_value <= start_at_value then
@@ -171,7 +171,7 @@ begin
     where relations.employee_id = employee_id_value
       and relations.service_id = service_id_value
   ) then
-    raise exception 'El empleado no esta vinculado a esa actividad.';
+    raise exception 'El empleado no esta vinculado a ese servicio.';
   end if;
 
   if not exists (

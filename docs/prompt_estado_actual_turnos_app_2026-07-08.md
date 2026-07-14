@@ -40,14 +40,14 @@ Para base existente que ya tenia un `011` viejo:
 - Puede solicitar turnos.
 - Puede cancelar solo turnos propios futuros.
 - No debe ver el nombre del empleado asignado.
-- En agenda cliente, los turnos muestran la actividad/estado, no el empleado.
+- En agenda cliente, los turnos muestran el servicio/estado, no el empleado.
 
 ### Empleado interno
 
 - Ingresa con usuario/password interno.
 - Ve agenda completa, no solo su agenda propia.
 - Puede crear un turno para un cliente eligiendo cualquier empleado activo que:
-  - este vinculado a la actividad;
+  - este vinculado al servicio;
   - tenga disponibilidad para fecha/hora;
   - no tenga turno superpuesto.
 - Puede cancelar solo turnos asignados a su propio `employee_id`.
@@ -56,7 +56,7 @@ Para base existente que ya tenia un `011` viejo:
 
 ### Admin interno o Auth admin
 
-- Puede administrar empleados, actividades, disponibilidades y turnos.
+- Puede administrar empleados, servicios, disponibilidades y turnos.
 - Puede crear empleados y marcar `Administrador` para promoverlos.
 - Puede resetear clave de empleados/admins internos a `123456`.
 - Puede cancelar turnos de cualquier empleado.
@@ -90,7 +90,7 @@ Para base existente que ya tenia un `011` viejo:
   - crear/editar/eliminar empleados;
   - marcar empleados como admin;
   - resetear claves;
-  - crear/editar/eliminar actividades;
+  - crear/editar/eliminar servicios;
   - manejar solicitudes internas.
 
 ## RPCs criticas actuales
@@ -132,7 +132,7 @@ La condicion debe ser `NULL-safe` con `coalesce(..., false)` para evitar que com
 - Cliente crea solicitud/turno propio sin elegir empleado visible; el admin asigna luego si aplica.
 - Se valida:
   - empleado activo;
-  - empleado vinculado a actividad;
+  - empleado vinculado a servicio;
   - disponibilidad exacta por fecha/hora;
   - no superposicion del empleado;
   - no superposicion del cliente/email.
@@ -154,7 +154,7 @@ Checklist funcional:
 
 - Admin interno entra con `admin` / `123456` en base nueva y cambia clave.
 - Admin crea empleado y marca admin.
-- Admin crea actividad y asigna empleados.
+- Admin crea servicio y asigna empleados.
 - Admin crea disponibilidad por fecha.
 - Empleado `clobo` puede reservar para cliente con empleado `nfernandez` si nfernandez esta activo/vinculado/disponible.
 - `clobo` no puede cancelar turnos de `nfernandez`.

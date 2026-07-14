@@ -40,7 +40,7 @@ create table if not exists public.mail_settings (
   id boolean primary key default true,
   resend_api_key text,
   from_email text not null default 'noresponder@quieroturnoapp.com.ar',
-  from_name text not null default 'Turnos App - No responder',
+  from_name text not null default 'Quiero Turno App - No responder',
   active boolean not null default true,
   created_at timestamp without time zone not null default now(),
   updated_at timestamp without time zone not null default now(),
@@ -54,7 +54,7 @@ on conflict (id) do nothing;
 
 update public.mail_settings
 set from_email = 'noresponder@quieroturnoapp.com.ar',
-    from_name = 'Turnos App - No responder',
+    from_name = 'Quiero Turno App - No responder',
     updated_at = now()
 where id = true;
 
@@ -66,7 +66,7 @@ create or replace function public.send_resend_email(
   to_email_value text,
   subject_value text,
   message_value text,
-  from_name_value text default 'Turnos App - No responder',
+  from_name_value text default 'Quiero Turno App - No responder',
   reply_to_value text default null
 )
 returns void
@@ -137,7 +137,7 @@ begin
       and employees.deleted_at is null
       and public.is_valid_email(employees.email)
   loop
-    perform public.send_resend_email(admin_email, subject_value, message_value, 'Turnos App - No responder', reply_to_value);
+    perform public.send_resend_email(admin_email, subject_value, message_value, 'Quiero Turno App - No responder', reply_to_value);
   end loop;
 end;
 $$;
@@ -166,7 +166,7 @@ begin
     event_label,
     'Cliente: ' || coalesce(nullif(booking_value.customer_name, ''), nullif(booking_value.user_email, ''), 'Cliente sin datos'),
     case when public.is_valid_email(booking_value.user_email) then 'Mail cliente: ' || booking_value.user_email else null end,
-    'Actividad: ' || coalesce(nullif(booking_value.booking_description, ''), service_name, 'Turno'),
+    'Servicio: ' || coalesce(nullif(booking_value.booking_description, ''), service_name, 'Turno'),
     case when employee_name is not null then 'Empleado: ' || employee_name else 'Empleado: pendiente de asignación' end,
     'Inicio: ' || to_char(booking_value.start_at, 'DD/MM/YYYY HH24:MI'),
     'Fin: ' || to_char(booking_value.end_at, 'DD/MM/YYYY HH24:MI')
@@ -195,7 +195,7 @@ begin
         NEW.user_email,
         'Recibimos tu reserva',
         client_message,
-        'Turnos App - No responder'
+        'Quiero Turno App - No responder'
       );
     end if;
 
@@ -211,7 +211,7 @@ begin
       where employees.id = NEW.employee_id;
 
       employee_message := public.format_booking_notification_message(NEW, 'Tenés un nuevo turno asignado.');
-      perform public.send_resend_email(employee_email, 'Tenés un nuevo turno asignado', employee_message, 'Turnos App - No responder', NEW.user_email);
+      perform public.send_resend_email(employee_email, 'Tenés un nuevo turno asignado', employee_message, 'Quiero Turno App - No responder', NEW.user_email);
     end if;
   end if;
 
@@ -225,7 +225,7 @@ begin
     where employees.id = NEW.employee_id;
 
     employee_message := public.format_booking_notification_message(NEW, 'Tenés un nuevo turno asignado.');
-    perform public.send_resend_email(employee_email, 'Tenés un nuevo turno asignado', employee_message, 'Turnos App - No responder', NEW.user_email);
+    perform public.send_resend_email(employee_email, 'Tenés un nuevo turno asignado', employee_message, 'Quiero Turno App - No responder', NEW.user_email);
   end if;
 
   if TG_OP = 'UPDATE'
@@ -238,7 +238,7 @@ begin
     where employees.id = NEW.employee_id;
 
     employee_message := public.format_booking_notification_message(NEW, 'Se canceló este turno.');
-    perform public.send_resend_email(employee_email, 'Se canceló un turno', employee_message, 'Turnos App - No responder', NEW.user_email);
+    perform public.send_resend_email(employee_email, 'Se canceló un turno', employee_message, 'Quiero Turno App - No responder', NEW.user_email);
   end if;
 
   return NEW;
@@ -361,7 +361,7 @@ begin
       clean_email,
       'Tu acceso interno fue creado',
       welcome_message,
-      'Turnos App - No responder'
+      'Quiero Turno App - No responder'
     );
 
     return query
