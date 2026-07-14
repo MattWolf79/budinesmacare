@@ -1128,6 +1128,19 @@ code {
   font-weight: 700;
 }
 
+.login-session-notice {
+  max-width: 360px;
+  margin: 0 auto 18px;
+  border: 1px solid #f8caca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #9f1d2b;
+  background: #fff1f2;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
 .login-access-grid {
   display: grid;
   gap: 10px;

@@ -9,6 +9,15 @@ const profileStorageKey = 'turnos_access_profile';
 const requestedProfileStorageKey = 'turnos_requested_profile';
 const internalSessionStorageKey = 'turnos_internal_session';
 const localClientSessionStorageKey = 'turnos_local_client_session';
+const lastActivityStorageKey = 'turnos_last_activity_at';
+const inactivityLimitMs = 5 * 60 * 1000;
+const inactivityMessage = 'Pasaron mas de 5 min sin operar, volver a intentar.';
+
+const getLastActivityAt = () => Number(sessionStorage.getItem(lastActivityStorageKey) || 0);
+
+const touchLastActivity = () => {
+  sessionStorage.setItem(lastActivityStorageKey, String(Date.now()));
+};
 
 const getAvailableProfiles = (role) => {
   if (role === 'admin') return ['admin'];
@@ -66,6 +75,7 @@ export default function App() {
   const [internalSession, setInternalSession] = useState(loadStoredInternalSession);
   const [accessProfile, setAccessProfile] = useState(null);
   const [authProfile, setAuthProfile] = useState(null);
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState('');
 
   const availableProfiles = internalSession
     ? getAvailableProfiles(internalSession.role)
@@ -73,6 +83,8 @@ export default function App() {
   const canChangeProfile = availableProfiles.length > 1;
 
   const selectAccessProfile = (profile) => {
+    setSessionExpiredMessage('');
+    touchLastActivity();
     setAccessProfile(profile);
     sessionStorage.setItem(profileStorageKey, profile);
   };
@@ -91,6 +103,7 @@ export default function App() {
   };
 
   const changeInternalAccess = () => {
+    setSessionExpiredMessage('');
     clearAccessProfile();
     clearInternalSession();
   };
@@ -108,15 +121,19 @@ export default function App() {
       employeeId: account.employee_id || null
     };
 
+    setSessionExpiredMessage('');
     setInternalSession(nextSession);
     setAccessProfile(account.role);
+    touchLastActivity();
     sessionStorage.setItem(internalSessionStorageKey, JSON.stringify(nextSession));
     sessionStorage.setItem(profileStorageKey, account.role);
   };
 
   const logout = async () => {
+    setSessionExpiredMessage('');
     clearAccessProfile();
     clearInternalSession();
+    sessionStorage.removeItem(lastActivityStorageKey);
 
     const { error } = await supabase.auth.signOut();
 
@@ -144,6 +161,11 @@ export default function App() {
 
     if (!nextSession) {
       return;
+    }
+
+    setSessionExpiredMessage('');
+    if (!getLastActivityAt()) {
+      touchLastActivity();
     }
 
     const profile = await loadAuthProfile(nextSession.user);
@@ -186,8 +208,75 @@ export default function App() {
 
   }, [applyAuthSession]);
 
+  useEffect(() => {
+    if (!session && !internalSession) {
+      return undefined;
+    }
+
+    let timeoutId = null;
+    let expired = false;
+
+    const expireInactiveSession = async () => {
+      if (expired) return;
+      expired = true;
+
+      setSessionExpiredMessage(inactivityMessage);
+      clearAccessProfile();
+      clearInternalSession();
+      sessionStorage.removeItem(lastActivityStorageKey);
+      setSession(null);
+      setAuthProfile(null);
+
+      if (session) {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('No se pudo cerrar la sesión por inactividad.', error);
+        }
+      }
+    };
+
+    const scheduleExpiration = () => {
+      const lastActivityAt = getLastActivityAt();
+      const elapsedMs = lastActivityAt ? Date.now() - lastActivityAt : 0;
+
+      window.clearTimeout(timeoutId);
+
+      if (lastActivityAt && elapsedMs >= inactivityLimitMs) {
+        expireInactiveSession();
+        return;
+      }
+
+      timeoutId = window.setTimeout(expireInactiveSession, inactivityLimitMs - elapsedMs);
+    };
+
+    const registerActivity = () => {
+      touchLastActivity();
+      scheduleExpiration();
+    };
+
+    if (!getLastActivityAt()) {
+      touchLastActivity();
+    }
+
+    scheduleExpiration();
+
+    const activityEvents = ['pointerdown', 'keydown', 'touchstart', 'wheel'];
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, registerActivity, { passive: true });
+    });
+    document.addEventListener('visibilitychange', scheduleExpiration);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, registerActivity);
+      });
+      document.removeEventListener('visibilitychange', scheduleExpiration);
+    };
+  }, [session, internalSession]);
+
   if (!session && !internalSession) {
-    return <Login onInternalAccess={startInternalSession} />;
+    return <Login onInternalAccess={startInternalSession} sessionNotice={sessionExpiredMessage} onDismissSessionNotice={() => setSessionExpiredMessage('')} />;
   }
 
   if (internalSession) {

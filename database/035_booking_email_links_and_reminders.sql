@@ -202,7 +202,7 @@ begin
     when event_label ilike '%pendiente%' then 'Acción requerida'
     when event_label ilike '%asignado%' then 'Agenda'
     when event_label ilike '%canceló%' then 'Cancelación'
-    else 'Turnos App'
+    else 'Quiero Turno App'
   end;
 
   return '<div style="margin:0;padding:0;background:#eef7f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937">'

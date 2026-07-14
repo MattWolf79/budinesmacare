@@ -15,6 +15,7 @@ declare
   updated_sql text;
 begin
   foreach function_identity in array array[
+    to_regprocedure('public.send_resend_email(text,text,text,text,text,text)'),
     to_regprocedure('public.send_resend_email(text,text,text,text,text)'),
     to_regprocedure('public.format_booking_notification_message(public.bookings,text)'),
     to_regprocedure('public.format_booking_notification_html(public.bookings,text,text,text)'),
@@ -28,6 +29,7 @@ begin
 
     original_sql := pg_get_functiondef(function_identity);
     updated_sql := replace(original_sql, 'Turnos App - No responder', 'Quiero Turno App - No responder');
+    updated_sql := replace(updated_sql, 'Turnos App', 'Quiero Turno App');
     updated_sql := replace(updated_sql, 'Actividad:', 'Servicio:');
     updated_sql := replace(updated_sql, '>Actividad</td>', '>Servicio</td>');
     updated_sql := replace(updated_sql, 'Solo un administrador puede guardar actividades.', 'Solo un administrador puede guardar servicios.');

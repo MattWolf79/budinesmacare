@@ -93,7 +93,7 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export default function Login({ onInternalAccess }) {
+export default function Login({ onInternalAccess, sessionNotice = '', onDismissSessionNotice }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
   const [inAppBrowserNoticeOpen, setInAppBrowserNoticeOpen] = useState(false);
   const [copyLinkStatus, setCopyLinkStatus] = useState('');
@@ -107,6 +107,7 @@ export default function Login({ onInternalAccess }) {
   const [isSubmittingInternalAccess, setIsSubmittingInternalAccess] = useState(false);
 
   const handleLogin = async (profileId) => {
+    onDismissSessionNotice?.();
     sessionStorage.setItem(requestedProfileStorageKey, profileId);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -142,6 +143,7 @@ export default function Login({ onInternalAccess }) {
   };
 
   const openRegistration = (profileId) => {
+    onDismissSessionNotice?.();
     setRegistrationProfile(profileId);
     setInternalAccessMode('login');
     setRegistrationForm(emptyRegistrationForm);
@@ -417,6 +419,12 @@ export default function Login({ onInternalAccess }) {
         <p className="login-copy">
           Elegí el tipo de acceso. Clientes ingresan con Google; empleados y administrador usan nombre y contraseña internos.
         </p>
+
+        {sessionNotice && (
+          <div className="login-session-notice" role="alert">
+            {sessionNotice}
+          </div>
+        )}
 
         <div className="login-access-grid" aria-label="Tipos de acceso">
           {accessOptions.map((option) => (
