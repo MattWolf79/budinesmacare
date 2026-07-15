@@ -6038,6 +6038,47 @@ body {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
+.admin-page-heading .admin-profile-panel,
+.admin-hero .admin-profile-panel {
+  margin-left: 0;
+}
+
+.admin-page-heading .role-workspace-profile-photo,
+.admin-hero .role-workspace-profile-photo,
+.agenda-page-heading .role-workspace-profile-photo {
+  flex-basis: 52px;
+  width: 52px;
+  height: 52px;
+}
+
+.admin-page-heading .workspace-profile-name,
+.admin-hero .workspace-profile-name,
+.agenda-page-heading .workspace-profile-name {
+  max-width: 130px;
+  font-size: 12px;
+}
+
+.admin-page-heading .workspace-profile-role,
+.admin-hero .workspace-profile-role,
+.agenda-page-heading .workspace-profile-role {
+  padding: 2px 8px;
+  font-size: 8px;
+}
+
+.admin-external-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-page-heading + .admin-external-actions {
+  margin: -18px 0 16px;
+}
+
+.admin-hero + .admin-external-actions {
+  margin: -8px 4px 14px;
+}
+
 .admin-page-heading h1 {
   margin: 0;
   color: #202938;
@@ -11651,6 +11692,129 @@ body {
     min-height: 30px !important;
     padding: 4px 7px !important;
     font-size: 11.5px !important;
+  }
+
+  .role-workspace-client .role-workspace-hero,
+  .role-workspace-employee .role-workspace-hero {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .role-workspace-client .role-workspace-hero > div:first-child,
+  .role-workspace-employee .role-workspace-hero > div:first-child {
+    min-width: 0 !important;
+  }
+
+  .role-workspace-client .role-workspace-hero h1,
+  .role-workspace-employee .role-workspace-hero h1 {
+    margin: 0 !important;
+    font-size: 20px !important;
+    line-height: 1.1 !important;
+  }
+
+  .role-workspace-client .role-workspace-hero p:not(.admin-kicker),
+  .role-workspace-employee .role-workspace-hero p:not(.admin-kicker) {
+    display: none !important;
+  }
+
+  .role-workspace-client .role-workspace-hero .admin-kicker,
+  .role-workspace-employee .role-workspace-hero .admin-kicker {
+    margin-bottom: 4px !important;
+  }
+
+  .workspace-profile-panel,
+  .dashboard-profile-hero {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+  }
+
+  .workspace-profile-panel {
+    min-width: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  .dashboard-profile-hero {
+    padding: 12px !important;
+  }
+
+  .workspace-profile-name {
+    max-width: 96px !important;
+    font-size: 11px !important;
+  }
+
+  .workspace-profile-role {
+    padding: 2px 7px !important;
+    font-size: 7.5px !important;
+  }
+
+  .workspace-profile-panel .role-workspace-profile-photo,
+  .dashboard-profile-hero .role-workspace-profile-photo {
+    flex-basis: 54px !important;
+    width: 54px !important;
+    height: 54px !important;
+  }
+
+  .dashboard-shell .admin-page-heading,
+  .dashboard-shell .admin-hero,
+  .agenda-page-heading {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-shell .admin-page-heading p,
+  .agenda-page-heading p {
+    display: none !important;
+  }
+
+  .dashboard-shell .admin-page-heading .admin-profile-panel,
+  .dashboard-shell .admin-hero .admin-profile-panel,
+  .agenda-page-heading .admin-profile-panel {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-shell .admin-page-heading .role-workspace-profile-photo,
+  .dashboard-shell .admin-hero .role-workspace-profile-photo,
+  .agenda-page-heading .role-workspace-profile-photo {
+    flex-basis: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .dashboard-shell .admin-page-heading .workspace-profile-name,
+  .dashboard-shell .admin-hero .workspace-profile-name,
+  .agenda-page-heading .workspace-profile-name {
+    max-width: 70px !important;
+    font-size: 9.5px !important;
+  }
+
+  .dashboard-shell .admin-page-heading .workspace-profile-role,
+  .dashboard-shell .admin-hero .workspace-profile-role,
+  .agenda-page-heading .workspace-profile-role {
+    padding: 1px 5px !important;
+    font-size: 6.5px !important;
+  }
+
+  .dashboard-shell .admin-external-actions {
+    justify-content: flex-end !important;
+    margin: -4px 0 10px !important;
+  }
+
+  .dashboard-shell .admin-external-actions .admin-link-button,
+  .dashboard-shell .admin-external-actions .admin-refresh-button {
+    min-height: 26px !important;
+    padding: 4px 7px !important;
+    font-size: 9.5px !important;
   }
 }
 

@@ -240,7 +240,7 @@ const formatSupabaseError = (error) => [
   error.hint ? `Ayuda: ${error.hint}` : ''
 ].filter(Boolean).join('\n');
 
-export default function AdminPanel({ view, user, onDataChanged }) {
+export default function AdminPanel({ view, user, onDataChanged, adminProfileSummary = null }) {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
   const [employeeServices, setEmployeeServices] = useState([]);
@@ -946,6 +946,10 @@ export default function AdminPanel({ view, user, onDataChanged }) {
             <h1>Administración de empleados</h1>
             <p>Gestioná perfiles internos, servicios asignados y datos de contacto.</p>
           </div>
+          {adminProfileSummary}
+        </div>
+
+        <div className="admin-external-actions">
           <button className="admin-link-button" type="button" onClick={loadAdminData}>
             Actualizar
           </button>
@@ -1208,6 +1212,10 @@ export default function AdminPanel({ view, user, onDataChanged }) {
           <h1>Administración de servicios</h1>
           <p>Configurá servicios, colores y disponibilidad operativa.</p>
         </div>
+        {adminProfileSummary}
+      </div>
+
+      <div className="admin-external-actions">
         <button className="admin-link-button" type="button" onClick={loadAdminData}>
           Actualizar
         </button>

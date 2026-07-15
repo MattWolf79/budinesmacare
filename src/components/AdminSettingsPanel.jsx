@@ -106,7 +106,7 @@ const normalizeBannerImages = (config) => {
   return normalizedImages;
 };
 
-export default function AdminSettingsPanel({ user }) {
+export default function AdminSettingsPanel({ user, adminProfileSummary = null }) {
   const [savedConfig, setSavedConfig] = useState(defaultConfig);
   const [form, setForm] = useState(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
@@ -118,7 +118,7 @@ export default function AdminSettingsPanel({ user }) {
   const [businessHoursOpen, setBusinessHoursOpen] = useState(false);
   const [promotionsOpen, setPromotionsOpen] = useState(false);
   const [discountsOpen, setDiscountsOpen] = useState(false);
-  const [activityChecksOpen, setActivityChecksOpen] = useState(true);
+  const [activityChecksOpen, setActivityChecksOpen] = useState(false);
   const [selectedActivityCheckIndex, setSelectedActivityCheckIndex] = useState(null);
 
   const enabledPromotions = useMemo(() => (
@@ -495,11 +495,16 @@ export default function AdminSettingsPanel({ user }) {
 
   return (
     <section className="admin-shell settings-shell">
-      <div className="admin-hero settings-hero">
+      <div className="admin-page-heading settings-hero">
         <div>
-          <p className="admin-kicker">Configuración</p>
+          <h1>Configuración</h1>
+          <p>Ajustá la experiencia, promociones y reglas de reserva.</p>
         </div>
-        <button className="agenda-close-button admin-refresh-button" type="button" onClick={() => setPreviewOpen(true)}>
+        {adminProfileSummary}
+      </div>
+
+      <div className="admin-external-actions">
+        <button className="admin-link-button admin-refresh-button" type="button" onClick={() => setPreviewOpen(true)}>
           Vista previa
         </button>
       </div>

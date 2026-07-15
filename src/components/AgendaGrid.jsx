@@ -518,7 +518,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   );
 }
 
-export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [] }) {
+export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -1334,6 +1334,16 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       onPointerCancel={cancelPointerSelection}
       style={{ userSelect: 'none' }}
     >
+
+      {isAdminView && adminProfileSummary && (
+        <section className="admin-page-heading agenda-page-heading">
+          <div>
+            <h1>Agenda</h1>
+            <p>Gestioná turnos, solicitudes pendientes y cierres de atención.</p>
+          </div>
+          {adminProfileSummary}
+        </section>
+      )}
 
       {isAdminView && pendingAssignmentBookings.length > 0 && (
         <section className="admin-pending-panel booking-assignment-panel">

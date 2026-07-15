@@ -122,7 +122,8 @@ export default function EmployeeAvailabilityPanel({
   employeeId,
   employeeName,
   employees: adminEmployees = [],
-  onAvailabilityChanged
+  onAvailabilityChanged,
+  adminProfileSummary = null
 }) {
   const isAdminMode = mode === 'admin';
   const availabilityFilterStorageKey = `turnos.availability.weekday.${isAdminMode ? 'admin' : employeeId || user?.id || 'employee'}`;
@@ -577,12 +578,16 @@ export default function EmployeeAvailabilityPanel({
 
   return (
     <section className="admin-shell employee-availability-manager">
-      <div className="admin-hero">
+      <div className="admin-page-heading availability-page-heading">
         <div>
-          <span className="admin-kicker">Agenda disponible</span>
+          <p>Agenda disponible</p>
           <h1>Disponibilidad</h1>
         </div>
-        <button className="agenda-close-button admin-refresh-button" type="button" onClick={loadAvailability} disabled={isLoading}>
+        {adminProfileSummary}
+      </div>
+
+      <div className="admin-external-actions">
+        <button className="admin-link-button admin-refresh-button" type="button" onClick={loadAvailability} disabled={isLoading}>
           Actualizar
         </button>
       </div>

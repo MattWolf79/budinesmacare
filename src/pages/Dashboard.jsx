@@ -83,6 +83,18 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     setActiveView(view);
   };
 
+  const adminProfileSummary = (
+    <div className="workspace-profile-panel admin-profile-panel">
+      <div className="workspace-profile-summary">
+        <span className="workspace-profile-name">{getUserLabel(user)}</span>
+        <span className="workspace-profile-role">Administrador</span>
+      </div>
+      <span className={`role-workspace-icon role-workspace-profile-photo ${user?.photoUrl ? 'has-photo' : ''}`} aria-hidden="true">
+        {user?.photoUrl ? <img src={user.photoUrl} alt="" /> : getUserInitials(user)}
+      </span>
+    </div>
+  );
+
   return (
     <Container maxWidth={false} disableGutters className="dashboard-shell">
       <Navbar
@@ -98,25 +110,15 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
       />
 
       <Box className="dashboard-content">
-        <section className="dashboard-profile-hero" aria-label="Perfil actual">
-          <div className="workspace-profile-summary">
-            <span className="workspace-profile-name">{getUserLabel(user)}</span>
-            <span className="workspace-profile-role">Administrador</span>
-          </div>
-          <span className={`role-workspace-icon role-workspace-profile-photo ${user?.photoUrl ? 'has-photo' : ''}`} aria-hidden="true">
-            {user?.photoUrl ? <img src={user.photoUrl} alt="" /> : getUserInitials(user)}
-          </span>
-        </section>
-
         {activeView === 'agenda' && (
           <div className="agenda-responsive-shell">
-            <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} />
+            <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} />
           </div>
         )}
-        {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} />}
-        {activeView === 'services' && <AdminPanel view="services" user={user} onDataChanged={notifyAdminDataChanged} />}
-        {activeView === 'availability' && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} />}
-        {activeView === 'settings' && <AdminSettingsPanel user={user} />}
+        {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} />}
+        {activeView === 'services' && <AdminPanel view="services" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} />}
+        {activeView === 'availability' && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} />}
+        {activeView === 'settings' && <AdminSettingsPanel user={user} adminProfileSummary={adminProfileSummary} />}
       </Box>
     </Container>
   );
