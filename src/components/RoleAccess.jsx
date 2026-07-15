@@ -71,6 +71,18 @@ function WorkspaceProfilePhoto({ user, fallback, className = '' }) {
   );
 }
 
+function WorkspaceProfileIdentity({ user, profile }) {
+  return (
+    <div className="workspace-profile-panel">
+      <div className="workspace-profile-summary">
+        <span className="workspace-profile-name">{user?.displayName || user?.email || user?.username || 'Sin usuario'}</span>
+        <span className="workspace-profile-role">{profile.label}</span>
+      </div>
+      <WorkspaceProfilePhoto user={user} fallback={profile.icon} />
+    </div>
+  );
+}
+
 function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
   const profile = profileOptions[profileId];
   const isSelected = selectedProfile === profileId;
@@ -214,7 +226,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             </p>
             {clientActiveView === 'home' && businessHoursText && <p className="client-business-hours-text">{businessHoursText}</p>}
           </div>
-          <WorkspaceProfilePhoto user={user} fallback={profile.icon} />
+          <WorkspaceProfileIdentity user={user} profile={profile} />
         </section>
       ) : (
         <section className="role-workspace-hero">
@@ -223,7 +235,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             <h1>{profile.title}</h1>
             <p>{profile.description}</p>
           </div>
-          <WorkspaceProfilePhoto user={user} fallback={profile.icon} />
+          <WorkspaceProfileIdentity user={user} profile={profile} />
         </section>
       )}
 

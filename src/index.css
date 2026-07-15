@@ -1813,8 +1813,49 @@ code {
   flex: 0 0 72px;
 }
 
+.workspace-profile-panel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.workspace-profile-summary {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  min-width: 0;
+  text-align: right;
+}
+
+.workspace-profile-name {
+  max-width: min(44vw, 220px);
+  overflow: hidden;
+  color: #26313a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-profile-role {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: #1c6670;
+  background: #d8fbf5;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .dashboard-profile-hero {
   display: flex;
+  align-items: center;
+  gap: 14px;
   justify-content: flex-end;
   margin-bottom: 16px;
   border: 1px solid #d8e0eb;

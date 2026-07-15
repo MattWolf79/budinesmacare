@@ -27,6 +27,8 @@ const getUserInitials = (user) => {
   return String(parts[0]?.[0] || 'U').toUpperCase();
 };
 
+const getUserLabel = (user) => user?.displayName || user?.email || user?.username || 'Sin usuario';
+
 export default function Dashboard({ user, accessProfile, onChangeProfile, onLogout, canChangeProfile = false }) {
 
   const [activeView, setActiveView] = useState(getAdminViewFromHash);
@@ -97,6 +99,10 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
 
       <Box className="dashboard-content">
         <section className="dashboard-profile-hero" aria-label="Perfil actual">
+          <div className="workspace-profile-summary">
+            <span className="workspace-profile-name">{getUserLabel(user)}</span>
+            <span className="workspace-profile-role">Administrador</span>
+          </div>
           <span className={`role-workspace-icon role-workspace-profile-photo ${user?.photoUrl ? 'has-photo' : ''}`} aria-hidden="true">
             {user?.photoUrl ? <img src={user.photoUrl} alt="" /> : getUserInitials(user)}
           </span>

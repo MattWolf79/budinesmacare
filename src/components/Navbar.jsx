@@ -8,12 +8,6 @@ const defaultNavItems = [
   { id: 'settings', label: 'Configuración', icon: '⚙' }
 ];
 
-const profileLabels = {
-  admin: 'Administrador',
-  client: 'Cliente',
-  employee: 'Empleado'
-};
-
 const getNavbarSubtitle = (accessProfile) => (
   accessProfile === 'client'
     ? 'Reservas online'
@@ -31,7 +25,6 @@ export default function Navbar({
   onLogout,
   showAdminNavigation = accessProfile === 'admin',
   showNavigation = showAdminNavigation,
-  showProfileBadge = Boolean(accessProfile),
   canChangeProfile = false,
   navItems = defaultNavItems
 }) {
@@ -59,13 +52,6 @@ export default function Navbar({
       )}
 
       <div className="app-navbar-session">
-        <div className="app-navbar-user">
-          <span className="app-navbar-email">{user?.email ? user.email : 'Sin usuario'}</span>
-          {showProfileBadge && accessProfile && (
-            <span className="app-navbar-profile">{profileLabels[accessProfile]}</span>
-          )}
-        </div>
-
         {user?.email && canChangeProfile && (
           <button className="app-navbar-switch" type="button" onClick={onChangeProfile} title="Cambiar perfil">
             Perfil
