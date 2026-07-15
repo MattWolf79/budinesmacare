@@ -10830,14 +10830,15 @@ body {
 .role-workspace-client .app-navbar {
   position: sticky !important;
   top: 0 !important;
-  min-height: 58px !important;
+  min-height: 64px !important;
   gap: 16px !important;
-  padding: 0 28px !important;
-  color: #1f2937 !important;
-  border: 1px solid #e4e8ef !important;
-  border-radius: 8px !important;
-  background: #fff !important;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06) !important;
+  padding: 0 44px !important;
+  color: #f8fafc !important;
+  border: 0 !important;
+  border-bottom: 1px solid #343a43 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(180deg, #4a505a 0%, #3d434d 100%) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16) !important;
 }
 
 .role-workspace-client .app-navbar-brand {
@@ -10878,6 +10879,14 @@ body {
   box-shadow: none !important;
 }
 
+.role-workspace-client .app-navbar-button,
+.role-workspace-client .app-navbar-switch,
+.role-workspace-client .app-navbar-logout {
+  color: #f3f7fc !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
 .role-workspace-client .app-navbar-button:hover,
 .role-workspace-client .app-navbar-button.is-active,
 .role-workspace-client .app-navbar-switch:hover,
@@ -10897,19 +10906,19 @@ body {
 .role-workspace-client .app-navbar-avatar {
   width: 38px !important;
   height: 38px !important;
-  border: 1px solid #d8e0eb !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   border-radius: 999px !important;
-  color: #334155 !important;
-  background: #f8fafc !important;
+  color: #fff !important;
+  background: rgba(43, 133, 255, 0.24) !important;
 }
 
 .role-workspace-client .app-navbar-email {
-  color: #5f6b7a !important;
+  color: #edf2f8 !important;
 }
 
 .role-workspace-client .app-navbar-profile {
-  color: #334155 !important;
-  background: #f1f5f9 !important;
+  color: #d7e8ff !important;
+  background: rgba(43, 133, 255, 0.18) !important;
 }
 
 .role-workspace-client .client-booking-list,
@@ -10925,6 +10934,7 @@ body {
 .role-workspace-client .client-promotion-card {
   display: grid !important;
   grid-template-columns: 1fr !important;
+  grid-template-areas: none !important;
   grid-template-rows: auto minmax(0, 1fr) auto !important;
   gap: 10px !important;
   width: 100% !important;
@@ -10938,6 +10948,13 @@ body {
   background: #fff !important;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
   text-align: left !important;
+}
+
+.role-workspace-client .client-booking-card > .client-card-header,
+.role-workspace-client .client-booking-card > .client-card-fields,
+.role-workspace-client .client-promotion-card > .client-card-header,
+.role-workspace-client .client-promotion-card > .client-card-fields {
+  grid-area: auto !important;
 }
 
 .role-workspace-client .client-card-header {
@@ -10957,12 +10974,26 @@ body {
 
 .role-workspace-client .client-card-header .activity-icon,
 .role-workspace-client .client-promotion-icon {
+  grid-area: auto !important;
+  justify-self: auto !important;
   flex: 0 0 auto !important;
   width: 28px !important;
   height: 28px !important;
   border: 1px solid rgba(255, 255, 255, 0.36) !important;
   border-radius: 7px !important;
   box-shadow: none !important;
+}
+
+.role-workspace-client .client-card-header .activity-icon.activity-icon-summary.activity-icon-small {
+  position: relative !important;
+  width: 28px !important;
+  height: 28px !important;
+  overflow: hidden !important;
+  font-size: 16px !important;
+}
+
+.role-workspace-client .client-card-header .activity-icon-summary.activity-icon-small.activity-icon-emoji .activity-icon-glyph {
+  transform: translate(-50%, -50%) scale(1) !important;
 }
 
 .role-workspace-client .client-promotion-icon {
