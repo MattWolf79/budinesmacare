@@ -899,7 +899,7 @@ code {
   gap: 10px;
   padding: 10px 14px;
   color: #fff;
-  background: #2f3842;
+  background: #494d56;
   border-radius: 0 0 8px 8px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
 }
@@ -5898,8 +5898,8 @@ body {
   gap: 16px;
   padding: 0 44px;
   color: #f8fafc;
-  background: linear-gradient(180deg, #4a505a 0%, #3d434d 100%);
-  border-bottom: 1px solid #343a43;
+  background: #494d56;
+  border-bottom: 1px solid #494d56;
   border-radius: 0;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
 }
@@ -8843,6 +8843,7 @@ body {
 
 .role-workspace-client .client-welcome-hero.has-custom-background .admin-kicker,
 .role-workspace-client .client-welcome-hero.has-custom-background h1,
+.role-workspace-client .client-welcome-hero.has-custom-background .workspace-profile-name,
 .role-workspace-client .client-welcome-hero.has-custom-background p:not(.admin-kicker),
 .settings-preview-hero.has-custom-background .admin-kicker,
 .settings-preview-hero.has-custom-background h1,
@@ -11014,9 +11015,9 @@ body {
   padding: 0 44px !important;
   color: #f8fafc !important;
   border: 0 !important;
-  border-bottom: 1px solid #343a43 !important;
+  border-bottom: 1px solid #494d56 !important;
   border-radius: 0 !important;
-  background: linear-gradient(180deg, #4a505a 0%, #3d434d 100%) !important;
+  background: #494d56 !important;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16) !important;
 }
 
