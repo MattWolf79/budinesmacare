@@ -29,6 +29,10 @@ const formatBookingTimeRange = (startValue, endValue) => {
   return `${pad(start.getHours())}:${pad(start.getMinutes())} hs-${pad(end.getHours())}:${pad(end.getMinutes())} hs`;
 };
 
+const getBookingCardTitle = (booking, service) => (
+  String(booking.booking_description || service?.name || 'Servicio').split('·')[0].trim() || 'Servicio'
+);
+
 export default function ClientDashboard({ user, showAgenda = true, selectedPromotion = null, onReservePromotion, onReserveTurn, activityLegend = null }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
@@ -183,7 +187,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
             {bookingDetails.map(({ booking, service }) => (
               <article className="client-booking-card" key={booking.id}>
                 <div className="client-card-header">
-                  <strong>{booking.booking_description || service?.name || 'Servicio'}</strong>
+                  <strong>{getBookingCardTitle(booking, service)}</strong>
                 </div>
                 <div className="client-card-fields">
                   <div className="client-card-field">

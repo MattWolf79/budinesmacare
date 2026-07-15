@@ -43,7 +43,7 @@ const employeeNavItems = [
 
 const clientNavItems = [
   { id: 'home', label: 'Inicio', icon: '⌂' },
-  { id: 'reserve', label: 'Reservar', icon: '' }
+  { id: 'reserve', label: 'Reservar', icon: '📅' }
 ];
 
 const getRoleViewFromHash = (selectedProfile) => {

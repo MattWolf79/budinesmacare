@@ -10264,17 +10264,6 @@ body {
     line-height: 1.1 !important;
   }
 
-  .role-workspace-client .app-navbar-button:nth-child(2) {
-    font-size: 0 !important;
-  }
-
-  .role-workspace-client .app-navbar-button:nth-child(2)::after {
-    content: 'Reservar';
-    font-size: 13px !important;
-    font-weight: 900 !important;
-    line-height: 1.1 !important;
-  }
-
   .role-workspace-client .app-navbar-button:nth-child(2) span,
   .role-workspace-client .app-navbar-button:nth-child(2) svg {
     font-size: 13px !important;
