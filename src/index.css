@@ -4212,7 +4212,9 @@ code {
   .settings-company-card,
   .settings-booking-preferences-card,
   .settings-banner-card,
-  .settings-activity-check-card {
+  .settings-activity-check-card,
+  .settings-business-hours-card,
+  .settings-promotions-card {
     grid-column: auto;
     grid-row: auto;
   }
@@ -4233,6 +4235,29 @@ code {
   .settings-actions .agenda-option-button,
   .settings-actions .agenda-close-button {
     flex: 1 1 0;
+  }
+
+  .settings-promotion-grid,
+  .settings-discount-grid,
+  .settings-activity-check-grid,
+  .settings-activity-check-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-management-card label:not(.settings-check-row),
+  .settings-management-card .settings-check-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .settings-management-card .settings-check-row input,
+  .settings-management-card .settings-check-row span {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .settings-activity-check-actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .employee-availability-manager .admin-layout {
@@ -11438,6 +11463,154 @@ body {
 
 .form-card .form-card-body.is-open {
   display: grid !important;
+}
+
+.app-navbar .app-navbar-email,
+.dashboard-shell > .app-navbar .app-navbar-email,
+.role-workspace-client .app-navbar-email,
+.role-workspace-employee .app-navbar-email {
+  color: #f8fafc !important;
+  text-align: right !important;
+}
+
+.app-navbar {
+  min-height: 56px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+.app-navbar .app-navbar-logo {
+  max-height: 42px !important;
+}
+
+.app-navbar .app-navbar-brand {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+
+.app-navbar .app-navbar-user,
+.dashboard-shell > .app-navbar .app-navbar-user,
+.role-workspace-client .app-navbar-user,
+.role-workspace-employee .app-navbar-user {
+  justify-items: end !important;
+  text-align: right !important;
+}
+
+.app-navbar .app-navbar-menu {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+.app-navbar .app-navbar-profile,
+.dashboard-shell > .app-navbar .app-navbar-profile,
+.role-workspace-client .app-navbar-profile,
+.role-workspace-employee .app-navbar-profile {
+  display: inline-flex !important;
+  justify-self: end !important;
+  justify-content: center !important;
+}
+
+.app-navbar .app-navbar-logout,
+.dashboard-shell > .app-navbar .app-navbar-logout,
+.role-workspace-client .app-navbar-logout,
+.role-workspace-employee .app-navbar-logout {
+  min-height: 30px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 999px !important;
+  padding: 6px 12px !important;
+  color: #fff !important;
+  background: #eb5d64 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+
+.app-navbar .app-navbar-logout:hover,
+.dashboard-shell > .app-navbar .app-navbar-logout:hover,
+.role-workspace-client .app-navbar-logout:hover,
+.role-workspace-employee .app-navbar-logout:hover {
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  background: #d94a56 !important;
+}
+
+@media (max-width: 760px) {
+  .dashboard-shell > .app-navbar,
+  .role-workspace-client .app-navbar,
+  .role-workspace-employee .app-navbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 6px 8px !important;
+    padding: 6px 8px !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-brand,
+  .role-workspace-client .app-navbar-brand,
+  .role-workspace-employee .app-navbar-brand {
+    order: 1 !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-logo,
+  .role-workspace-client .app-navbar-logo,
+  .role-workspace-employee .app-navbar-logo {
+    width: min(44vw, 172px) !important;
+    height: 36px !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-session,
+  .role-workspace-client .app-navbar-session,
+  .role-workspace-employee .app-navbar-session {
+    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-user,
+  .role-workspace-client .app-navbar-user,
+  .role-workspace-employee .app-navbar-user {
+    max-width: min(35vw, 130px) !important;
+    gap: 1px !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-profile,
+  .role-workspace-client .app-navbar-profile,
+  .role-workspace-employee .app-navbar-profile {
+    display: inline-flex !important;
+    padding: 1px 6px !important;
+    font-size: 7.5px !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-logout,
+  .role-workspace-client .app-navbar-logout,
+  .role-workspace-employee .app-navbar-logout {
+    min-height: 28px !important;
+    padding: 5px 10px !important;
+    font-size: 10.5px !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-menu,
+  .role-workspace-client .app-navbar-menu,
+  .role-workspace-employee .app-navbar-menu {
+    order: 3 !important;
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    gap: 5px !important;
+  }
+
+  .role-workspace-employee .app-navbar-button {
+    min-height: 30px !important;
+    padding: 4px 7px !important;
+    font-size: 11.5px !important;
+  }
 }
 
 @media (min-width: 641px) {

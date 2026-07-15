@@ -91,7 +91,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         onChangeProfile={onChangeProfile}
         onLogout={onLogout}
         showAdminNavigation={accessProfile === 'admin'}
-        showProfileBadge={accessProfile !== 'client'}
+        showProfileBadge
         canChangeProfile={canChangeProfile}
       />
 

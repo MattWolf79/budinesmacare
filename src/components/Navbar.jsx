@@ -31,7 +31,7 @@ export default function Navbar({
   onLogout,
   showAdminNavigation = accessProfile === 'admin',
   showNavigation = showAdminNavigation,
-  showProfileBadge = accessProfile === 'admin' || accessProfile === 'employee',
+  showProfileBadge = Boolean(accessProfile),
   canChangeProfile = false,
   navItems = defaultNavItems
 }) {
