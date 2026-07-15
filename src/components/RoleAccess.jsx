@@ -3,7 +3,6 @@ import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import Navbar from './Navbar';
 import { supabase } from '../api/supabaseClient';
-import turnosAppIcon from '../assets/turnos-app-icon.svg';
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
@@ -297,7 +296,7 @@ export default function RoleAccess({
   return (
     <main className="profile-select-page">
       <section className="profile-select-panel">
-        <img className="login-brand-mark" src={turnosAppIcon} alt="QuieroTurnoApp" />
+        <img className="login-brand-mark" src={turnosAppLogo} alt="QuieroTurnoApp" />
         <p className="login-kicker">Tipo de acceso</p>
         <h1>Elegí cómo querés entrar</h1>
         <p className="profile-select-copy">
