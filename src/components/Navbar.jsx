@@ -1,4 +1,4 @@
-import turnosAppLogo from '../assets/turnos-app-navbar-logo.svg';
+const turnosAppLogo = '/logo-quieroturnoapp.png';
 
 const defaultNavItems = [
   { id: 'agenda', label: 'Agenda', icon: '📅' },

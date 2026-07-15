@@ -3,8 +3,9 @@ import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import Navbar from './Navbar';
 import { supabase } from '../api/supabaseClient';
-import turnosAppLogo from '../assets/turnos-app-navbar-logo.svg';
 import turnosAppIcon from '../assets/turnos-app-icon.svg';
+
+const turnosAppLogo = '/logo-quieroturnoapp.png';
 
 const profileOptions = {
   client: {
