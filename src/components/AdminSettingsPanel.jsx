@@ -846,9 +846,22 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null })
                   <div className="client-promotions-grid">
                     {enabledPromotions.map((promotion, index) => (
                       <article className="client-promotion-card" key={index}>
-                        <strong>{promotion.title || 'Promoción'}</strong>
-                        <p>{promotion.description || 'Descripción de la promoción'}</p>
-                        <span>{promotion.value || 'Valor'}</span>
+                        <div className="client-card-header">
+                          <strong>{promotion.title || 'Promoción'}</strong>
+                        </div>
+                        <div className="client-card-fields">
+                          <div className="client-card-field client-card-field-wide">
+                            <span>Detalle</span>
+                            <strong>{promotion.description || 'Descripción de la promoción'}</strong>
+                          </div>
+                          <div className="client-card-field client-card-field-wide client-card-price-field">
+                            <span>Precio</span>
+                            <strong>{promotion.value || 'Valor'}</strong>
+                          </div>
+                        </div>
+                        <button className="client-welcome-action client-promotion-action" type="button">
+                          Reservar turno
+                        </button>
                       </article>
                     ))}
                   </div>
