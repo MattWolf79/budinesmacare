@@ -3190,12 +3190,17 @@ code {
 .settings-preview-modal {
   width: min(920px, calc(100vw - 28px));
   max-height: calc(100svh - 28px);
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .settings-preview-body {
   display: grid;
   gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   background: #eef6f8;
 }
 
