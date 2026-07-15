@@ -70,7 +70,7 @@ const normalizeDiscounts = (discounts) => {
 };
 
 const defaultConfig = {
-  company_name: 'Turnos App',
+  company_name: 'QuieroTurnoApp',
   business_hours_text: '',
   welcome_background_data_url: '',
   welcome_background_file_name: '',
@@ -138,7 +138,7 @@ export default function AdminSettingsPanel({ user }) {
     const bannerImages = normalizeBannerImages(config);
     const firstBanner = bannerImages[0] || {};
     const nextConfig = {
-      company_name: String(config?.company_name || 'Turnos App').trim() || 'Turnos App',
+      company_name: String(config?.company_name || 'QuieroTurnoApp').trim() || 'QuieroTurnoApp',
       business_hours_text: String(config?.business_hours_text || ''),
       welcome_background_data_url: String(config?.welcome_background_data_url || ''),
       welcome_background_file_name: String(config?.welcome_background_file_name || ''),
@@ -527,7 +527,7 @@ export default function AdminSettingsPanel({ user }) {
                 onChange={(event) => setForm((current) => ({ ...current, company_name: event.target.value }))}
               />
             </label>
-            <p className="settings-empty-text">Se va a mostrar debajo de BIENVENIDA como: {form.company_name.trim() || 'Turnos App'}</p>
+            <p className="settings-empty-text">Se va a mostrar debajo de BIENVENIDA como: {form.company_name.trim() || 'QuieroTurnoApp'}</p>
 
             <label className="settings-upload-field">
               <span>Fondo de bienvenida JPG o PNG</span>
@@ -789,7 +789,7 @@ export default function AdminSettingsPanel({ user }) {
               >
                 <div>
                   <p className="admin-kicker">Bienvenida</p>
-                  <h1><span className="client-welcome-name">{form.company_name.trim() || 'Turnos App'}</span></h1>
+                  <h1><span className="client-welcome-name">{form.company_name.trim() || 'QuieroTurnoApp'}</span></h1>
                   <p>Consultá tus próximos turnos y elegí un servicio cuando quieras reservar.</p>
                   {form.business_hours_text.trim() && <p className="client-business-hours-text">{form.business_hours_text.trim()}</p>}
                 </div>

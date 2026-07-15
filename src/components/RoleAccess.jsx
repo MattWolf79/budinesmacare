@@ -43,7 +43,7 @@ const employeeNavItems = [
 
 const clientNavItems = [
   { id: 'home', label: 'Inicio', icon: '⌂' },
-  { id: 'reserve', label: 'Reservar Turno', icon: '+' }
+  { id: 'reserve', label: 'Reservar', icon: '' }
 ];
 
 const getRoleViewFromHash = (selectedProfile) => {
@@ -88,7 +88,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const [clientActiveView, setClientActiveView] = useState('home');
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
-  const [companyName, setCompanyName] = useState('Turnos App');
+  const [companyName, setCompanyName] = useState('QuieroTurnoApp');
   const [businessHoursText, setBusinessHoursText] = useState('');
   const [welcomeBackground, setWelcomeBackground] = useState(null);
   const profile = profileOptions[selectedProfile];
@@ -125,7 +125,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
 
       if (!active || error) return;
 
-      setCompanyName(String(data?.company_name || 'Turnos App').trim() || 'Turnos App');
+      setCompanyName(String(data?.company_name || 'QuieroTurnoApp').trim() || 'QuieroTurnoApp');
   setBusinessHoursText(String(data?.business_hours_text || '').trim());
       setWelcomeBackground(data?.welcome_background_data_url ? {
         dataUrl: data.welcome_background_data_url,
@@ -178,7 +178,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
       ) : (
         <section className="role-workspace-topbar">
           <div className="role-workspace-brand">
-            <img className="app-navbar-logo" src={turnosAppLogo} alt={`Turnos app - ${profile.label}`} />
+            <img className="app-navbar-logo" src={turnosAppLogo} alt={`QuieroTurnoApp - ${profile.label}`} />
           </div>
 
           <div className="role-workspace-session">
@@ -280,7 +280,7 @@ export default function RoleAccess({
   return (
     <main className="profile-select-page">
       <section className="profile-select-panel">
-        <img className="login-brand-mark" src={turnosAppIcon} alt="Turnos app" />
+        <img className="login-brand-mark" src={turnosAppIcon} alt="QuieroTurnoApp" />
         <p className="login-kicker">Tipo de acceso</p>
         <h1>Elegí cómo querés entrar</h1>
         <p className="profile-select-copy">

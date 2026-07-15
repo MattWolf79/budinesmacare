@@ -5759,12 +5759,12 @@ body {
 .app-navbar-brand {
   flex: 0 0 auto;
   gap: 0;
-  min-width: 184px;
+  min-width: 250px;
 }
 
 .app-navbar-logo {
   display: block;
-  width: 174px;
+  width: 242px;
   height: 48px;
   object-fit: contain;
 }
@@ -10843,11 +10843,11 @@ body {
 
 .role-workspace-client .app-navbar-brand {
   flex: 0 0 auto !important;
-  min-width: 184px !important;
+  min-width: 250px !important;
 }
 
 .role-workspace-client .app-navbar-logo {
-  width: 174px !important;
+  width: 242px !important;
   height: 48px !important;
 }
 
@@ -10928,6 +10928,10 @@ body {
   gap: 10px !important;
   overflow: visible !important;
   padding: 0 !important;
+}
+
+.role-workspace-client .client-promotions-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
 }
 
 .role-workspace-client .client-booking-card,
@@ -11096,7 +11100,7 @@ body {
   }
 
   .role-workspace-client .app-navbar-logo {
-    width: 148px !important;
+    width: 210px !important;
     height: 42px !important;
   }
 

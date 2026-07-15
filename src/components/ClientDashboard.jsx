@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
-import ActivityIcon from './ActivityIcon';
 import AgendaGrid from './AgendaGrid';
 import { formatDisplayDate } from '../utils/dateFormat';
 
@@ -29,8 +28,6 @@ const formatBookingTimeRange = (startValue, endValue) => {
   const end = new Date(endValue);
   return `${pad(start.getHours())}:${pad(start.getMinutes())} hs-${pad(end.getHours())}:${pad(end.getMinutes())} hs`;
 };
-
-const getClientName = (user) => user?.displayName || user?.user_metadata?.full_name || user?.email || 'Cliente';
 
 export default function ClientDashboard({ user, showAgenda = true, selectedPromotion = null, onReservePromotion, onReserveTurn, activityLegend = null }) {
   const [bookings, setBookings] = useState([]);
@@ -163,7 +160,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
 
       {!showAgenda && (
         <button className="client-welcome-action client-home-reserve-action" type="button" onClick={onReserveTurn}>
-          Reservar Turno
+          Reservar
         </button>
       )}
 
@@ -186,18 +183,9 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
             {bookingDetails.map(({ booking, service }) => (
               <article className="client-booking-card" key={booking.id}>
                 <div className="client-card-header">
-                  <ActivityIcon service={service} size="small" variant="summary" />
                   <strong>{booking.booking_description || service?.name || 'Servicio'}</strong>
                 </div>
                 <div className="client-card-fields">
-                  <div className="client-card-field client-card-field-wide">
-                    <span>Cliente</span>
-                    <strong>{getClientName(user)}</strong>
-                  </div>
-                  <div className="client-card-field client-card-field-wide">
-                    <span>Correo</span>
-                    <strong>{user?.email || 'Sin correo'}</strong>
-                  </div>
                   <div className="client-card-field">
                     <span>Fecha</span>
                     <strong>{formatBookingDate(booking.start_at)}</strong>
@@ -226,7 +214,6 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
             {enabledPromotions.map((promotion, index) => (
               <article className="client-promotion-card" key={index}>
                 <div className="client-card-header">
-                  <span className="client-promotion-icon" aria-hidden="true">✦</span>
                   <strong>{promotion.title || 'Promoción'}</strong>
                 </div>
                 <div className="client-card-fields">

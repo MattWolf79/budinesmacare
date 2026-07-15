@@ -50,7 +50,7 @@ export default function Navbar({
   return (
     <div className="app-navbar">
       <div className="app-navbar-brand">
-        <img className="app-navbar-logo" src={turnosAppLogo} alt={`Turnos app - ${getNavbarSubtitle(accessProfile)}`} />
+        <img className="app-navbar-logo" src={turnosAppLogo} alt={`QuieroTurnoApp - ${getNavbarSubtitle(accessProfile)}`} />
       </div>
 
       {showNavigation && (

@@ -418,9 +418,9 @@ export default function Login({ onInternalAccess, onLocalClientAccess, localClie
   return (
     <main className="login-page">
       <section className="login-card">
-        <img className="login-brand-mark" src={turnosAppIcon} alt="Turnos app" />
+        <img className="login-brand-mark" src={turnosAppIcon} alt="QuieroTurnoApp" />
         <p className="login-kicker">Reserva de turnos</p>
-        <h1>Turnos App</h1>
+        <h1>QuieroTurnoApp</h1>
         <p className="login-copy">
           Elegí el tipo de acceso. Clientes ingresan con Google; empleados y administrador usan nombre y contraseña internos.
         </p>
