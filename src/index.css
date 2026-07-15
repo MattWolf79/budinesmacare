@@ -977,11 +977,11 @@ code {
 
 .app-navbar-user {
   display: grid;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   justify-items: center;
   gap: 4px;
   min-width: 0;
-  max-width: 190px;
+  max-width: 150px;
   overflow: hidden;
   color: #cbd5e1;
   font-size: 11px;
@@ -1016,7 +1016,7 @@ code {
 
 .app-navbar-session {
   display: flex;
-  flex: 0 1 330px;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
   gap: 7px;
@@ -1807,6 +1807,21 @@ code {
   width: 72px;
   height: 72px;
   font-size: 34px;
+}
+
+.role-workspace-profile-photo {
+  flex: 0 0 72px;
+}
+
+.dashboard-profile-hero {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  padding: 24px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
 }
 
 .role-action-grid {
@@ -5903,7 +5918,7 @@ body {
 }
 
 .app-navbar-session {
-  flex: 0 1 360px;
+  flex: 0 0 auto;
   gap: 10px;
 }
 
@@ -7031,7 +7046,7 @@ body {
   .dashboard-shell > .app-navbar .app-navbar-session {
     order: 2 !important;
     display: grid !important;
-    grid-template-columns: 34px minmax(0, 1fr) auto !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
     align-items: center !important;
     gap: 8px !important;
     width: 100% !important;
@@ -7048,7 +7063,7 @@ body {
   }
 
   .dashboard-shell > .app-navbar .app-navbar-user {
-    justify-items: start !important;
+    justify-items: end !important;
     max-width: none !important;
     min-width: 0 !important;
     gap: 2px !important;
@@ -7058,7 +7073,7 @@ body {
     max-width: 100% !important;
     color: #4b5563 !important;
     font-size: 10px !important;
-    text-align: left !important;
+    text-align: right !important;
   }
 
   .dashboard-shell > .app-navbar .app-navbar-profile {
@@ -11194,6 +11209,8 @@ body {
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
   height: auto !important;
   min-height: 0 !important;
 }
@@ -11202,7 +11219,7 @@ body {
   display: grid !important;
   gap: 3px !important;
   min-width: 0 !important;
-  max-width: min(34vw, 260px) !important;
+  max-width: min(34vw, 150px) !important;
 }
 
 @media (max-width: 760px) {
@@ -11424,13 +11441,11 @@ body {
 }
 
 @media (min-width: 641px) {
-  .form-card .form-card-toggle,
-  .settings-activity-check-card .admin-collapsible-form-toggle {
+  .form-card .form-card-toggle {
     display: none !important;
   }
 
-  .form-card .form-card-body.is-collapsed,
-  .settings-activity-check-card .admin-collapsible-form-body.is-collapsed {
+  .form-card .form-card-body.is-collapsed {
     display: grid !important;
   }
 }

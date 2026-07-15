@@ -63,6 +63,14 @@ function UserPhoto({ user, fallback }) {
   return fallback;
 }
 
+function WorkspaceProfilePhoto({ user, fallback, className = '' }) {
+  return (
+    <span className={`role-workspace-icon role-workspace-profile-photo ${user?.photoUrl ? 'has-photo' : ''} ${className}`.trim()} aria-hidden="true">
+      <UserPhoto user={user} fallback={fallback} />
+    </span>
+  );
+}
+
 function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
   const profile = profileOptions[profileId];
   const isSelected = selectedProfile === profileId;
@@ -182,9 +190,6 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
           </div>
 
           <div className="role-workspace-session">
-            <span className="app-navbar-avatar role-workspace-avatar" aria-hidden="true">
-              <UserPhoto user={user} fallback={String(user?.displayName || user?.email || 'U').trim().charAt(0).toUpperCase() || 'U'} />
-            </span>
             <span>{user?.email || 'Sin usuario'}</span>
             {canChangeProfile && (
               <button type="button" className="app-navbar-switch" onClick={onChangeProfile}>Cambiar perfil</button>
@@ -209,6 +214,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             </p>
             {clientActiveView === 'home' && businessHoursText && <p className="client-business-hours-text">{businessHoursText}</p>}
           </div>
+          <WorkspaceProfilePhoto user={user} fallback={profile.icon} />
         </section>
       ) : (
         <section className="role-workspace-hero">
@@ -217,9 +223,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             <h1>{profile.title}</h1>
             <p>{profile.description}</p>
           </div>
-          <span className="role-workspace-icon" aria-hidden="true">
-            <UserPhoto user={null} fallback={profile.icon} />
-          </span>
+          <WorkspaceProfilePhoto user={user} fallback={profile.icon} />
         </section>
       )}
 

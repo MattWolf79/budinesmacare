@@ -16,6 +16,17 @@ const getAdminViewFromHash = () => {
   return 'agenda';
 };
 
+const getUserInitials = (user) => {
+  const label = user?.displayName || user?.email || user?.username || 'U';
+  const parts = String(label).trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+
+  return String(parts[0]?.[0] || 'U').toUpperCase();
+};
+
 export default function Dashboard({ user, accessProfile, onChangeProfile, onLogout, canChangeProfile = false }) {
 
   const [activeView, setActiveView] = useState(getAdminViewFromHash);
@@ -85,6 +96,12 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
       />
 
       <Box className="dashboard-content">
+        <section className="dashboard-profile-hero" aria-label="Perfil actual">
+          <span className={`role-workspace-icon role-workspace-profile-photo ${user?.photoUrl ? 'has-photo' : ''}`} aria-hidden="true">
+            {user?.photoUrl ? <img src={user.photoUrl} alt="" /> : getUserInitials(user)}
+          </span>
+        </section>
+
         {activeView === 'agenda' && (
           <div className="agenda-responsive-shell">
             <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} />

@@ -111,7 +111,6 @@ export default function AdminSettingsPanel({ user }) {
   const [form, setForm] = useState(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isCompactSettingsViewport, setIsCompactSettingsViewport] = useState(() => window.matchMedia?.('(max-width: 640px)').matches ?? false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);
   const [bannerOpen, setBannerOpen] = useState(false);
@@ -119,7 +118,7 @@ export default function AdminSettingsPanel({ user }) {
   const [businessHoursOpen, setBusinessHoursOpen] = useState(false);
   const [promotionsOpen, setPromotionsOpen] = useState(false);
   const [discountsOpen, setDiscountsOpen] = useState(false);
-  const [activityChecksOpen, setActivityChecksOpen] = useState(false);
+  const [activityChecksOpen, setActivityChecksOpen] = useState(true);
   const [selectedActivityCheckIndex, setSelectedActivityCheckIndex] = useState(null);
 
   const enabledPromotions = useMemo(() => (
@@ -134,17 +133,7 @@ export default function AdminSettingsPanel({ user }) {
   const selectedActivityCheck = useMemo(() => (
     activityDiscounts.find(({ index }) => index === selectedActivityCheckIndex) || activityDiscounts[0] || null
   ), [activityDiscounts, selectedActivityCheckIndex]);
-  const isActivityChecksBodyOpen = activityChecksOpen || !isCompactSettingsViewport;
-
-  useEffect(() => {
-    const viewportQuery = window.matchMedia?.('(max-width: 640px)');
-    if (!viewportQuery) return undefined;
-
-    const updateCompactViewport = (event) => setIsCompactSettingsViewport(event.matches);
-    viewportQuery.addEventListener('change', updateCompactViewport);
-
-    return () => viewportQuery.removeEventListener('change', updateCompactViewport);
-  }, []);
+  const isActivityChecksBodyOpen = activityChecksOpen;
 
   const applyConfig = (config) => {
     const bannerImages = normalizeBannerImages(config);
