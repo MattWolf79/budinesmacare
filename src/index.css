@@ -3025,12 +3025,12 @@ code {
 
 .settings-activity-check-card {
   grid-column: 2;
-  grid-row: 1 / span 3;
+  grid-row: 1;
 }
 
 .settings-business-hours-card {
   grid-column: 2;
-  grid-row: 4;
+  grid-row: 2;
 }
 
 .settings-activity-check-grid {

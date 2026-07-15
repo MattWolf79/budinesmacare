@@ -23,7 +23,7 @@
   <path d="M44.5 19.8l4.1-5.8" stroke="#ffffff" stroke-width="4.3" stroke-linecap="round" />
   <path d="M23.5 19.8L19.4 14" stroke="#ffffff" stroke-width="4.3" stroke-linecap="round" />
 
-  <g opacity="0.62" aria-hidden="true">
+  <g opacity="0.62" transform="translate(-11 0)" aria-hidden="true">
     <g fill="none" stroke-linecap="round" stroke-linejoin="round">
       <g stroke="#8a3b0d" stroke-width="2.8">
         <path d="M251 11c3.4 8.4 3.4 16.7 0 25c-3.4-8.3-3.4-16.6 0-25Z" fill="#facc15" />
