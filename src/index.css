@@ -1087,10 +1087,7 @@ code {
   justify-content: center;
   padding: 28px;
   box-sizing: border-box;
-  background:
-    radial-gradient(circle at 16% 18%, rgba(216, 251, 245, 0.9), transparent 30%),
-    radial-gradient(circle at 86% 12%, rgba(63, 201, 213, 0.32), transparent 26%),
-    linear-gradient(135deg, #e9fbfd 0%, #d8fbf5 46%, #24aebb 100%);
+  background: #494d56;
 }
 
 .login-card {
@@ -1099,25 +1096,29 @@ code {
   flex-direction: column;
   width: min(100%, 620px);
   overflow: hidden;
-  border: 1px solid rgba(36, 174, 187, 0.36);
+  border: 0;
   border-radius: 8px;
   padding: 0 var(--login-card-x) var(--login-card-x);
   text-align: center;
-  background: #fff;
-  box-shadow: 0 22px 52px rgba(23, 76, 85, 0.26);
+  background: transparent;
+  box-shadow: none;
 }
 
 .login-brand-mark {
   display: block;
-  width: 76px;
-  height: 76px;
-  margin: 22px auto 0;
-  border: 1px solid #b7eef4;
-  border-radius: 18px;
-  padding: 10px;
-  background: #fff;
+  width: min(72vw, 300px);
+  height: auto;
+  margin: 22px auto 8px;
   object-fit: contain;
-  box-shadow: 0 12px 26px rgba(36, 174, 187, 0.2);
+}
+
+.login-brand-heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 .login-kicker {
@@ -1125,7 +1126,7 @@ code {
   margin: 0 calc(var(--login-card-x) * -1) 0;
   padding: 12px 16px;
   color: #fff;
-  background: linear-gradient(135deg, #174c55, #24aebb);
+  background: #2f333a;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0;
@@ -1143,7 +1144,7 @@ code {
 .login-copy {
   max-width: 330px;
   margin: 0 auto 24px;
-  color: #64748b;
+  color: #f8fafc;
   font-size: 14px;
   font-weight: 700;
 }

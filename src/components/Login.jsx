@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '../api/supabaseClient';
-import turnosAppIcon from '../assets/turnos-app-icon.svg';
 
 const requestedProfileStorageKey = 'turnos_requested_profile';
 const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+const turnosAppLogo = '/logo-quieroturnoapp.png';
 const inAppBrowserPattern = /Instagram|FBAN|FBAV|FB_IAB|FB4A|FBIOS/i;
 
 const getAppLink = () => `${appUrl.replace(/\/$/, '')}/`;
@@ -418,9 +418,9 @@ export default function Login({ onInternalAccess, onLocalClientAccess, localClie
   return (
     <main className="login-page">
       <section className="login-card">
-        <img className="login-brand-mark" src={turnosAppIcon} alt="QuieroTurnoApp" />
+        <img className="login-brand-mark" src={turnosAppLogo} alt="QuieroTurnoApp" />
         <p className="login-kicker">Reserva de turnos</p>
-        <h1>QuieroTurnoApp</h1>
+        <h1 className="login-brand-heading">QuieroTurnoApp</h1>
         <p className="login-copy">
           Elegí el tipo de acceso. Clientes ingresan con Google; empleados y administrador usan nombre y contraseña internos.
         </p>
