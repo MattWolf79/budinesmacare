@@ -93,7 +93,7 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export default function Login({ onInternalAccess, sessionNotice = '', onDismissSessionNotice }) {
+export default function Login({ onInternalAccess, onLocalClientAccess, localClientAccessEnabled = false, sessionNotice = '', onDismissSessionNotice }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
   const [inAppBrowserNoticeOpen, setInAppBrowserNoticeOpen] = useState(false);
   const [copyLinkStatus, setCopyLinkStatus] = useState('');
@@ -410,6 +410,11 @@ export default function Login({ onInternalAccess, sessionNotice = '', onDismissS
     openRegistration(profileId);
   };
 
+  const handleLocalClientAccess = () => {
+    onDismissSessionNotice?.();
+    onLocalClientAccess?.();
+  };
+
   return (
     <main className="login-page">
       <section className="login-card">
@@ -428,21 +433,27 @@ export default function Login({ onInternalAccess, sessionNotice = '', onDismissS
 
         <div className="login-access-grid" aria-label="Tipos de acceso">
           {accessOptions.map((option) => (
-            <button
-              key={option.id}
-              className={`login-access-card login-access-card-${option.id}`}
-              type="button"
-              onClick={() => handleAccessOption(option.id)}
-            >
-              <span className="login-access-icon" aria-hidden="true">{option.icon}</span>
-              <span className="login-access-content">
-                <span className="login-access-title-row">
-                  <strong>{option.title}</strong>
-                  <span>{option.badge}</span>
+            <div className="login-access-option" key={option.id}>
+              <button
+                className={`login-access-card login-access-card-${option.id}`}
+                type="button"
+                onClick={() => handleAccessOption(option.id)}
+              >
+                <span className="login-access-icon" aria-hidden="true">{option.icon}</span>
+                <span className="login-access-content">
+                  <span className="login-access-title-row">
+                    <strong>{option.title}</strong>
+                    <span>{option.badge}</span>
+                  </span>
+                  <small>{option.description}</small>
                 </span>
-                <small>{option.description}</small>
-              </span>
-            </button>
+              </button>
+              {option.id === 'client' && localClientAccessEnabled && (
+                <button className="login-local-client-button" type="button" onClick={handleLocalClientAccess}>
+                  Probar cliente local
+                </button>
+              )}
+            </div>
           ))}
         </div>
 

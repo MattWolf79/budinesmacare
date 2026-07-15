@@ -10,6 +10,10 @@ const getBookingStatusLabel = (booking) => (
   !booking.employee_id || booking.status === 'pending_assignment' ? 'Pendiente de asignación' : 'Turno confirmado'
 );
 
+const getBookingStatusValue = (booking) => (
+  !booking.employee_id || booking.status === 'pending_assignment' ? 'Pendiente' : 'Asignado'
+);
+
 const pad = (value) => String(value).padStart(2, '0');
 
 const formatDateForDb = (date) => (
@@ -20,11 +24,13 @@ const formatBookingDate = (value) => {
   return formatDisplayDate(value, { weekday: 'short' });
 };
 
-const formatBookingTime = (startValue, endValue) => {
+const formatBookingTimeRange = (startValue, endValue) => {
   const start = new Date(startValue);
   const end = new Date(endValue);
-  return `${pad(start.getHours())}:${pad(start.getMinutes())} - ${pad(end.getHours())}:${pad(end.getMinutes())}`;
+  return `${pad(start.getHours())}:${pad(start.getMinutes())} hs-${pad(end.getHours())}:${pad(end.getMinutes())} hs`;
 };
+
+const getClientName = (user) => user?.displayName || user?.user_metadata?.full_name || user?.email || 'Cliente';
 
 export default function ClientDashboard({ user, showAgenda = true, selectedPromotion = null, onReservePromotion, onReserveTurn, activityLegend = null }) {
   const [bookings, setBookings] = useState([]);
@@ -179,12 +185,34 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
           <div className="client-booking-list">
             {bookingDetails.map(({ booking, service }) => (
               <article className="client-booking-card" key={booking.id}>
-                <ActivityIcon service={service} size="small" variant="summary" />
-                <div>
+                <div className="client-card-header">
+                  <ActivityIcon service={service} size="small" variant="summary" />
                   <strong>{booking.booking_description || service?.name || 'Servicio'}</strong>
-                  <span>{getBookingStatusLabel(booking)} · {formatBookingDate(booking.start_at)}</span>
                 </div>
-                <time>{formatBookingTime(booking.start_at, booking.end_at)}</time>
+                <div className="client-card-fields">
+                  <div className="client-card-field client-card-field-wide">
+                    <span>Cliente</span>
+                    <strong>{getClientName(user)}</strong>
+                  </div>
+                  <div className="client-card-field client-card-field-wide">
+                    <span>Correo</span>
+                    <strong>{user?.email || 'Sin correo'}</strong>
+                  </div>
+                  <div className="client-card-field">
+                    <span>Fecha</span>
+                    <strong>{formatBookingDate(booking.start_at)}</strong>
+                  </div>
+                  <div className="client-card-field">
+                    <span>Horario</span>
+                    <strong>{formatBookingTimeRange(booking.start_at, booking.end_at)}</strong>
+                  </div>
+                  <div className="client-card-field client-card-status-field">
+                    <span>Estado</span>
+                    <strong className={booking.employee_id && booking.status !== 'pending_assignment' ? 'is-active' : 'is-muted'} title={getBookingStatusLabel(booking)}>
+                      {getBookingStatusValue(booking)}
+                    </strong>
+                  </div>
+                </div>
               </article>
             ))}
           </div>
@@ -197,9 +225,24 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
           <div className="client-promotions-grid">
             {enabledPromotions.map((promotion, index) => (
               <article className="client-promotion-card" key={index}>
-                <strong>{promotion.title || 'Promoción'}</strong>
-                {promotion.description && <p>{promotion.description}</p>}
-                {promotion.value && <span>{promotion.value}</span>}
+                <div className="client-card-header">
+                  <span className="client-promotion-icon" aria-hidden="true">✦</span>
+                  <strong>{promotion.title || 'Promoción'}</strong>
+                </div>
+                <div className="client-card-fields">
+                  {promotion.description && (
+                    <div className="client-card-field client-card-field-wide">
+                      <span>Detalle</span>
+                      <strong>{promotion.description}</strong>
+                    </div>
+                  )}
+                  {promotion.value && (
+                    <div className="client-card-field client-card-field-wide client-card-price-field">
+                      <span>Precio</span>
+                      <strong>{promotion.value}</strong>
+                    </div>
+                  )}
+                </div>
                 <button className="client-welcome-action client-promotion-action" type="button" onClick={() => onReservePromotion?.(promotion)}>
                   Reservar turno
                 </button>

@@ -12,6 +12,7 @@ const localClientSessionStorageKey = 'turnos_local_client_session';
 const lastActivityStorageKey = 'turnos_last_activity_at';
 const inactivityLimitMs = 5 * 60 * 1000;
 const inactivityMessage = 'Pasaron mas de 5 min sin operar, volver a intentar.';
+const localClientAccessEnabled = import.meta.env.DEV && ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
 const getLastActivityAt = () => Number(sessionStorage.getItem(lastActivityStorageKey) || 0);
 
@@ -59,6 +60,25 @@ const loadStoredInternalSession = () => {
   }
 };
 
+const loadStoredLocalClientSession = () => {
+  if (!localClientAccessEnabled) return null;
+
+  const storedSession = sessionStorage.getItem(localClientSessionStorageKey);
+
+  if (!storedSession) {
+    return null;
+  }
+
+  try {
+    const parsedSession = JSON.parse(storedSession);
+
+    return parsedSession?.role === 'client' ? parsedSession : null;
+  } catch {
+    sessionStorage.removeItem(localClientSessionStorageKey);
+    return null;
+  }
+};
+
 const getStoredProfile = () => {
   const requestedProfile = sessionStorage.getItem(requestedProfileStorageKey);
   const storedProfile = sessionStorage.getItem(profileStorageKey);
@@ -73,6 +93,7 @@ export default function App() {
 
   const [session, setSession] = useState(null);
   const [internalSession, setInternalSession] = useState(loadStoredInternalSession);
+  const [localClientSession, setLocalClientSession] = useState(loadStoredLocalClientSession);
   const [accessProfile, setAccessProfile] = useState(null);
   const [authProfile, setAuthProfile] = useState(null);
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState('');
@@ -92,6 +113,7 @@ export default function App() {
   const clearAccessProfile = () => {
     setAccessProfile(null);
     setAuthProfile(null);
+    setLocalClientSession(null);
     sessionStorage.removeItem(profileStorageKey);
     sessionStorage.removeItem(requestedProfileStorageKey);
     sessionStorage.removeItem(localClientSessionStorageKey);
@@ -129,10 +151,33 @@ export default function App() {
     sessionStorage.setItem(profileStorageKey, account.role);
   };
 
+  const startLocalClientSession = () => {
+    if (!localClientAccessEnabled) return;
+
+    const nextSession = {
+      id: '00000000-0000-4000-8000-000000000001',
+      email: 'cliente.local@turnos.test',
+      role: 'client',
+      displayName: 'Cliente local',
+      photoUrl: null,
+      isLocalClient: true
+    };
+
+    setSessionExpiredMessage('');
+    setSession(null);
+    setAuthProfile(null);
+    setLocalClientSession(nextSession);
+    setAccessProfile('client');
+    touchLastActivity();
+    sessionStorage.setItem(localClientSessionStorageKey, JSON.stringify(nextSession));
+    sessionStorage.setItem(profileStorageKey, 'client');
+  };
+
   const logout = async () => {
     setSessionExpiredMessage('');
     clearAccessProfile();
     clearInternalSession();
+    setLocalClientSession(null);
     sessionStorage.removeItem(lastActivityStorageKey);
 
     const { error } = await supabase.auth.signOut();
@@ -176,9 +221,6 @@ export default function App() {
   }, [loadAuthProfile]);
 
   useEffect(() => {
-
-    sessionStorage.removeItem(localClientSessionStorageKey);
-
     supabase.auth.getSession().then(({ data }) => {
       applyAuthSession(data.session);
     });
@@ -196,6 +238,15 @@ export default function App() {
           if (storedInternalSession) {
             setInternalSession(storedInternalSession);
             setAccessProfile(storedInternalSession.role);
+          } else if (localClientAccessEnabled) {
+            const storedLocalClientSession = loadStoredLocalClientSession();
+
+            if (storedLocalClientSession) {
+              setLocalClientSession(storedLocalClientSession);
+              setAccessProfile('client');
+            } else {
+              clearAccessProfile();
+            }
           } else {
             clearAccessProfile();
           }
@@ -209,7 +260,7 @@ export default function App() {
   }, [applyAuthSession]);
 
   useEffect(() => {
-    if (!session && !internalSession) {
+    if (!session && !internalSession && !localClientSession) {
       return undefined;
     }
 
@@ -223,6 +274,7 @@ export default function App() {
       setSessionExpiredMessage(inactivityMessage);
       clearAccessProfile();
       clearInternalSession();
+      setLocalClientSession(null);
       sessionStorage.removeItem(lastActivityStorageKey);
       setSession(null);
       setAuthProfile(null);
@@ -273,10 +325,24 @@ export default function App() {
       });
       document.removeEventListener('visibilitychange', scheduleExpiration);
     };
-  }, [session, internalSession]);
+  }, [session, internalSession, localClientSession]);
 
-  if (!session && !internalSession) {
-    return <Login onInternalAccess={startInternalSession} sessionNotice={sessionExpiredMessage} onDismissSessionNotice={() => setSessionExpiredMessage('')} />;
+  if (!session && !internalSession && !localClientSession) {
+    return <Login onInternalAccess={startInternalSession} onLocalClientAccess={startLocalClientSession} localClientAccessEnabled={localClientAccessEnabled} sessionNotice={sessionExpiredMessage} onDismissSessionNotice={() => setSessionExpiredMessage('')} />;
+  }
+
+  if (localClientSession) {
+    return (
+      <RoleAccess
+        user={localClientSession}
+        selectedProfile="client"
+        onSelectProfile={selectAccessProfile}
+        onChangeProfile={clearAccessProfile}
+        availableProfiles={['client']}
+        canChangeProfile={false}
+        onLogout={logout}
+      />
+    );
   }
 
   if (internalSession) {
