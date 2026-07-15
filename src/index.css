@@ -1087,7 +1087,7 @@ code {
   justify-content: center;
   padding: 28px;
   box-sizing: border-box;
-  background: #494d56;
+  background: #fff;
 }
 
 .login-card {
@@ -1096,12 +1096,12 @@ code {
   flex-direction: column;
   width: min(100%, 620px);
   overflow: hidden;
-  border: 0;
+  border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 8px;
   padding: 0 var(--login-card-x) var(--login-card-x);
   text-align: center;
-  background: transparent;
-  box-shadow: none;
+  background: #494d56;
+  box-shadow: 0 22px 52px rgba(15, 23, 42, 0.18);
 }
 
 .login-brand-mark {
