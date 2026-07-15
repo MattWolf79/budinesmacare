@@ -3207,13 +3207,6 @@ code {
   box-shadow: none;
 }
 
-.settings-preview-booking {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas:
-    'main'
-    'time';
-}
-
 .admin-form-card,
 .admin-loading-card {
   overflow: hidden;
@@ -8813,7 +8806,9 @@ body {
 }
 
 .role-workspace-client .client-welcome-hero {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   color: #1f2937;
   background: #fff;
 }

@@ -788,7 +788,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null })
               <span>Vista previa cliente</span>
               <button className="agenda-option-button" type="button" onClick={() => setPreviewOpen(false)}>Cerrar</button>
             </div>
-            <div className="agenda-modal-body settings-preview-body">
+            <div className="agenda-modal-body settings-preview-body role-workspace role-workspace-client">
               <section
                 className={`role-workspace-hero client-welcome-hero settings-preview-hero ${form.welcome_background_data_url ? 'has-custom-background' : ''}`}
                 style={form.welcome_background_data_url ? { backgroundImage: `url(${form.welcome_background_data_url})` } : undefined}
@@ -819,8 +819,23 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null })
                 <div className="client-summary-header"><h2>Próximos turnos</h2></div>
                 <div className="client-booking-list">
                   <article className="client-booking-card settings-preview-booking">
-                    <div><strong>Servicio ejemplo</strong><span>Turno confirmado · jue 09/07</span></div>
-                    <time>10:00 - 10:30</time>
+                    <div className="client-card-header">
+                      <strong>Servicio ejemplo</strong>
+                    </div>
+                    <div className="client-card-fields">
+                      <div className="client-card-field">
+                        <span>Fecha</span>
+                        <strong>jue 09/07</strong>
+                      </div>
+                      <div className="client-card-field">
+                        <span>Horario</span>
+                        <strong>10:00 - 10:30</strong>
+                      </div>
+                      <div className="client-card-field client-card-status-field">
+                        <span>Estado</span>
+                        <strong className="is-active">Confirmado</strong>
+                      </div>
+                    </div>
                   </article>
                 </div>
               </div>
