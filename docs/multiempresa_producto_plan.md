@@ -26,6 +26,14 @@ Usar un modelo multiempresa por `tenant`.
 
 Para la primera version conviene usar rutas por slug porque evita configurar DNS por cada empresa.
 
+## Etapa 2 - Corte local en curso
+
+- `039_multi_tenant_client_context.sql` crea el contexto publico por empresa y hace tenant-aware la configuracion, opciones de reserva y solicitud de turnos de cliente.
+- `040_multi_tenant_internal_access.sql` bloquea el fallback backend a `esteticatopbody`, ata login/registro/cambio de contraseña internos al slug de la URL y agrega RPCs usadas por admin/empleado con `company_slug_value`.
+- `041_platform_admin.sql` crea el acceso plataforma `Admin/Admin`, separado de las empresas, y habilita la URL reservada `/plataforma` para crear empresas, crear el administrador inicial y blanquear passwords de administradores.
+- La raiz `https://quieroturnoapp.com.ar` ya no debe abrir una agenda. El acceso esperado es `https://quieroturnoapp.com.ar/jardinmasaje`, `https://quieroturnoapp.com.ar/sanatoriorivadavia`, etc.
+- El slug se normaliza en minusculas. Para `https://quieroturnoapp.com.ar/SanatorioRivadavia`, la empresa debe existir como `sanatoriorivadavia` en `public.companies.slug`.
+
 ## Paso 1 - Crear tablas base de empresas
 
 Crear una migracion nueva, por ejemplo `database/034_multi_tenant_foundation.sql`.
@@ -378,6 +386,51 @@ Probar:
 - Empleado de una empresa no ve agenda de otra.
 - Usuario Google desconocido queda bloqueado.
 - URL raiz muestra selector/informacion comercial, no agenda abierta.
+
+## Etapa 2 - Primer corte local implementado
+
+Migracion nueva:
+
+```txt
+database/039_multi_tenant_client_context.sql
+```
+
+Alcance de este corte:
+
+- Resolver empresa activa desde la URL por slug.
+- Mantener `esteticatopbody` como empresa default para compatibilidad local.
+- Crear `barberia-demo` como segunda empresa de prueba.
+- Permitir una configuracion visual por empresa en `app_configuration.company_id`.
+- Filtrar por empresa las RPC publicas de cliente:
+	- `get_app_configuration(company_slug_value)`
+	- `get_company_public_context(slug_value)`
+	- `get_client_booking_options(company_slug_value)`
+	- `request_client_booking(..., company_slug_value)`
+- Frontend lee el slug desde `/{slug}` y pasa ese tenant a cliente, agenda, empleado y configuracion admin.
+- El login ya muestra el nombre de empresa activa y OAuth vuelve a `/{slug}`.
+
+Pruebas locales sugeridas despues de ejecutar la migracion:
+
+```txt
+http://127.0.0.1:5173/esteticatopbody
+http://127.0.0.1:5173/barberia-demo
+http://127.0.0.1:5173/empresa-inexistente
+```
+
+Validar:
+
+- `esteticatopbody` carga la configuracion actual.
+- `barberia-demo` carga como empresa activa pero sin servicios/promos si no se cargaron datos.
+- `empresa-inexistente` muestra empresa no disponible.
+- Las reservas cliente se insertan con `bookings.company_id` de la empresa de la URL.
+- `get_client_booking_options('barberia-demo')` no devuelve servicios ni empleados de `esteticatopbody`.
+
+Pendiente para cerrar aislamiento completo:
+
+- Adaptar todas las RPC internas/admin para resolver y validar `company_id` desde la sesion interna.
+- Hacer `verify_internal_login`, `request_internal_registration` y `validate_internal_session` tenant-aware.
+- Crear datos de prueba completos para `barberia-demo`.
+- Endurecer constraints `not null` y uniques por empresa cuando todas las RPC esten migradas.
 
 ## Decision pendiente antes de implementar
 

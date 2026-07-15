@@ -116,7 +116,7 @@ const buildClosedBookingAmounts = (employeeBookings, closureItems = [], closures
   }, {});
 };
 
-export default function EmployeeDashboard({ user, activeView = 'summary' }) {
+export default function EmployeeDashboard({ user, activeView = 'summary', companySlug }) {
   const [employee, setEmployee] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
@@ -181,9 +181,12 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
         const [workspaceResult, configResult] = await Promise.all([
           supabase.rpc('get_internal_employee_workspace', {
             account_id_value: user.id,
-            session_token_value: user.sessionToken
+            session_token_value: user.sessionToken,
+            company_slug_value: companySlug
           }),
-          supabase.rpc('get_app_configuration')
+          supabase.rpc('get_app_configuration', {
+            company_slug_value: companySlug
+          })
         ]);
 
         const { data, error: workspaceError } = workspaceResult;
@@ -235,7 +238,9 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
           .order('start_at', { ascending: true }),
         supabase.from('services').select('*'),
         availabilityRequest,
-        supabase.rpc('get_app_configuration')
+        supabase.rpc('get_app_configuration', {
+          company_slug_value: companySlug
+        })
       ]);
 
       if (!active) {
@@ -264,7 +269,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
     return () => {
       active = false;
     };
-  }, [employeeId, refreshKey, user?.id, user?.isInternal]);
+  }, [employeeId, refreshKey, user?.id, user?.isInternal, companySlug]);
 
   const refreshEmployeeWorkspace = () => {
     setRefreshKey((current) => current + 1);
@@ -480,6 +485,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
             refreshKey={refreshKey}
             onBookingsChanged={refreshEmployeeWorkspace}
             promotions={enabledPromotions}
+            companySlug={companySlug}
           />
         </article>
       )}
@@ -491,6 +497,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary' }) {
           employeeId={employeeId}
           employeeName={employee?.name || user?.email || 'Empleado'}
           onAvailabilityChanged={refreshEmployeeWorkspace}
+          companySlug={companySlug}
         />
       )}
     </section>

@@ -104,7 +104,7 @@ function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
   );
 }
 
-function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canChangeProfile }) {
+function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canChangeProfile, companySlug, companyContext }) {
   const [clientActiveView, setClientActiveView] = useState('home');
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
@@ -141,7 +141,9 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
     let active = true;
 
     const loadConfiguration = async () => {
-      const { data, error } = await supabase.rpc('get_app_configuration');
+      const { data, error } = await supabase.rpc('get_app_configuration', {
+        company_slug_value: companySlug
+      });
 
       if (!active || error) return;
 
@@ -165,7 +167,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
       active = false;
       window.removeEventListener('turnos-app-configuration-saved', refreshConfiguration);
     };
-  }, []);
+  }, [companySlug]);
 
   const changeClientView = (view) => {
     setClientActiveView(view);
@@ -249,9 +251,11 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             setSelectedPromotion(null);
             setClientActiveView('reserve');
           }}
+          companySlug={companySlug}
+          companyContext={companyContext}
         />
       ) : selectedProfile === 'employee' ? (
-        <EmployeeDashboard user={user} activeView={employeeActiveView} />
+        <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} />
       ) : (
         <section className="role-action-grid" aria-label="Acciones previstas">
           {profile.actions.map((action) => (
@@ -275,7 +279,9 @@ export default function RoleAccess({
   onChangeProfile,
   availableProfiles = profileList,
   canChangeProfile = availableProfiles.length > 1,
-  onLogout
+  onLogout,
+  companySlug,
+  companyContext
 }) {
   if (children) {
     return children;
@@ -289,6 +295,8 @@ export default function RoleAccess({
         onChangeProfile={onChangeProfile}
         canChangeProfile={canChangeProfile}
         onLogout={onLogout}
+        companySlug={companySlug}
+        companyContext={companyContext}
       />
     );
   }

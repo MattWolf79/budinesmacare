@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import { getCompanyPath } from '../utils/tenant';
 
 const requestedProfileStorageKey = 'turnos_requested_profile';
 const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 const inAppBrowserPattern = /Instagram|FBAN|FBAV|FB_IAB|FB4A|FBIOS/i;
 
-const getAppLink = () => `${appUrl.replace(/\/$/, '')}/`;
+const getAppLink = (companySlug) => `${appUrl.replace(/\/$/, '')}${getCompanyPath(companySlug)}`;
 
 const isInAppBrowser = () => inAppBrowserPattern.test(window.navigator.userAgent || '');
 
@@ -93,7 +94,7 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export default function Login({ onInternalAccess, onLocalClientAccess, localClientAccessEnabled = false, sessionNotice = '', onDismissSessionNotice }) {
+export default function Login({ companySlug, companyContext, onInternalAccess, onLocalClientAccess, localClientAccessEnabled = false, sessionNotice = '', onDismissSessionNotice }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
   const [inAppBrowserNoticeOpen, setInAppBrowserNoticeOpen] = useState(false);
   const [copyLinkStatus, setCopyLinkStatus] = useState('');
@@ -109,11 +110,12 @@ export default function Login({ onInternalAccess, onLocalClientAccess, localClie
   const handleLogin = async (profileId) => {
     onDismissSessionNotice?.();
     sessionStorage.setItem(requestedProfileStorageKey, profileId);
+    sessionStorage.setItem('turnos_last_activity_at', String(Date.now()));
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: getAppLink(),
+        redirectTo: getAppLink(companySlug),
         skipBrowserRedirect: true,
         queryParams: {
           prompt: 'select_account'
@@ -132,7 +134,7 @@ export default function Login({ onInternalAccess, onLocalClientAccess, localClie
   };
 
   const copyAppLink = async () => {
-    const link = getAppLink();
+    const link = getAppLink(companySlug);
 
     try {
       await navigator.clipboard.writeText(link);
@@ -283,7 +285,8 @@ export default function Login({ onInternalAccess, onLocalClientAccess, localClie
         address_locality_value: registrationForm.addressLocality.trim() || null,
         photo_url_value: registrationForm.photoUrl || null,
         password_value: password,
-        employee_id_value: null
+        employee_id_value: null,
+        company_slug_value: companySlug
       });
 
       setIsSubmittingInternalAccess(false);
@@ -302,7 +305,8 @@ export default function Login({ onInternalAccess, onLocalClientAccess, localClie
     const { data, error } = await supabase.rpc('verify_internal_login', {
       account_role: registrationProfile,
       username_value: username,
-      password_value: password
+      password_value: password,
+      company_slug_value: companySlug
     });
 
     setIsSubmittingInternalAccess(false);
@@ -373,7 +377,8 @@ export default function Login({ onInternalAccess, onLocalClientAccess, localClie
     const { data, error } = await supabase.rpc('change_internal_password', {
       account_id_value: passwordChangeAccount.id,
       current_password_value: passwordChangeForm.currentPassword,
-      new_password_value: password
+      new_password_value: password,
+      company_slug_value: companySlug
     });
 
     setIsSubmittingInternalAccess(false);
@@ -415,14 +420,16 @@ export default function Login({ onInternalAccess, onLocalClientAccess, localClie
     onLocalClientAccess?.();
   };
 
+  const companyDisplayName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
+
   return (
     <main className="login-page">
       <section className="login-card">
         <img className="login-brand-mark" src={turnosAppLogo} alt="QuieroTurnoApp" />
         <p className="login-kicker">Reserva de turnos</p>
-        <h1 className="login-brand-heading">QuieroTurnoApp</h1>
+        <h1 className="login-brand-heading">{companyDisplayName}</h1>
         <p className="login-copy">
-          Elegí el tipo de acceso. Clientes ingresan con Google; empleados y administrador usan nombre y contraseña internos.
+          Acceso exclusivo para {companyDisplayName}. Clientes ingresan con Google; empleados y administrador usan nombre y contraseña internos.
         </p>
 
         {sessionNotice && (

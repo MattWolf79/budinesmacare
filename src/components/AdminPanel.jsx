@@ -67,7 +67,8 @@ const saveAdminServiceRecord = async ({
   active,
   accountId,
   sessionToken,
-  activityDiscountCheckId
+  activityDiscountCheckId,
+  companySlug
 }) => {
   const baseArgs = {
     service_id_value: serviceId,
@@ -78,7 +79,8 @@ const saveAdminServiceRecord = async ({
     base_price_value: basePrice,
     active_value: active,
     account_id_value: accountId,
-    session_token_value: sessionToken
+    session_token_value: sessionToken,
+    company_slug_value: companySlug
   };
 
   const resultWithCheck = await supabase.rpc('save_admin_service', {
@@ -240,7 +242,7 @@ const formatSupabaseError = (error) => [
   error.hint ? `Ayuda: ${error.hint}` : ''
 ].filter(Boolean).join('\n');
 
-export default function AdminPanel({ view, user, onDataChanged, adminProfileSummary = null }) {
+export default function AdminPanel({ view, user, onDataChanged, adminProfileSummary = null, companySlug }) {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
   const [employeeServices, setEmployeeServices] = useState([]);
@@ -315,9 +317,12 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       supabase.rpc('get_admin_panel_data', {
         account_id_value: internalAdminAccountId,
         session_token_value: internalSessionToken,
-        request_status_value: view === 'employees' ? 'pending' : null
+        request_status_value: view === 'employees' ? 'pending' : null,
+        company_slug_value: companySlug
       }),
-      supabase.rpc('get_app_configuration')
+      supabase.rpc('get_app_configuration', {
+        company_slug_value: companySlug
+      })
     ]);
 
     const { data, error } = adminResult;
@@ -339,7 +344,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     });
     setAccessRequests(view === 'employees' ? data?.accessRequests || [] : []);
     setIsLoading(false);
-  }, [internalAdminAccountId, internalSessionToken, view]);
+  }, [internalAdminAccountId, internalSessionToken, view, companySlug]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -473,7 +478,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       discounts_value: nextDiscounts,
       client_can_choose_employee_value: Boolean(sourceConfig.client_can_choose_employee),
       account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
     });
 
     if (!result.error) {
@@ -532,7 +538,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       discounts_value: Array.isArray(sourceConfig.discounts) ? sourceConfig.discounts : [],
       client_can_choose_employee_value: Boolean(sourceConfig.client_can_choose_employee),
       account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
     });
   };
 
@@ -605,7 +612,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
         is_admin_value: payload.is_admin,
         service_ids_value: employeeForm.serviceIds,
         account_id_value: adminAccountId,
-        session_token_value: internalSessionToken
+        session_token_value: internalSessionToken,
+        company_slug_value: companySlug
       })
       : await supabase.rpc('create_admin_employee', {
         name_value: payload.name,
@@ -621,7 +629,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
         service_ids_value: employeeForm.serviceIds,
         is_admin_value: payload.is_admin,
         account_id_value: adminAccountId,
-        session_token_value: internalSessionToken
+        session_token_value: internalSessionToken,
+        company_slug_value: companySlug
       }).single();
 
     if (employeeResult.error) {
@@ -769,7 +778,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       active: payload.active,
       accountId: internalAdminAccountId,
       sessionToken: internalSessionToken,
-      activityDiscountCheckId: payload.activity_discount_check_id
+      activityDiscountCheckId: payload.activity_discount_check_id,
+      companySlug
     });
 
     if (serviceResult.error) {

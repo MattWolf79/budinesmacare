@@ -123,7 +123,8 @@ export default function EmployeeAvailabilityPanel({
   employeeName,
   employees: adminEmployees = [],
   onAvailabilityChanged,
-  adminProfileSummary = null
+  adminProfileSummary = null,
+  companySlug
 }) {
   const isAdminMode = mode === 'admin';
   const availabilityFilterStorageKey = `turnos.availability.weekday.${isAdminMode ? 'admin' : employeeId || user?.id || 'employee'}`;
@@ -190,17 +191,19 @@ export default function EmployeeAvailabilityPanel({
       ? supabase.rpc('get_admin_panel_data', {
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
           session_token_value: user?.isInternal ? user.sessionToken : null,
-          request_status_value: null
+          request_status_value: null,
+          company_slug_value: companySlug
         })
       : Promise.resolve({ data: employeeId ? [{ id: employeeId, name: employeeName || 'Mi agenda', active: true }] : [], error: null });
 
     const availabilityRequest = !isAdminMode && user?.isInternal
       ? supabase.rpc('list_internal_employee_availability', {
           account_id_value: user.id,
-          session_token_value: user.sessionToken
+          session_token_value: user.sessionToken,
+          company_slug_value: companySlug
         })
       : isAdminMode
-        ? supabase.from('employee_availability').select('*').order('available_date', { ascending: true }).order('start_time', { ascending: true })
+        ? Promise.resolve({ data: null, error: null })
         : supabase
             .from('employee_availability')
             .select('*')
@@ -221,7 +224,7 @@ export default function EmployeeAvailabilityPanel({
       ? employeesResult.data?.employees || []
       : employeesResult.data || [];
     setEmployees(nextEmployees);
-    setAvailability(availabilityResult.data || []);
+    setAvailability(isAdminMode ? employeesResult.data?.availability || [] : availabilityResult.data || []);
     setForm((current) => ({
       ...current,
       employeeId: nextEmployees.some((employee) => String(employee.id) === String(current.employeeId))
@@ -229,7 +232,7 @@ export default function EmployeeAvailabilityPanel({
         : employeeId || nextEmployees[0]?.id || ''
     }));
     setIsLoading(false);
-  }, [employeeId, employeeName, isAdminMode, user]);
+  }, [companySlug, employeeId, employeeName, isAdminMode, user]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -369,7 +372,8 @@ export default function EmployeeAvailabilityPanel({
             end_time_value: endTime,
             active_value: true,
             account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
-            session_token_value: user?.isInternal ? user.sessionToken : null
+            session_token_value: user?.isInternal ? user.sessionToken : null,
+            company_slug_value: companySlug
           });
 
           if (updateResult.error || !form.splitSchedule) return updateResult;
@@ -382,7 +386,8 @@ export default function EmployeeAvailabilityPanel({
             end_time_value: secondEndTime,
             active_value: true,
             account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
-            session_token_value: user?.isInternal ? user.sessionToken : null
+            session_token_value: user?.isInternal ? user.sessionToken : null,
+            company_slug_value: companySlug
           });
         }
 
@@ -396,7 +401,8 @@ export default function EmployeeAvailabilityPanel({
               end_time_value: range.endTime,
               active_value: true,
               account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
-              session_token_value: user?.isInternal ? user.sessionToken : null
+              session_token_value: user?.isInternal ? user.sessionToken : null,
+              company_slug_value: companySlug
             });
 
             if (result.error) return result;
@@ -416,7 +422,8 @@ export default function EmployeeAvailabilityPanel({
             available_date_value: availabilityDate,
             start_time_value: startTime,
             end_time_value: endTime,
-            active_value: true
+            active_value: true,
+            company_slug_value: companySlug
           });
 
           if (updateResult.error || !form.splitSchedule) return updateResult;
@@ -427,7 +434,8 @@ export default function EmployeeAvailabilityPanel({
             available_date_value: availabilityDate,
             start_time_value: secondStartTime,
             end_time_value: secondEndTime,
-            active_value: true
+            active_value: true,
+            company_slug_value: companySlug
           });
         }
 
@@ -439,7 +447,8 @@ export default function EmployeeAvailabilityPanel({
               available_date_value: availabilityDate,
               start_time_value: range.startTime,
               end_time_value: range.endTime,
-              active_value: true
+              active_value: true,
+              company_slug_value: companySlug
             });
 
             if (result.error) return result;
@@ -545,7 +554,8 @@ export default function EmployeeAvailabilityPanel({
       ? await supabase.rpc('delete_admin_employee_availability', {
           availability_id_value: String(item.id),
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
-          session_token_value: user?.isInternal ? user.sessionToken : null
+          session_token_value: user?.isInternal ? user.sessionToken : null,
+          company_slug_value: companySlug
         })
       : !user?.isInternal
         ? await supabase
@@ -556,7 +566,8 @@ export default function EmployeeAvailabilityPanel({
         : await supabase.rpc('delete_internal_employee_availability', {
           account_id_value: user.id,
           session_token_value: user.sessionToken,
-          availability_id_value: String(item.id)
+          availability_id_value: String(item.id),
+          company_slug_value: companySlug
         });
 
     if (result.error) {

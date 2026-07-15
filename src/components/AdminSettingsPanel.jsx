@@ -106,7 +106,7 @@ const normalizeBannerImages = (config) => {
   return normalizedImages;
 };
 
-export default function AdminSettingsPanel({ user, adminProfileSummary = null }) {
+export default function AdminSettingsPanel({ user, adminProfileSummary = null, companySlug }) {
   const [savedConfig, setSavedConfig] = useState(defaultConfig);
   const [form, setForm] = useState(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,7 +163,9 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null })
 
     const timeoutId = window.setTimeout(async () => {
       setIsLoading(true);
-      const { data, error } = await supabase.rpc('get_app_configuration');
+      const { data, error } = await supabase.rpc('get_app_configuration', {
+        company_slug_value: companySlug
+      });
 
       if (!active) return;
 
@@ -181,7 +183,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null })
       active = false;
       window.clearTimeout(timeoutId);
     };
-  }, []);
+  }, [companySlug]);
 
   const updatePromotion = (index, field, value) => {
     setForm((current) => ({
@@ -398,7 +400,8 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null })
       discounts_value: discountsPayload,
       client_can_choose_employee_value: form.client_can_choose_employee,
       account_id_value: user?.isInternal ? user.id : null,
-      session_token_value: user?.isInternal ? user.sessionToken : null
+      session_token_value: user?.isInternal ? user.sessionToken : null,
+      company_slug_value: companySlug
     });
 
     setIsSaving(false);

@@ -518,7 +518,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   );
 }
 
-export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null }) {
+export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -552,6 +552,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const isAdminView = accessProfile === 'admin';
   const isEmployeeView = accessProfile === 'employee';
   const isClientView = accessProfile === 'client';
+  const applyCompanyFilter = (query) => companyContext?.id ? query.eq('company_id', companyContext.id) : query;
   const canGoBack = !isClientView || offset > 0;
   const isCompactAgenda = visibleDayCount <= 3;
   const timeColumnWidth = isCompactAgenda ? 46 : 64;
@@ -625,25 +626,29 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       ? supabase.rpc('get_admin_panel_data', {
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
           session_token_value: user?.isInternal ? user.sessionToken : null,
-          request_status_value: null
+          request_status_value: null,
+          company_slug_value: companySlug
         })
       : Promise.resolve({ data: null, error: null });
     const internalEmployeeDataRequest = isEmployeeView && user?.isInternal
       ? supabase.rpc('get_internal_employee_workspace', {
           account_id_value: user.id,
-          session_token_value: user.sessionToken
+          session_token_value: user.sessionToken,
+          company_slug_value: companySlug
         })
       : Promise.resolve({ data: null, error: null });
     const bookingOptionsRequest = isClientView || isAdminView || isEmployeeView
-      ? supabase.rpc('get_client_booking_options')
+      ? supabase.rpc('get_client_booking_options', {
+          company_slug_value: companySlug
+        })
       : Promise.resolve({ data: null, error: null });
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
 
     return Promise.all([
-      isAdminView || usesInternalEmployeeData ? Promise.resolve({ data: null, error: null }) : supabase.from('bookings').select('*'),
-      isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : supabase.from('services').select('*'),
-      isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : supabase.from('employees').select('*').is('deleted_at', null),
-      usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : supabase.from('employee_availability').select('*'),
+      isAdminView || usesInternalEmployeeData ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('bookings').select('*')),
+      isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('services').select('*')),
+      isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('employees').select('*').is('deleted_at', null)),
+      usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('employee_availability').select('*')),
       adminDataRequest,
       internalEmployeeDataRequest,
       bookingOptionsRequest
@@ -674,7 +679,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   };
 
   const openCloseAttention = async () => {
-    const { data } = await supabase.rpc('get_app_configuration');
+    const { data } = await supabase.rpc('get_app_configuration', {
+      company_slug_value: companySlug
+    });
     setClosureDiscounts(Array.isArray(data?.discounts) ? data.discounts : []);
     setClosurePromotions(Array.isArray(data?.promotions) ? data.promotions : promotions);
     setCloseAttentionOpen(true);
@@ -715,10 +722,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
             .map((employee) => ({ employee_id: employee.id }))
         : usesLoadedEmployeeData
         ? employeeServices.filter((relation) => Number(relation.service_id) === Number(selectedService.id))
-        : (await supabase
-            .from('employee_services')
-            .select('employee_id')
-            .eq('service_id', selectedService.id)).data;
+          : (await applyCompanyFilter(supabase
+              .from('employee_services')
+              .select('employee_id'))
+              .eq('service_id', selectedService.id)).data;
 
       const ids = rel?.map(r => r.employee_id) || [];
       const filteredIds = ids;
@@ -734,10 +741,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
       const emp = usesLoadedEmployeeData
         ? employees.filter((employee) => filteredIds.some((id) => String(id) === String(employee.id)))
-        : (await supabase
-            .from('employees')
-            .select('*')
-            .is('deleted_at', null)
+        : (await applyCompanyFilter(supabase
+          .from('employees')
+          .select('*')
+          .is('deleted_at', null))
             .in('id', filteredIds)).data;
 
       if (!active) return;
@@ -959,7 +966,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const { error } = await supabase.rpc('cancel_booking', {
       booking_id_value: booking.id,
       account_id_value: user?.isInternal ? user.id : null,
-      session_token_value: user?.isInternal ? user.sessionToken : null
+      session_token_value: user?.isInternal ? user.sessionToken : null,
+      company_slug_value: companySlug
     });
 
     if (error) {
@@ -1019,7 +1027,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       start_at_value: range.start_at,
       end_at_value: range.end_at,
       customer_name_value: customerName || null,
-      customer_email_value: customerEmail || null
+      customer_email_value: customerEmail || null,
+      company_slug_value: companySlug
     });
 
     if (error) {
@@ -1063,9 +1072,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const shouldValidateWithRpc = isClientView || (user?.isInternal && (isAdminView || isEmployeeView));
     const { data: conflicts, error: conflictError } = shouldValidateWithRpc
       ? { data: [], error: null }
-      : await supabase
+        : await applyCompanyFilter(supabase
           .from('bookings')
-          .select('id, employee_id')
+          .select('id, employee_id'))
           .in('status', ['confirmed', 'reserved'])
           .eq('employee_id', employee.id)
           .lt('start_at', range.end_at)
@@ -1085,12 +1094,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     if (!availabilityLoadFailed && !shouldValidateWithRpc) {
       const availableDate = formatDateOnlyForDb(range.startLocal);
-      const { data: availabilityRows, error: availabilityError } = await supabase
+      const { data: availabilityRows, error: availabilityError } = await applyCompanyFilter(supabase
         .from('employee_availability')
         .select('*')
         .eq('employee_id', employee.id)
         .eq('available_date', availableDate)
-        .eq('active', true);
+        .eq('active', true));
 
       if (availabilityError) {
         alert('No se pudo validar la disponibilidad horaria del empleado. Intentá nuevamente.');
@@ -1106,9 +1115,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     const { data: clientConflicts, error: clientConflictError } = shouldValidateWithRpc
       ? { data: [], error: null }
-      : await supabase
+        : await applyCompanyFilter(supabase
           .from('bookings')
-          .select('id, user_id, user_email, status, start_at, end_at')
+          .select('id, user_id, user_email, status, start_at, end_at'))
           .in('status', ['confirmed', 'reserved'])
           .lt('start_at', range.end_at)
           .gt('end_at', range.start_at);
@@ -1132,7 +1141,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           start_at_value: range.start_at,
           end_at_value: range.end_at,
           customer_name_value: customerName || null,
-          customer_email_value: customerEmail || null
+          customer_email_value: customerEmail || null,
+          company_slug_value: companySlug
         })
       : isAdminView
       ? await supabase.rpc('create_admin_booking', {
@@ -1144,7 +1154,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           customer_email_value: customerEmail || null,
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
           session_token_value: user?.isInternal ? user.sessionToken : null,
-          booking_description_value: selectedService.isPromotion ? bookingDescription || null : null
+          booking_description_value: selectedService.isPromotion ? bookingDescription || null : null,
+          company_slug_value: companySlug
         })
       : user?.isInternal && isEmployeeView
         ? await supabase.rpc('create_internal_employee_booking', {
@@ -1156,9 +1167,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           customer_email_value: customerEmail || null,
           account_id_value: user.id,
           session_token_value: user.sessionToken,
-          booking_description_value: selectedService.isPromotion ? bookingDescription || null : null
+          booking_description_value: selectedService.isPromotion ? bookingDescription || null : null,
+          company_slug_value: companySlug
         })
-      : await supabase.from('bookings').insert({
+        : await supabase.from('bookings').insert({
+          company_id: companyContext?.id || null,
           user_id: isClientView ? user.id : null,
           user_email: customerEmail,
           customer_name: customerName || null,
@@ -1209,9 +1222,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       ? { data: employeeServices.filter((relation) => Number(relation.service_id) === Number(booking.service)), error: null }
       : user?.isInternal && isEmployeeView
         ? { data: employeeServices.filter((relation) => Number(relation.service_id) === Number(booking.service)), error: null }
-      : await supabase
+        : await applyCompanyFilter(supabase
           .from('employee_services')
-          .select('employee_id')
+          .select('employee_id'))
           .eq('service_id', booking.service);
 
     const { data: rel, error: relError } = relResult;
@@ -1232,10 +1245,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     const empResult = isAdminView || (user?.isInternal && isEmployeeView)
       ? { data: employees.filter((employee) => ids.some((id) => String(id) === String(employee.id))), error: null }
-      : await supabase
+        : await applyCompanyFilter(supabase
           .from('employees')
           .select('*')
-          .is('deleted_at', null)
+          .is('deleted_at', null))
           .in('id', ids);
 
     const { data: emp, error: empError } = empResult;
@@ -1289,14 +1302,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           booking_id_value: assignmentRequest.booking.id,
           employee_id_value: employee.id,
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
-          session_token_value: user?.isInternal ? user.sessionToken : null
+          session_token_value: user?.isInternal ? user.sessionToken : null,
+          company_slug_value: companySlug
         })
-      : await supabase
+      : await applyCompanyFilter(supabase
           .from('bookings')
           .update({
             employee_id: employee.id,
             status: 'confirmed'
-          })
+          }))
           .eq('id', assignmentRequest.booking.id)
           .is('employee_id', null);
 

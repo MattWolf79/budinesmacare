@@ -5,7 +5,7 @@ export default function ServiceModal({ services, rangeLabel, onClose, onSelectSe
 
   return (
     <div className="modal">
-      <div className="agenda-modal-card">
+      <div className="agenda-modal-card service-select-modal">
         <div className="agenda-modal-header">Servicios</div>
 
         <div className="agenda-modal-body">
@@ -17,7 +17,7 @@ export default function ServiceModal({ services, rangeLabel, onClose, onSelectSe
             <div className="agenda-option-grid">
               {activeServices.map(service => (
                 <button className="agenda-option-button client-modal-option-button" key={service.id ?? service.promotionKey ?? service.name} onClick={() => onSelectService(service)}>
-                  <ActivityIcon service={service} size="small" /> {service.name}
+                  <ActivityIcon service={service} size="small" /> <span>{service.name}</span>
                 </button>
               ))}
             </div>

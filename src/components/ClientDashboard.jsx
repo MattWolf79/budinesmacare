@@ -33,7 +33,7 @@ const getBookingCardTitle = (booking, service) => (
   String(booking.booking_description || service?.name || 'Servicio').split('·')[0].trim() || 'Servicio'
 );
 
-export default function ClientDashboard({ user, showAgenda = true, selectedPromotion = null, onReservePromotion, onReserveTurn, activityLegend = null }) {
+export default function ClientDashboard({ user, showAgenda = true, selectedPromotion = null, onReservePromotion, onReserveTurn, activityLegend = null, companySlug, companyContext }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [appConfig, setAppConfig] = useState(null);
@@ -49,21 +49,31 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
 
       const now = formatDateForDb(new Date());
 
+      let bookingRequest = user?.id
+        ? supabase
+            .from('bookings')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('status', ACTIVE_BOOKING_STATUSES)
+            .gte('start_at', now)
+            .order('start_at', { ascending: true })
+            .limit(6)
+        : null;
+      let serviceRequest = supabase.from('services').select('*');
+
+      if (companyContext?.id) {
+        if (bookingRequest) bookingRequest = bookingRequest.eq('company_id', companyContext.id);
+        serviceRequest = serviceRequest.eq('company_id', companyContext.id);
+      }
+
       const [bookingResult, serviceResult] = await Promise.all([
-        user?.id
-          ? supabase
-              .from('bookings')
-              .select('*')
-              .eq('user_id', user.id)
-              .in('status', ACTIVE_BOOKING_STATUSES)
-              .gte('start_at', now)
-              .order('start_at', { ascending: true })
-              .limit(6)
-          : Promise.resolve({ data: [], error: null }),
-        supabase.from('services').select('*')
+        bookingRequest || Promise.resolve({ data: [], error: null }),
+        serviceRequest
       ]);
 
-      const configResult = await supabase.rpc('get_app_configuration');
+      const configResult = await supabase.rpc('get_app_configuration', {
+        company_slug_value: companySlug
+      });
 
       if (!active) return;
 
@@ -85,7 +95,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
       active = false;
       window.clearTimeout(timeoutId);
     };
-  }, [user, refreshKey, configRefreshKey, showAgenda]);
+  }, [user, refreshKey, configRefreshKey, showAgenda, companySlug, companyContext?.id]);
 
   useEffect(() => {
     const refreshConfiguration = () => {
@@ -259,6 +269,8 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
             clientCanChooseEmployee={Boolean(appConfig?.client_can_choose_employee)}
             selectedPromotion={selectedPromotion}
             promotions={enabledPromotions}
+            companySlug={companySlug}
+            companyContext={companyContext}
           />
         </div>
       )}
