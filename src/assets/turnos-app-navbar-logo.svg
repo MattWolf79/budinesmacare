@@ -23,7 +23,41 @@
   <path d="M44.5 19.8l4.1-5.8" stroke="#ffffff" stroke-width="4.3" stroke-linecap="round" />
   <path d="M23.5 19.8L19.4 14" stroke="#ffffff" stroke-width="4.3" stroke-linecap="round" />
 
-  <text x="84" y="45" font-family="Montserrat, Poppins, Arial, sans-serif" font-size="30" font-weight="850" letter-spacing="-0.8" fill="#ffffff">Quiero</text>
-  <text x="183" y="45" font-family="Montserrat, Poppins, Arial, sans-serif" font-size="30" font-weight="850" letter-spacing="-0.8" fill="#ffffff">Turno</text>
-  <text x="274" y="45" font-family="Montserrat, Poppins, Arial, sans-serif" font-size="30" font-weight="850" letter-spacing="-0.8" fill="#2b85ff">App</text>
+  <g opacity="0.62" aria-hidden="true">
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke="#8a3b0d" stroke-width="2.8">
+        <path d="M251 11c3.4 8.4 3.4 16.7 0 25c-3.4-8.3-3.4-16.6 0-25Z" fill="#facc15" />
+        <path d="M251 61c-3.4-8.4-3.4-16.7 0-25c3.4 8.3 3.4 16.6 0 25Z" fill="#facc15" />
+        <path d="M226 36c8.4-3.4 16.7-3.4 25 0c-8.3 3.4-16.6 3.4-25 0Z" fill="#facc15" />
+        <path d="M276 36c-8.4 3.4-16.7 3.4-25 0c8.3-3.4 16.6-3.4 25 0Z" fill="#facc15" />
+        <path d="M233.3 18.3c8.3 3.5 14.2 9.4 17.7 17.7c-8.3-3.5-14.2-9.4-17.7-17.7Z" fill="#facc15" />
+        <path d="M268.7 53.7c-8.3-3.5-14.2-9.4-17.7-17.7c8.3 3.5 14.2 9.4 17.7 17.7Z" fill="#facc15" />
+        <path d="M268.7 18.3c-3.5 8.3-9.4 14.2-17.7 17.7c3.5-8.3 9.4-14.2 17.7-17.7Z" fill="#facc15" />
+        <path d="M233.3 53.7c3.5-8.3 9.4-14.2 17.7-17.7c-3.5 8.3-9.4 14.2-17.7 17.7Z" fill="#facc15" />
+      </g>
+      <g stroke="#8a3b0d" stroke-width="2.4">
+        <path d="M241 13c5 6 6.3 13.7 3.9 23" />
+        <path d="M261 59c-5-6-6.3-13.7-3.9-23" />
+        <path d="M241 59c5-6 6.3-13.7 3.9-23" />
+        <path d="M261 13c-5 6-6.3 13.7-3.9 23" />
+        <path d="M228 26c7.7 1 14.4 4.3 20 10" />
+        <path d="M274 46c-7.7-1-14.4-4.3-20-10" />
+        <path d="M228 46c7.7-1 14.4-4.3 20-10" />
+        <path d="M274 26c-7.7 1-14.4 4.3-20 10" />
+      </g>
+    </g>
+    <circle cx="251" cy="36" r="15" fill="#facc15" stroke="#8a3b0d" stroke-width="2.3" />
+    <g fill="none" stroke="#8a3b0d" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M242 32c2-1.8 4.1-1.8 6.2 0" stroke-width="1.4" />
+      <path d="M254 32c2.1-1.8 4.2-1.8 6.3 0" stroke-width="1.4" />
+      <path d="M244 34.2c1.6 1.2 3.1 1.2 4.5 0" stroke-width="1.2" />
+      <path d="M255.5 34.2c1.6 1.2 3.1 1.2 4.5 0" stroke-width="1.2" />
+      <path d="M251 35.5c-.9 2-.9 3.5 0 4.5" stroke-width="1.2" />
+      <path d="M245.5 43c3.4 2.1 7.1 2.1 11 0" stroke-width="1.4" />
+    </g>
+  </g>
+
+  <text x="84" y="45" font-family="Montserrat, Poppins, Arial, sans-serif" font-size="30" font-weight="850" letter-spacing="0">
+    <tspan fill="#7dd3fc">Quiero</tspan><tspan fill="#ffffff">Turno</tspan><tspan fill="#7dd3fc">App</tspan>
+  </text>
 </svg>

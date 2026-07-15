@@ -1007,7 +1007,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    if (!selectedService?.isPromotion && !availabilityLoadFailed && !availableEmployees.length) {
+    if (!availabilityLoadFailed && !availableEmployees.length) {
       alert('No hay disponibilidad para ese servicio en ese horario. Probá con otro horario.');
       return;
     }
@@ -1567,7 +1567,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
               <div className="agenda-modal-actions client-request-actions">
                 <button className="client-welcome-action client-request-secondary" type="button" onClick={close}>Cerrar</button>
-                <button className="client-welcome-action client-request-submit" type="button" onClick={reserveClientRequest} disabled={isLoadingAvailableEmployees || (!selectedService?.isPromotion && availableEmployees.length === 0 && !availabilityLoadFailed)}>
+                <button className="client-welcome-action client-request-submit" type="button" onClick={reserveClientRequest} disabled={isLoadingAvailableEmployees || (availableEmployees.length === 0 && !availabilityLoadFailed)}>
                   Solicitar turno
                 </button>
               </div>
