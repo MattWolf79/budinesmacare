@@ -4,7 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Login from './components/Login';
 import PlatformAdmin from './components/PlatformAdmin';
 import RoleAccess from './components/RoleAccess';
-import { getCompanySlugFromLocation, isPlatformAdminLocation } from './utils/tenant';
+import { getClientPortalPath, getCompanyPortalFromLocation, getCompanySlugFromLocation, isPlatformAdminLocation } from './utils/tenant';
 
 const validProfiles = ['client', 'employee', 'admin'];
 const profileStorageKey = 'turnos_access_profile';
@@ -101,24 +101,47 @@ const getStoredProfile = () => {
   return validProfiles.includes(selectedProfile) ? selectedProfile : 'client';
 };
 
+const hasAuthCallbackParams = () => {
+  const searchParams = new URLSearchParams(window.location.search || '');
+  const hashParams = new URLSearchParams(String(window.location.hash || '').replace(/^#/, ''));
+
+  return searchParams.has('code') || searchParams.has('error') || hashParams.has('access_token') || hashParams.has('error');
+};
+
 export default function App() {
   const isPlatformAdminRoute = isPlatformAdminLocation();
+  const companyPortal = getCompanyPortalFromLocation();
+  const isClientPortal = companyPortal === 'client';
+  const isInternalPortal = companyPortal === 'internal';
+  const routeAllowedProfiles = isClientPortal
+    ? ['client']
+    : isInternalPortal
+      ? ['employee', 'admin']
+      : validProfiles;
 
   const [companySlug] = useState(getCompanySlugFromLocation);
   const [companyContext, setCompanyContext] = useState(null);
   const [companyContextLoading, setCompanyContextLoading] = useState(true);
   const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [internalSession, setInternalSession] = useState(() => loadStoredInternalSession(companySlug));
   const [localClientSession, setLocalClientSession] = useState(() => loadStoredLocalClientSession(companySlug));
   const [accessProfile, setAccessProfile] = useState(null);
   const [authProfile, setAuthProfile] = useState(null);
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState('');
 
-  const availableProfiles = internalSession
+  const baseAvailableProfiles = internalSession
     ? getAvailableProfiles(internalSession.role)
     : getAvailableProfiles(authProfile?.role || accessProfile);
+  const availableProfiles = baseAvailableProfiles.filter((profile) => routeAllowedProfiles.includes(profile));
   const canChangeProfile = availableProfiles.length > 1;
   const companyContextId = companyContext?.id;
+
+  useEffect(() => {
+    if (companyPortal === 'root' && companySlug) {
+      window.location.replace(getClientPortalPath(companySlug));
+    }
+  }, [companyPortal, companySlug]);
 
   useEffect(() => {
     let active = true;
@@ -272,14 +295,36 @@ export default function App() {
   }, [loadAuthProfile]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      applyAuthSession(data.session);
-    });
+    let active = true;
+
+    const initializeAuthSession = async () => {
+      setAuthLoading(true);
+
+      try {
+        if (hasAuthCallbackParams()) {
+          await supabase.auth.exchangeCodeForSession(window.location.href);
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+        }
+
+        const { data } = await supabase.auth.getSession();
+
+        if (!active) return;
+        await applyAuthSession(data.session);
+      } catch (error) {
+        console.error('No se pudo procesar el inicio de sesión.', error);
+      } finally {
+        if (active) {
+          setAuthLoading(false);
+        }
+      }
+    };
+
+    initializeAuthSession();
 
     const { data: listener } =
       supabase.auth.onAuthStateChange((_event, session) => {
         if (session) {
-          applyAuthSession(session);
+          applyAuthSession(session).finally(() => setAuthLoading(false));
         } else {
           setSession(null);
           setAuthProfile(null);
@@ -301,10 +346,13 @@ export default function App() {
           } else {
             clearAccessProfile();
           }
+
+          setAuthLoading(false);
         }
       });
 
     return () => {
+      active = false;
       listener.subscription.unsubscribe();
     };
 
@@ -382,7 +430,11 @@ export default function App() {
     return <PlatformAdmin />;
   }
 
-  if (companyContextLoading) {
+  if (companyPortal === 'root' && companySlug) {
+    return <main className="login-page"><section className="login-card"><p className="login-copy">Redirigiendo...</p></section></main>;
+  }
+
+  if (companyContextLoading || authLoading) {
     return <main className="login-page"><section className="login-card"><p className="login-copy">Cargando empresa...</p></section></main>;
   }
 
@@ -398,8 +450,29 @@ export default function App() {
     );
   }
 
+  const loginView = (
+    <Login
+      companySlug={companySlug}
+      companyContext={companyContext}
+      allowedProfiles={routeAllowedProfiles}
+      onInternalAccess={startInternalSession}
+      onLocalClientAccess={startLocalClientSession}
+      localClientAccessEnabled={localClientAccessEnabled && routeAllowedProfiles.includes('client')}
+      sessionNotice={sessionExpiredMessage}
+      onDismissSessionNotice={() => setSessionExpiredMessage('')}
+    />
+  );
+
+  if (isClientPortal && !session && !localClientSession) {
+    return loginView;
+  }
+
+  if (isInternalPortal && !internalSession) {
+    return loginView;
+  }
+
   if (!session && !internalSession && !localClientSession) {
-    return <Login companySlug={companySlug} companyContext={companyContext} onInternalAccess={startInternalSession} onLocalClientAccess={startLocalClientSession} localClientAccessEnabled={localClientAccessEnabled} sessionNotice={sessionExpiredMessage} onDismissSessionNotice={() => setSessionExpiredMessage('')} />;
+    return loginView;
   }
 
   if (localClientSession) {

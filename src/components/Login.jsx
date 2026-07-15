@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { supabase } from '../api/supabaseClient';
-import { getCompanyPath } from '../utils/tenant';
+import { getClientPortalPath } from '../utils/tenant';
 
 const requestedProfileStorageKey = 'turnos_requested_profile';
 const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 const inAppBrowserPattern = /Instagram|FBAN|FBAV|FB_IAB|FB4A|FBIOS/i;
 
-const getAppLink = (companySlug) => `${appUrl.replace(/\/$/, '')}${getCompanyPath(companySlug)}`;
+const getAppLink = (companySlug) => `${appUrl.replace(/\/$/, '')}${getClientPortalPath(companySlug)}`;
 
 const isInAppBrowser = () => inAppBrowserPattern.test(window.navigator.userAgent || '');
 
@@ -94,7 +94,7 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export default function Login({ companySlug, companyContext, onInternalAccess, onLocalClientAccess, localClientAccessEnabled = false, sessionNotice = '', onDismissSessionNotice }) {
+export default function Login({ companySlug, companyContext, allowedProfiles = accessOptions.map((option) => option.id), onInternalAccess, onLocalClientAccess, localClientAccessEnabled = false, sessionNotice = '', onDismissSessionNotice }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
   const [inAppBrowserNoticeOpen, setInAppBrowserNoticeOpen] = useState(false);
   const [copyLinkStatus, setCopyLinkStatus] = useState('');
@@ -421,6 +421,11 @@ export default function Login({ companySlug, companyContext, onInternalAccess, o
   };
 
   const companyDisplayName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
+  const visibleAccessOptions = accessOptions.filter((option) => allowedProfiles.includes(option.id));
+  const isClientOnlyAccess = visibleAccessOptions.length === 1 && visibleAccessOptions[0]?.id === 'client';
+  const loginCopy = isClientOnlyAccess
+    ? `Acceso exclusivo para ${companyDisplayName}. Ingresá con Google para reservar y consultar tus turnos.`
+    : `Acceso interno para ${companyDisplayName}. Empleados y administrador usan nombre y contraseña internos.`;
 
   return (
     <main className="login-page">
@@ -429,7 +434,7 @@ export default function Login({ companySlug, companyContext, onInternalAccess, o
         <p className="login-kicker">Reserva de turnos</p>
         <h1 className="login-brand-heading">{companyDisplayName}</h1>
         <p className="login-copy">
-          Acceso exclusivo para {companyDisplayName}. Clientes ingresan con Google; empleados y administrador usan nombre y contraseña internos.
+          {loginCopy}
         </p>
 
         {sessionNotice && (
@@ -439,7 +444,7 @@ export default function Login({ companySlug, companyContext, onInternalAccess, o
         )}
 
         <div className="login-access-grid" aria-label="Tipos de acceso">
-          {accessOptions.map((option) => (
+          {visibleAccessOptions.map((option) => (
             <div className="login-access-option" key={option.id}>
               <button
                 className={`login-access-card login-access-card-${option.id}`}
@@ -753,7 +758,7 @@ export default function Login({ companySlug, companyContext, onInternalAccess, o
               <p>
                 Instagram puede bloquear el inicio de sesión con Google. Para entrar como cliente, abrí esta página en Chrome o Safari.
               </p>
-              <div className="login-browser-link">{getAppLink()}</div>
+              <div className="login-browser-link">{getAppLink(companySlug)}</div>
               {copyLinkStatus && <p className="login-browser-status">{copyLinkStatus}</p>}
             </div>
             <div className="agenda-modal-actions">
