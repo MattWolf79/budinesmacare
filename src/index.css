@@ -60,6 +60,13 @@ body {
   box-sizing: border-box;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 400 !important;
+  opacity: 1;
+}
+
 #root {
   width: 1126px;
   max-width: 100%;
@@ -1081,31 +1088,44 @@ code {
   padding: 28px;
   box-sizing: border-box;
   background:
-    linear-gradient(135deg, rgba(63, 201, 213, 0.12), rgba(232, 93, 104, 0.08)),
-    #f8fafc;
+    radial-gradient(circle at 16% 18%, rgba(216, 251, 245, 0.9), transparent 30%),
+    radial-gradient(circle at 86% 12%, rgba(63, 201, 213, 0.32), transparent 26%),
+    linear-gradient(135deg, #e9fbfd 0%, #d8fbf5 46%, #24aebb 100%);
 }
 
 .login-card {
+  --login-card-x: 30px;
+  display: flex;
+  flex-direction: column;
   width: min(100%, 620px);
-  border: 1px solid #d8e0eb;
+  overflow: hidden;
+  border: 1px solid rgba(36, 174, 187, 0.36);
   border-radius: 8px;
-  padding: 30px;
+  padding: 0 var(--login-card-x) var(--login-card-x);
   text-align: center;
   background: #fff;
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 22px 52px rgba(23, 76, 85, 0.26);
 }
 
 .login-brand-mark {
   display: block;
-  width: 70px;
-  height: 70px;
-  margin: 0 auto;
+  width: 76px;
+  height: 76px;
+  margin: 22px auto 0;
+  border: 1px solid #b7eef4;
+  border-radius: 18px;
+  padding: 10px;
+  background: #fff;
   object-fit: contain;
+  box-shadow: 0 12px 26px rgba(36, 174, 187, 0.2);
 }
 
 .login-kicker {
-  margin-top: 18px;
-  color: #24aebb;
+  order: -1;
+  margin: 0 calc(var(--login-card-x) * -1) 0;
+  padding: 12px 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #174c55, #24aebb);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0;
@@ -1113,7 +1133,7 @@ code {
 }
 
 .login-card h1 {
-  margin: 6px 0 10px;
+  margin: 12px 0 10px;
   color: #1f2937;
   font-size: 34px;
   line-height: 1.1;
@@ -1156,11 +1176,12 @@ code {
   align-items: center;
   gap: 12px;
   width: 100%;
-  border: 1px solid #d8e0eb;
+  min-height: 84px;
+  border: 1px solid #c5eef1;
   border-radius: 8px;
   padding: 12px;
   color: #334155;
-  background: #f8fafc;
+  background: #f4feff;
   text-align: left;
   cursor: pointer;
 }
@@ -1168,18 +1189,27 @@ code {
 .login-access-card:hover {
   border-color: #24aebb;
   background: #e9fbfd;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 8px 18px rgba(36, 174, 187, 0.16);
 }
 
 .login-access-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: 8px;
-  background: #2f3842;
+  color: #fff;
+  background: #174c55;
   font-size: 20px;
+}
+
+.login-access-card-employee .login-access-icon {
+  background: #24aebb;
+}
+
+.login-access-card-admin .login-access-icon {
+  background: #3fc9d5;
 }
 
 .login-access-content {
@@ -1204,7 +1234,8 @@ code {
 
 .login-access-title-row span {
   flex: 0 0 auto;
-  border-radius: 999px;
+  border: 1px solid #b7eef4;
+  border-radius: 6px;
   padding: 3px 8px;
   color: #155e75;
   background: #cffafe;
@@ -1257,6 +1288,13 @@ code {
   background: #eef5ff;
 }
 
+@media (max-width: 640px) {
+  .login-page .login-card {
+    --login-card-x: 18px;
+    padding: 0 var(--login-card-x) var(--login-card-x);
+  }
+}
+
 .login-browser-modal {
   width: min(92vw, 420px);
 }
@@ -1306,17 +1344,27 @@ code {
   width: min(94vw, 620px);
   max-height: 92svh;
   overflow: hidden;
-  border: 1px solid #d8e0eb;
+  border: 1px solid rgba(36, 174, 187, 0.42);
   border-radius: 8px;
   background: #fff;
   color: #334155;
   text-align: left;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 18px 44px rgba(23, 76, 85, 0.3);
+}
+
+.internal-register-modal .agenda-modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.26);
+  color: #fff;
+  background: linear-gradient(135deg, #174c55, #24aebb);
+  font-weight: 900;
 }
 
 .internal-register-modal .agenda-modal-body {
   max-height: calc(92svh - 44px);
   overflow-y: auto;
+  background:
+    linear-gradient(180deg, rgba(233, 251, 253, 0.92), rgba(255, 255, 255, 0.96) 42%),
+    #fff;
 }
 
 .internal-register-tabs {
@@ -1324,17 +1372,17 @@ code {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   margin-bottom: 16px;
-  border: 1px solid #d8e0eb;
+  border: 1px solid #b7eef4;
   border-radius: 8px;
   padding: 5px;
-  background: #f8fafc;
+  background: #effdff;
 }
 
 .internal-register-tabs button {
   min-height: 36px;
   border: 1px solid transparent;
   border-radius: 6px;
-  color: #64748b;
+  color: #174c55;
   background: transparent;
   font-weight: 900;
   cursor: pointer;
@@ -1344,12 +1392,12 @@ code {
 .internal-register-tabs button.is-active {
   color: #fff;
   border-color: #24aebb;
-  background: #3fc9d5;
+  background: linear-gradient(135deg, #24aebb, #3fc9d5);
 }
 
 .internal-register-copy {
   margin-bottom: 16px;
-  color: #64748b;
+  color: #475569;
   font-size: 13px;
   font-weight: 700;
 }
@@ -1366,11 +1414,11 @@ code {
 .internal-register-field input {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #c5eef1;
   border-radius: 6px;
   padding: 10px 11px;
   color: #334155;
-  background: #f8fafc;
+  background: #f8feff;
   font: inherit;
   font-size: 14px;
   outline: none;
@@ -1512,7 +1560,7 @@ code {
 .internal-register-primary {
   border: 1px solid #24aebb;
   color: #fff;
-  background: #3fc9d5;
+  background: linear-gradient(135deg, #24aebb, #3fc9d5);
 }
 
 .internal-register-primary:hover {
@@ -1530,14 +1578,14 @@ code {
 }
 
 .internal-register-secondary {
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  background: #f8fafc;
+  border: 1px solid #b7eef4;
+  color: #174c55;
+  background: #f8feff;
 }
 
 .internal-register-secondary:hover {
-  border-color: #94a3b8;
-  background: #eef2f7;
+  border-color: #24aebb;
+  background: #e9fbfd;
 }
 
 .profile-select-page,
@@ -11373,6 +11421,18 @@ body {
 
 .form-card .form-card-body.is-open {
   display: grid !important;
+}
+
+@media (min-width: 641px) {
+  .form-card .form-card-toggle,
+  .settings-activity-check-card .admin-collapsible-form-toggle {
+    display: none !important;
+  }
+
+  .form-card .form-card-body.is-collapsed,
+  .settings-activity-check-card .admin-collapsible-form-body.is-collapsed {
+    display: grid !important;
+  }
 }
 
 .dashboard-shell > .app-navbar .app-navbar-menu {

@@ -111,6 +111,7 @@ export default function AdminSettingsPanel({ user }) {
   const [form, setForm] = useState(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCompactSettingsViewport, setIsCompactSettingsViewport] = useState(() => window.matchMedia?.('(max-width: 640px)').matches ?? false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);
   const [bannerOpen, setBannerOpen] = useState(false);
@@ -133,6 +134,17 @@ export default function AdminSettingsPanel({ user }) {
   const selectedActivityCheck = useMemo(() => (
     activityDiscounts.find(({ index }) => index === selectedActivityCheckIndex) || activityDiscounts[0] || null
   ), [activityDiscounts, selectedActivityCheckIndex]);
+  const isActivityChecksBodyOpen = activityChecksOpen || !isCompactSettingsViewport;
+
+  useEffect(() => {
+    const viewportQuery = window.matchMedia?.('(max-width: 640px)');
+    if (!viewportQuery) return undefined;
+
+    const updateCompactViewport = (event) => setIsCompactSettingsViewport(event.matches);
+    viewportQuery.addEventListener('change', updateCompactViewport);
+
+    return () => viewportQuery.removeEventListener('change', updateCompactViewport);
+  }, []);
 
   const applyConfig = (config) => {
     const bannerImages = normalizeBannerImages(config);
@@ -421,8 +433,8 @@ export default function AdminSettingsPanel({ user }) {
           className="availability-form-toggle admin-collapsible-form-toggle"
           type="button"
           onClick={() => setActivityChecksOpen((current) => !current)}
-          aria-expanded={activityChecksOpen}
-          aria-label={activityChecksOpen ? 'Ocultar check servicio' : 'Mostrar check servicio'}
+          aria-expanded={isActivityChecksBodyOpen}
+          aria-label={isActivityChecksBodyOpen ? 'Ocultar check servicio' : 'Mostrar check servicio'}
         >
           &gt;
         </button>
@@ -442,11 +454,11 @@ export default function AdminSettingsPanel({ user }) {
           </button>
         )) : <span className="settings-empty-text">Sin checks creados.</span>}
       </div>
-      <div className={`agenda-modal-body settings-promotion-grid settings-discount-grid settings-activity-check-grid admin-collapsible-form-body ${activityChecksOpen ? 'is-open' : 'is-collapsed'}`}>
+      <div className={`agenda-modal-body settings-promotion-grid settings-discount-grid settings-activity-check-grid admin-collapsible-form-body ${isActivityChecksBodyOpen ? 'is-open' : 'is-collapsed'}`}>
         <div className="settings-section-toolbar">
           <button className="agenda-option-button" type="button" onClick={addActivityDiscount}>Agregar check</button>
         </div>
-        {activityChecksOpen && (activityDiscounts.length === 0 ? (
+        {isActivityChecksBodyOpen && (activityDiscounts.length === 0 ? (
           <p className="settings-empty-text">Todavía no hay checks configurados.</p>
         ) : selectedActivityCheck && (
           <div className="settings-promotion-card settings-discount-card settings-activity-check-form" key={selectedActivityCheck.index}>
