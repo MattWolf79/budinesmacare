@@ -5038,6 +5038,25 @@ code {
   }
 
   .role-workspace-hero {
+
+  .form-card {
+    overflow: hidden;
+  }
+
+  .form-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .form-card-body {
+    min-width: 0;
+  }
+
+  .form-card-toggle {
+    flex: 0 0 auto;
+  }
     margin-top: 14px;
     padding: 16px;
   }
@@ -7340,6 +7359,7 @@ body {
     width: min(190px, 100%) !important;
     max-width: 100% !important;
   }
+
 
   .dashboard-shell .employee-button-list .employee-record-card {
     grid-template-columns: 44px minmax(0, 1fr) 82px !important;
@@ -11171,4 +11191,232 @@ body {
   color: #334155 !important;
   border: 1px solid #cbd5e1 !important;
   background: #fff !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card {
+  overflow: hidden !important;
+  border: 1px solid #d7dde3 !important;
+  border-top: 0 !important;
+  border-radius: 10px !important;
+  padding: 0 12px 12px !important;
+  background: #fff !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06) !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card > .agenda-modal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  margin: 0 -12px 12px !important;
+  border: 0 !important;
+  border-radius: 9px 9px 6px 6px !important;
+  padding: 8px 12px !important;
+  color: #fff !important;
+  background: #174c55 !important;
+  box-sizing: border-box !important;
+  text-transform: none !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card > .agenda-modal-header span {
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  line-height: 1.16 !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .agenda-modal-body {
+  gap: 9px !important;
+  padding: 0 !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card label:not(.admin-switch-row) {
+  display: grid !important;
+  grid-template-columns: 108px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  color: #596574 !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-two-columns label,
+.role-workspace-employee .employee-availability-manager .availability-form-card .availability-date-columns label {
+  grid-template-columns: 1fr !important;
+  gap: 4px !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card input,
+.role-workspace-employee .employee-availability-manager .availability-form-card select {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  min-height: 30px !important;
+  height: 30px !important;
+  border: 1px solid #cfd6dd !important;
+  border-radius: 6px !important;
+  padding: 6px 8px !important;
+  color: #26313a !important;
+  background: #fbfcfd !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1.25 !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-fieldset,
+.role-workspace-employee .employee-availability-manager .availability-form-card .availability-range-card {
+  grid-column: 1 / -1 !important;
+  border: 1px solid #cfd6dd !important;
+  border-radius: 7px !important;
+  padding: 8px !important;
+  background: #fbfcfd !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-fieldset-title {
+  margin: 0 0 8px !important;
+  color: #26313a !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-two-columns,
+.role-workspace-employee .employee-availability-manager .availability-form-card .availability-date-columns {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .availability-date-field span {
+  min-height: 26px !important;
+  border: 1px solid #cfd6dd !important;
+  border-radius: 999px !important;
+  padding: 6px 8px !important;
+  color: #26313a !important;
+  background: #fbfcfd !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-switch-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 30px !important;
+  margin: 0 !important;
+  color: #26313a !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-transform: none !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-switch-row input {
+  flex: 0 0 auto !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  padding: 3px 0 0 !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-actions .agenda-close-button,
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-actions .agenda-option-button {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  border-radius: 7px !important;
+  padding: 6px 8px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-actions .agenda-close-button:only-child {
+  grid-column: 1 / -1 !important;
+}
+
+.form-card .form-card-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  border: 1px solid rgba(255, 255, 255, 0.52) !important;
+  border-radius: 999px !important;
+  color: #174c55 !important;
+  background: #d8fbf5 !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  transform: rotate(90deg) !important;
+  transition: transform 0.16s ease !important;
+}
+
+.form-card .form-card-toggle[aria-expanded='true'] {
+  transform: rotate(-90deg) !important;
+}
+
+.form-card .form-card-body.is-collapsed {
+  display: none !important;
+}
+
+.form-card .form-card-body.is-open {
+  display: grid !important;
+}
+
+.dashboard-shell > .app-navbar .app-navbar-menu {
+  overflow-x: visible !important;
+  scrollbar-width: none !important;
+}
+
+.dashboard-shell > .app-navbar .app-navbar-menu::-webkit-scrollbar {
+  display: none !important;
+}
+
+@media (max-width: 1080px) {
+  .dashboard-shell > .app-navbar .app-navbar-menu {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    justify-content: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: visible !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-shell > .app-navbar .app-navbar-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .role-workspace-employee .employee-availability-manager .availability-form-card .admin-two-columns,
+  .role-workspace-employee .employee-availability-manager .availability-form-card .availability-date-columns,
+  .role-workspace-employee .employee-availability-manager .availability-form-card label:not(.admin-switch-row) {
+    grid-template-columns: 1fr !important;
+  }
 }

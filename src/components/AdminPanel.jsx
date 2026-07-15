@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import ActivityIcon from './ActivityIcon';
+import FormCard from './FormCard';
 import { formatDisplayDateTime } from '../utils/dateFormat';
 
 const emptyEmployee = {
@@ -1021,20 +1022,16 @@ export default function AdminPanel({ view, user, onDataChanged }) {
         )}
 
         <div className="admin-layout">
-          <form className="agenda-modal-card admin-form-card employee-form-card" onSubmit={saveEmployee}>
-            <div className="agenda-modal-header admin-collapsible-form-header">
-              <span>{editingEmployeeId ? 'Editar empleado' : 'Nuevo empleado'}</span>
-              <button
-                className="availability-form-toggle admin-collapsible-form-toggle"
-                type="button"
-                onClick={() => setIsEmployeeFormOpen((current) => !current)}
-                aria-expanded={isEmployeeFormOpen}
-                aria-label={isEmployeeFormOpen ? 'Ocultar formulario de empleado' : 'Mostrar formulario de empleado'}
-              >
-                &gt;
-              </button>
-            </div>
-            <div className={`agenda-modal-body admin-form-grid admin-collapsible-form-body ${isEmployeeFormOpen ? 'is-open' : 'is-collapsed'}`}>
+          <FormCard
+            title={editingEmployeeId ? 'Editar empleado' : 'Nuevo empleado'}
+            className="employee-form-card"
+            headerClassName="admin-collapsible-form-header"
+            bodyClassName="admin-collapsible-form-body"
+            isOpen={isEmployeeFormOpen}
+            onToggle={() => setIsEmployeeFormOpen((current) => !current)}
+            toggleLabel={isEmployeeFormOpen ? 'Ocultar formulario de empleado' : 'Mostrar formulario de empleado'}
+            onSubmit={saveEmployee}
+          >
               <label className="admin-photo-field">
                 Foto de perfil
                 <span className="admin-photo-control">
@@ -1147,8 +1144,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                   </button>
                 )}
               </div>
-            </div>
-          </form>
+          </FormCard>
 
           <div className="admin-list employee-record-list employee-button-list">
             {employees.map((employee) => (
@@ -1253,20 +1249,16 @@ export default function AdminPanel({ view, user, onDataChanged }) {
       </div>
 
       <div className="admin-layout">
-        <form className="agenda-modal-card admin-form-card service-form-card" onSubmit={saveService}>
-          <div className="agenda-modal-header admin-collapsible-form-header">
-            <span>{editingServiceId ? 'Editar servicio' : 'Nuevo servicio'}</span>
-            <button
-              className="availability-form-toggle admin-collapsible-form-toggle"
-              type="button"
-              onClick={() => setIsServiceFormOpen((current) => !current)}
-              aria-expanded={isServiceFormOpen}
-              aria-label={isServiceFormOpen ? 'Ocultar formulario de servicio' : 'Mostrar formulario de servicio'}
-            >
-              &gt;
-            </button>
-          </div>
-          <div className={`agenda-modal-body admin-form-grid admin-collapsible-form-body ${isServiceFormOpen ? 'is-open' : 'is-collapsed'}`}>
+        <FormCard
+          title={editingServiceId ? 'Editar servicio' : 'Nuevo servicio'}
+          className="service-form-card"
+          headerClassName="admin-collapsible-form-header"
+          bodyClassName="admin-collapsible-form-body"
+          isOpen={isServiceFormOpen}
+          onToggle={() => setIsServiceFormOpen((current) => !current)}
+          toggleLabel={isServiceFormOpen ? 'Ocultar formulario de servicio' : 'Mostrar formulario de servicio'}
+          onSubmit={saveService}
+        >
             <label>
               Nombre
               <input value={serviceForm.name} onChange={(event) => updateServiceField('name', event.target.value)} placeholder="Peluquería" />
@@ -1357,8 +1349,7 @@ export default function AdminPanel({ view, user, onDataChanged }) {
                 </button>
               )}
             </div>
-          </div>
-        </form>
+        </FormCard>
 
         <div className="admin-list service-record-list service-button-grid">
           {services.map((service) => {

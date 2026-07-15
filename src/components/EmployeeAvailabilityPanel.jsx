@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import FormCard from './FormCard';
 import { formatDisplayDate } from '../utils/dateFormat';
 
 const weekdayOptions = [
@@ -632,20 +633,16 @@ export default function EmployeeAvailabilityPanel({
       </div>
 
       <div className="admin-layout">
-        <form className="agenda-modal-card admin-form-card availability-form-card" onSubmit={saveAvailability}>
-          <div className="agenda-modal-header availability-form-header">
-            <span>{editingAvailabilityId ? 'Editar disponibilidad' : 'Nueva disponibilidad'}</span>
-            <button
-              className="availability-form-toggle"
-              type="button"
-              onClick={() => setIsAvailabilityFormOpen((current) => !current)}
-              aria-expanded={isAvailabilityFormOpen}
-              aria-label={isAvailabilityFormOpen ? 'Ocultar formulario de disponibilidad' : 'Mostrar formulario de disponibilidad'}
-            >
-              &gt;
-            </button>
-          </div>
-          <div className={`agenda-modal-body admin-form-grid availability-form-body ${isAvailabilityFormOpen ? 'is-open' : 'is-collapsed'}`}>
+        <FormCard
+          title={editingAvailabilityId ? 'Editar disponibilidad' : 'Nueva disponibilidad'}
+          className="availability-form-card"
+          headerClassName="availability-form-header"
+          bodyClassName="availability-form-body"
+          isOpen={isAvailabilityFormOpen}
+          onToggle={() => setIsAvailabilityFormOpen((current) => !current)}
+          toggleLabel={isAvailabilityFormOpen ? 'Ocultar formulario de disponibilidad' : 'Mostrar formulario de disponibilidad'}
+          onSubmit={saveAvailability}
+        >
             <label>
               Empleado
               {isAdminMode ? (
@@ -735,8 +732,7 @@ export default function EmployeeAvailabilityPanel({
                 </button>
               )}
             </div>
-          </div>
-        </form>
+        </FormCard>
 
         <div className="admin-list availability-list">
           {isLoading ? (
