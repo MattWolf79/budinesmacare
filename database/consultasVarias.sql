@@ -1,6 +1,19 @@
 -- Consultas utiles para soporte y diagnostico.
 -- Editar el slug 'empresa-prueba' por la empresa que quieras revisar.
 
+-- Listado de empresas cargadas en Supabase, con URLs de acceso.
+select
+  companies.id,
+  companies.name,
+  companies.slug,
+  companies.status,
+  'https://quieroturnoapp.com.ar/' || companies.slug || '/sacarturno' as client_url,
+  'https://quieroturnoapp.com.ar/' || companies.slug || '/admin' as admin_url,
+  companies.created_at,
+  companies.updated_at
+from public.companies companies
+order by companies.created_at desc;
+
 -- Cuentas internas por usuario, con datos de empresa y empleado asociado.
 select
   accounts.company_id,
