@@ -73,6 +73,7 @@ const defaultConfig = {
   company_name: 'QuieroTurnoApp',
   business_hours_text: '',
   welcome_background_data_url: '',
+  welcome_background_public_url: '',
   welcome_background_file_name: '',
   welcome_background_mime_type: '',
   banner_data_url: '',
@@ -142,6 +143,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       company_name: String(config?.company_name || 'QuieroTurnoApp').trim() || 'QuieroTurnoApp',
       business_hours_text: String(config?.business_hours_text || ''),
       welcome_background_data_url: String(config?.welcome_background_data_url || ''),
+      welcome_background_public_url: String(config?.welcome_background_public_url || ''),
       welcome_background_file_name: String(config?.welcome_background_file_name || ''),
       welcome_background_mime_type: String(config?.welcome_background_mime_type || ''),
       banner_data_url: firstBanner.dataUrl || config?.banner_data_url || '',
@@ -299,11 +301,32 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
     }
 
     try {
+      const fileExtension = file.type === 'image/png' ? 'png' : 'jpg';
+      const cleanCompanySlug = String(companySlug || 'empresa').toLowerCase().replace(/[^a-z0-9-]/g, '-') || 'empresa';
+      const storagePath = `${cleanCompanySlug}/welcome-background-${Date.now()}.${fileExtension}`;
+      const { error: uploadError } = await supabase.storage
+        .from('company-mail-assets')
+        .upload(storagePath, file, {
+          cacheControl: '31536000',
+          contentType: file.type,
+          upsert: true
+        });
+
+      if (uploadError) {
+        alert(`No se pudo preparar la imagen para los mails: ${uploadError.message}`);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('company-mail-assets')
+        .getPublicUrl(storagePath);
+
       const reader = new FileReader();
       reader.onload = () => {
         setForm((current) => ({
           ...current,
           welcome_background_data_url: String(reader.result || ''),
+          welcome_background_public_url: publicUrlData?.publicUrl || '',
           welcome_background_file_name: file.name,
           welcome_background_mime_type: file.type
         }));
@@ -318,6 +341,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
     setForm((current) => ({
       ...current,
       welcome_background_data_url: '',
+      welcome_background_public_url: '',
       welcome_background_file_name: '',
       welcome_background_mime_type: ''
     }));
@@ -390,6 +414,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       company_name_value: form.company_name.trim() || null,
       business_hours_text_value: form.business_hours_text.trim(),
       welcome_background_data_url_value: form.welcome_background_data_url || null,
+      welcome_background_public_url_value: form.welcome_background_public_url || null,
       welcome_background_file_name_value: form.welcome_background_file_name || null,
       welcome_background_mime_type_value: form.welcome_background_mime_type || null,
       banner_data_url_value: form.banner_data_url || null,
@@ -513,7 +538,8 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       </div>
 
       <div className="settings-layout">
-        <article className="admin-form-card settings-card settings-company-card">
+        <div className="settings-column settings-main-column">
+          <article className="admin-form-card settings-card settings-company-card">
           <div className="agenda-modal-header admin-collapsible-form-header">
             <span>Nombre de la empresa</span>
             <button
@@ -555,9 +581,9 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
               <p className="settings-empty-text">Todavía no hay fondo cargado.</p>
             )}
           </div>
-        </article>
+          </article>
 
-        <article className="admin-form-card settings-card settings-banner-card">
+          <article className="admin-form-card settings-card settings-banner-card">
           <div className="agenda-modal-header admin-collapsible-form-header">
             <span>Banner de presentación</span>
             <button
@@ -593,9 +619,9 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
               <p className="settings-empty-text">Todavía no hay banner cargado.</p>
             )}
           </div>
-        </article>
+          </article>
 
-        <article className="admin-form-card settings-card settings-booking-preferences-card">
+          <article className="admin-form-card settings-card settings-booking-preferences-card">
           <div className="agenda-modal-header admin-collapsible-form-header">
             <span>Preferencias de reserva</span>
             <button
@@ -618,11 +644,13 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
               <span>Permitir que el cliente elija el empleado al reservar</span>
             </label>
           </div>
-        </article>
+          </article>
+        </div>
 
-        {activityChecksSection}
+        <div className="settings-column settings-side-column">
+          {activityChecksSection}
 
-        <article className="admin-form-card settings-card settings-business-hours-card">
+          <article className="admin-form-card settings-card settings-business-hours-card">
           <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
             <span>Horario de atención</span>
             <button
@@ -647,7 +675,8 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
             </label>
             <p className="settings-empty-text">Se verá completo debajo del mensaje de bienvenida.</p>
           </div>
-        </article>
+          </article>
+        </div>
 
         <article className="admin-form-card settings-card settings-promotions-card">
           <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">

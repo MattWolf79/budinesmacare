@@ -70,6 +70,23 @@ const isAlphanumeric = (value) => /^[a-z0-9]+$/i.test(value);
 const isUsername = (value) => /^[a-z0-9._-]+$/i.test(value);
 const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
 
+const normalizeUsernamePart = (value) =>
+  String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+const generateInternalUsername = (firstName, lastName) => {
+  const normalizedFirstName = normalizeUsernamePart(firstName);
+  const normalizedLastName = normalizeUsernamePart(lastName);
+
+  if (!normalizedFirstName || !normalizedLastName) return '';
+
+  return `${normalizedFirstName.slice(0, 1)}${normalizedLastName}`;
+};
+
 const calculateAge = (birthDateValue) => {
   if (!birthDateValue) return '';
 
@@ -221,20 +238,22 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
   const submitRegistration = async (event) => {
     event.preventDefault();
 
-    const username = registrationForm.username.trim();
     const firstName = registrationForm.firstName.trim();
     const lastName = registrationForm.lastName.trim();
+    const username = internalAccessMode === 'register'
+      ? generateInternalUsername(firstName, lastName)
+      : registrationForm.username.trim();
     const password = registrationForm.password.trim();
     const confirmPassword = registrationForm.confirmPassword.trim();
-
-    if (username.length < 3 || !isUsername(username)) {
-      setRegistrationError('El usuario debe tener al menos 3 caracteres y solo puede usar letras, números, punto, guion o guion bajo.');
-      return;
-    }
 
     if (internalAccessMode === 'register') {
       if (firstName.length < 2 || lastName.length < 2) {
         setRegistrationError('Ingresá nombre y apellido.');
+        return;
+      }
+
+      if (username.length < 3 || !isUsername(username)) {
+        setRegistrationError('No se pudo generar un usuario válido con ese nombre y apellido.');
         return;
       }
 
@@ -252,6 +271,9 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
         setRegistrationError('Ingresá un mail válido para recibir notificaciones.');
         return;
       }
+    } else if (username.length < 3 || !isUsername(username)) {
+      setRegistrationError('El usuario debe tener al menos 3 caracteres y solo puede usar letras, números, punto, guion o guion bajo.');
+      return;
     }
 
     if (password.length < 6) {
@@ -272,7 +294,7 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
     setIsSubmittingInternalAccess(true);
 
     if (internalAccessMode === 'register') {
-      const { error } = await supabase.rpc('request_internal_registration', {
+      const { data, error } = await supabase.rpc('request_internal_registration', {
         account_role: registrationProfile,
         username_value: username,
         first_name_value: firstName,
@@ -298,7 +320,8 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
 
       setRegistrationForm(emptyRegistrationForm);
       setInternalAccessMode('login');
-      setRegistrationSuccess('Solicitud enviada. Cuando el administrador la apruebe, vas a poder ingresar con estos datos.');
+      const request = Array.isArray(data) ? data[0] : data;
+      setRegistrationSuccess(`Solicitud enviada. Tu usuario será ${request?.username || username}. Cuando el administrador la apruebe, vas a poder ingresar con estos datos.`);
       return;
     }
 
@@ -423,6 +446,7 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
   const companyDisplayName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
   const visibleAccessOptions = accessOptions.filter((option) => allowedProfiles.includes(option.id));
   const isClientOnlyAccess = visibleAccessOptions.length === 1 && visibleAccessOptions[0]?.id === 'client';
+  const generatedRegistrationUsername = generateInternalUsername(registrationForm.firstName, registrationForm.lastName);
   const loginCopy = isClientOnlyAccess
     ? `Acceso exclusivo para ${companyDisplayName}. Ingresá con Google para reservar y consultar tus turnos.`
     : `Acceso interno para ${companyDisplayName}. Empleados y administrador usan nombre y contraseña internos.`;
@@ -556,22 +580,24 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
 
               <p className="internal-register-copy">
                 {internalAccessMode === 'register'
-                  ? 'Creá un acceso interno con usuario único, datos personales y contraseña. Clientes continúan ingresando únicamente con Google.'
+                  ? 'Creá un acceso interno con datos personales y contraseña. El usuario se genera con la inicial del nombre y el apellido.'
                   : 'Ingresá con tu usuario y contraseña internos si ya tenés una cuenta aprobada.'}
               </p>
 
-              <label className="internal-register-field">
-                Usuario
-                <input
-                  type="text"
-                  value={registrationForm.username}
-                  minLength="3"
-                  maxLength="40"
-                  autoComplete="username"
-                  placeholder="Ej: martina.perez"
-                  onChange={(event) => updateRegistrationField('username', event.target.value)}
-                />
-              </label>
+              {internalAccessMode === 'login' && (
+                <label className="internal-register-field">
+                  Usuario
+                  <input
+                    type="text"
+                    value={registrationForm.username}
+                    minLength="3"
+                    maxLength="40"
+                    autoComplete="username"
+                    placeholder="Ej: mperez"
+                    onChange={(event) => updateRegistrationField('username', event.target.value)}
+                  />
+                </label>
+              )}
 
               {internalAccessMode === 'register' && (
                 <>
@@ -600,6 +626,11 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
                       />
                     </label>
                   </div>
+
+                  <label className="internal-register-field">
+                    Usuario
+                    <input value={generatedRegistrationUsername} disabled placeholder="Ej: mperez" />
+                  </label>
 
                   <div className="internal-register-two-columns internal-register-age-row">
                     <label className="internal-register-field">

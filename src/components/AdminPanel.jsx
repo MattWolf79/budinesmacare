@@ -289,10 +289,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   );
 
   const employeeUsernamePreview = useMemo(
-    () => editingEmployeeId
-      ? employeeForm.name
-      : generateEmployeeUsername(employeeForm.first_name, employeeForm.last_name),
-    [editingEmployeeId, employeeForm.first_name, employeeForm.last_name, employeeForm.name]
+    () => generateEmployeeUsername(employeeForm.first_name, employeeForm.last_name),
+    [employeeForm.first_name, employeeForm.last_name]
   );
 
   const internalAdminAccountId = user?.isInternal && user?.role === 'admin' ? user.id : null;
@@ -563,7 +561,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     const fullName = [employeeForm.first_name.trim(), employeeForm.last_name.trim()].filter(Boolean).join(' ');
 
     const payload = {
-      name: editingEmployeeId ? employeeForm.name.trim() : employeeUsernamePreview,
+      name: employeeUsernamePreview,
       first_name: employeeForm.first_name.trim() || null,
       last_name: employeeForm.last_name.trim() || null,
       birth_date: employeeForm.birth_date || null,
@@ -577,12 +575,12 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       is_admin: employeeForm.is_admin
     };
 
-    if (!editingEmployeeId && (!payload.first_name || !payload.last_name)) {
+    if (!payload.first_name || !payload.last_name) {
       alert('Ingresá nombre y apellido para generar el usuario.');
       return;
     }
 
-    if (!payload.name || (!editingEmployeeId && !fullName)) {
+    if (!payload.name || !fullName) {
       alert('No se pudo generar el usuario del empleado.');
       return;
     }

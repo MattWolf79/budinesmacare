@@ -2728,6 +2728,20 @@ code {
   min-width: 0;
 }
 
+.settings-column {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.settings-main-column {
+  grid-column: 1;
+}
+
+.settings-side-column {
+  grid-column: 2;
+}
+
 .settings-company-card,
 .settings-booking-preferences-card,
 .settings-banner-card {
@@ -2739,15 +2753,20 @@ code {
 }
 
 .settings-booking-preferences-card {
-  grid-row: 2;
+  grid-row: 3;
 }
 
 .settings-banner-card {
-  grid-row: 3;
+  grid-row: 2;
 }
 
 .settings-promotions-card {
   grid-column: 1 / -1;
+}
+
+.settings-column > .settings-card {
+  grid-column: 1;
+  grid-row: auto;
 }
 
 .settings-card-body {
@@ -4276,6 +4295,11 @@ code {
 
   .settings-layout {
     grid-template-columns: 1fr;
+  }
+
+  .settings-main-column,
+  .settings-side-column {
+    grid-column: auto;
   }
 
   .settings-company-card,
