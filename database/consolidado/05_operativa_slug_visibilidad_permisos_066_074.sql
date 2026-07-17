@@ -1,7 +1,7 @@
 ﻿-- Archivo consolidado generado desde database/*.sql
 -- Uso: ejecutar los 5 archivos consolidados en orden numerico.
 -- No reemplaza las migraciones originales; es una copia de portabilidad/bootstrap.
--- Rango incluido: 066-073
+-- Rango incluido: 066-074
 
 
 -- ============================================================================

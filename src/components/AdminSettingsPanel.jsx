@@ -82,7 +82,8 @@ const defaultConfig = {
   banner_images: [],
   promotions: [emptyPromotion(), emptyPromotion()],
   discounts: [],
-  client_can_choose_employee: false
+  client_can_choose_employee: false,
+  configuracion_operativa: null
 };
 
 const normalizeBannerImages = (config) => {
@@ -121,9 +122,10 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const [discountsOpen, setDiscountsOpen] = useState(false);
   const [activityChecksOpen, setActivityChecksOpen] = useState(false);
   const [selectedActivityCheckIndex, setSelectedActivityCheckIndex] = useState(null);
-  const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
-  const descuentosHabilitados = preciosHabilitados && companyContext?.configuracion_operativa?.descuentos_habilitados !== false;
-  const promocionesHabilitadas = preciosHabilitados && companyContext?.configuracion_operativa?.promociones_habilitadas !== false;
+  const configuracionOperativa = form.configuracion_operativa || {};
+  const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
+  const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
+  const promocionesHabilitadas = preciosHabilitados && configuracionOperativa.promociones_habilitadas !== false;
 
   const enabledPromotions = useMemo(() => (
     form.promotions.filter((promotion) => promotion.enabled)
@@ -155,7 +157,8 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       banner_images: bannerImages,
       promotions: normalizePromotions(config?.promotions),
       discounts: normalizeDiscounts(config?.discounts),
-      client_can_choose_employee: Boolean(config?.client_can_choose_employee)
+      client_can_choose_employee: Boolean(config?.client_can_choose_employee),
+      configuracion_operativa: config?.configuracion_operativa || null
     };
 
     setSavedConfig(nextConfig);
