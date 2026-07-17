@@ -19,6 +19,8 @@ const initialCompanyForm = {
   empleadosPuedenReservar: true,
   empleadosVenAgendaCompleta: true,
   visibilidadTurnosEmpleado: 'completa',
+  empleadosCancelanTurnos: 'propios',
+  empleadosVenDetalleTurnos: 'propios',
   pdfDetalleTurnoHabilitado: false
 };
 
@@ -32,6 +34,8 @@ const initialEditForm = {
   empleadosPuedenReservar: true,
   empleadosVenAgendaCompleta: true,
   visibilidadTurnosEmpleado: 'completa',
+  empleadosCancelanTurnos: 'propios',
+  empleadosVenDetalleTurnos: 'propios',
   pdfDetalleTurnoHabilitado: false
 };
 
@@ -61,6 +65,8 @@ const getConfigPayload = (form) => ({
   empleados_pueden_reservar_valor: Boolean(form.empleadosPuedenReservar),
   empleados_ven_agenda_completa_valor: form.visibilidadTurnosEmpleado !== 'solo_propios',
   visibilidad_turnos_empleado_valor: form.visibilidadTurnosEmpleado || 'completa',
+  empleados_cancelan_turnos_valor: form.empleadosCancelanTurnos || 'propios',
+  empleados_ven_detalle_turnos_valor: form.empleadosVenDetalleTurnos || 'propios',
   pdf_detalle_turno_habilitado_valor: Boolean(form.pdfDetalleTurnoHabilitado)
 });
 
@@ -77,6 +83,8 @@ const applyConfigData = (data) => {
     empleadosPuedenReservar: config.empleados_pueden_reservar !== false,
     empleadosVenAgendaCompleta: (config.visibilidad_turnos_empleado || 'completa') !== 'solo_propios',
     visibilidadTurnosEmpleado: config.visibilidad_turnos_empleado || 'completa',
+    empleadosCancelanTurnos: config.empleados_cancelan_turnos || 'propios',
+    empleadosVenDetalleTurnos: config.empleados_ven_detalle_turnos || 'propios',
     pdfDetalleTurnoHabilitado: config.pdf_detalle_turno_habilitado === true
   };
 };
@@ -365,6 +373,20 @@ export default function PlatformAdmin() {
                 </select>
               </Field>
               <CheckField label="Empleados pueden crear turnos" checked={companyForm.empleadosPuedenReservar} onChange={(value) => updateCompanyField('empleadosPuedenReservar', value)} />
+              <Field label="Empleados cancelan turnos">
+                <select value={companyForm.empleadosCancelanTurnos} onChange={(event) => updateCompanyField('empleadosCancelanTurnos', event.target.value)}>
+                  <option value="propios">Propios</option>
+                  <option value="todos">Todos</option>
+                  <option value="ninguno">Ninguno</option>
+                </select>
+              </Field>
+              <Field label="Empleados ven detalle">
+                <select value={companyForm.empleadosVenDetalleTurnos} onChange={(event) => updateCompanyField('empleadosVenDetalleTurnos', event.target.value)}>
+                  <option value="propios">Propios</option>
+                  <option value="todos">Todos</option>
+                  <option value="ninguno">Ninguno</option>
+                </select>
+              </Field>
               <CheckField label="Habilita PDF de detalle de turno" checked={companyForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateCompanyField('pdfDetalleTurnoHabilitado', value)} />
             </div>
           </div>
@@ -404,6 +426,20 @@ export default function PlatformAdmin() {
               </select>
             </Field>
             <CheckField label="Empleados pueden crear turnos" checked={editForm.empleadosPuedenReservar} onChange={(value) => updateEditField('empleadosPuedenReservar', value)} />
+            <Field label="Empleados cancelan turnos">
+              <select value={editForm.empleadosCancelanTurnos} onChange={(event) => updateEditField('empleadosCancelanTurnos', event.target.value)}>
+                <option value="propios">Propios</option>
+                <option value="todos">Todos</option>
+                <option value="ninguno">Ninguno</option>
+              </select>
+            </Field>
+            <Field label="Empleados ven detalle">
+              <select value={editForm.empleadosVenDetalleTurnos} onChange={(event) => updateEditField('empleadosVenDetalleTurnos', event.target.value)}>
+                <option value="propios">Propios</option>
+                <option value="todos">Todos</option>
+                <option value="ninguno">Ninguno</option>
+              </select>
+            </Field>
             <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} />
           </div>
           <div className="platform-action-row">

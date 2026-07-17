@@ -778,6 +778,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const empleadosPuedenReservar = configuracionOperativa.empleados_pueden_reservar !== false;
   const empleadosVenAgendaCompleta = configuracionOperativa.empleados_ven_agenda_completa !== false;
   const visibilidadTurnosEmpleado = configuracionOperativa.visibilidad_turnos_empleado || 'completa';
+  const empleadosCancelanTurnos = configuracionOperativa.empleados_cancelan_turnos || 'propios';
+  const empleadosVenDetalleTurnos = configuracionOperativa.empleados_ven_detalle_turnos || 'propios';
   const pdfDetalleTurnoHabilitado = configuracionOperativa.pdf_detalle_turno_habilitado === true;
   const applyCompanyFilter = (query) => companyContext?.id ? query.eq('company_id', companyContext.id) : query;
   const canGoBack = !isClientView || offset > 0;
@@ -1247,11 +1249,23 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const isOwnBooking = (booking) => String(booking.user_id) === String(user?.id);
   const isAssignedBooking = (booking) => String(booking.employee_id) === String(employeeId);
+  const canEmployeeCancelBooking = (booking) => {
+    if (!isEmployeeView) return true;
+    if (empleadosCancelanTurnos === 'todos') return true;
+    if (empleadosCancelanTurnos === 'propios') return isAssignedBooking(booking);
+    return false;
+  };
+  const canEmployeeViewBookingDetails = (booking) => {
+    if (!isEmployeeView) return true;
+    if (empleadosVenDetalleTurnos === 'todos') return true;
+    if (empleadosVenDetalleTurnos === 'propios') return isAssignedBooking(booking);
+    return false;
+  };
 
   const canCancelBooking = (booking) =>
     !isClosedBooking(booking) &&
     !isPastDay(parseBookingDate(booking.start_at)) &&
-    (isAdminView || isOwnBooking(booking) || (isEmployeeView && isAssignedBooking(booking)));
+    (isAdminView || (!isEmployeeView && isOwnBooking(booking)) || (isEmployeeView && canEmployeeCancelBooking(booking)));
 
   const cancelBooking = async (booking) => {
     if (isPastDay(parseBookingDate(booking.start_at))) {
@@ -1260,9 +1274,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    if (!isAdminView && !isOwnBooking(booking) && !(isEmployeeView && isAssignedBooking(booking))) {
+    if (!isAdminView && !(!isEmployeeView && isOwnBooking(booking)) && !(isEmployeeView && canEmployeeCancelBooking(booking))) {
       setBookingToCancel(null);
-      alert(isEmployeeView ? 'Solo podés cancelar turnos asignados a tu empleado.' : 'Solo podés cancelar turnos propios.');
+      alert(isEmployeeView ? 'No tenés habilitada la cancelación de este turno.' : 'Solo podés cancelar turnos propios.');
       return;
     }
 
@@ -1285,6 +1299,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const updateBookingCustomerDetails = async ({ firstName, lastName, email }) => {
     if (!bookingDetails?.booking?.id) return;
+
+    if (isEmployeeView && !empleadosPuedenReservar) {
+      throw new Error('Los empleados no tienen habilitada la modificación de turnos.');
+    }
 
     if (user?.isLocalInternal) {
       const cleanCustomerName = [firstName, lastName].map((value) => String(value || '').trim()).filter(Boolean).join(' ');
@@ -1872,8 +1890,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       const isEmployeeForeignBooking = isEmployeeView && !isOwn && !isAssigned;
                       const hideEmployee = isEmployeeView && ['solo_ocupado', 'cliente_sin_empleado', 'cliente_servicio'].includes(visibilidadTurnosEmpleado);
                       const hideCustomer = isEmployeeView && visibilidadTurnosEmpleado === 'solo_ocupado' && isEmployeeForeignBooking;
-                      const canOpenDetails = isAdminView || isOwn || (isEmployeeView && !['solo_ocupado', 'cliente_servicio'].includes(visibilidadTurnosEmpleado));
-                      const canViewCustomerDetails = isAdminView || isOwn || (isEmployeeView && !hideCustomer);
+                      const canOpenDetails = isAdminView || (!isEmployeeView && isOwn) || (isEmployeeView && canEmployeeViewBookingDetails(b));
+                      const canViewCustomerDetails = isAdminView || (!isEmployeeView && isOwn) || (isEmployeeView && !hideCustomer && canEmployeeViewBookingDetails(b));
                       const visibleEmployeeLabel = hideEmployee ? '' : employeeLabel;
                       const activityLabel = getBookingActivityLabel(b, service);
                       const displayLabel = isEmployeeView && isEmployeeForeignBooking && visibilidadTurnosEmpleado === 'solo_ocupado'
@@ -2102,7 +2120,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           booking={bookingDetails.booking}
           service={bookingDetails.service}
           employee={bookingDetails.employee}
-          canEditCustomer={!isClientView && !isClosedBooking(bookingDetails.booking) && !isPastBookingStart(bookingDetails.booking)}
+          canEditCustomer={!isClientView && (!isEmployeeView || (empleadosPuedenReservar && isAssignedBooking(bookingDetails.booking))) && !isClosedBooking(bookingDetails.booking) && !isPastBookingStart(bookingDetails.booking)}
           canDownloadPdf={!isClientView && pdfDetalleTurnoHabilitado}
           onClose={() => setBookingDetails(null)}
           onSave={updateBookingCustomerDetails}
