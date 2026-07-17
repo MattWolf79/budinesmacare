@@ -3,6 +3,13 @@
 
 begin;
 
+alter table public.app_configuration
+  drop constraint if exists app_configuration_visibilidad_turnos_empleado_chk;
+
+alter table public.app_configuration
+  add constraint app_configuration_visibilidad_turnos_empleado_chk
+  check (visibilidad_turnos_empleado in ('completa', 'cliente_servicio', 'solo_ocupado', 'cliente_sin_empleado', 'solo_propios'));
+
 update public.app_configuration
 set empleados_ven_agenda_completa = visibilidad_turnos_empleado <> 'solo_propios'
 where empleados_ven_agenda_completa is distinct from (visibilidad_turnos_empleado <> 'solo_propios');
@@ -83,6 +90,18 @@ begin
           bookings.start_at,
           case
             when bookings.employee_id = account_record.employee_id or visibilidad = 'completa' then to_jsonb(bookings)
+            when visibilidad = 'cliente_servicio' then jsonb_build_object(
+              'id', bookings.id,
+              'company_id', bookings.company_id,
+              'start_at', bookings.start_at,
+              'end_at', bookings.end_at,
+              'status', bookings.status,
+              'employee_id', null,
+              'service', bookings.service,
+              'booking_description', bookings.booking_description,
+              'customer_name', bookings.customer_name,
+              'user_email', null
+            )
             when visibilidad = 'cliente_sin_empleado' then to_jsonb(bookings) - 'employee_id'
             when visibilidad = 'solo_ocupado' then jsonb_build_object(
               'id', bookings.id,

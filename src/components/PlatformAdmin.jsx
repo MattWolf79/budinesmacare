@@ -358,6 +358,7 @@ export default function PlatformAdmin() {
               <Field label="Visibilidad empleado">
                 <select value={companyForm.visibilidadTurnosEmpleado} onChange={(event) => updateCompanyField('visibilidadTurnosEmpleado', event.target.value)}>
                   <option value="completa">Completa</option>
+                  <option value="cliente_servicio">Cliente/Servicio</option>
                   <option value="solo_ocupado">Solo ocupado</option>
                   <option value="cliente_sin_empleado">Cliente sin empleado</option>
                   <option value="solo_propios">Solo sus turnos</option>
@@ -396,6 +397,7 @@ export default function PlatformAdmin() {
             <Field label="Visibilidad empleado">
               <select value={editForm.visibilidadTurnosEmpleado} onChange={(event) => updateEditField('visibilidadTurnosEmpleado', event.target.value)}>
                 <option value="completa">Completa</option>
+                <option value="cliente_servicio">Cliente/Servicio</option>
                 <option value="solo_ocupado">Solo ocupado</option>
                 <option value="cliente_sin_empleado">Cliente sin empleado</option>
                 <option value="solo_propios">Solo sus turnos</option>

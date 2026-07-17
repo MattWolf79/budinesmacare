@@ -33,7 +33,7 @@ begin
   platform_account := public.validate_platform_admin_session(cuenta_plataforma_id_valor, token_sesion_valor);
 
   if clean_intervalo not in (15, 30, 45, 60) then raise exception 'El intervalo de grilla debe ser 15, 30, 45 o 60 minutos.'; end if;
-  if clean_visibilidad not in ('completa', 'solo_ocupado', 'cliente_sin_empleado', 'solo_propios') then raise exception 'La visibilidad de turnos del empleado no es válida.'; end if;
+  if clean_visibilidad not in ('completa', 'cliente_servicio', 'solo_ocupado', 'cliente_sin_empleado', 'solo_propios') then raise exception 'La visibilidad de turnos del empleado no es válida.'; end if;
   if clean_slug_url !~ '^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$' then raise exception 'El slug URL debe tener entre 3 y 63 caracteres, con letras minúsculas, números o guion.'; end if;
   if clean_slug_url = 'plataforma' then raise exception 'Ese slug URL está reservado para administración plataforma.'; end if;
 

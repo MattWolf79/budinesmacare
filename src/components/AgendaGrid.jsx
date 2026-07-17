@@ -1870,16 +1870,19 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       const isAssigned = isAssignedBooking(b);
                       const isClosed = isClosedBooking(b);
                       const isEmployeeForeignBooking = isEmployeeView && !isOwn && !isAssigned;
-                      const hideEmployee = isEmployeeView && ['solo_ocupado', 'cliente_sin_empleado'].includes(visibilidadTurnosEmpleado);
+                      const hideEmployee = isEmployeeView && ['solo_ocupado', 'cliente_sin_empleado', 'cliente_servicio'].includes(visibilidadTurnosEmpleado);
                       const hideCustomer = isEmployeeView && visibilidadTurnosEmpleado === 'solo_ocupado' && isEmployeeForeignBooking;
-                      const canOpenDetails = isAdminView || isOwn || (isEmployeeView && visibilidadTurnosEmpleado !== 'solo_ocupado');
+                      const canOpenDetails = isAdminView || isOwn || (isEmployeeView && !['solo_ocupado', 'cliente_servicio'].includes(visibilidadTurnosEmpleado));
                       const canViewCustomerDetails = isAdminView || isOwn || (isEmployeeView && !hideCustomer);
                       const visibleEmployeeLabel = hideEmployee ? '' : employeeLabel;
-                      const displayLabel = isEmployeeView && visibilidadTurnosEmpleado === 'solo_ocupado' && isEmployeeForeignBooking
+                      const activityLabel = getBookingActivityLabel(b, service);
+                      const displayLabel = isEmployeeView && isEmployeeForeignBooking && visibilidadTurnosEmpleado === 'solo_ocupado'
                         ? 'Ocupado'
-                        : visibleEmployeeLabel
-                          ? `${getBookingActivityLabel(b, service)} / ${visibleEmployeeLabel}`
-                          : getBookingActivityLabel(b, service);
+                        : isEmployeeView && isEmployeeForeignBooking && visibilidadTurnosEmpleado === 'cliente_servicio'
+                          ? `${getClientName(b)} / ${activityLabel}`
+                          : visibleEmployeeLabel
+                            ? `${activityLabel} / ${visibleEmployeeLabel}`
+                            : activityLabel;
                       const priceDetails = preciosHabilitados ? bookingPriceDetailsById[b.id] : null;
 
                       return (

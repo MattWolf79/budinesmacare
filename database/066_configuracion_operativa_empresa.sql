@@ -24,7 +24,7 @@ alter table public.app_configuration
 
 alter table public.app_configuration
   add constraint app_configuration_visibilidad_turnos_empleado_chk
-  check (visibilidad_turnos_empleado in ('completa', 'solo_ocupado', 'cliente_sin_empleado', 'solo_propios'));
+  check (visibilidad_turnos_empleado in ('completa', 'cliente_servicio', 'solo_ocupado', 'cliente_sin_empleado', 'solo_propios'));
 
 create or replace function public.obtener_configuracion_operativa(configuracion public.app_configuration)
 returns jsonb
@@ -234,7 +234,7 @@ begin
   if length(clean_admin_username) < 3 or clean_admin_username !~ '^[A-Za-z0-9._-]+$' then raise exception 'El usuario administrador debe tener al menos 3 caracteres y solo puede usar letras, números, punto, guion o guion bajo.'; end if;
   if clean_admin_email is not null and not public.is_valid_email(clean_admin_email) then raise exception 'Ingresá un mail válido para el administrador.'; end if;
   if clean_intervalo not in (15, 30, 45, 60) then raise exception 'El intervalo de grilla debe ser 15, 30, 45 o 60 minutos.'; end if;
-  if clean_visibilidad not in ('completa', 'solo_ocupado', 'cliente_sin_empleado', 'solo_propios') then raise exception 'La visibilidad de turnos del empleado no es válida.'; end if;
+  if clean_visibilidad not in ('completa', 'cliente_servicio', 'solo_ocupado', 'cliente_sin_empleado', 'solo_propios') then raise exception 'La visibilidad de turnos del empleado no es válida.'; end if;
 
   next_display_name := trim(concat_ws(' ', clean_admin_first_name, clean_admin_last_name));
   if next_display_name = '' then next_display_name := clean_admin_username; end if;
@@ -278,7 +278,7 @@ begin
     coalesce(turnos_superpuestos_habilitados_valor, true),
     clean_intervalo,
     coalesce(empleados_pueden_reservar_valor, true),
-    coalesce(empleados_ven_agenda_completa_valor, true),
+    clean_visibilidad <> 'solo_propios',
     clean_visibilidad,
     coalesce(pdf_detalle_turno_habilitado_valor, false)
   )
@@ -426,7 +426,7 @@ begin
   platform_account := public.validate_platform_admin_session(cuenta_plataforma_id_valor, token_sesion_valor);
 
   if clean_intervalo not in (15, 30, 45, 60) then raise exception 'El intervalo de grilla debe ser 15, 30, 45 o 60 minutos.'; end if;
-  if clean_visibilidad not in ('completa', 'solo_ocupado', 'cliente_sin_empleado', 'solo_propios') then raise exception 'La visibilidad de turnos del empleado no es válida.'; end if;
+  if clean_visibilidad not in ('completa', 'cliente_servicio', 'solo_ocupado', 'cliente_sin_empleado', 'solo_propios') then raise exception 'La visibilidad de turnos del empleado no es válida.'; end if;
 
   select * into target_company
   from public.companies companies
