@@ -384,6 +384,16 @@ const isPastDay = (day) => {
   return target < today;
 };
 
+const isFutureDay = (day) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const target = new Date(day);
+  target.setHours(0, 0, 0, 0);
+
+  return target > today;
+};
+
 const isPastBookingStart = (booking) =>
   parseBookingDate(booking?.start_at).getTime() <= Date.now();
 
@@ -391,10 +401,11 @@ const isPastBookingStart = (booking) =>
    COMPONENT
 ========================= */
 
-function CloseAttentionModal({ bookings, services, employees, promotions, discounts, accessProfile, employeeId, user, onClose, onClosed }) {
+function CloseAttentionModal({ bookings, services, employees, promotions, discounts, accessProfile, employeeId, user, initialServiceDate, onClose, onClosed }) {
   const todayInput = formatDateOnlyForDb(new Date());
-  const [serviceDate, setServiceDate] = useState(todayInput);
-  const [serviceDateInput, setServiceDateInput] = useState(formatDateInputForDisplay(todayInput));
+  const initialDate = initialServiceDate && initialServiceDate <= todayInput ? initialServiceDate : todayInput;
+  const [serviceDate, setServiceDate] = useState(initialDate);
+  const [serviceDateInput, setServiceDateInput] = useState(formatDateInputForDisplay(initialDate));
   const [selectedClientKey, setSelectedClientKey] = useState('');
   const [selectedBookingIds, setSelectedBookingIds] = useState(null);
   const [lineDiscounts, setLineDiscounts] = useState({});
@@ -681,6 +692,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [assignmentEmployees, setAssignmentEmployees] = useState([]);
   const [isLoadingAssignmentEmployees, setIsLoadingAssignmentEmployees] = useState(false);
   const [closeAttentionOpen, setCloseAttentionOpen] = useState(false);
+  const [closeAttentionInitialDate, setCloseAttentionInitialDate] = useState(formatDateOnlyForDb(new Date()));
   const [closureDiscounts, setClosureDiscounts] = useState([]);
   const [closurePromotions, setClosurePromotions] = useState(promotions);
 
@@ -840,8 +852,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const { data } = await supabase.rpc('get_app_configuration', {
       company_slug_value: companySlug
     });
+    const initialVisibleDate = days.find((day) => !isFutureDay(day));
     setClosureDiscounts(Array.isArray(data?.discounts) ? data.discounts : []);
     setClosurePromotions(Array.isArray(data?.promotions) ? data.promotions : promotions);
+    setCloseAttentionInitialDate(formatDateOnlyForDb(initialVisibleDate || new Date()));
     setCloseAttentionOpen(true);
   };
 
@@ -1689,8 +1703,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                         : 'transparent',
                     outline: isSelected ? '2px solid rgba(15, 62, 168, 0.38)' : 'none',
                     outlineOffset: -2,
-                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    opacity: isDisabled ? 0.55 : 1
+                    cursor: isDisabled ? 'not-allowed' : 'pointer'
                   }}
                 >
                   <div style={{ flex: '1 1 auto' }}>
@@ -1932,6 +1945,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           accessProfile={accessProfile}
           employeeId={employeeId}
           user={user}
+          initialServiceDate={closeAttentionInitialDate}
           onClose={() => setCloseAttentionOpen(false)}
           onClosed={async () => {
             setCloseAttentionOpen(false);
