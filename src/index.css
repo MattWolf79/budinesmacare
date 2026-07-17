@@ -12311,6 +12311,17 @@ body {
   align-self: start !important;
 }
 
+.platform-admin-panel button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.62 !important;
+}
+
+.platform-admin-panel .platform-button-secondary {
+  border-color: #cfe4e8 !important;
+  color: #155e75 !important;
+  background: #f8fdfe !important;
+}
+
 .platform-admin-header button {
   color: #cffafe !important;
   background: rgba(255, 255, 255, 0.08) !important;
@@ -12385,11 +12396,34 @@ body {
 
 .platform-config-block {
   display: grid !important;
-  gap: 12px !important;
+  gap: 14px !important;
   border: 1px solid rgba(36, 174, 187, 0.18) !important;
   border-radius: 8px !important;
   padding: 12px !important;
   background: #f8fdfe !important;
+}
+
+.platform-config-block-compact {
+  padding: 12px !important;
+}
+
+.platform-config-section {
+  display: grid !important;
+  gap: 9px !important;
+}
+
+.platform-config-section > p {
+  margin: 0 !important;
+  color: #155e75 !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase !important;
+}
+
+.platform-config-section + .platform-config-section {
+  border-top: 1px solid rgba(36, 174, 187, 0.14) !important;
+  padding-top: 12px !important;
 }
 
 .platform-check-field {
@@ -12426,11 +12460,16 @@ body {
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: flex-start !important;
-  gap: 8px !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+.platform-action-row-end {
+  margin-top: 2px !important;
 }
 
 .platform-action-row button {
-  flex: 0 0 auto !important;
+  flex: 0 1 180px !important;
   min-height: 42px !important;
 }
 
@@ -12470,5 +12509,9 @@ body {
   .platform-admin-grid,
   .platform-form-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .platform-action-row button {
+    flex: 1 1 100% !important;
   }
 }
