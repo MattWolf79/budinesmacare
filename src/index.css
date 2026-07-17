@@ -835,6 +835,64 @@ code {
   background: #16a34a;
 }
 
+.booking-detail-modal {
+  width: min(92vw, 440px);
+}
+
+.booking-detail-body {
+  display: grid;
+  gap: 14px;
+}
+
+.booking-detail-summary {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #d8e0eb;
+  border-radius: 7px;
+  padding: 12px 14px;
+  color: #475569;
+  background: #f8fafc;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.booking-detail-service {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.booking-detail-form {
+  display: grid;
+  gap: 2px;
+}
+
+.agenda-modal-actions.booking-detail-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-width: none;
+  margin-top: 2px;
+}
+
+.agenda-modal-actions.booking-detail-actions .agenda-option-button,
+.agenda-modal-actions.booking-detail-actions .agenda-close-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  margin: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .agenda-customer-cancel {
   display: block;
   width: 100%;
@@ -4673,6 +4731,25 @@ code {
     grid-template-columns: 1fr;
     flex-direction: column;
     max-width: none;
+  }
+
+  .booking-detail-modal {
+    width: 100%;
+    border-radius: 10px 10px 8px 8px;
+  }
+
+  .booking-detail-summary {
+    gap: 7px;
+    padding: 11px 12px;
+    font-size: 12px;
+  }
+
+  .booking-detail-service {
+    font-size: 13px;
+  }
+
+  .agenda-modal-actions.booking-detail-actions {
+    grid-template-columns: 1fr;
   }
 
   .agenda-option-button,

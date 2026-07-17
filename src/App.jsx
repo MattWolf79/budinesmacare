@@ -14,7 +14,12 @@ const localClientSessionStorageKey = 'turnos_local_client_session';
 const lastActivityStorageKey = 'turnos_last_activity_at';
 const inactivityLimitMs = 5 * 60 * 1000;
 const inactivityMessage = 'Pasaron mas de 5 min sin operar, volver a intentar.';
-const localClientAccessEnabled = import.meta.env.DEV && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const isDevLocalHost = (hostname) => ['localhost', '127.0.0.1'].includes(hostname) ||
+  /^10\./.test(hostname) ||
+  /^192\.168\./.test(hostname) ||
+  /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
+const localClientAccessEnabled = import.meta.env.DEV && isDevLocalHost(window.location.hostname);
+const localInternalAccessEnabled = import.meta.env.DEV && isDevLocalHost(window.location.hostname);
 
 const getLastActivityAt = () => Number(sessionStorage.getItem(lastActivityStorageKey) || 0);
 
@@ -244,6 +249,31 @@ export default function App() {
     sessionStorage.setItem(profileStorageKey, 'client');
   };
 
+  const startLocalInternalSession = (role) => {
+    if (!localInternalAccessEnabled || !['employee', 'admin'].includes(role)) return;
+
+    const nextSession = {
+      id: `00000000-0000-4000-8000-${role === 'admin' ? '000000000002' : '000000000003'}`,
+      sessionToken: 'local-dev-session',
+      role,
+      displayName: role === 'admin' ? 'Admin local' : 'Empleado local',
+      username: role === 'admin' ? 'admin.local' : 'empleado.local',
+      firstName: role === 'admin' ? 'Admin' : 'Empleado',
+      lastName: 'Local',
+      photoUrl: null,
+      employeeId: role === 'employee' ? '00000000-0000-4000-8000-000000000101' : null,
+      companySlug,
+      isLocalInternal: true
+    };
+
+    setSessionExpiredMessage('');
+    setInternalSession(nextSession);
+    setAccessProfile(role);
+    touchLastActivity();
+    sessionStorage.setItem(internalSessionStorageKey, JSON.stringify(nextSession));
+    sessionStorage.setItem(profileStorageKey, role);
+  };
+
   const logout = async () => {
     setSessionExpiredMessage('');
     clearAccessProfile();
@@ -457,7 +487,9 @@ export default function App() {
       allowedProfiles={routeAllowedProfiles}
       onInternalAccess={startInternalSession}
       onLocalClientAccess={startLocalClientSession}
+      onLocalInternalAccess={startLocalInternalSession}
       localClientAccessEnabled={localClientAccessEnabled && routeAllowedProfiles.includes('client')}
+      localInternalAccessEnabled={localInternalAccessEnabled && isInternalPortal}
       sessionNotice={sessionExpiredMessage}
       onDismissSessionNotice={() => setSessionExpiredMessage('')}
     />
@@ -503,7 +535,8 @@ export default function App() {
       firstName: internalSession.firstName,
       lastName: internalSession.lastName,
       photoUrl: internalSession.photoUrl,
-      isInternal: true
+      isInternal: true,
+      isLocalInternal: internalSession.isLocalInternal === true
     };
 
     if (internalSession.role === 'admin') {

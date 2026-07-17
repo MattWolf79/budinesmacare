@@ -93,6 +93,12 @@ const formatPersonShortName = (person) => {
   return capitalizeNamePart(nameParts[0]) || 'Pendiente';
 };
 
+const splitCustomerName = (value) => {
+  const parts = String(value || '').trim().replace(/\s+/g, ' ').split(' ').filter(Boolean);
+  if (parts.length <= 1) return { firstName: parts[0] || '', lastName: '' };
+  return { firstName: parts.slice(0, -1).join(' '), lastName: parts.at(-1) };
+};
+
 const getBookingActivityLabel = (booking, service) => {
   if (!booking.service && booking.booking_description) {
     return String(booking.booking_description).split('·')[0].trim() || 'Promo';
@@ -207,6 +213,61 @@ const buildRangeFromBooking = (booking) => {
     endLocal,
     start_at: formatDateForDb(startLocal),
     end_at: formatDateForDb(endLocal)
+  };
+};
+
+const buildLocalMockAgendaData = (employeeId) => {
+  const today = new Date();
+  const localEmployeeId = employeeId || '00000000-0000-4000-8000-000000000101';
+  const otherEmployeeId = '00000000-0000-4000-8000-000000000102';
+  const buildDate = (hour, minute = 0) => formatDateForDb(new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour, minute, 0, 0));
+
+  return {
+    bookings: [
+      {
+        id: '00000000-0000-4000-8000-000000000201',
+        company_id: '00000000-0000-4000-8000-000000000301',
+        user_id: null,
+        user_email: 'pendiente@example.com',
+        customer_name: 'Cliente X',
+        service: 1,
+        employee_id: otherEmployeeId,
+        booking_description: null,
+        start_at: buildDate(11, 30),
+        end_at: buildDate(12, 0),
+        status: 'confirmed'
+      },
+      {
+        id: '00000000-0000-4000-8000-000000000202',
+        company_id: '00000000-0000-4000-8000-000000000301',
+        user_id: null,
+        user_email: '',
+        customer_name: 'Nombre provisorio',
+        service: 2,
+        employee_id: localEmployeeId,
+        booking_description: null,
+        start_at: buildDate(13, 0),
+        end_at: buildDate(13, 30),
+        status: 'reserved'
+      }
+    ],
+    services: [
+      { id: 1, name: 'Gastroenterologia', icon: '🩺', color: '#3fc9d5', active: true },
+      { id: 2, name: 'Control general', icon: '✨', color: '#20a6b2', active: true }
+    ],
+    employees: [
+      { id: localEmployeeId, name: 'Empleado Local', first_name: 'Empleado', last_name: 'Local', active: true },
+      { id: otherEmployeeId, name: 'Cintia E', first_name: 'Cintia', last_name: 'Ejemplo', active: true }
+    ],
+    employeeServices: [
+      { employee_id: localEmployeeId, service_id: 1 },
+      { employee_id: localEmployeeId, service_id: 2 },
+      { employee_id: otherEmployeeId, service_id: 1 }
+    ],
+    employeeAvailability: [
+      { employee_id: localEmployeeId, weekday: today.getDay(), available_date: formatDateOnlyForDb(today), start_time: '08:00', end_time: '20:00', active: true },
+      { employee_id: otherEmployeeId, weekday: today.getDay(), available_date: formatDateOnlyForDb(today), start_time: '08:00', end_time: '20:00', active: true }
+    ]
   };
 };
 
@@ -518,6 +579,81 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   );
 }
 
+function BookingDetailsModal({ booking, service, employee, canEditCustomer, onClose, onSave }) {
+  const initialName = splitCustomerName(booking?.customer_name || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [firstName, setFirstName] = useState(initialName.firstName);
+  const [lastName, setLastName] = useState(initialName.lastName);
+  const [email, setEmail] = useState(booking?.user_email || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  if (!booking) return null;
+
+  const startTime = formatTime(parseBookingDate(booking.start_at));
+  const endTime = formatTime(parseBookingDate(booking.end_at));
+  const bookingDate = formatDisplayDate(booking.start_at);
+  const activityLabel = getBookingActivityLabel(booking, service);
+  const employeeLabel = formatPersonShortName(employee);
+  const customerName = booking.customer_name || 'Cliente sin datos';
+  const customerEmail = booking.user_email || 'Sin mail cargado';
+
+  const saveCustomerDetails = async () => {
+    setErrorMessage('');
+    setIsSaving(true);
+
+    try {
+      await onSave({ firstName, lastName, email });
+      setIsEditing(false);
+    } catch (error) {
+      setErrorMessage(error?.message || 'No se pudieron guardar los datos del cliente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal">
+      <div className="agenda-modal-card booking-detail-modal" style={{ '--service-chip-color': service?.color || '#15b8c8' }}>
+        <div className="agenda-modal-header">Detalle del turno</div>
+        <div className="agenda-modal-body booking-detail-body">
+          <div className="booking-detail-summary">
+            <div className="booking-detail-service"><ActivityIcon service={service} size="small" /> <b>{activityLabel}</b></div>
+            <div><b>Cliente:</b> {customerName}</div>
+            <div><b>Mail:</b> {customerEmail}</div>
+            <div><b>Empleado:</b> {employeeLabel}</div>
+            <div><b>Fecha:</b> {bookingDate}</div>
+            <div><b>Horario:</b> {startTime} - {endTime}</div>
+          </div>
+
+          {isEditing && (
+            <div className="booking-detail-form">
+              <label className="agenda-customer-field">Nombre<input value={firstName} onChange={(event) => setFirstName(event.target.value)} autoComplete="given-name" /></label>
+              <label className="agenda-customer-field">Apellido<input value={lastName} onChange={(event) => setLastName(event.target.value)} autoComplete="family-name" /></label>
+              <label className="agenda-customer-field">Mail<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
+              {errorMessage && <div className="agenda-customer-error">{errorMessage}</div>}
+            </div>
+          )}
+
+          <div className="agenda-modal-actions booking-detail-actions">
+            {isEditing ? (
+              <>
+                <button className="agenda-option-button" type="button" onClick={() => { setIsEditing(false); setErrorMessage(''); }} disabled={isSaving}>Cancelar</button>
+                <button className="agenda-close-button" type="button" onClick={saveCustomerDetails} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar'}</button>
+              </>
+            ) : (
+              <>
+                <button className="agenda-option-button" type="button" onClick={onClose}>Cerrar</button>
+                {canEditCustomer && <button className="agenda-close-button" type="button" onClick={() => setIsEditing(true)}>Editar datos</button>}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
@@ -537,6 +673,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [isLoadingAvailableEmployees, setIsLoadingAvailableEmployees] = useState(false);
   const [pendingEmployee, setPendingEmployee] = useState(null);
   const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [bookingDetails, setBookingDetails] = useState(null);
   const [assignmentRequest, setAssignmentRequest] = useState(null);
   const [assignmentEmployees, setAssignmentEmployees] = useState([]);
   const [isLoadingAssignmentEmployees, setIsLoadingAssignmentEmployees] = useState(false);
@@ -622,6 +759,24 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   }, []);
 
   const fetchAll = async () => {
+    if (user?.isLocalInternal) {
+      const mockData = buildLocalMockAgendaData(employeeId);
+      return [
+        { data: mockData.bookings, error: null },
+        { data: mockData.services, error: null },
+        { data: mockData.employees, error: null },
+        { data: mockData.employeeAvailability, error: null },
+        { data: null, error: null },
+        { data: mockData, error: null },
+        { data: {
+          services: mockData.services,
+          employees: mockData.employees,
+          employeeServices: mockData.employeeServices,
+          employeeAvailability: mockData.employeeAvailability
+        }, error: null }
+      ];
+    }
+
     const adminDataRequest = isAdminView
       ? supabase.rpc('get_admin_panel_data', {
           account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
@@ -976,6 +1131,40 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     }
 
     setBookingToCancel(null);
+    await loadAll();
+    onBookingsChanged?.();
+  };
+
+  const updateBookingCustomerDetails = async ({ firstName, lastName, email }) => {
+    if (!bookingDetails?.booking?.id) return;
+
+    if (user?.isLocalInternal) {
+      const cleanCustomerName = [firstName, lastName].map((value) => String(value || '').trim()).filter(Boolean).join(' ');
+      const updatedBooking = {
+        ...bookingDetails.booking,
+        customer_name: cleanCustomerName || null,
+        user_email: String(email || '').trim()
+      };
+
+      setBookings((current) => current.map((booking) => booking.id === updatedBooking.id ? updatedBooking : booking));
+      setBookingDetails((current) => current ? { ...current, booking: updatedBooking } : current);
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('update_booking_customer_details', {
+      booking_id_value: bookingDetails.booking.id,
+      customer_first_name_value: firstName,
+      customer_last_name_value: lastName,
+      customer_email_value: email,
+      account_id_value: user?.isInternal ? user.id : null,
+      session_token_value: user?.isInternal ? user.sessionToken : null,
+      company_slug_value: companySlug
+    });
+
+    if (error) throw error;
+
+    const updatedBooking = data || bookingDetails.booking;
+    setBookingDetails((current) => current ? { ...current, booking: updatedBooking } : current);
     await loadAll();
     onBookingsChanged?.();
   };
@@ -1519,12 +1708,17 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                           employee={emp}
                           canCancel={canCancelBooking(b)}
                           isClosed={isClosed}
-                          canShowDetails={isAdminView || isOwn || (isEmployeeView && isAssigned)}
-                          canViewCustomer={isAdminView || isOwn || (isEmployeeView && isAssigned)}
+                          canShowDetails={isAdminView || isOwn || isEmployeeView}
+                          canViewCustomer={isAdminView || isOwn || isEmployeeView}
                           customerLabel={isOwn ? 'Tu turno' : 'Turno reservado'}
                           displayLabel={displayLabel}
                           employeeLabel={employeeLabel}
                           compact={isCompactAgenda}
+                          onOpenDetails={() => {
+                            if (isAdminView || isOwn || isEmployeeView) {
+                              setBookingDetails({ booking: b, service, employee: emp });
+                            }
+                          }}
                           onCancel={() => setBookingToCancel({
                             booking: b,
                             service,
@@ -1693,6 +1887,17 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           employee={bookingToCancel.employee}
           onClose={() => setBookingToCancel(null)}
           onConfirm={cancelBooking}
+        />
+      )}
+
+      {bookingDetails && (
+        <BookingDetailsModal
+          booking={bookingDetails.booking}
+          service={bookingDetails.service}
+          employee={bookingDetails.employee}
+          canEditCustomer={!isClientView && !isClosedBooking(bookingDetails.booking)}
+          onClose={() => setBookingDetails(null)}
+          onSave={updateBookingCustomerDetails}
         />
       )}
 

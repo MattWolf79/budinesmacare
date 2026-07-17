@@ -111,7 +111,7 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export default function Login({ companySlug, companyContext, allowedProfiles = accessOptions.map((option) => option.id), onInternalAccess, onLocalClientAccess, localClientAccessEnabled = false, sessionNotice = '', onDismissSessionNotice }) {
+export default function Login({ companySlug, companyContext, allowedProfiles = accessOptions.map((option) => option.id), onInternalAccess, onLocalClientAccess, onLocalInternalAccess, localClientAccessEnabled = false, localInternalAccessEnabled = false, sessionNotice = '', onDismissSessionNotice }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
   const [inAppBrowserNoticeOpen, setInAppBrowserNoticeOpen] = useState(false);
   const [copyLinkStatus, setCopyLinkStatus] = useState('');
@@ -443,6 +443,11 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
     onLocalClientAccess?.();
   };
 
+  const handleLocalInternalAccess = (role) => {
+    onDismissSessionNotice?.();
+    onLocalInternalAccess?.(role);
+  };
+
   const companyDisplayName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
   const visibleAccessOptions = accessOptions.filter((option) => allowedProfiles.includes(option.id));
   const isClientOnlyAccess = visibleAccessOptions.length === 1 && visibleAccessOptions[0]?.id === 'client';
@@ -487,6 +492,11 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
               {option.id === 'client' && localClientAccessEnabled && (
                 <button className="login-local-client-button" type="button" onClick={handleLocalClientAccess}>
                   Probar cliente local
+                </button>
+              )}
+              {option.id === 'employee' && localInternalAccessEnabled && (
+                <button className="login-local-client-button" type="button" onClick={() => handleLocalInternalAccess(option.id)}>
+                  Probar empleado local
                 </button>
               )}
             </div>

@@ -17,7 +17,8 @@ export default function BookingItem({
   customerLabel,
   displayLabel,
   employeeLabel,
-  compact = false
+  compact = false,
+  onOpenDetails
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
@@ -48,6 +49,10 @@ export default function BookingItem({
       className={`agenda-booking-item${compact ? ' agenda-booking-item-compact' : ''}${isPromotionBooking ? ' agenda-booking-item-promotion' : ''}`}
       onMouseDown={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        onOpenDetails?.(booking);
+      }}
       onMouseEnter={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect();
         const hasRightSpace = window.innerWidth - bounds.right >= POPOVER_WIDTH + POPOVER_GAP + POPOVER_MARGIN;
@@ -78,7 +83,8 @@ export default function BookingItem({
         display: 'flex',
         flexDirection: compact ? 'column' : 'row',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        cursor: onOpenDetails ? 'pointer' : 'default'
       }}
     >
       <span

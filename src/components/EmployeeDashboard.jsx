@@ -134,6 +134,24 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       return;
     }
 
+    if (user?.isLocalInternal) {
+      setEmployee({
+        id: employeeId,
+        name: 'Empleado Local',
+        first_name: 'Empleado',
+        last_name: 'Local',
+        active: true
+      });
+      setBookings([]);
+      setServices([]);
+      setPromotions([]);
+      setAvailability([]);
+      setClosedBookingAmounts({});
+      setIsLoading(false);
+      setError('');
+      return;
+    }
+
     let active = true;
 
     const loadEmployeeWorkspace = async () => {
