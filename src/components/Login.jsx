@@ -499,6 +499,11 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
                   Probar empleado local
                 </button>
               )}
+              {option.id === 'admin' && localInternalAccessEnabled && (
+                <button className="login-local-client-button" type="button" onClick={() => handleLocalInternalAccess(option.id)}>
+                  Probar admin local
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -135,6 +135,9 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     }
 
     if (user?.isLocalInternal) {
+      const today = new Date();
+      const buildDate = (hours, minutes = 0) => new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, hours, minutes, 0, 0).toISOString();
+
       setEmployee({
         id: employeeId,
         name: 'Empleado Local',
@@ -142,11 +145,40 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         last_name: 'Local',
         active: true
       });
-      setBookings([]);
-      setServices([]);
+      setBookings([
+        {
+          id: '00000000-0000-4000-8000-000000000401',
+          user_email: 'cliente.local@example.com',
+          customer_name: 'Cliente Local',
+          service: 1,
+          employee_id: employeeId,
+          start_at: buildDate(10, 0),
+          end_at: buildDate(10, 30),
+          status: 'completed',
+          is_settled: false
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000402',
+          user_email: 'lucas.perez@example.com',
+          customer_name: 'Lucas Perez',
+          service: 2,
+          employee_id: employeeId,
+          start_at: buildDate(11, 0),
+          end_at: buildDate(11, 30),
+          status: 'completed',
+          is_settled: false
+        }
+      ]);
+      setServices([
+        { id: 1, name: 'Gastroenterologia', icon: '🩺', color: '#3fc9d5', active: true },
+        { id: 2, name: 'Control general', icon: '✨', color: '#20a6b2', active: true }
+      ]);
       setPromotions([]);
       setAvailability([]);
-      setClosedBookingAmounts({});
+      setClosedBookingAmounts({
+        '00000000-0000-4000-8000-000000000401': 10000,
+        '00000000-0000-4000-8000-000000000402': 8000
+      });
       setIsLoading(false);
       setError('');
       return;
@@ -354,6 +386,15 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     };
   }, [bookings, closedBookingAmounts, now]);
 
+  const pendingSettlementSummary = useMemo(() => {
+    const pendingBookings = bookings.filter((booking) => isClosedBooking(booking) && booking.is_settled !== true);
+
+    return pendingBookings.reduce((summary, booking) => ({
+      count: summary.count + 1,
+      total: summary.total + Number(closedBookingAmounts[booking.id] || 0)
+    }), { count: 0, total: 0 });
+  }, [bookings, closedBookingAmounts]);
+
   if (!employeeId) {
     return (
       <section className="employee-panel employee-panel-empty">
@@ -399,6 +440,11 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
               <span>Disponibilidad</span>
               <strong>{availabilityDayCount}</strong>
               <p>{todayAvailabilityLabel}</p>
+            </article>
+            <article className="employee-summary-card">
+              <span>Pendiente cobro</span>
+              <strong>{pendingSettlementSummary.count}</strong>
+              <p>{formatMoney(pendingSettlementSummary.total)}</p>
             </article>
             <article className="employee-summary-card employee-summary-card-closed-weeks">
               <span>Recaudación</span>
@@ -474,6 +520,12 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                           <div className="employee-booking-field">
                             <span>Cobrado</span>
                             <strong>{formatMoney(closedAmount)}</strong>
+                          </div>
+                        )}
+                        {isClosed && (
+                          <div className="employee-booking-field">
+                            <span>Rendición</span>
+                            <strong className={booking.is_settled === true ? 'is-active' : 'is-muted'}>{booking.is_settled === true ? 'Rendido' : 'Pendiente'}</strong>
                           </div>
                         )}
                       </div>

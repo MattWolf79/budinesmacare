@@ -844,6 +844,126 @@ code {
   gap: 14px;
 }
 
+.settlement-modal {
+  width: min(94vw, 820px);
+  max-width: min(94vw, 820px) !important;
+}
+
+.settlement-body {
+  display: grid;
+  gap: 12px;
+  max-height: min(78vh, 720px);
+  overflow: auto;
+}
+
+.settlement-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 10px;
+  align-items: end;
+}
+
+.settlement-check-all,
+.settlement-percent-field {
+  display: grid;
+  gap: 5px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.settlement-check-all {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  min-height: 38px;
+}
+
+.settlement-check-all input,
+.settlement-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: #174c55;
+}
+
+.settlement-percent-field input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #334155;
+  background: #fff;
+  font-weight: 900;
+}
+
+.settlement-list {
+  display: grid;
+  gap: 8px;
+}
+
+.settlement-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(170px, auto);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.settlement-row-main,
+.settlement-row-amounts {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.settlement-row-main strong,
+.settlement-row-amounts strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.settlement-row-main small,
+.settlement-row-amounts small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.settlement-row-amounts {
+  text-align: right;
+}
+
+.settlement-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.settlement-summary div {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #e8f5f7;
+}
+
+.settlement-summary span {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.settlement-summary strong {
+  color: #174c55;
+  font-size: 15px;
+  font-weight: 950;
+}
+
 .booking-detail-summary {
   display: grid;
   gap: 8px;
@@ -5897,13 +6017,15 @@ code {
   .employee-record-card .admin-record-actions {
     display: flex !important;
     gap: 8px !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
   }
 
   .employee-record-card .employee-list-action {
     width: auto !important;
-    min-width: 90px !important;
+    min-width: 86px !important;
     height: 34px !important;
-    padding: 0 12px !important;
+    padding: 0 10px !important;
   }
 
   .employee-record-card .employee-list-action-full {
@@ -5912,6 +6034,22 @@ code {
 
   .employee-record-card .employee-list-action-icon {
     display: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .settlement-toolbar,
+  .settlement-row,
+  .settlement-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .settlement-row {
+    align-items: start;
+  }
+
+  .settlement-row-amounts {
+    text-align: left;
   }
 }
 
@@ -8314,9 +8452,9 @@ body {
 }
 
 .admin-management-card-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: center;
   gap: 10px;
   min-width: 0;
   margin: 0 -12px;
@@ -8327,6 +8465,32 @@ body {
   color: #fff;
   background: var(--admin-management-card-color, #174c55);
   text-align: center;
+}
+
+.employee-header-settlement-button {
+  width: auto;
+  min-width: 74px;
+  height: 30px;
+  border: 1px solid rgba(36, 174, 187, 0.9);
+  border-radius: 6px;
+  padding: 0 9px;
+  color: #fff;
+  background: #494d56;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.14) inset;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.employee-header-settlement-button:hover {
+  background: #3f434b;
+}
+
+.employee-header-settlement-button:focus-visible {
+  outline: 2px solid #24aebb;
+  outline-offset: 2px;
 }
 
 .employee-record-card.is-muted .admin-management-card-header,

@@ -31,6 +31,78 @@ const emptyService = {
   active: true
 };
 
+const localEmployeeId = '00000000-0000-4000-8000-000000000101';
+const localOtherEmployeeId = '00000000-0000-4000-8000-000000000102';
+
+const buildLocalAdminData = () => ({
+  employees: [
+    {
+      id: localEmployeeId,
+      name: 'empleadolocal',
+      first_name: 'Empleado',
+      last_name: 'Local',
+      phone: '1130986789',
+      email: 'empleado.local@empresa-prueba.com',
+      photo_url: '',
+      active: true,
+      is_admin: false,
+      internal_username: 'empleadolocal'
+    },
+    {
+      id: localOtherEmployeeId,
+      name: 'cespinosa',
+      first_name: 'Cintia',
+      last_name: 'Espinosa',
+      phone: '1130986789',
+      email: 'matiasdlobo79@gmail.com',
+      photo_url: '',
+      active: true,
+      is_admin: false,
+      internal_username: 'cespinosa'
+    }
+  ],
+  services: [
+    { id: 1, name: 'Gastroenterologia', icon: '🩺', color: '#3fc9d5', default_duration: 30, base_price: 10000, active: true },
+    { id: 2, name: 'Control general', icon: '✨', color: '#20a6b2', default_duration: 30, base_price: 8000, active: true }
+  ],
+  employeeServices: [
+    { employee_id: localEmployeeId, service_id: 1 },
+    { employee_id: localEmployeeId, service_id: 2 },
+    { employee_id: localOtherEmployeeId, service_id: 1 }
+  ]
+});
+
+const buildLocalSettlementRows = (employeeId) => {
+  const today = new Date();
+  const buildDate = (hours, minutes = 0) => new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, hours, minutes, 0, 0).toISOString();
+  const employeeName = String(employeeId) === localOtherEmployeeId ? 'Mariana Torres' : 'Cliente Local';
+
+  return [
+    {
+      id: '00000000-0000-4000-8000-000000000401',
+      service_name: 'Gastroenterologia',
+      employee_id: employeeId,
+      employee_name: String(employeeId) === localOtherEmployeeId ? 'cespinosa' : 'empleadolocal',
+      customer_name: employeeName,
+      user_email: 'cliente.local@example.com',
+      start_at: buildDate(10, 0),
+      end_at: buildDate(10, 30),
+      total_amount: 10000
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000402',
+      service_name: 'Control general',
+      employee_id: employeeId,
+      employee_name: String(employeeId) === localOtherEmployeeId ? 'cespinosa' : 'empleadolocal',
+      customer_name: 'Lucas Perez',
+      user_email: 'lucas.perez@example.com',
+      start_at: buildDate(11, 0),
+      end_at: buildDate(11, 30),
+      total_amount: 8000
+    }
+  ];
+};
+
 const parseMoney = (value) => {
   const normalized = String(value || '')
     .replace(/[^\d,.-]/g, '')
@@ -45,6 +117,118 @@ const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   currency: 'ARS',
   maximumFractionDigits: 0
 }).format(Number(value) || 0);
+
+const formatSettlementDate = (value) => new Intl.DateTimeFormat('es-AR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric'
+}).format(new Date(value));
+
+const formatSettlementTime = (value) => new Date(value).toLocaleTimeString([], {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false
+}).replace(/^24:/, '00');
+
+const downloadSettlementPdf = async ({ employee, rows, percent }) => {
+  const { jsPDF } = await import('jspdf');
+  const employeeRows = rows.filter((row) => !row.employee_id || String(row.employee_id) === String(employee?.id));
+  const normalizedPercent = Number(percent) || 0;
+  const totals = employeeRows.reduce((summary, row) => {
+    const total = Number(row.total_amount ?? row.totalAmount ?? 0);
+    const employeeAmount = total * normalizedPercent / 100;
+    return {
+      total: summary.total + total,
+      employee: summary.employee + employeeAmount,
+      company: summary.company + total - employeeAmount
+    };
+  }, { total: 0, employee: 0, company: 0 });
+
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 12;
+  let currentY = 14;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Rendicion de turnos', margin, currentY);
+
+  currentY += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(`Empleado: ${employee?.name || 'Empleado'}`, margin, currentY);
+  doc.text(`Fecha: ${formatSettlementDate(new Date())}`, pageWidth / 2 - 20, currentY);
+  doc.text(`Porcentaje empleado: ${normalizedPercent}%`, pageWidth - 70, currentY);
+
+  currentY += 10;
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Total cobrado: ${formatMoney(totals.total)}`, margin, currentY);
+  doc.text(`Empleado: ${formatMoney(totals.employee)}`, pageWidth / 2 - 20, currentY);
+  doc.text(`Empresa: ${formatMoney(totals.company)}`, pageWidth - 70, currentY);
+
+  currentY += 9;
+  const columns = [
+    { label: 'Servicio', x: margin, width: 44 },
+    { label: 'Cliente', x: 58, width: 46 },
+    { label: 'Fecha', x: 106, width: 24 },
+    { label: 'Inicio', x: 132, width: 18 },
+    { label: 'Fin', x: 152, width: 18 },
+    { label: 'Total', x: 174, width: 26 },
+    { label: '%', x: 202, width: 12 },
+    { label: 'Empleado', x: 218, width: 28 },
+    { label: 'Empresa', x: 250, width: 28 }
+  ];
+
+  doc.setFillColor(232, 245, 247);
+  doc.rect(margin, currentY - 5, pageWidth - margin * 2, 8, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  columns.forEach((column) => doc.text(column.label, column.x, currentY));
+  currentY += 7;
+
+  doc.setFont('helvetica', 'normal');
+  employeeRows.forEach((row) => {
+    const total = Number(row.total_amount ?? row.totalAmount ?? 0);
+    const employeeAmount = total * normalizedPercent / 100;
+    const companyAmount = total - employeeAmount;
+
+    if (currentY > 190) {
+      doc.addPage();
+      currentY = 14;
+    }
+
+    const values = [
+      row.service_name || row.serviceName || 'Servicio',
+      row.customer_name || row.customerName || 'Cliente',
+      formatSettlementDate(row.start_at || row.startAt),
+      formatSettlementTime(row.start_at || row.startAt),
+      formatSettlementTime(row.end_at || row.endAt),
+      formatMoney(total),
+      `${normalizedPercent}%`,
+      formatMoney(employeeAmount),
+      formatMoney(companyAmount)
+    ];
+
+    columns.forEach((column, index) => {
+      const text = doc.splitTextToSize(String(values[index]), column.width);
+      doc.text(text.slice(0, 2), column.x, currentY);
+    });
+    currentY += 8;
+  });
+
+  currentY += 3;
+  doc.setDrawColor(203, 213, 225);
+  doc.line(margin, currentY, pageWidth - margin, currentY);
+  currentY += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Totales', margin, currentY);
+  doc.text(formatMoney(totals.total), 174, currentY);
+  doc.text(formatMoney(totals.employee), 218, currentY);
+  doc.text(formatMoney(totals.company), 250, currentY);
+
+  const safeEmployeeName = normalizeComparableText(employee?.name || 'empleado').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'empleado';
+  doc.save(`rendicion-${safeEmployeeName}-${new Date().toISOString().slice(0, 10)}.pdf`);
+};
 
 const getCurrentMonthName = () => new Intl.DateTimeFormat('es-AR', { month: 'long' }).format(new Date()).toUpperCase();
 
@@ -261,6 +445,13 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   const emojiPickerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [settlementEmployee, setSettlementEmployee] = useState(null);
+  const [settlementRows, setSettlementRows] = useState([]);
+  const [settlementPercent, setSettlementPercent] = useState('70');
+  const [selectedSettlementIds, setSelectedSettlementIds] = useState([]);
+  const [isSettlementLoading, setIsSettlementLoading] = useState(false);
+  const [isSettling, setIsSettling] = useState(false);
+  const [localSettledBookingIds, setLocalSettledBookingIds] = useState([]);
 
   const activeServices = useMemo(
     () => services.filter((service) => service.active !== false),
@@ -293,6 +484,26 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     [employeeForm.first_name, employeeForm.last_name]
   );
 
+  const selectedSettlementRows = useMemo(
+    () => settlementRows.filter((row) => selectedSettlementIds.includes(String(row.id))),
+    [settlementRows, selectedSettlementIds]
+  );
+
+  const settlementTotals = useMemo(() => {
+    const percent = Number(settlementPercent) || 0;
+
+    return selectedSettlementRows.reduce((summary, row) => {
+      const total = Number(row.total_amount || 0);
+      const employeeAmount = total * percent / 100;
+
+      return {
+        total: summary.total + total,
+        employee: summary.employee + employeeAmount,
+        company: summary.company + total - employeeAmount
+      };
+    }, { total: 0, employee: 0, company: 0 });
+  }, [selectedSettlementRows, settlementPercent]);
+
   const internalAdminAccountId = user?.isInternal && user?.role === 'admin' ? user.id : null;
   const internalSessionToken = user?.isInternal ? user.sessionToken : null;
 
@@ -310,6 +521,19 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
 
   const loadAdminData = useCallback(async () => {
     setIsLoading(true);
+
+    if (user?.isLocalInternal) {
+      const localData = buildLocalAdminData();
+      setEmployees(localData.employees);
+      setServices(localData.services);
+      setEmployeeServices(localData.employeeServices);
+      setAppConfig({ promotions: [], discounts: [] });
+      setPromotions([]);
+      setCurrentMonthClosureSummary({ bookingCount: 2, total: 18000 });
+      setAccessRequests([]);
+      setIsLoading(false);
+      return;
+    }
 
     const [adminResult, configResult] = await Promise.all([
       supabase.rpc('get_admin_panel_data', {
@@ -342,7 +566,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     });
     setAccessRequests(view === 'employees' ? data?.accessRequests || [] : []);
     setIsLoading(false);
-  }, [internalAdminAccountId, internalSessionToken, view, companySlug]);
+  }, [internalAdminAccountId, internalSessionToken, view, companySlug, user?.isLocalInternal]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -727,6 +951,118 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
 
     alert(`Contraseña reseteada. Usuario: ${data.username}. Clave temporal: ${data.temporary_password}. Se le pedirá cambiarla al ingresar.`);
     await loadAdminData();
+  };
+
+  const openSettlement = async (employee) => {
+    setSettlementEmployee(employee);
+    setSettlementRows([]);
+    setSelectedSettlementIds([]);
+    setSettlementPercent('70');
+    setIsSettlementLoading(true);
+
+    if (user?.isLocalInternal) {
+      const rows = buildLocalSettlementRows(employee.id).filter((row) => !localSettledBookingIds.includes(String(row.id)));
+      setSettlementRows(rows);
+      setSelectedSettlementIds(rows.map((row) => String(row.id)));
+      setIsSettlementLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('get_employee_pending_settlement_bookings', {
+      employee_id_value: employee.id,
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
+    });
+
+    setIsSettlementLoading(false);
+
+    if (error) {
+      alert(`No se pudo cargar la rendición. ${formatSupabaseError(error)}`);
+      setSettlementEmployee(null);
+      return;
+    }
+
+    const rows = (Array.isArray(data) ? data : [])
+      .filter((row) => !row.employee_id || String(row.employee_id) === String(employee.id))
+      .map((row) => ({
+        ...row,
+        total_amount: Number(row.total_amount || 0)
+      }));
+
+    setSettlementRows(rows);
+    setSelectedSettlementIds(rows.map((row) => String(row.id)));
+  };
+
+  const closeSettlement = () => {
+    if (isSettling) return;
+
+    setSettlementEmployee(null);
+    setSettlementRows([]);
+    setSelectedSettlementIds([]);
+  };
+
+  const toggleSettlementRow = (bookingId) => {
+    const normalizedId = String(bookingId);
+    setSelectedSettlementIds((current) => current.includes(normalizedId)
+      ? current.filter((id) => id !== normalizedId)
+      : [...current, normalizedId]);
+  };
+
+  const toggleAllSettlementRows = () => {
+    setSelectedSettlementIds((current) => current.length === settlementRows.length
+      ? []
+      : settlementRows.map((row) => String(row.id)));
+  };
+
+  const confirmSettlement = async () => {
+    if (!settlementEmployee) return;
+    if (!selectedSettlementRows.length) {
+      alert('Seleccioná al menos un turno para rendir.');
+      return;
+    }
+
+    const percent = Number(settlementPercent);
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+      alert('Ingresá un porcentaje entre 0 y 100.');
+      return;
+    }
+
+    setIsSettling(true);
+
+    if (user?.isLocalInternal) {
+      await downloadSettlementPdf({ employee: settlementEmployee, rows: selectedSettlementRows, percent });
+      setIsSettling(false);
+      setLocalSettledBookingIds((current) => Array.from(new Set([...current, ...selectedSettlementIds])));
+      setSettlementRows((current) => current.filter((row) => !selectedSettlementIds.includes(String(row.id))));
+      setSelectedSettlementIds([]);
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('settle_employee_bookings', {
+      employee_id_value: settlementEmployee.id,
+      booking_ids_value: selectedSettlementRows.map((row) => row.id),
+      commission_percent_value: percent,
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
+    });
+
+    if (error) {
+      setIsSettling(false);
+      alert(`No se pudo confirmar la rendición. ${formatSupabaseError(error)}`);
+      return;
+    }
+
+    const reportRows = (Array.isArray(data?.items) && data.items.length ? data.items : selectedSettlementRows)
+      .filter((row) => !row.employee_id || String(row.employee_id) === String(settlementEmployee.id));
+    await downloadSettlementPdf({ employee: settlementEmployee, rows: reportRows, percent });
+
+    setIsSettling(false);
+    setSettlementRows((current) => current.filter((row) => !selectedSettlementIds.includes(String(row.id))));
+    setSelectedSettlementIds([]);
+    await loadAdminData();
+    onDataChanged?.();
   };
 
   const saveService = async (event) => {
@@ -1166,6 +1502,9 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                     {employee.photo_url ? <img src={employee.photo_url} alt="" /> : (employee.name || 'E').slice(0, 1).toUpperCase()}
                   </span>
                   <strong>{employee.name}</strong>
+                  <button className="employee-header-settlement-button" type="button" onClick={() => openSettlement(employee)} aria-label={`Rendición de ${employee.name}`} title="Rendición">
+                    Rendición
+                  </button>
                 </div>
                 <div className="admin-record-main admin-management-card-main">
                   <div className="admin-management-card-fields">
@@ -1209,6 +1548,69 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
             ))}
           </div>
         </div>
+
+        {settlementEmployee && (
+          <div className="modal" role="dialog" aria-modal="true" aria-label="Rendición de empleado">
+            <div className="agenda-modal-card settlement-modal">
+              <div className="agenda-modal-header">Rendición · {settlementEmployee.name}</div>
+              <div className="agenda-modal-body settlement-body">
+                {isSettlementLoading ? (
+                  <div className="agenda-empty-state">Cargando turnos pendientes...</div>
+                ) : settlementRows.length === 0 ? (
+                  <div className="agenda-empty-state">No hay turnos cerrados pendientes de rendición.</div>
+                ) : (
+                  <>
+                    <div className="settlement-toolbar">
+                      <label className="settlement-check-all">
+                        <input type="checkbox" checked={settlementRows.length > 0 && selectedSettlementIds.length === settlementRows.length} onChange={toggleAllSettlementRows} />
+                        Total
+                      </label>
+                      <label className="settlement-percent-field">
+                        % empleado
+                        <input type="number" min="0" max="100" step="0.01" value={settlementPercent} onChange={(event) => setSettlementPercent(event.target.value)} />
+                      </label>
+                    </div>
+
+                    <div className="settlement-list">
+                      {settlementRows.map((row) => {
+                        const total = Number(row.total_amount || 0);
+                        const employeeAmount = total * (Number(settlementPercent) || 0) / 100;
+                        const companyAmount = total - employeeAmount;
+
+                        return (
+                          <label className="settlement-row" key={row.id}>
+                            <input type="checkbox" checked={selectedSettlementIds.includes(String(row.id))} onChange={() => toggleSettlementRow(row.id)} />
+                            <span className="settlement-row-main">
+                              <strong>{row.service_name || 'Servicio'}</strong>
+                              <small>{row.customer_name || 'Cliente sin nombre'} · {formatSettlementDate(row.start_at)} · {formatSettlementTime(row.start_at)}-{formatSettlementTime(row.end_at)}</small>
+                            </span>
+                            <span className="settlement-row-amounts">
+                              <strong>{formatMoney(total)}</strong>
+                              <small>Empleado {formatMoney(employeeAmount)} · Empresa {formatMoney(companyAmount)}</small>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    <div className="settlement-summary">
+                      <div><span>Total</span><strong>{formatMoney(settlementTotals.total)}</strong></div>
+                      <div><span>Empleado</span><strong>{formatMoney(settlementTotals.employee)}</strong></div>
+                      <div><span>Empresa</span><strong>{formatMoney(settlementTotals.company)}</strong></div>
+                    </div>
+                  </>
+                )}
+
+                <div className="agenda-modal-actions booking-detail-actions">
+                  <button className="agenda-option-button" type="button" onClick={closeSettlement} disabled={isSettling}>Cerrar</button>
+                  <button className="agenda-close-button" type="button" onClick={confirmSettlement} disabled={isSettlementLoading || isSettling || !selectedSettlementRows.length}>
+                    {isSettling ? 'Confirmando...' : 'Confirmar rendición'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     );
   }
