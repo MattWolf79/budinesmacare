@@ -425,23 +425,30 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const lineDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'line' || discount.scope === 'both'));
   const activityDiscountOptions = activeDiscounts.filter((discount) => discount.discountType === 'activity');
   const totalDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'total' || discount.scope === 'both'));
-  const dayBookings = useMemo(() => bookings
-    .filter((booking) => isActiveBooking(booking))
-    .filter((booking) => formatDateOnlyForDb(parseBookingDate(booking.start_at)) === serviceDate)
+  const pendingClosureBookings = useMemo(() => bookings
+    .filter((booking) => isActiveBooking(booking) && booking.employee_id)
+    .filter((booking) => formatDateOnlyForDb(parseBookingDate(booking.start_at)) <= serviceDate)
     .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [bookings, serviceDate]);
   const clients = useMemo(() => {
     const map = new Map();
-    dayBookings.forEach((booking) => {
-      const key = getClientKey(booking);
-      const current = map.get(key) || { key, name: getClientName(booking), email: getClientEmail(booking), canEmployeeClose: false };
+    pendingClosureBookings.forEach((booking) => {
+      const bookingDate = formatDateOnlyForDb(parseBookingDate(booking.start_at));
+      const clientKey = getClientKey(booking);
+      const key = `${bookingDate}|${clientKey}`;
+      const current = map.get(key) || { key, clientKey, serviceDate: bookingDate, name: getClientName(booking), email: getClientEmail(booking), canEmployeeClose: false };
       if (String(booking.employee_id) === String(employeeId)) current.canEmployeeClose = true;
       map.set(key, current);
     });
     return [...map.values()].filter((client) => !isEmployeeView || client.canEmployeeClose);
-  }, [dayBookings, employeeId, isEmployeeView]);
+  }, [employeeId, isEmployeeView, pendingClosureBookings]);
 
   const effectiveSelectedClientKey = clients.some((client) => client.key === selectedClientKey) ? selectedClientKey : clients[0]?.key || '';
-  const clientBookings = useMemo(() => dayBookings.filter((booking) => getClientKey(booking) === effectiveSelectedClientKey), [dayBookings, effectiveSelectedClientKey]);
+  const selectedClient = clients.find((client) => client.key === effectiveSelectedClientKey);
+  const clientBookings = useMemo(() => pendingClosureBookings.filter((booking) =>
+    selectedClient &&
+    formatDateOnlyForDb(parseBookingDate(booking.start_at)) === selectedClient.serviceDate &&
+    getClientKey(booking) === selectedClient.clientKey
+  ), [pendingClosureBookings, selectedClient]);
   const effectiveSelectedBookingIds = useMemo(() => {
     const availableIds = clientBookings.map((booking) => booking.id);
     if (!Array.isArray(selectedBookingIds)) return availableIds;
@@ -525,9 +532,8 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     if (!selectedItems.length) return alert('Seleccioná al menos un turno para cerrar.');
     if (Math.abs(paymentDifference) > 0.01) return alert('La suma de pagos debe coincidir con el total final.');
     setIsClosing(true);
-    const selectedClient = clients.find((client) => client.key === effectiveSelectedClientKey);
     const { error } = await supabase.rpc('close_booking_attention', {
-      service_date_value: serviceDate,
+      service_date_value: selectedClient?.serviceDate || serviceDate,
       client_name_value: selectedClient?.name || null,
       client_email_value: selectedClient?.email || null,
       booking_ids_value: selectedItems.map((item) => item.booking.id),
@@ -555,8 +561,8 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         <div className="agenda-modal-header">Cerrar atención</div>
         <div className="agenda-modal-body close-attention-body">
           <div className="close-attention-controls">
-            <label>Fecha<input type="text" inputMode="numeric" value={serviceDateInput} onChange={(event) => updateServiceDateInput(event.target.value)} placeholder="DD/MM/AAAA" /></label>
-            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
+            <label>Hasta fecha<input type="text" inputMode="numeric" value={serviceDateInput} onChange={(event) => updateServiceDateInput(event.target.value)} placeholder="DD/MM/AAAA" /></label>
+            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
           </div>
           <div className="close-attention-items">
             {clientBookings.length ? clientBookings.map((booking) => {
@@ -571,7 +577,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
               const availableLineDiscounts = activityDiscount ? [...lineDiscountOptions, activityDiscount] : lineDiscountOptions;
               return <article className="close-attention-item" key={booking.id}>
                 <label className="settings-check-row close-attention-item-check"><input type="checkbox" checked={isSelected} onChange={() => setSelectedBookingIds((current) => { const currentIds = Array.isArray(current) ? current : clientBookings.map((itemBooking) => itemBooking.id); return currentIds.includes(booking.id) ? currentIds.filter((id) => id !== booking.id) : [...currentIds, booking.id]; })} /><span>{getBookingActivityLabel(booking, service)}</span></label>
-                <div className="close-attention-item-meta">{formatTime(parseBookingDate(booking.start_at))} - {formatTime(parseBookingDate(booking.end_at))} · {formatPersonShortName(employee)}</div>
+                <div className="close-attention-item-meta">{formatDisplayDate(booking.start_at)} · {formatTime(parseBookingDate(booking.start_at))} - {formatTime(parseBookingDate(booking.end_at))} · {formatPersonShortName(employee)}</div>
                 <div className="close-attention-price-row"><span>Base: {formatMoney(item?.basePrice ?? bookingPriceById.get(booking.id) ?? 0)}</span><strong>Subtotal: {formatMoney(item?.subtotal || 0)}</strong></div>
                 {isSelected && availableLineDiscounts.length > 0 && <div className="close-attention-discounts">{availableLineDiscounts.map((discount) => {
                   const discountKey = getDiscountKey(discount);
@@ -862,16 +868,18 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const { data } = await supabase.rpc('get_app_configuration', {
       company_slug_value: companySlug
     });
-    const initialVisibleDateWithBookings = days.find((day) => {
+    const latestVisibleDate = [...days].reverse().find((day) => !isFutureDay(day));
+    const latestVisibleDateWithBookings = [...days].reverse().find((day) => {
       if (isFutureDay(day)) return false;
 
       const dayInput = formatDateOnlyForDb(day);
       return bookings.some((booking) =>
         isActiveBooking(booking) &&
+        booking.employee_id &&
         formatDateOnlyForDb(parseBookingDate(booking.start_at)) === dayInput
       );
     });
-    const initialVisibleDate = initialVisibleDateWithBookings || days.find((day) => !isFutureDay(day));
+    const initialVisibleDate = latestVisibleDateWithBookings || latestVisibleDate;
     setClosureDiscounts(Array.isArray(data?.discounts) ? data.discounts : []);
     setClosurePromotions(Array.isArray(data?.promotions) ? data.promotions : promotions);
     setCloseAttentionInitialDate(formatDateOnlyForDb(initialVisibleDate || new Date()));

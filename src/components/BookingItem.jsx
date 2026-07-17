@@ -5,6 +5,16 @@ const POPOVER_WIDTH = 240;
 const POPOVER_GAP = 8;
 const POPOVER_MARGIN = 12;
 
+const getBookingStatusLabel = (booking) => {
+  const status = String(booking?.status || '').trim().toLowerCase();
+
+  if (['completed', 'closed'].includes(status)) return 'Cerrado';
+  if (status === 'cancelled') return 'Cancelado';
+  if (!booking?.employee_id || status === 'pending_assignment') return 'Pendiente';
+  if (['confirmed', 'reserved'].includes(status)) return 'Asignado';
+  return 'Pendiente';
+};
+
 export default function BookingItem({
   booking,
   service,
@@ -43,6 +53,7 @@ export default function BookingItem({
     : '';
   const agendaLabel = displayLabel || (isPromotionBooking ? promotionTitle || 'Promo' : bookingLabel);
   const [primaryLabel, secondaryLabel] = String(agendaLabel).split(' / ');
+  const statusLabel = getBookingStatusLabel(booking);
 
   return (
     <div
@@ -185,6 +196,7 @@ export default function BookingItem({
             <div className="agenda-detail-title"><ActivityIcon service={service} size="small" /> <b>{service?.name}</b></div>
             {booking.booking_description && <div>🏷 {booking.booking_description}</div>}
             {(employeeLabel || employee?.name) && <div>👤 {employeeLabel || employee.name}</div>}
+            <div>Estado: {statusLabel}</div>
             <div>🧍 {canViewCustomer ? customerDetail : customerLabel || 'Turno reservado'}</div>
             <div className="agenda-detail-time">
               ⏱ {startTime} - {endTime}
