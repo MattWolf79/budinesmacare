@@ -128,6 +128,63 @@ begin
           and bookings.status = 'completed'
       ) closure_rows
     ), '[]'::jsonb),
+    'adminBookingCostSummary', jsonb_build_object(
+      'assigned', coalesce((
+        select jsonb_build_object(
+          'booking_count', count(*),
+          'total', coalesce(sum(coalesce(services.base_price, nullif(regexp_replace(coalesce(bookings.booking_description, ''), '[^0-9]', '', 'g'), '')::numeric, 0)), 0)
+        )
+        from public.bookings bookings
+        left join public.services services on services.id = bookings.service and services.company_id = target_company_id
+        where bookings.company_id = target_company_id
+          and bookings.status in ('reserved', 'confirmed')
+          and bookings.employee_id is not null
+          and bookings.start_at >= month_start
+          and bookings.start_at < month_end
+      ), jsonb_build_object('booking_count', 0, 'total', 0)),
+      'closed', coalesce((
+        select jsonb_build_object(
+          'booking_count', count(month_rows.booking_id),
+          'total', coalesce(sum(month_rows.amount), 0)
+        )
+        from (
+          select
+            closure_items.booking_id,
+            greatest(
+              0,
+              coalesce(closure_items.subtotal, 0) - case
+                when coalesce(closure_totals.subtotal_total, 0) > 0 then
+                  (coalesce(closure_items.subtotal, 0) / closure_totals.subtotal_total) * coalesce(closures.total_discount_total, 0)
+                else 0
+              end
+            ) as amount
+          from public.bookings bookings
+          join public.booking_closure_items closure_items on closure_items.booking_id = bookings.id
+          left join public.booking_closures closures on closures.id = closure_items.closure_id
+          join (
+            select closure_id, sum(subtotal) as subtotal_total
+            from public.booking_closure_items
+            group by closure_id
+          ) closure_totals on closure_totals.closure_id = closure_items.closure_id
+          where bookings.company_id = target_company_id
+            and bookings.status = 'completed'
+            and bookings.start_at >= month_start
+            and bookings.start_at < month_end
+        ) month_rows
+      ), jsonb_build_object('booking_count', 0, 'total', 0)),
+      'pending', coalesce((
+        select jsonb_build_object(
+          'booking_count', count(*),
+          'total', coalesce(sum(coalesce(services.base_price, nullif(regexp_replace(coalesce(bookings.booking_description, ''), '[^0-9]', '', 'g'), '')::numeric, 0)), 0)
+        )
+        from public.bookings bookings
+        left join public.services services on services.id = bookings.service and services.company_id = target_company_id
+        where bookings.company_id = target_company_id
+          and bookings.status = 'pending_assignment'
+          and bookings.start_at >= month_start
+          and bookings.start_at < month_end
+      ), jsonb_build_object('booking_count', 0, 'total', 0))
+    ),
     'currentMonthClosureSummary', coalesce((
       select jsonb_build_object(
         'booking_count', count(month_rows.booking_id),

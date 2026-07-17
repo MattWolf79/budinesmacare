@@ -445,7 +445,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   const [employeeServices, setEmployeeServices] = useState([]);
   const [appConfig, setAppConfig] = useState(null);
   const [promotions, setPromotions] = useState([]);
-  const [currentMonthClosureSummary, setCurrentMonthClosureSummary] = useState({ bookingCount: 0, total: 0 });
+  const emptyBookingCostSummary = { assigned: { bookingCount: 0, total: 0 }, closed: { bookingCount: 0, total: 0 }, pending: { bookingCount: 0, total: 0 } };
+  const [bookingCostSummary, setBookingCostSummary] = useState(emptyBookingCostSummary);
   const [accessRequests, setAccessRequests] = useState([]);
   const [employeeForm, setEmployeeForm] = useState(emptyEmployee);
   const [serviceForm, setServiceForm] = useState(emptyService);
@@ -542,7 +543,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       setEmployeeServices(localData.employeeServices);
       setAppConfig({ promotions: [], discounts: [] });
       setPromotions([]);
-      setCurrentMonthClosureSummary({ bookingCount: 2, total: 18000 });
+      setBookingCostSummary({ assigned: { bookingCount: 2, total: 18000 }, closed: { bookingCount: 2, total: 18000 }, pending: { bookingCount: 1, total: 9000 } });
       setAccessRequests([]);
       setIsLoading(false);
       return;
@@ -573,9 +574,21 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     setEmployeeServices(data?.employeeServices || []);
     setAppConfig(configResult.data || null);
     setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
-    setCurrentMonthClosureSummary({
-      bookingCount: Number(data?.currentMonthClosureSummary?.booking_count || data?.currentMonthClosureSummary?.bookingCount || 0),
-      total: Number(data?.currentMonthClosureSummary?.total || 0)
+    const summary = data?.adminBookingCostSummary || {};
+    const legacyClosedSummary = data?.currentMonthClosureSummary || {};
+    setBookingCostSummary({
+      assigned: {
+        bookingCount: Number(summary?.assigned?.booking_count || summary?.assigned?.bookingCount || 0),
+        total: Number(summary?.assigned?.total || 0)
+      },
+      closed: {
+        bookingCount: Number(summary?.closed?.booking_count || summary?.closed?.bookingCount || legacyClosedSummary?.booking_count || legacyClosedSummary?.bookingCount || 0),
+        total: Number(summary?.closed?.total || legacyClosedSummary?.total || 0)
+      },
+      pending: {
+        bookingCount: Number(summary?.pending?.booking_count || summary?.pending?.bookingCount || 0),
+        total: Number(summary?.pending?.total || 0)
+      }
     });
     setAccessRequests(view === 'employees' ? data?.accessRequests || [] : []);
     setIsLoading(false);
@@ -1665,10 +1678,12 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
           <strong>{employeeServices.length}</strong>
           <small>Empleado por servicio.</small>
         </article>
-        <article className="admin-metric-card admin-metric-card-monthly-closures">
+        <article className="admin-metric-card admin-metric-card-monthly-closures admin-booking-cost-summary-card">
           <span>{getCurrentMonthName()}</span>
-          <strong>{formatMoney(currentMonthClosureSummary.total)}</strong>
-          <small>{currentMonthClosureSummary.bookingCount} turno(s) cerrados.</small>
+          <strong>{formatMoney(bookingCostSummary.assigned.total + bookingCostSummary.closed.total + bookingCostSummary.pending.total)}</strong>
+          <small>Asignados: {bookingCostSummary.assigned.bookingCount} / {formatMoney(bookingCostSummary.assigned.total)}</small>
+          <small>Cerrados: {bookingCostSummary.closed.bookingCount} / {formatMoney(bookingCostSummary.closed.total)}</small>
+          <small>Pendientes: {bookingCostSummary.pending.bookingCount} / {formatMoney(bookingCostSummary.pending.total)}</small>
         </article>
       </div>
 

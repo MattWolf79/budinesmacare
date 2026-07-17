@@ -10466,6 +10466,21 @@ body {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
+.admin-booking-cost-summary-card {
+  min-height: 128px !important;
+}
+
+.admin-booking-cost-summary-card small {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 0 !important;
+  padding: 2px 9px !important;
+}
+
+.admin-booking-cost-summary-card small:last-child {
+  border-radius: 0 0 8px 8px !important;
+  padding-bottom: 8px !important;
+}
+
 .service-admin-manager .service-metric-grid,
 .dashboard-shell .service-admin-manager .service-metric-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
