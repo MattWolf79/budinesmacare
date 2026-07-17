@@ -12,7 +12,26 @@ const initialCompanyForm = {
   adminUsername: '',
   adminFirstName: '',
   adminLastName: '',
-  adminEmail: ''
+  adminEmail: '',
+  preciosHabilitados: true,
+  turnosSuperpuestosHabilitados: true,
+  intervaloGrillaMinutos: '30',
+  empleadosPuedenReservar: true,
+  empleadosVenAgendaCompleta: true,
+  visibilidadTurnosEmpleado: 'completa',
+  pdfDetalleTurnoHabilitado: false
+};
+
+const initialEditForm = {
+  companySlug: '',
+  companyName: '',
+  preciosHabilitados: true,
+  turnosSuperpuestosHabilitados: true,
+  intervaloGrillaMinutos: '30',
+  empleadosPuedenReservar: true,
+  empleadosVenAgendaCompleta: true,
+  visibilidadTurnosEmpleado: 'completa',
+  pdfDetalleTurnoHabilitado: false
 };
 
 const initialResetForm = {
@@ -27,6 +46,39 @@ const Field = ({ label, children }) => (
   </label>
 );
 
+const CheckField = ({ label, checked, onChange }) => (
+  <label className="platform-check-field">
+    <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+    <span>{label}</span>
+  </label>
+);
+
+const getConfigPayload = (form) => ({
+  precios_habilitados_valor: Boolean(form.preciosHabilitados),
+  turnos_superpuestos_habilitados_valor: Boolean(form.turnosSuperpuestosHabilitados),
+  intervalo_grilla_minutos_valor: Number(form.intervaloGrillaMinutos) || 30,
+  empleados_pueden_reservar_valor: Boolean(form.empleadosPuedenReservar),
+  empleados_ven_agenda_completa_valor: Boolean(form.empleadosVenAgendaCompleta),
+  visibilidad_turnos_empleado_valor: form.visibilidadTurnosEmpleado || 'completa',
+  pdf_detalle_turno_habilitado_valor: Boolean(form.pdfDetalleTurnoHabilitado)
+});
+
+const applyConfigData = (data) => {
+  const config = data?.configuracion_operativa || {};
+
+  return {
+    companySlug: data?.company_slug || '',
+    companyName: data?.company_name || '',
+    preciosHabilitados: config.precios_habilitados !== false,
+    turnosSuperpuestosHabilitados: config.turnos_superpuestos_habilitados !== false,
+    intervaloGrillaMinutos: String(config.intervalo_grilla_minutos || 30),
+    empleadosPuedenReservar: config.empleados_pueden_reservar !== false,
+    empleadosVenAgendaCompleta: config.empleados_ven_agenda_completa !== false,
+    visibilidadTurnosEmpleado: config.visibilidad_turnos_empleado || 'completa',
+    pdfDetalleTurnoHabilitado: config.pdf_detalle_turno_habilitado === true
+  };
+};
+
 const normalizeSlug = (value) => String(value || '')
   .trim()
   .toLowerCase()
@@ -36,8 +88,10 @@ export default function PlatformAdmin() {
   const [loginForm, setLoginForm] = useState(initialLoginForm);
   const [platformSession, setPlatformSession] = useState(null);
   const [companyForm, setCompanyForm] = useState(initialCompanyForm);
+  const [editForm, setEditForm] = useState(initialEditForm);
   const [resetForm, setResetForm] = useState(initialResetForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingCompany, setIsLoadingCompany] = useState(false);
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -47,6 +101,13 @@ export default function PlatformAdmin() {
 
   const updateCompanyField = (field, value) => {
     setCompanyForm((current) => ({
+      ...current,
+      [field]: field === 'companySlug' ? normalizeSlug(value) : value
+    }));
+  };
+
+  const updateEditField = (field, value) => {
+    setEditForm((current) => ({
       ...current,
       [field]: field === 'companySlug' ? normalizeSlug(value) : value
     }));
@@ -109,7 +170,8 @@ export default function PlatformAdmin() {
       admin_username_value: companyForm.adminUsername.trim(),
       admin_first_name_value: companyForm.adminFirstName.trim() || null,
       admin_last_name_value: companyForm.adminLastName.trim() || null,
-      admin_email_value: companyForm.adminEmail.trim().toLowerCase() || null
+      admin_email_value: companyForm.adminEmail.trim().toLowerCase() || null,
+      ...getConfigPayload(companyForm)
     });
 
     setIsSubmitting(false);
@@ -122,6 +184,57 @@ export default function PlatformAdmin() {
     const result = Array.isArray(data) ? data[0] : data;
     setMessage(`Empresa creada: ${result.company_slug}. Admin: ${result.admin_username}. Password temporal: ${result.temporary_password}. URL: ${window.location.origin}/${result.company_slug}`);
     setCompanyForm(initialCompanyForm);
+  };
+
+  const loadCompanyConfig = async (event) => {
+    event.preventDefault();
+    if (!platformSession) return;
+
+    setIsLoadingCompany(true);
+    setMessage('');
+    setErrorMessage('');
+
+    const { data, error } = await supabase.rpc('plataforma_obtener_configuracion_empresa', {
+      cuenta_plataforma_id_valor: platformSession.id,
+      token_sesion_valor: platformSession.sessionToken,
+      slug_empresa_valor: editForm.companySlug.trim()
+    });
+
+    setIsLoadingCompany(false);
+
+    if (error) {
+      setErrorMessage(error.message || 'No se pudo cargar la empresa.');
+      return;
+    }
+
+    setEditForm(applyConfigData(data));
+    setMessage(`Configuración cargada para ${data.company_slug}.`);
+  };
+
+  const submitEditCompany = async (event) => {
+    event.preventDefault();
+    if (!platformSession) return;
+
+    setIsSubmitting(true);
+    setMessage('');
+    setErrorMessage('');
+
+    const { data, error } = await supabase.rpc('plataforma_actualizar_configuracion_empresa', {
+      cuenta_plataforma_id_valor: platformSession.id,
+      token_sesion_valor: platformSession.sessionToken,
+      slug_empresa_valor: editForm.companySlug.trim(),
+      ...getConfigPayload(editForm)
+    });
+
+    setIsSubmitting(false);
+
+    if (error) {
+      setErrorMessage(error.message || 'No se pudo modificar la empresa.');
+      return;
+    }
+
+    setEditForm(applyConfigData(data));
+    setMessage(`Configuración actualizada para ${data.company_slug}.`);
   };
 
   const submitReset = async (event) => {
@@ -223,7 +336,74 @@ export default function PlatformAdmin() {
             <input type="email" value={companyForm.adminEmail} onChange={(event) => updateCompanyField('adminEmail', event.target.value)} placeholder="admin@empresa.com" />
             </Field>
           </div>
+          <div className="platform-config-block">
+            <div className="platform-panel-heading">
+              <p>Modo operativo</p>
+              <h2>Agenda y permisos</h2>
+            </div>
+            <div className="platform-form-grid">
+              <CheckField label="Usa precios en el sistema" checked={companyForm.preciosHabilitados} onChange={(value) => updateCompanyField('preciosHabilitados', value)} />
+              <CheckField label="Permite turnos superpuestos" checked={companyForm.turnosSuperpuestosHabilitados} onChange={(value) => updateCompanyField('turnosSuperpuestosHabilitados', value)} />
+              <Field label="Bloque de grilla">
+                <select value={companyForm.intervaloGrillaMinutos} onChange={(event) => updateCompanyField('intervaloGrillaMinutos', event.target.value)}>
+                  <option value="15">15 minutos</option>
+                  <option value="30">30 minutos</option>
+                  <option value="45">45 minutos</option>
+                  <option value="60">60 minutos</option>
+                </select>
+              </Field>
+              <Field label="Visibilidad empleado">
+                <select value={companyForm.visibilidadTurnosEmpleado} onChange={(event) => updateCompanyField('visibilidadTurnosEmpleado', event.target.value)}>
+                  <option value="completa">Completa</option>
+                  <option value="solo_ocupado">Solo ocupado</option>
+                  <option value="cliente_sin_empleado">Cliente sin empleado</option>
+                  <option value="solo_propios">Solo propios</option>
+                </select>
+              </Field>
+              <CheckField label="Empleados pueden reservar" checked={companyForm.empleadosPuedenReservar} onChange={(value) => updateCompanyField('empleadosPuedenReservar', value)} />
+              <CheckField label="Empleados ven agenda completa" checked={companyForm.empleadosVenAgendaCompleta} onChange={(value) => updateCompanyField('empleadosVenAgendaCompleta', value)} />
+              <CheckField label="Habilita PDF de detalle de turno" checked={companyForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateCompanyField('pdfDetalleTurnoHabilitado', value)} />
+            </div>
+          </div>
           <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Crear empresa'}</button>
+        </form>
+
+        <form className="platform-admin-panel" onSubmit={submitEditCompany}>
+          <div className="platform-panel-heading">
+            <p>Modificar empresa</p>
+            <h2>Configuración operativa</h2>
+          </div>
+          <Field label="Slug empresa">
+            <input value={editForm.companySlug} onChange={(event) => updateEditField('companySlug', event.target.value)} placeholder="jardinmasaje" required />
+          </Field>
+          {editForm.companyName && <p className="platform-company-loaded">Empresa: {editForm.companyName}</p>}
+          <div className="platform-form-grid">
+            <CheckField label="Usa precios en el sistema" checked={editForm.preciosHabilitados} onChange={(value) => updateEditField('preciosHabilitados', value)} />
+            <CheckField label="Permite turnos superpuestos" checked={editForm.turnosSuperpuestosHabilitados} onChange={(value) => updateEditField('turnosSuperpuestosHabilitados', value)} />
+            <Field label="Bloque de grilla">
+              <select value={editForm.intervaloGrillaMinutos} onChange={(event) => updateEditField('intervaloGrillaMinutos', event.target.value)}>
+                <option value="15">15 minutos</option>
+                <option value="30">30 minutos</option>
+                <option value="45">45 minutos</option>
+                <option value="60">60 minutos</option>
+              </select>
+            </Field>
+            <Field label="Visibilidad empleado">
+              <select value={editForm.visibilidadTurnosEmpleado} onChange={(event) => updateEditField('visibilidadTurnosEmpleado', event.target.value)}>
+                <option value="completa">Completa</option>
+                <option value="solo_ocupado">Solo ocupado</option>
+                <option value="cliente_sin_empleado">Cliente sin empleado</option>
+                <option value="solo_propios">Solo propios</option>
+              </select>
+            </Field>
+            <CheckField label="Empleados pueden reservar" checked={editForm.empleadosPuedenReservar} onChange={(value) => updateEditField('empleadosPuedenReservar', value)} />
+            <CheckField label="Empleados ven agenda completa" checked={editForm.empleadosVenAgendaCompleta} onChange={(value) => updateEditField('empleadosVenAgendaCompleta', value)} />
+            <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} />
+          </div>
+          <div className="platform-action-row">
+            <button type="button" disabled={isLoadingCompany || isSubmitting || !editForm.companySlug} onClick={loadCompanyConfig}>{isLoadingCompany ? 'Cargando...' : 'Cargar'}</button>
+            <button type="submit" disabled={isSubmitting || isLoadingCompany || !editForm.companySlug}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</button>
+          </div>
         </form>
 
         <form className="platform-admin-panel" onSubmit={submitReset}>

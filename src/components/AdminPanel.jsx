@@ -439,7 +439,7 @@ const formatSupabaseError = (error) => [
   error.hint ? `Ayuda: ${error.hint}` : ''
 ].filter(Boolean).join('\n');
 
-export default function AdminPanel({ view, user, onDataChanged, adminProfileSummary = null, companySlug }) {
+export default function AdminPanel({ view, user, onDataChanged, adminProfileSummary = null, companySlug, companyContext }) {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
   const [employeeServices, setEmployeeServices] = useState([]);
@@ -466,6 +466,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   const [isSettlementLoading, setIsSettlementLoading] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
   const [localSettledBookingIds, setLocalSettledBookingIds] = useState([]);
+  const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
 
   const activeServices = useMemo(
     () => services.filter((service) => service.active !== false),
@@ -1099,13 +1100,13 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       icon: serviceForm.icon.trim() || null,
       color: serviceForm.color || '#42A5F5',
       default_duration: Number(serviceForm.default_duration) || 30,
-      base_price: parseMoney(serviceForm.base_price),
-      activity_discount_check_id: serviceForm.activity_discount_check_id || '',
+      base_price: preciosHabilitados ? parseMoney(serviceForm.base_price) : 0,
+      activity_discount_check_id: preciosHabilitados ? serviceForm.activity_discount_check_id || '' : '',
       active: serviceForm.active
     };
 
     const selectedActivityCheck = activityDiscountChecks.find((discount) => String(discount.id) === String(payload.activity_discount_check_id));
-    if (selectedActivityCheck?.valueType === 'amount' && Number(selectedActivityCheck.value || 0) > payload.base_price) {
+    if (preciosHabilitados && selectedActivityCheck?.valueType === 'amount' && Number(selectedActivityCheck.value || 0) > payload.base_price) {
       alert(`El check ${selectedActivityCheck.name || selectedActivityCheck.id} no puede superar el precio base del servicio.`);
       return;
     }
@@ -1528,9 +1529,11 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                     {employee.photo_url ? <img src={employee.photo_url} alt="" /> : (employee.name || 'E').slice(0, 1).toUpperCase()}
                   </span>
                   <strong>{employee.name}</strong>
-                  <button className="employee-header-settlement-button" type="button" onClick={() => openSettlement(employee)} aria-label={`Rendición de ${employee.name}`} title="Rendición">
-                    Rendición
-                  </button>
+                  {preciosHabilitados && (
+                    <button className="employee-header-settlement-button" type="button" onClick={() => openSettlement(employee)} aria-label={`Rendición de ${employee.name}`} title="Rendición">
+                      Rendición
+                    </button>
+                  )}
                 </div>
                 <div className="admin-record-main admin-management-card-main">
                   <div className="admin-management-card-fields">
@@ -1575,7 +1578,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
           </div>
         </div>
 
-        {settlementEmployee && (
+        {preciosHabilitados && settlementEmployee && (
           <div className="modal" role="dialog" aria-modal="true" aria-label="Rendición de empleado">
             <div className="agenda-modal-card settlement-modal">
               <div className="agenda-modal-header">Rendición · {settlementEmployee.name}</div>
@@ -1678,13 +1681,15 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
           <strong>{employeeServices.length}</strong>
           <small>Empleado por servicio.</small>
         </article>
-        <article className="admin-metric-card admin-metric-card-monthly-closures admin-booking-cost-summary-card">
-          <span>{getCurrentMonthName()}</span>
-          <strong>{formatMoney(bookingCostSummary.assigned.total + bookingCostSummary.closed.total + bookingCostSummary.pending.total)}</strong>
-          <small>Asignados: {bookingCostSummary.assigned.bookingCount} / {formatMoney(bookingCostSummary.assigned.total)}</small>
-          <small>Cerrados: {bookingCostSummary.closed.bookingCount} / {formatMoney(bookingCostSummary.closed.total)}</small>
-          <small>Pendientes: {bookingCostSummary.pending.bookingCount} / {formatMoney(bookingCostSummary.pending.total)}</small>
-        </article>
+        {preciosHabilitados && (
+          <article className="admin-metric-card admin-metric-card-monthly-closures admin-booking-cost-summary-card">
+            <span>{getCurrentMonthName()}</span>
+            <strong>{formatMoney(bookingCostSummary.assigned.total + bookingCostSummary.closed.total + bookingCostSummary.pending.total)}</strong>
+            <small>Asignados: {bookingCostSummary.assigned.bookingCount} / {formatMoney(bookingCostSummary.assigned.total)}</small>
+            <small>Cerrados: {bookingCostSummary.closed.bookingCount} / {formatMoney(bookingCostSummary.closed.total)}</small>
+            <small>Pendientes: {bookingCostSummary.pending.bookingCount} / {formatMoney(bookingCostSummary.pending.total)}</small>
+          </article>
+        )}
       </div>
 
       <div className="admin-hero service-legacy-heading">
@@ -1763,12 +1768,14 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
               <input type="color" value={serviceForm.color} onChange={(event) => updateServiceField('color', event.target.value)} />
             </label>
 
-            <label>
-              Precio base
-              <input type="text" inputMode="decimal" value={serviceForm.base_price} onChange={(event) => updateServiceField('base_price', event.target.value)} placeholder="20000" />
-            </label>
+            {preciosHabilitados && (
+              <label>
+                Precio base
+                <input type="text" inputMode="decimal" value={serviceForm.base_price} onChange={(event) => updateServiceField('base_price', event.target.value)} placeholder="20000" />
+              </label>
+            )}
 
-            {activityDiscountChecks.length > 0 && (
+            {preciosHabilitados && activityDiscountChecks.length > 0 && (
               <label>
                 Check servicio
                 <select value={serviceForm.activity_discount_check_id} onChange={(event) => updateServiceField('activity_discount_check_id', event.target.value)}>
@@ -1810,10 +1817,12 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                 </div>
                 <div className="admin-record-main admin-management-card-main">
                   <div className="admin-management-card-fields">
-                    <div className="admin-management-card-field">
-                      <span>Precio</span>
-                      <strong>{formatMoney(service.base_price)}</strong>
-                    </div>
+                    {preciosHabilitados && (
+                      <div className="admin-management-card-field">
+                        <span>Precio</span>
+                        <strong>{formatMoney(service.base_price)}</strong>
+                      </div>
+                    )}
                     <div className="admin-management-card-field">
                       <span>Asignados</span>
                       <strong>{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length}</strong>

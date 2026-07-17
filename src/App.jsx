@@ -150,6 +150,7 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
+    let retryTimeoutId = null;
 
     const loadCompanyContext = async () => {
       setCompanyContextLoading(true);
@@ -160,9 +161,20 @@ export default function App() {
         return;
       }
 
-      const { data, error } = await supabase.rpc('get_company_public_context', {
+      const loadContextAttempt = () => supabase.rpc('get_company_public_context', {
         slug_value: companySlug
       });
+
+      let { data, error } = await loadContextAttempt();
+
+      if (active && (error || !data?.active)) {
+        await new Promise((resolve) => {
+          retryTimeoutId = window.setTimeout(resolve, 450);
+        });
+
+        if (!active) return;
+        ({ data, error } = await loadContextAttempt());
+      }
 
       if (!active) return;
 
@@ -174,6 +186,7 @@ export default function App() {
 
     return () => {
       active = false;
+      if (retryTimeoutId) window.clearTimeout(retryTimeoutId);
     };
   }, [companySlug]);
 

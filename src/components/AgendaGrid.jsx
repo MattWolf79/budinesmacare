@@ -11,6 +11,8 @@ import { formatDisplayDate } from '../utils/dateFormat';
 const SLOT_MINUTES = 30;
 const START_HOUR = 8;
 const SLOTS = 30;
+const AGENDA_TOTAL_MINUTES = SLOT_MINUTES * SLOTS;
+const ALLOWED_SLOT_MINUTES = new Set([15, 30, 45, 60]);
 const EMPTY_SLOT_HEIGHT = 30;
 const BOOKED_SLOT_PADDING_HEIGHT = 5;
 const BOOKING_STACK_HEIGHT = 24;
@@ -22,7 +24,12 @@ const TOUCH_TAP_MOVE_TOLERANCE = 8;
 ========================= */
 
 // 👉 genera hora LOCAL real (sin drift)
-const buildSlotDate = (day, slotIndex) => {
+const getValidSlotMinutes = (value) => {
+  const minutes = Number(value) || SLOT_MINUTES;
+  return ALLOWED_SLOT_MINUTES.has(minutes) ? minutes : SLOT_MINUTES;
+};
+
+const buildSlotDate = (day, slotIndex, slotMinutes = SLOT_MINUTES) => {
   const d = new Date(
     day.getFullYear(),
     day.getMonth(),
@@ -33,15 +40,15 @@ const buildSlotDate = (day, slotIndex) => {
     0
   );
 
-  d.setMinutes(d.getMinutes() + slotIndex * SLOT_MINUTES);
+  d.setMinutes(d.getMinutes() + slotIndex * slotMinutes);
   return d;
 };
 
 const formatTime = (date) =>
   `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 
-const formatDuration = (startSlot, endSlot) => {
-  const totalMinutes = (endSlot - startSlot + 1) * SLOT_MINUTES;
+const formatDuration = (startSlot, endSlot, slotMinutes = SLOT_MINUTES) => {
+  const totalMinutes = (endSlot - startSlot + 1) * slotMinutes;
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
@@ -52,6 +59,14 @@ const formatDuration = (startSlot, endSlot) => {
 
 const rangesOverlap = (startA, endA, startB, endB) =>
   startA < endB && endA > startB;
+
+const companyHasBookingConflict = (bookings, range) =>
+  bookings.some((booking) => {
+    if (!isActiveBooking(booking)) return false;
+
+    const bookingRange = buildRangeFromBooking(booking);
+    return rangesOverlap(bookingRange.startLocal, bookingRange.endLocal, range.startLocal, range.endLocal);
+  });
 
 const isActiveBooking = (booking) =>
   ACTIVE_BOOKING_STATUSES.has(String(booking.status || '').trim().toLowerCase());
@@ -200,9 +215,9 @@ const getClientName = (booking) => booking.customer_name || booking.user_email |
 
 const getClientEmail = (booking) => booking.user_email || '';
 
-const buildReservationRange = (day, startSlot, endSlot) => {
-  const startLocal = buildSlotDate(day, startSlot);
-  const endLocal = buildSlotDate(day, endSlot + 1);
+const buildReservationRange = (day, startSlot, endSlot, slotMinutes = SLOT_MINUTES) => {
+  const startLocal = buildSlotDate(day, startSlot, slotMinutes);
+  const endLocal = buildSlotDate(day, endSlot + 1, slotMinutes);
 
   return {
     startLocal,
@@ -594,7 +609,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   );
 }
 
-function BookingDetailsModal({ booking, service, employee, canEditCustomer, onClose, onSave }) {
+function BookingDetailsModal({ booking, service, employee, canEditCustomer, canDownloadPdf = false, onClose, onSave }) {
   const initialName = splitCustomerName(booking?.customer_name || '');
   const [isEditing, setIsEditing] = useState(false);
   const [firstName, setFirstName] = useState(initialName.firstName);
@@ -613,6 +628,47 @@ function BookingDetailsModal({ booking, service, employee, canEditCustomer, onCl
   const statusLabel = getBookingStatusLabel(booking);
   const customerName = booking.customer_name || 'Cliente sin datos';
   const customerEmail = booking.user_email || 'Sin mail cargado';
+
+  const downloadBookingPdf = async () => {
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const margin = 16;
+    let currentY = 18;
+    const rows = [
+      ['Servicio', activityLabel],
+      ['Cliente', customerName],
+      ['Mail', customerEmail],
+      ['Empleado', employee ? employeeLabel : 'No visible'],
+      ['Estado', statusLabel],
+      ['Fecha', bookingDate],
+      ['Horario', `${startTime} - ${endTime}`]
+    ];
+
+    if (booking.booking_description) rows.push(['Detalle', booking.booking_description]);
+    if (booking.priceDetails?.baseLabel) rows.push(['Costo', booking.priceDetails.baseLabel]);
+    if (booking.priceDetails?.netLabel) rows.push(['Neto', booking.priceDetails.netLabel]);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Detalle del turno', margin, currentY);
+    currentY += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generado: ${formatDisplayDate(new Date())}`, margin, currentY);
+    currentY += 10;
+
+    rows.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${label}:`, margin, currentY);
+      doc.setFont('helvetica', 'normal');
+      const textLines = doc.splitTextToSize(String(value || '-'), 150);
+      doc.text(textLines, margin + 32, currentY);
+      currentY += Math.max(7, textLines.length * 5);
+    });
+
+    const safeName = normalizeComparableText(customerName).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'turno';
+    doc.save(`detalle-turno-${safeName}-${String(booking.id || '').slice(0, 8) || 'sin-id'}.pdf`);
+  };
 
   const saveCustomerDetails = async () => {
     setErrorMessage('');
@@ -665,6 +721,7 @@ function BookingDetailsModal({ booking, service, employee, canEditCustomer, onCl
             ) : (
               <>
                 <button className="agenda-option-button" type="button" onClick={onClose}>Cerrar</button>
+                {canDownloadPdf && <button className="agenda-option-button" type="button" onClick={downloadBookingPdf}>PDF</button>}
                 {canEditCustomer && <button className="agenda-close-button" type="button" onClick={() => setIsEditing(true)}>Editar datos</button>}
               </>
             )}
@@ -713,10 +770,20 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const isAdminView = accessProfile === 'admin';
   const isEmployeeView = accessProfile === 'employee';
   const isClientView = accessProfile === 'client';
+  const configuracionOperativa = companyContext?.configuracion_operativa || {};
+  const slotMinutes = getValidSlotMinutes(configuracionOperativa.intervalo_grilla_minutos);
+  const totalSlots = Math.max(1, Math.floor(AGENDA_TOTAL_MINUTES / slotMinutes));
+  const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
+  const turnosSuperpuestosHabilitados = configuracionOperativa.turnos_superpuestos_habilitados !== false;
+  const empleadosPuedenReservar = configuracionOperativa.empleados_pueden_reservar !== false;
+  const empleadosVenAgendaCompleta = configuracionOperativa.empleados_ven_agenda_completa !== false;
+  const visibilidadTurnosEmpleado = configuracionOperativa.visibilidad_turnos_empleado || 'completa';
+  const pdfDetalleTurnoHabilitado = configuracionOperativa.pdf_detalle_turno_habilitado === true;
   const applyCompanyFilter = (query) => companyContext?.id ? query.eq('company_id', companyContext.id) : query;
   const canGoBack = !isClientView || offset > 0;
   const isCompactAgenda = visibleDayCount <= 3;
   const timeColumnWidth = isCompactAgenda ? 46 : 64;
+  const canEmployeeInteractWithEmptySlots = !isEmployeeView || empleadosPuedenReservar;
 
   const activeSelection = dragStart && dragEnd
     ? {
@@ -734,11 +801,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const selectedRange = useMemo(() => {
     if (!selection) return null;
-    return buildReservationRange(days[selection.day], selection.start, selection.end);
-  }, [selection, days]);
+    return buildReservationRange(days[selection.day], selection.start, selection.end, slotMinutes);
+  }, [selection, days, slotMinutes]);
 
   const selectedRangeLabel = selection && selectedRange
-    ? `${formatTime(selectedRange.startLocal)} - ${formatTime(selectedRange.endLocal)} (${formatDuration(selection.start, selection.end)})`
+    ? `${formatTime(selectedRange.startLocal)} - ${formatTime(selectedRange.endLocal)} (${formatDuration(selection.start, selection.end, slotMinutes)})`
     : '';
   const promotionServices = useMemo(() => {
     const source = selectedPromotion ? [selectedPromotion] : promotions;
@@ -844,7 +911,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const fallbackEmployeeServices = bookingOptions.employeeServices || [];
     const fallbackAvailability = bookingOptions.employeeAvailability || [];
 
-    setBookings(isAdminView ? adminData.bookings || [] : usesInternalEmployeeData ? internalEmployeeData.bookings || [] : bk || []);
+    const loadedBookings = isAdminView ? adminData.bookings || [] : usesInternalEmployeeData ? internalEmployeeData.bookings || [] : bk || [];
+    const visibleBookings = isEmployeeView && (!empleadosVenAgendaCompleta || visibilidadTurnosEmpleado === 'solo_propios')
+      ? loadedBookings.filter((booking) => String(booking.employee_id) === String(employeeId))
+      : loadedBookings;
+
+    setBookings(visibleBookings);
     setServices(isAdminView ? adminData.services || fallbackServices : usesInternalEmployeeData ? fallbackServices.length ? fallbackServices : internalEmployeeData.services || [] : isClientView ? fallbackServices : srv || []);
     setEmployees(isAdminView ? adminData.employees || fallbackEmployees : usesInternalEmployeeData ? fallbackEmployees.length ? fallbackEmployees : internalEmployeeData.employees || [] : isClientView ? fallbackEmployees : emp || []);
     setEmployeeServices(isAdminView ? adminData.employeeServices || fallbackEmployeeServices : usesInternalEmployeeData ? fallbackEmployeeServices.length ? fallbackEmployeeServices : internalEmployeeData.employeeServices || [] : isClientView ? fallbackEmployeeServices : []);
@@ -907,6 +979,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   };
 
   const openCloseAttention = async () => {
+    if (!preciosHabilitados) return;
+
     const { data } = await supabase.rpc('get_app_configuration', {
       company_slug_value: companySlug
     });
@@ -1248,6 +1322,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   ========================= */
 
   const chooseEmployeeForReservation = (employee) => {
+    if (isEmployeeView && !empleadosPuedenReservar) {
+      alert('Los empleados no tienen habilitada la reserva de turnos.');
+      return;
+    }
+
     if (isClientView && clientCanChooseEmployee) {
       reserve(employee);
       return;
@@ -1275,6 +1354,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     if (clientHasBookingConflict(bookings, clientIdentity, range)) {
       alert('Ya tenés un turno o solicitud en ese horario. Una persona no puede tener dos reservas superpuestas.');
+      return;
+    }
+
+    if (!turnosSuperpuestosHabilitados && companyHasBookingConflict(bookings, range)) {
+      alert('Ese horario ya está ocupado. La empresa no permite turnos superpuestos.');
       return;
     }
 
@@ -1310,6 +1394,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     if (!range) return;
 
+    if (isEmployeeView && !empleadosPuedenReservar) {
+      alert('Los empleados no tienen habilitada la reserva de turnos.');
+      return;
+    }
+
     const customerName = customer?.name?.trim() || user?.displayName || user?.email || '';
     const customerEmail = customer?.email?.trim() || user?.email || '';
     const clientIdentity = {
@@ -1319,6 +1408,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     if (clientHasBookingConflict(bookings, clientIdentity, range)) {
       alert('Ese cliente ya tiene un turno en ese horario. Una persona no puede tener dos reservas superpuestas.');
+      return;
+    }
+
+    if (!turnosSuperpuestosHabilitados && companyHasBookingConflict(bookings, range)) {
+      alert('Ese horario ya está ocupado. La empresa no permite turnos superpuestos.');
       return;
     }
 
@@ -1662,7 +1756,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           ←
         </button>
         <button className="agenda-week-button" onClick={() => setOffset(offset + visibleDayCount)} aria-label="Siguientes dias">→</button>
-        {!isClientView && (
+        {!isClientView && preciosHabilitados && (
           <button className="agenda-close-attention-button" type="button" onClick={openCloseAttention}>
             Cerrar atención
           </button>
@@ -1690,10 +1784,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       )}
 
       {/* GRID */}
-      {[...Array(SLOTS)].map((_, slotIndex) => {
-        const label = buildSlotDate(days[0], slotIndex);
+      {[...Array(totalSlots)].map((_, slotIndex) => {
+        const label = buildSlotDate(days[0], slotIndex, slotMinutes);
         const rowSlotBookings = days.map((day) => {
-          const slotTime = buildSlotDate(day, slotIndex);
+          const slotTime = buildSlotDate(day, slotIndex, slotMinutes);
 
           return bookings.filter((booking) =>
             isVisibleGridBooking(booking) && isBooked(booking, slotTime)
@@ -1723,6 +1817,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
             {days.map((day, dayIndex) => {
               const isDisabled = isPastDay(day);
               const slotBookings = rowSlotBookings[dayIndex];
+              const bloqueaSuperpuestos = slotBookings.length > 0 && !turnosSuperpuestosHabilitados;
 
               const isSelected = !isDisabled && activeSelection?.day === dayIndex &&
                 slotIndex >= activeSelection.start &&
@@ -1730,12 +1825,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
               return (
                 <div
-                  className="agenda-slot-cell"
+                  className={`agenda-slot-cell${bloqueaSuperpuestos ? ' agenda-slot-cell-blocked' : ''}`}
                   key={dayIndex}
                   data-agenda-cell="true"
                   data-day-index={dayIndex}
                   data-slot-index={slotIndex}
-                  onPointerDown={(event) => startPointerSelection(event, dayIndex, slotIndex)}
+                  onPointerDown={(event) => {
+                    if (!canEmployeeInteractWithEmptySlots || bloqueaSuperpuestos) return;
+                    startPointerSelection(event, dayIndex, slotIndex);
+                  }}
                   onPointerUp={finishCellPointerSelection}
                   onLostPointerCapture={finishCellPointerSelection}
                   onPointerEnter={() => move(dayIndex, slotIndex)}
@@ -1745,7 +1843,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       return;
                     }
 
-                    if (isCompactAgenda) selectMobileRangePoint(dayIndex, slotIndex);
+                    if (isCompactAgenda && canEmployeeInteractWithEmptySlots && !bloqueaSuperpuestos) selectMobileRangePoint(dayIndex, slotIndex);
                   }}
                   style={{
                     border: '1px solid #edf1f5',
@@ -1760,10 +1858,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                         : 'transparent',
                     outline: isSelected ? '2px solid rgba(15, 62, 168, 0.38)' : 'none',
                     outlineOffset: -2,
-                    cursor: isDisabled ? 'not-allowed' : 'pointer'
+                    cursor: isDisabled || !canEmployeeInteractWithEmptySlots || bloqueaSuperpuestos ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <div style={{ flex: '1 1 auto' }}>
+                  <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
                     {slotBookings.map(b => {
                       const service = services.find(s => Number(s.id) === Number(b.service));
                       const emp = employees.find(e => e.id === b.employee_id);
@@ -1771,27 +1869,38 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       const isOwn = isOwnBooking(b);
                       const isAssigned = isAssignedBooking(b);
                       const isClosed = isClosedBooking(b);
-                      const displayLabel = `${getBookingActivityLabel(b, service)} / ${employeeLabel}`;
-                      const priceDetails = bookingPriceDetailsById[b.id];
+                      const isEmployeeForeignBooking = isEmployeeView && !isOwn && !isAssigned;
+                      const hideEmployee = isEmployeeView && ['solo_ocupado', 'cliente_sin_empleado'].includes(visibilidadTurnosEmpleado);
+                      const hideCustomer = isEmployeeView && visibilidadTurnosEmpleado === 'solo_ocupado' && isEmployeeForeignBooking;
+                      const canOpenDetails = isAdminView || isOwn || (isEmployeeView && visibilidadTurnosEmpleado !== 'solo_ocupado');
+                      const canViewCustomerDetails = isAdminView || isOwn || (isEmployeeView && !hideCustomer);
+                      const visibleEmployeeLabel = hideEmployee ? '' : employeeLabel;
+                      const displayLabel = isEmployeeView && visibilidadTurnosEmpleado === 'solo_ocupado' && isEmployeeForeignBooking
+                        ? 'Ocupado'
+                        : visibleEmployeeLabel
+                          ? `${getBookingActivityLabel(b, service)} / ${visibleEmployeeLabel}`
+                          : getBookingActivityLabel(b, service);
+                      const priceDetails = preciosHabilitados ? bookingPriceDetailsById[b.id] : null;
 
                       return (
                         <BookingItem
                           key={b.id}
                           booking={b}
                           service={service}
-                          employee={emp}
+                          employee={hideEmployee ? null : emp}
                           canCancel={canCancelBooking(b)}
                           isClosed={isClosed}
-                          canShowDetails={isAdminView || isOwn || isEmployeeView}
-                          canViewCustomer={isAdminView || isOwn || isEmployeeView}
+                          canShowDetails={canOpenDetails}
+                          canViewCustomer={canViewCustomerDetails}
                           customerLabel={isOwn ? 'Tu turno' : 'Turno reservado'}
                           displayLabel={displayLabel}
-                          employeeLabel={employeeLabel}
+                          employeeLabel={visibleEmployeeLabel}
                           priceDetails={priceDetails}
                           compact={isCompactAgenda}
+                          fillCell={bloqueaSuperpuestos}
                           onOpenDetails={() => {
-                            if (isAdminView || isOwn || isEmployeeView) {
-                              setBookingDetails({ booking: { ...b, priceDetails }, service, employee: emp });
+                            if (canOpenDetails) {
+                              setBookingDetails({ booking: { ...b, priceDetails }, service, employee: hideEmployee ? null : emp });
                             }
                           }}
                           onCancel={() => setBookingToCancel({
@@ -1804,7 +1913,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                     })}
                   </div>
 
-                  {isCompactAgenda && slotBookings.length > 0 && !isDisabled && (
+                  {isCompactAgenda && slotBookings.length > 0 && !isDisabled && turnosSuperpuestosHabilitados && (
                     <div className="agenda-slot-add-actions">
                       <button
                         className="agenda-slot-add-overlap"
@@ -1822,13 +1931,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                     </div>
                   )}
 
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      flex: slotBookings.length ? '0 0 4px' : '1 1 auto',
-                      borderTop: slotBookings.length ? '1px dashed rgba(15, 62, 168, 0.16)' : 'none'
-                    }}
-                  />
+                  {(!slotBookings.length || turnosSuperpuestosHabilitados) && (
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        flex: slotBookings.length ? '0 0 4px' : '1 1 auto',
+                        borderTop: slotBookings.length ? '1px dashed rgba(15, 62, 168, 0.16)' : 'none'
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -1989,6 +2100,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           service={bookingDetails.service}
           employee={bookingDetails.employee}
           canEditCustomer={!isClientView && !isClosedBooking(bookingDetails.booking) && !isPastBookingStart(bookingDetails.booking)}
+          canDownloadPdf={!isClientView && pdfDetalleTurnoHabilitado}
           onClose={() => setBookingDetails(null)}
           onSave={updateBookingCustomerDetails}
         />

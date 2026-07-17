@@ -107,7 +107,7 @@ const normalizeBannerImages = (config) => {
   return normalizedImages;
 };
 
-export default function AdminSettingsPanel({ user, adminProfileSummary = null, companySlug }) {
+export default function AdminSettingsPanel({ user, adminProfileSummary = null, companySlug, companyContext }) {
   const [savedConfig, setSavedConfig] = useState(defaultConfig);
   const [form, setForm] = useState(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
@@ -121,6 +121,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const [discountsOpen, setDiscountsOpen] = useState(false);
   const [activityChecksOpen, setActivityChecksOpen] = useState(false);
   const [selectedActivityCheckIndex, setSelectedActivityCheckIndex] = useState(null);
+  const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
 
   const enabledPromotions = useMemo(() => (
     form.promotions.filter((promotion) => promotion.enabled)
@@ -648,7 +649,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
         </div>
 
         <div className="settings-column settings-side-column">
-          {activityChecksSection}
+          {preciosHabilitados && activityChecksSection}
 
           <article className="admin-form-card settings-card settings-business-hours-card">
           <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
@@ -678,7 +679,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
           </article>
         </div>
 
-        <article className="admin-form-card settings-card settings-promotions-card">
+        {preciosHabilitados && <article className="admin-form-card settings-card settings-promotions-card">
           <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
             <span>Promociones</span>
             <button
@@ -733,9 +734,9 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                 </div>
               ))}
           </div>
-        </article>
+        </article>}
 
-        <article className="admin-form-card settings-card settings-promotions-card">
+        {preciosHabilitados && <article className="admin-form-card settings-card settings-promotions-card">
           <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
             <span>Descuentos</span>
             <button
@@ -802,7 +803,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
               </div>
             )))}
           </div>
-        </article>
+        </article>}
 
       </div>
 

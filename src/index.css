@@ -8774,9 +8774,17 @@ body {
   background: #f8fbff !important;
 }
 
+.agenda-slot-cell-blocked:hover {
+  background: transparent !important;
+}
+
 .agenda-booking-item {
   box-shadow: none;
   font-weight: 900;
+}
+
+.agenda-booking-item-fill {
+  border-radius: 0 !important;
 }
 
 .agenda-booking-item-promotion {
@@ -12300,6 +12308,7 @@ body {
   font-size: 13px !important;
   font-weight: 900 !important;
   cursor: pointer !important;
+  align-self: start !important;
 }
 
 .platform-admin-header button {
@@ -12309,7 +12318,7 @@ body {
 
 .platform-admin-grid {
   display: grid !important;
-  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr) !important;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr) minmax(280px, 0.8fr) !important;
   gap: 16px !important;
   max-width: 1120px !important;
   margin: 0 auto !important;
@@ -12318,6 +12327,7 @@ body {
 .platform-admin-panel {
   display: grid !important;
   gap: 14px !important;
+  align-content: start !important;
   border: 1px solid rgba(36, 174, 187, 0.2) !important;
   border-radius: 8px !important;
   padding: 18px !important;
@@ -12356,7 +12366,8 @@ body {
   color: #475569 !important;
 }
 
-.platform-field input {
+.platform-field input,
+.platform-field select {
   width: 100% !important;
   min-height: 42px !important;
   border: 1px solid #cfe4e8 !important;
@@ -12366,6 +12377,61 @@ body {
   background: #f8fdfe !important;
   font-size: 14px !important;
   font-weight: 650 !important;
+}
+
+.platform-field select {
+  appearance: auto !important;
+}
+
+.platform-config-block {
+  display: grid !important;
+  gap: 12px !important;
+  border: 1px solid rgba(36, 174, 187, 0.18) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  background: #f8fdfe !important;
+}
+
+.platform-check-field {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  min-height: 42px !important;
+  border: 1px solid #d9edf0 !important;
+  border-radius: 6px !important;
+  padding: 9px 10px !important;
+  color: #334155 !important;
+  background: #f8fdfe !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.platform-check-field input {
+  width: 16px !important;
+  height: 16px !important;
+  accent-color: #24aebb !important;
+}
+
+.platform-company-loaded {
+  margin: 0 !important;
+  border-radius: 6px !important;
+  padding: 9px 10px !important;
+  color: #155e75 !important;
+  background: #ecfeff !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+}
+
+.platform-action-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+}
+
+.platform-action-row button {
+  flex: 0 0 auto !important;
+  min-height: 42px !important;
 }
 
 .platform-admin-success,

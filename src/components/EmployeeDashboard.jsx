@@ -116,7 +116,7 @@ const buildClosedBookingAmounts = (employeeBookings, closureItems = [], closures
   }, {});
 };
 
-export default function EmployeeDashboard({ user, activeView = 'summary', companySlug }) {
+export default function EmployeeDashboard({ user, activeView = 'summary', companySlug, companyContext }) {
   const [employee, setEmployee] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
@@ -128,6 +128,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const [refreshKey, setRefreshKey] = useState(0);
 
   const employeeId = user?.employeeId;
+  const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
 
   useEffect(() => {
     if (!employeeId) {
@@ -258,7 +259,9 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         setServices(data?.services || []);
         setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
         setAvailability(data?.availability || []);
-        if (Array.isArray(data?.bookingClosureItems) && Array.isArray(data?.bookingClosures)) {
+        if (!preciosHabilitados) {
+          setClosedBookingAmounts({});
+        } else if (Array.isArray(data?.bookingClosureItems) && Array.isArray(data?.bookingClosures)) {
           setClosedBookingAmounts(buildClosedBookingAmounts(employeeBookings, data.bookingClosureItems, data.bookingClosures));
         } else {
           await loadClosedBookingAmounts(employeeBookings);
@@ -311,7 +314,11 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       setServices(servicesResult.data || []);
       setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
       setAvailability(availabilityResult.data || []);
-      await loadClosedBookingAmounts(bookingsResult.data || []);
+      if (preciosHabilitados) {
+        await loadClosedBookingAmounts(bookingsResult.data || []);
+      } else {
+        setClosedBookingAmounts({});
+      }
     };
 
     loadEmployeeWorkspace();
@@ -319,7 +326,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     return () => {
       active = false;
     };
-  }, [employeeId, refreshKey, user?.id, user?.isInternal, companySlug]);
+  }, [employeeId, refreshKey, user?.id, user?.isInternal, companySlug, preciosHabilitados]);
 
   const refreshEmployeeWorkspace = () => {
     setRefreshKey((current) => current + 1);
@@ -441,26 +448,30 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
               <strong>{availabilityDayCount}</strong>
               <p>{todayAvailabilityLabel}</p>
             </article>
-            <article className="employee-summary-card">
-              <span>Pendiente cobro</span>
-              <strong>{pendingSettlementSummary.count}</strong>
-              <p>{formatMoney(pendingSettlementSummary.total)}</p>
-            </article>
-            <article className="employee-summary-card employee-summary-card-closed-weeks">
-              <span>Recaudación</span>
-              <div className="employee-closed-week-lines">
-                <div className="employee-closed-week-row is-current">
-                  <span>Esta semana</span>
-                  <strong>{formatMoney(weeklyClosedSummary.current.total)}</strong>
-                  <small>{weeklyClosedSummary.current.count} turnos</small>
-                </div>
-                <div className="employee-closed-week-row">
-                  <span>Semana anterior</span>
-                  <strong>{formatMoney(weeklyClosedSummary.previous.total)}</strong>
-                  <small>{weeklyClosedSummary.previous.count} turnos</small>
-                </div>
-              </div>
-            </article>
+            {preciosHabilitados && (
+              <>
+                <article className="employee-summary-card">
+                  <span>Pendiente cobro</span>
+                  <strong>{pendingSettlementSummary.count}</strong>
+                  <p>{formatMoney(pendingSettlementSummary.total)}</p>
+                </article>
+                <article className="employee-summary-card employee-summary-card-closed-weeks">
+                  <span>Recaudación</span>
+                  <div className="employee-closed-week-lines">
+                    <div className="employee-closed-week-row is-current">
+                      <span>Esta semana</span>
+                      <strong>{formatMoney(weeklyClosedSummary.current.total)}</strong>
+                      <small>{weeklyClosedSummary.current.count} turnos</small>
+                    </div>
+                    <div className="employee-closed-week-row">
+                      <span>Semana anterior</span>
+                      <strong>{formatMoney(weeklyClosedSummary.previous.total)}</strong>
+                      <small>{weeklyClosedSummary.previous.count} turnos</small>
+                    </div>
+                  </div>
+                </article>
+              </>
+            )}
           </div>
 
           <div className="employee-layout employee-layout-summary">
@@ -516,13 +527,13 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                           <span>Estado</span>
                           <strong className={isClosed ? 'is-muted' : 'is-active'}>{statusLabel}</strong>
                         </div>
-                        {isClosed && closedAmount !== undefined && (
+                        {preciosHabilitados && isClosed && closedAmount !== undefined && (
                           <div className="employee-booking-field">
                             <span>Cobrado</span>
                             <strong>{formatMoney(closedAmount)}</strong>
                           </div>
                         )}
-                        {isClosed && (
+                        {preciosHabilitados && isClosed && (
                           <div className="employee-booking-field">
                             <span>Rendición</span>
                             <strong className={booking.is_settled === true ? 'is-active' : 'is-muted'}>{booking.is_settled === true ? 'Rendido' : 'Pendiente'}</strong>
@@ -556,6 +567,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
             onBookingsChanged={refreshEmployeeWorkspace}
             promotions={enabledPromotions}
             companySlug={companySlug}
+            companyContext={companyContext}
           />
         </article>
       )}

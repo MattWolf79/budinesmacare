@@ -29,6 +29,7 @@ export default function BookingItem({
   employeeLabel,
   priceDetails,
   compact = false,
+  fillCell = false,
   onOpenDetails
 }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -58,7 +59,7 @@ export default function BookingItem({
 
   return (
     <div
-      className={`agenda-booking-item${compact ? ' agenda-booking-item-compact' : ''}${isPromotionBooking ? ' agenda-booking-item-promotion' : ''}`}
+      className={`agenda-booking-item${compact ? ' agenda-booking-item-compact' : ''}${fillCell ? ' agenda-booking-item-fill' : ''}${isPromotionBooking ? ' agenda-booking-item-promotion' : ''}`}
       onMouseDown={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => {
@@ -87,11 +88,13 @@ export default function BookingItem({
         borderRadius: 2,
         padding: compact ? (canCancel || isClosed ? '5px 27px 5px 29px' : '5px 8px 5px 29px') : (canCancel || isClosed ? '3px 27px 3px 25px' : '3px 8px 3px 25px'),
         fontSize: compact ? 11 : 10,
-        marginBottom: 1,
+        marginBottom: fillCell ? 0 : 1,
         position: 'relative',
         zIndex: isHovered ? 20 : 1,
         overflow: 'visible',
-        minHeight: compact ? 38 : 34,
+        minHeight: fillCell ? '100%' : (compact ? 38 : 34),
+        height: fillCell ? '100%' : 'auto',
+        flex: fillCell ? '1 1 auto' : '0 0 auto',
         display: 'flex',
         flexDirection: compact ? 'column' : 'row',
         alignItems: 'center',
