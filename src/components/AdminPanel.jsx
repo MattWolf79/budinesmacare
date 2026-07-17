@@ -130,6 +130,18 @@ const formatSettlementTime = (value) => new Date(value).toLocaleTimeString([], {
   hour12: false
 }).replace(/^24:/, '00');
 
+const getEmployeeDisplayName = (employee) => {
+  const fullName = [employee?.first_name, employee?.last_name]
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join(' ');
+
+  return fullName || employee?.display_name || employee?.name || 'Empleado';
+};
+
+const getEmployeeUsername = (employee) =>
+  employee?.internal_username || employee?.username || employee?.name || 'sin usuario';
+
 const downloadSettlementPdf = async ({ employee, rows, percent }) => {
   const { jsPDF } = await import('jspdf');
   const employeeRows = rows.filter((row) => !row.employee_id || String(row.employee_id) === String(employee?.id));
@@ -156,7 +168,8 @@ const downloadSettlementPdf = async ({ employee, rows, percent }) => {
   currentY += 8;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.text(`Empleado: ${employee?.name || 'Empleado'}`, margin, currentY);
+  doc.text(`Empleado: ${getEmployeeDisplayName(employee)}`, margin, currentY);
+  doc.text(`Usuario: ${getEmployeeUsername(employee)}`, margin + 70, currentY);
   doc.text(`Fecha: ${formatSettlementDate(new Date())}`, pageWidth / 2 - 20, currentY);
   doc.text(`Porcentaje empleado: ${normalizedPercent}%`, pageWidth - 70, currentY);
 
