@@ -87,7 +87,7 @@ begin
     coalesce(turnos_superpuestos_habilitados_valor, true),
     clean_intervalo,
     coalesce(empleados_pueden_reservar_valor, true),
-    coalesce(empleados_ven_agenda_completa_valor, true),
+    clean_visibilidad <> 'solo_propios',
     clean_visibilidad,
     coalesce(pdf_detalle_turno_habilitado_valor, false)
   )

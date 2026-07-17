@@ -59,7 +59,7 @@ const getConfigPayload = (form) => ({
   turnos_superpuestos_habilitados_valor: Boolean(form.turnosSuperpuestosHabilitados),
   intervalo_grilla_minutos_valor: Number(form.intervaloGrillaMinutos) || 30,
   empleados_pueden_reservar_valor: Boolean(form.empleadosPuedenReservar),
-  empleados_ven_agenda_completa_valor: Boolean(form.empleadosVenAgendaCompleta),
+  empleados_ven_agenda_completa_valor: form.visibilidadTurnosEmpleado !== 'solo_propios',
   visibilidad_turnos_empleado_valor: form.visibilidadTurnosEmpleado || 'completa',
   pdf_detalle_turno_habilitado_valor: Boolean(form.pdfDetalleTurnoHabilitado)
 });
@@ -75,7 +75,7 @@ const applyConfigData = (data) => {
     turnosSuperpuestosHabilitados: config.turnos_superpuestos_habilitados !== false,
     intervaloGrillaMinutos: String(config.intervalo_grilla_minutos || 30),
     empleadosPuedenReservar: config.empleados_pueden_reservar !== false,
-    empleadosVenAgendaCompleta: config.empleados_ven_agenda_completa !== false,
+    empleadosVenAgendaCompleta: (config.visibilidad_turnos_empleado || 'completa') !== 'solo_propios',
     visibilidadTurnosEmpleado: config.visibilidad_turnos_empleado || 'completa',
     pdfDetalleTurnoHabilitado: config.pdf_detalle_turno_habilitado === true
   };
@@ -360,11 +360,10 @@ export default function PlatformAdmin() {
                   <option value="completa">Completa</option>
                   <option value="solo_ocupado">Solo ocupado</option>
                   <option value="cliente_sin_empleado">Cliente sin empleado</option>
-                  <option value="solo_propios">Solo propios</option>
+                  <option value="solo_propios">Solo sus turnos</option>
                 </select>
               </Field>
-              <CheckField label="Empleados pueden reservar" checked={companyForm.empleadosPuedenReservar} onChange={(value) => updateCompanyField('empleadosPuedenReservar', value)} />
-              <CheckField label="Empleados ven agenda completa" checked={companyForm.empleadosVenAgendaCompleta} onChange={(value) => updateCompanyField('empleadosVenAgendaCompleta', value)} />
+              <CheckField label="Empleados pueden crear turnos" checked={companyForm.empleadosPuedenReservar} onChange={(value) => updateCompanyField('empleadosPuedenReservar', value)} />
               <CheckField label="Habilita PDF de detalle de turno" checked={companyForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateCompanyField('pdfDetalleTurnoHabilitado', value)} />
             </div>
           </div>
@@ -399,11 +398,10 @@ export default function PlatformAdmin() {
                 <option value="completa">Completa</option>
                 <option value="solo_ocupado">Solo ocupado</option>
                 <option value="cliente_sin_empleado">Cliente sin empleado</option>
-                <option value="solo_propios">Solo propios</option>
+                <option value="solo_propios">Solo sus turnos</option>
               </select>
             </Field>
-            <CheckField label="Empleados pueden reservar" checked={editForm.empleadosPuedenReservar} onChange={(value) => updateEditField('empleadosPuedenReservar', value)} />
-            <CheckField label="Empleados ven agenda completa" checked={editForm.empleadosVenAgendaCompleta} onChange={(value) => updateEditField('empleadosVenAgendaCompleta', value)} />
+            <CheckField label="Empleados pueden crear turnos" checked={editForm.empleadosPuedenReservar} onChange={(value) => updateEditField('empleadosPuedenReservar', value)} />
             <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} />
           </div>
           <div className="platform-action-row">
