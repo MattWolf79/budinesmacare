@@ -117,11 +117,15 @@ export default function App() {
   const isPlatformAdminRoute = isPlatformAdminLocation();
   const companyPortal = getCompanyPortalFromLocation();
   const isClientPortal = companyPortal === 'client';
-  const isInternalPortal = companyPortal === 'internal';
+  const isAdminPortal = companyPortal === 'admin';
+  const isEmployeePortal = companyPortal === 'employee';
+  const isInternalPortal = isAdminPortal || isEmployeePortal;
   const routeAllowedProfiles = isClientPortal
     ? ['client']
-    : isInternalPortal
-      ? ['employee', 'admin']
+    : isAdminPortal
+      ? ['admin']
+      : isEmployeePortal
+        ? ['employee']
       : validProfiles;
 
   const [companySlug] = useState(getCompanySlugFromLocation);
@@ -217,7 +221,23 @@ export default function App() {
     clearInternalSession();
   };
 
+  useEffect(() => {
+    if (!internalSession || routeAllowedProfiles.includes(internalSession.role)) {
+      return;
+    }
+
+    setSessionExpiredMessage('Ingresá con el perfil correspondiente a esta URL.');
+    clearInternalSession();
+    setAccessProfile(null);
+    sessionStorage.removeItem(profileStorageKey);
+  }, [internalSession, routeAllowedProfiles]);
+
   const startInternalSession = (account) => {
+    if (!routeAllowedProfiles.includes(account.role)) {
+      setSessionExpiredMessage('Ingresá con el perfil correspondiente a esta URL.');
+      return;
+    }
+
     const nextSession = {
       id: account.id,
       sessionToken: account.session_token || account.sessionToken || null,
@@ -374,9 +394,12 @@ export default function App() {
 
           const storedInternalSession = loadStoredInternalSession(companySlug);
 
-          if (storedInternalSession) {
+          if (storedInternalSession && routeAllowedProfiles.includes(storedInternalSession.role)) {
             setInternalSession(storedInternalSession);
             setAccessProfile(storedInternalSession.role);
+          } else if (storedInternalSession) {
+            sessionStorage.removeItem(internalSessionStorageKey);
+            clearAccessProfile();
           } else if (localClientAccessEnabled) {
             const storedLocalClientSession = loadStoredLocalClientSession(companySlug);
 
@@ -508,15 +531,17 @@ export default function App() {
     />
   );
 
+  const internalSessionAllowed = internalSession && routeAllowedProfiles.includes(internalSession.role);
+
   if (isClientPortal && !session && !localClientSession) {
     return loginView;
   }
 
-  if (isInternalPortal && !internalSession) {
+  if (isInternalPortal && !internalSessionAllowed) {
     return loginView;
   }
 
-  if (!session && !internalSession && !localClientSession) {
+  if (!session && !internalSessionAllowed && !localClientSession) {
     return loginView;
   }
 
@@ -536,7 +561,7 @@ export default function App() {
     );
   }
 
-  if (internalSession) {
+  if (internalSessionAllowed) {
     const internalUser = {
       id: internalSession.id,
       sessionToken: internalSession.sessionToken,

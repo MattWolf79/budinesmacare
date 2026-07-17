@@ -1,7 +1,8 @@
 export const defaultCompanySlug = 'esteticatopbody';
 export const platformAdminPath = 'plataforma';
 export const clientPortalPath = 'sacarturno';
-export const internalPortalPath = 'admin';
+export const adminPortalPath = 'admin';
+export const employeePortalPath = 'empleado';
 
 const ignoredPathSegments = new Set(['', 'index.html']);
 
@@ -40,11 +41,13 @@ export const getCompanyPortalFromLocation = (locationValue = window.location) =>
   const normalizedPortal = normalizeCompanySlug(secondSegment);
 
   if (normalizedPortal === clientPortalPath) return 'client';
-  if (normalizedPortal === internalPortalPath) return 'internal';
+  if (normalizedPortal === adminPortalPath) return 'admin';
+  if (normalizedPortal === employeePortalPath) return 'employee';
 
   return 'root';
 };
 
 export const getCompanyPath = (slug = defaultCompanySlug) => `/${normalizeCompanySlug(slug) || defaultCompanySlug}`;
 export const getClientPortalPath = (slug = defaultCompanySlug) => `${getCompanyPath(slug)}/${clientPortalPath}`;
-export const getInternalPortalPath = (slug = defaultCompanySlug) => `${getCompanyPath(slug)}/${internalPortalPath}`;
+export const getAdminPortalPath = (slug = defaultCompanySlug) => `${getCompanyPath(slug)}/${adminPortalPath}`;
+export const getEmployeePortalPath = (slug = defaultCompanySlug) => `${getCompanyPath(slug)}/${employeePortalPath}`;
