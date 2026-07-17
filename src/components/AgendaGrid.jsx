@@ -65,6 +65,14 @@ const isVisibleGridBooking = (booking) =>
 const isPendingAssignmentBooking = (booking) =>
   isActiveBooking(booking) && (!booking.employee_id || booking.status === 'pending_assignment');
 
+const getBookingStatusLabel = (booking) => {
+  if (isClosedBooking(booking)) return 'Cerrado';
+  if (isPendingAssignmentBooking(booking)) return 'Pendiente';
+  if (isActiveBooking(booking)) return 'Asignado';
+  if (String(booking?.status || '').trim().toLowerCase() === 'cancelled') return 'Cancelado';
+  return 'Pendiente';
+};
+
 const capitalizeNamePart = (value) => {
   const cleanValue = String(value || '').trim();
   if (!cleanValue) return '';
@@ -609,6 +617,7 @@ function BookingDetailsModal({ booking, service, employee, canEditCustomer, onCl
   const bookingDate = formatDisplayDate(booking.start_at);
   const activityLabel = getBookingActivityLabel(booking, service);
   const employeeLabel = formatPersonShortName(employee);
+  const statusLabel = getBookingStatusLabel(booking);
   const customerName = booking.customer_name || 'Cliente sin datos';
   const customerEmail = booking.user_email || 'Sin mail cargado';
 
@@ -636,6 +645,7 @@ function BookingDetailsModal({ booking, service, employee, canEditCustomer, onCl
             <div><b>Cliente:</b> {customerName}</div>
             <div><b>Mail:</b> {customerEmail}</div>
             <div><b>Empleado:</b> {employeeLabel}</div>
+            <div><b>Estado:</b> {statusLabel}</div>
             <div><b>Fecha:</b> {bookingDate}</div>
             <div><b>Horario:</b> {startTime} - {endTime}</div>
           </div>
@@ -852,7 +862,16 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const { data } = await supabase.rpc('get_app_configuration', {
       company_slug_value: companySlug
     });
-    const initialVisibleDate = days.find((day) => !isFutureDay(day));
+    const initialVisibleDateWithBookings = days.find((day) => {
+      if (isFutureDay(day)) return false;
+
+      const dayInput = formatDateOnlyForDb(day);
+      return bookings.some((booking) =>
+        isActiveBooking(booking) &&
+        formatDateOnlyForDb(parseBookingDate(booking.start_at)) === dayInput
+      );
+    });
+    const initialVisibleDate = initialVisibleDateWithBookings || days.find((day) => !isFutureDay(day));
     setClosureDiscounts(Array.isArray(data?.discounts) ? data.discounts : []);
     setClosurePromotions(Array.isArray(data?.promotions) ? data.promotions : promotions);
     setCloseAttentionInitialDate(formatDateOnlyForDb(initialVisibleDate || new Date()));
