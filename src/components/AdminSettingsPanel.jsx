@@ -125,7 +125,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const configuracionOperativa = form.configuracion_operativa || {};
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
-  const promocionesHabilitadas = preciosHabilitados && configuracionOperativa.promociones_habilitadas !== false;
+  const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
 
   const enabledPromotions = useMemo(() => (
     form.promotions.filter((promotion) => promotion.enabled)
