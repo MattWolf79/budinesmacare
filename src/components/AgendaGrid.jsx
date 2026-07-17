@@ -412,8 +412,8 @@ const isPastBookingStart = (booking) =>
 function CloseAttentionModal({ bookings, services, employees, promotions, discounts, accessProfile, employeeId, user, initialServiceDate, onClose, onClosed }) {
   const todayInput = formatDateOnlyForDb(new Date());
   const initialDate = initialServiceDate && initialServiceDate <= todayInput ? initialServiceDate : todayInput;
-  const [serviceDate, setServiceDate] = useState(initialDate);
-  const [serviceDateInput, setServiceDateInput] = useState(formatDateInputForDisplay(initialDate));
+  const [serviceDate] = useState(initialDate);
+  const [closureCutoff] = useState(() => new Date());
   const [selectedClientKey, setSelectedClientKey] = useState('');
   const [selectedBookingIds, setSelectedBookingIds] = useState(null);
   const [lineDiscounts, setLineDiscounts] = useState({});
@@ -427,8 +427,8 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const totalDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'total' || discount.scope === 'both'));
   const pendingClosureBookings = useMemo(() => bookings
     .filter((booking) => isActiveBooking(booking) && booking.employee_id)
-    .filter((booking) => formatDateOnlyForDb(parseBookingDate(booking.start_at)) <= serviceDate)
-    .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [bookings, serviceDate]);
+    .filter((booking) => parseBookingDate(booking.end_at) <= closureCutoff)
+    .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [bookings, closureCutoff]);
   const clients = useMemo(() => {
     const map = new Map();
     pendingClosureBookings.forEach((booking) => {
@@ -506,26 +506,13 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const totalSavings = Math.max(0, grossTotal - finalTotal);
   const paidTotal = cashPaymentAmount + parseMoney(payments.transfer) + parseMoney(payments.card);
   const paymentDifference = Math.round((paidTotal - finalTotal) * 100) / 100;
+  const closureCutoffLabel = `${formatDisplayDate(closureCutoff)} ${formatTime(closureCutoff)}`;
 
   const toggleLineDiscount = (bookingId, discountKey) => {
     setLineDiscounts((current) => {
       const currentDiscounts = current[bookingId] || [];
       return { ...current, [bookingId]: currentDiscounts.includes(discountKey) ? currentDiscounts.filter((key) => key !== discountKey) : [...currentDiscounts, discountKey] };
     });
-  };
-
-  const updateServiceDateInput = (value) => {
-    setServiceDateInput(value);
-    const parsedDate = parseDisplayDateInput(value);
-
-    if (!parsedDate || parsedDate > todayInput) return;
-
-    setServiceDate(parsedDate);
-    setSelectedClientKey('');
-    setSelectedBookingIds(null);
-    setLineDiscounts({});
-    setTotalDiscountIds([]);
-    setPayments({ cash: '', transfer: '', card: '' });
   };
 
   const confirmClosure = async () => {
@@ -561,7 +548,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         <div className="agenda-modal-header">Cerrar atención</div>
         <div className="agenda-modal-body close-attention-body">
           <div className="close-attention-controls">
-            <label>Hasta fecha<input type="text" inputMode="numeric" value={serviceDateInput} onChange={(event) => updateServiceDateInput(event.target.value)} placeholder="DD/MM/AAAA" /></label>
+            <label>Hasta ahora<input type="text" value={closureCutoffLabel} readOnly /></label>
             <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
           </div>
           <div className="close-attention-items">
@@ -868,21 +855,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const { data } = await supabase.rpc('get_app_configuration', {
       company_slug_value: companySlug
     });
-    const latestVisibleDate = [...days].reverse().find((day) => !isFutureDay(day));
-    const latestVisibleDateWithBookings = [...days].reverse().find((day) => {
-      if (isFutureDay(day)) return false;
-
-      const dayInput = formatDateOnlyForDb(day);
-      return bookings.some((booking) =>
-        isActiveBooking(booking) &&
-        booking.employee_id &&
-        formatDateOnlyForDb(parseBookingDate(booking.start_at)) === dayInput
-      );
-    });
-    const initialVisibleDate = latestVisibleDateWithBookings || latestVisibleDate;
     setClosureDiscounts(Array.isArray(data?.discounts) ? data.discounts : []);
     setClosurePromotions(Array.isArray(data?.promotions) ? data.promotions : promotions);
-    setCloseAttentionInitialDate(formatDateOnlyForDb(initialVisibleDate || new Date()));
+    setCloseAttentionInitialDate(formatDateOnlyForDb(new Date()));
     setCloseAttentionOpen(true);
   };
 
