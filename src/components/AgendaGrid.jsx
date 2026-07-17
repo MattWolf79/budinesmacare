@@ -1878,7 +1878,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       const activityLabel = getBookingActivityLabel(b, service);
                       const displayLabel = isEmployeeView && isEmployeeForeignBooking && visibilidadTurnosEmpleado === 'solo_ocupado'
                         ? 'Ocupado'
-                        : isEmployeeView && isEmployeeForeignBooking && visibilidadTurnosEmpleado === 'cliente_servicio'
+                        : isEmployeeView && visibilidadTurnosEmpleado === 'cliente_servicio'
                           ? `${getClientName(b)} / ${activityLabel}`
                           : visibleEmployeeLabel
                             ? `${activityLabel} / ${visibleEmployeeLabel}`
