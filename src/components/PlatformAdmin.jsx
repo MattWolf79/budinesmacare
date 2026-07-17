@@ -65,10 +65,6 @@ const ConfigSection = ({ title, children }) => (
   </div>
 );
 
-const refreshAfterSave = () => {
-  window.setTimeout(() => window.location.reload(), 700);
-};
-
 const getConfigPayload = (form) => ({
   precios_habilitados_valor: Boolean(form.preciosHabilitados),
   turnos_superpuestos_habilitados_valor: Boolean(form.turnosSuperpuestosHabilitados),
@@ -255,9 +251,8 @@ export default function PlatformAdmin() {
       return;
     }
 
-    setEditForm(applyConfigData(data));
+    setEditForm(initialEditForm);
     setMessage(`Configuración actualizada para ${data.company_slug}. URL: ${window.location.origin}/${data.company_slug}`);
-    refreshAfterSave();
   };
 
   const submitReset = async (event) => {
