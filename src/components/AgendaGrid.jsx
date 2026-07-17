@@ -639,6 +639,10 @@ function BookingDetailsModal({ booking, service, employee, canEditCustomer, onCl
             <div><b>Mail:</b> {customerEmail}</div>
             <div><b>Empleado:</b> {employeeLabel}</div>
             <div><b>Estado:</b> {statusLabel}</div>
+            {booking.priceDetails?.baseLabel && <div><b>Costo:</b> {booking.priceDetails.baseLabel}</div>}
+            {booking.priceDetails?.isClosed && booking.priceDetails.netLabel && <div><b>Neto:</b> {booking.priceDetails.netLabel}</div>}
+            {booking.priceDetails?.isClosed && booking.priceDetails.employeeLabel && <div><b>Empleado:</b> {booking.priceDetails.employeeLabel}</div>}
+            {booking.priceDetails?.isClosed && booking.priceDetails.companyLabel && <div><b>Empresa:</b> {booking.priceDetails.companyLabel}</div>}
             <div><b>Fecha:</b> {bookingDate}</div>
             <div><b>Horario:</b> {startTime} - {endTime}</div>
           </div>
@@ -677,6 +681,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [employees, setEmployees] = useState([]);
   const [employeeServices, setEmployeeServices] = useState([]);
   const [employeeAvailability, setEmployeeAvailability] = useState([]);
+  const [bookingClosureItems, setBookingClosureItems] = useState([]);
+  const [bookingClosures, setBookingClosures] = useState([]);
   const [availabilityLoadFailed, setAvailabilityLoadFailed] = useState(false);
 
   const [offset, setOffset] = useState(0);
@@ -843,8 +849,57 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setEmployees(isAdminView ? adminData.employees || fallbackEmployees : usesInternalEmployeeData ? fallbackEmployees.length ? fallbackEmployees : internalEmployeeData.employees || [] : isClientView ? fallbackEmployees : emp || []);
     setEmployeeServices(isAdminView ? adminData.employeeServices || fallbackEmployeeServices : usesInternalEmployeeData ? fallbackEmployeeServices.length ? fallbackEmployeeServices : internalEmployeeData.employeeServices || [] : isClientView ? fallbackEmployeeServices : []);
     setEmployeeAvailability(usesInternalEmployeeData ? internalEmployeeData.agendaAvailability || internalEmployeeData.availability || fallbackAvailability : isClientView || isAdminView ? fallbackAvailability : availabilityResult.data || []);
+    setBookingClosureItems(isAdminView ? adminData.bookingClosureItems || [] : usesInternalEmployeeData ? internalEmployeeData.bookingClosureItems || [] : []);
+    setBookingClosures(isAdminView ? adminData.bookingClosures || [] : usesInternalEmployeeData ? internalEmployeeData.bookingClosures || [] : []);
     setAvailabilityLoadFailed(isClientView || isAdminView || usesInternalEmployeeData ? Boolean(bookingOptionsResult.error) : Boolean(availabilityResult.error));
   };
+
+  const bookingPriceDetailsById = useMemo(() => {
+    const closuresById = new Map((bookingClosures || []).map((closure) => [String(closure.id), closure]));
+    const subtotalByClosure = (bookingClosureItems || []).reduce((map, item) => {
+      const closureId = String(item.closure_id || '');
+      map.set(closureId, (map.get(closureId) || 0) + Number(item.subtotal || 0));
+      return map;
+    }, new Map());
+
+    return bookings.reduce((map, booking) => {
+      const service = services.find((item) => Number(item.id) === Number(booking.service));
+      const closureItem = (bookingClosureItems || []).find((item) => String(item.booking_id) === String(booking.id));
+      const closure = closuresById.get(String(closureItem?.closure_id || booking.closure_id || ''));
+      const promotionTitle = getBookingActivityLabel(booking, service);
+      const promotion = (promotions || []).find((item) => normalizeComparableText(item?.title) === normalizeComparableText(promotionTitle));
+      const fallbackBaseAmount = Number(service?.base_price ?? promotion?.price ?? 0) || parseMoney(promotion?.value || booking.booking_description);
+      const baseAmount = Number(closureItem?.base_price ?? fallbackBaseAmount);
+
+      if (isClosedBooking(booking) && closureItem) {
+        const itemSubtotal = Number(closureItem.subtotal || 0);
+        const closureSubtotal = subtotalByClosure.get(String(closureItem.closure_id || '')) || 0;
+        const closureTotalDiscount = Number(closure?.total_discount_total || 0);
+        const proportionalDiscount = closureSubtotal > 0 ? (itemSubtotal / closureSubtotal) * closureTotalDiscount : 0;
+        const netAmount = Math.max(0, itemSubtotal - proportionalDiscount);
+        const employeeAmount = Number(booking.settlement_employee_amount ?? 0);
+        const companyAmount = Number(booking.settlement_company_amount ?? 0);
+
+        map[booking.id] = {
+          isClosed: true,
+          baseLabel: formatMoney(baseAmount),
+          netLabel: formatMoney(netAmount),
+          employeeLabel: booking.is_settled ? formatMoney(employeeAmount) : 'Pendiente de rendición',
+          companyLabel: booking.is_settled ? formatMoney(companyAmount) : 'Pendiente de rendición'
+        };
+        return map;
+      }
+
+      if (baseAmount > 0) {
+        map[booking.id] = {
+          isClosed: false,
+          baseLabel: formatMoney(baseAmount)
+        };
+      }
+
+      return map;
+    }, {});
+  }, [bookingClosureItems, bookingClosures, bookings, promotions, services]);
 
   const loadAll = async () => {
     const results = await fetchAll();
@@ -1717,6 +1772,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       const isAssigned = isAssignedBooking(b);
                       const isClosed = isClosedBooking(b);
                       const displayLabel = `${getBookingActivityLabel(b, service)} / ${employeeLabel}`;
+                      const priceDetails = bookingPriceDetailsById[b.id];
 
                       return (
                         <BookingItem
@@ -1731,10 +1787,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                           customerLabel={isOwn ? 'Tu turno' : 'Turno reservado'}
                           displayLabel={displayLabel}
                           employeeLabel={employeeLabel}
+                          priceDetails={priceDetails}
                           compact={isCompactAgenda}
                           onOpenDetails={() => {
                             if (isAdminView || isOwn || isEmployeeView) {
-                              setBookingDetails({ booking: b, service, employee: emp });
+                              setBookingDetails({ booking: { ...b, priceDetails }, service, employee: emp });
                             }
                           }}
                           onCancel={() => setBookingToCancel({

@@ -27,6 +27,7 @@ export default function BookingItem({
   customerLabel,
   displayLabel,
   employeeLabel,
+  priceDetails,
   compact = false,
   onOpenDetails
 }) {
@@ -197,6 +198,10 @@ export default function BookingItem({
             {booking.booking_description && <div>🏷 {booking.booking_description}</div>}
             {(employeeLabel || employee?.name) && <div>👤 {employeeLabel || employee.name}</div>}
             <div>Estado: {statusLabel}</div>
+            {priceDetails?.baseLabel && <div>Costo: {priceDetails.baseLabel}</div>}
+            {priceDetails?.isClosed && priceDetails.netLabel && <div>Neto: {priceDetails.netLabel}</div>}
+            {priceDetails?.isClosed && priceDetails.employeeLabel && <div>Empleado: {priceDetails.employeeLabel}</div>}
+            {priceDetails?.isClosed && priceDetails.companyLabel && <div>Empresa: {priceDetails.companyLabel}</div>}
             <div>🧍 {canViewCustomer ? customerDetail : customerLabel || 'Turno reservado'}</div>
             <div className="agenda-detail-time">
               ⏱ {startTime} - {endTime}
