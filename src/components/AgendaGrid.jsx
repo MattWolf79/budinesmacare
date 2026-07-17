@@ -1730,19 +1730,21 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                   </div>
 
                   {isCompactAgenda && slotBookings.length > 0 && !isDisabled && (
-                    <button
-                      className="agenda-slot-add-overlap"
-                      type="button"
-                      aria-label="Agregar turno en este horario"
-                      title="Agregar turno en este horario"
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        selectMobileRangePoint(dayIndex, slotIndex);
-                      }}
-                    >
-                      +
-                    </button>
+                    <div className="agenda-slot-add-actions">
+                      <button
+                        className="agenda-slot-add-overlap"
+                        type="button"
+                        aria-label="Agregar turno en este horario"
+                        title="Agregar turno en este horario"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          selectMobileRangePoint(dayIndex, slotIndex);
+                        }}
+                      >
+                        + turno
+                      </button>
+                    </div>
                   )}
 
                   <div
