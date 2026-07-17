@@ -123,11 +123,13 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
     booking,
     service: services.find((service) => Number(service.id) === Number(booking.service))
   })), [bookings, services]);
+  const preciosHabilitados = appConfig?.configuracion_operativa?.precios_habilitados !== false;
+  const promocionesHabilitadas = preciosHabilitados && appConfig?.configuracion_operativa?.promociones_habilitadas !== false;
   const enabledPromotions = useMemo(() => (
-    Array.isArray(appConfig?.promotions)
+    promocionesHabilitadas && Array.isArray(appConfig?.promotions)
       ? appConfig.promotions.filter((promotion) => promotion?.enabled)
       : []
-  ), [appConfig]);
+  ), [promocionesHabilitadas, appConfig]);
   const selectedPromotionLabel = selectedPromotion
     ? [selectedPromotion.title, selectedPromotion.value].filter(Boolean).join(' · ')
     : '';

@@ -467,19 +467,23 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   const [isSettling, setIsSettling] = useState(false);
   const [localSettledBookingIds, setLocalSettledBookingIds] = useState([]);
   const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
+  const descuentosHabilitados = preciosHabilitados && companyContext?.configuracion_operativa?.descuentos_habilitados !== false;
+  const promocionesHabilitadas = preciosHabilitados && companyContext?.configuracion_operativa?.promociones_habilitadas !== false;
 
   const activeServices = useMemo(
     () => services.filter((service) => service.active !== false),
     [services]
   );
   const enabledPromotions = useMemo(
-    () => promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value)),
-    [promotions]
+    () => promocionesHabilitadas ? promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value)) : [],
+    [promocionesHabilitadas, promotions]
   );
   const activityDiscountChecks = useMemo(
-    () => (Array.isArray(appConfig?.discounts) ? appConfig.discounts : [])
-      .filter((discount) => discount?.enabled !== false && discount?.discountType === 'activity' && discount?.id),
-    [appConfig]
+    () => descuentosHabilitados
+      ? (Array.isArray(appConfig?.discounts) ? appConfig.discounts : [])
+        .filter((discount) => discount?.enabled !== false && discount?.discountType === 'activity' && discount?.id)
+      : [],
+    [descuentosHabilitados, appConfig]
   );
   const promotionServices = useMemo(
     () => enabledPromotions.map((promotion, index) => ({

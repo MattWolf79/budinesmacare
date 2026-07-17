@@ -14,6 +14,8 @@ const initialCompanyForm = {
   adminLastName: '',
   adminEmail: '',
   preciosHabilitados: true,
+  descuentosHabilitados: true,
+  promocionesHabilitadas: true,
   turnosSuperpuestosHabilitados: true,
   intervaloGrillaMinutos: '30',
   empleadosPuedenReservar: true,
@@ -29,6 +31,8 @@ const initialEditForm = {
   companySlug: '',
   companyName: '',
   preciosHabilitados: true,
+  descuentosHabilitados: true,
+  promocionesHabilitadas: true,
   turnosSuperpuestosHabilitados: true,
   intervaloGrillaMinutos: '30',
   empleadosPuedenReservar: true,
@@ -67,6 +71,8 @@ const ConfigSection = ({ title, children }) => (
 
 const getConfigPayload = (form) => ({
   precios_habilitados_valor: Boolean(form.preciosHabilitados),
+  descuentos_habilitados_valor: Boolean(form.descuentosHabilitados),
+  promociones_habilitadas_valor: Boolean(form.promocionesHabilitadas),
   turnos_superpuestos_habilitados_valor: Boolean(form.turnosSuperpuestosHabilitados),
   intervalo_grilla_minutos_valor: Number(form.intervaloGrillaMinutos) || 30,
   empleados_pueden_reservar_valor: Boolean(form.empleadosPuedenReservar),
@@ -85,6 +91,8 @@ const applyConfigData = (data) => {
     companySlug: data?.company_slug || '',
     companyName: data?.company_name || '',
     preciosHabilitados: config.precios_habilitados !== false,
+    descuentosHabilitados: config.descuentos_habilitados !== false,
+    promocionesHabilitadas: config.promociones_habilitadas !== false,
     turnosSuperpuestosHabilitados: config.turnos_superpuestos_habilitados !== false,
     intervaloGrillaMinutos: String(config.intervalo_grilla_minutos || 30),
     empleadosPuedenReservar: config.empleados_pueden_reservar !== false,
@@ -361,6 +369,8 @@ export default function PlatformAdmin() {
             </div>
             <ConfigSection title="Sistema">
               <CheckField label="Usa precios en el sistema" checked={companyForm.preciosHabilitados} onChange={(value) => updateCompanyField('preciosHabilitados', value)} />
+              <CheckField label="Habilita descuentos" checked={companyForm.descuentosHabilitados} onChange={(value) => updateCompanyField('descuentosHabilitados', value)} />
+              <CheckField label="Habilita promociones" checked={companyForm.promocionesHabilitadas} onChange={(value) => updateCompanyField('promocionesHabilitadas', value)} />
               <CheckField label="Permite turnos superpuestos" checked={companyForm.turnosSuperpuestosHabilitados} onChange={(value) => updateCompanyField('turnosSuperpuestosHabilitados', value)} />
               <CheckField label="Habilita PDF de detalle de turno" checked={companyForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateCompanyField('pdfDetalleTurnoHabilitado', value)} />
             </ConfigSection>
@@ -421,6 +431,8 @@ export default function PlatformAdmin() {
           <div className="platform-config-block platform-config-block-compact">
             <ConfigSection title="Sistema">
               <CheckField label="Usa precios en el sistema" checked={editForm.preciosHabilitados} onChange={(value) => updateEditField('preciosHabilitados', value)} />
+              <CheckField label="Habilita descuentos" checked={editForm.descuentosHabilitados} onChange={(value) => updateEditField('descuentosHabilitados', value)} />
+              <CheckField label="Habilita promociones" checked={editForm.promocionesHabilitadas} onChange={(value) => updateEditField('promocionesHabilitadas', value)} />
               <CheckField label="Permite turnos superpuestos" checked={editForm.turnosSuperpuestosHabilitados} onChange={(value) => updateEditField('turnosSuperpuestosHabilitados', value)} />
               <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} />
             </ConfigSection>

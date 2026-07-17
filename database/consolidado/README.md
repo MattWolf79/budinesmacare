@@ -8,7 +8,7 @@ Ejecutar en este orden:
 2. `02_configuracion_agenda_cierres_015_033.sql`
 3. `03_multitenant_plataforma_034_049.sql`
 4. `04_turnos_empleados_rendiciones_050_065.sql`
-5. `05_operativa_slug_visibilidad_permisos_066_073.sql`
+5. `05_operativa_slug_visibilidad_permisos_066_074.sql`
 
 Notas:
 

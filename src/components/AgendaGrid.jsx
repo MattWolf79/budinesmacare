@@ -774,6 +774,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const slotMinutes = getValidSlotMinutes(configuracionOperativa.intervalo_grilla_minutos);
   const totalSlots = Math.max(1, Math.floor(AGENDA_TOTAL_MINUTES / slotMinutes));
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
+  const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
+  const promocionesHabilitadas = preciosHabilitados && configuracionOperativa.promociones_habilitadas !== false;
   const turnosSuperpuestosHabilitados = configuracionOperativa.turnos_superpuestos_habilitados !== false;
   const empleadosPuedenReservar = configuracionOperativa.empleados_pueden_reservar !== false;
   const empleadosVenAgendaCompleta = configuracionOperativa.empleados_ven_agenda_completa !== false;
@@ -986,8 +988,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const { data } = await supabase.rpc('get_app_configuration', {
       company_slug_value: companySlug
     });
-    setClosureDiscounts(Array.isArray(data?.discounts) ? data.discounts : []);
-    setClosurePromotions(Array.isArray(data?.promotions) ? data.promotions : promotions);
+    setClosureDiscounts(descuentosHabilitados && Array.isArray(data?.discounts) ? data.discounts : []);
+    setClosurePromotions(promocionesHabilitadas && Array.isArray(data?.promotions) ? data.promotions : []);
     setCloseAttentionInitialDate(formatDateOnlyForDb(new Date()));
     setCloseAttentionOpen(true);
   };

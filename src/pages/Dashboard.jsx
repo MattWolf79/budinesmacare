@@ -34,6 +34,9 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   const [activeView, setActiveView] = useState(getAdminViewFromHash);
   const [adminDataVersion, setAdminDataVersion] = useState(0);
   const [promotions, setPromotions] = useState([]);
+  const configuracionOperativa = companyContext?.configuracion_operativa || {};
+  const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
+  const promocionesHabilitadas = preciosHabilitados && configuracionOperativa.promociones_habilitadas !== false;
 
   useEffect(() => {
     const applyHashView = () => {
@@ -70,8 +73,10 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   }, [adminDataVersion, companySlug]);
 
   const enabledPromotions = useMemo(() => (
-    promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value))
-  ), [promotions]);
+    promocionesHabilitadas
+      ? promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value))
+      : []
+  ), [promocionesHabilitadas, promotions]);
 
   const notifyAdminDataChanged = () => {
     setAdminDataVersion((current) => current + 1);
