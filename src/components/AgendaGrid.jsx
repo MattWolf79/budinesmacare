@@ -384,6 +384,9 @@ const isPastDay = (day) => {
   return target < today;
 };
 
+const isPastBookingStart = (booking) =>
+  parseBookingDate(booking?.start_at).getTime() <= Date.now();
+
 /* =========================
    COMPONENT
 ========================= */
@@ -1913,7 +1916,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           booking={bookingDetails.booking}
           service={bookingDetails.service}
           employee={bookingDetails.employee}
-          canEditCustomer={!isClientView && !isClosedBooking(bookingDetails.booking)}
+          canEditCustomer={!isClientView && !isClosedBooking(bookingDetails.booking) && !isPastBookingStart(bookingDetails.booking)}
           onClose={() => setBookingDetails(null)}
           onSave={updateBookingCustomerDetails}
         />
