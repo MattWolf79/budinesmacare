@@ -934,23 +934,28 @@ code {
 
 .agenda-slot-add-overlap {
   position: absolute;
-  right: 5px;
-  bottom: 5px;
+  right: 4px;
+  bottom: 4px;
   z-index: 8;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid #20a6b2;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #24aebb;
   border-radius: 999px;
-  color: #0f6d78;
-  background: #effbfd;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
-  font-size: 18px;
+  color: #fff;
+  background: #494d56;
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.22);
+  font-size: 14px;
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
+}
+
+.agenda-slot-add-overlap:hover {
+  background: #3fc9d5;
+  border-color: #24aebb;
 }
 
 .agenda-slot-add-overlap:active {
