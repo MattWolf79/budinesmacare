@@ -23,6 +23,7 @@ const initialCompanyForm = {
 };
 
 const initialEditForm = {
+  lookupSlug: '',
   companySlug: '',
   companyName: '',
   preciosHabilitados: true,
@@ -67,6 +68,7 @@ const applyConfigData = (data) => {
   const config = data?.configuracion_operativa || {};
 
   return {
+    lookupSlug: data?.company_slug || '',
     companySlug: data?.company_slug || '',
     companyName: data?.company_name || '',
     preciosHabilitados: config.precios_habilitados !== false,
@@ -109,7 +111,7 @@ export default function PlatformAdmin() {
   const updateEditField = (field, value) => {
     setEditForm((current) => ({
       ...current,
-      [field]: field === 'companySlug' ? normalizeSlug(value) : value
+      [field]: ['lookupSlug', 'companySlug'].includes(field) ? normalizeSlug(value) : value
     }));
   };
 
@@ -197,7 +199,7 @@ export default function PlatformAdmin() {
     const { data, error } = await supabase.rpc('plataforma_obtener_configuracion_empresa', {
       cuenta_plataforma_id_valor: platformSession.id,
       token_sesion_valor: platformSession.sessionToken,
-      slug_empresa_valor: editForm.companySlug.trim()
+      slug_empresa_valor: editForm.lookupSlug.trim()
     });
 
     setIsLoadingCompany(false);
@@ -222,7 +224,8 @@ export default function PlatformAdmin() {
     const { data, error } = await supabase.rpc('plataforma_actualizar_configuracion_empresa', {
       cuenta_plataforma_id_valor: platformSession.id,
       token_sesion_valor: platformSession.sessionToken,
-      slug_empresa_valor: editForm.companySlug.trim(),
+      slug_empresa_valor: editForm.lookupSlug.trim(),
+      slug_url_valor: editForm.companySlug.trim(),
       ...getConfigPayload(editForm)
     });
 
@@ -234,7 +237,7 @@ export default function PlatformAdmin() {
     }
 
     setEditForm(applyConfigData(data));
-    setMessage(`Configuración actualizada para ${data.company_slug}.`);
+    setMessage(`Configuración actualizada para ${data.company_slug}. URL: ${window.location.origin}/${data.company_slug}`);
   };
 
   const submitReset = async (event) => {
@@ -374,9 +377,12 @@ export default function PlatformAdmin() {
             <h2>Configuración operativa</h2>
           </div>
           <Field label="Slug empresa">
-            <input value={editForm.companySlug} onChange={(event) => updateEditField('companySlug', event.target.value)} placeholder="jardinmasaje" required />
+            <input value={editForm.lookupSlug} onChange={(event) => updateEditField('lookupSlug', event.target.value)} placeholder="verificacionvehicular" required />
           </Field>
           {editForm.companyName && <p className="platform-company-loaded">Empresa: {editForm.companyName}</p>}
+          <Field label="Slug URL">
+            <input value={editForm.companySlug} onChange={(event) => updateEditField('companySlug', event.target.value)} placeholder="verificacion" required />
+          </Field>
           <div className="platform-form-grid">
             <CheckField label="Usa precios en el sistema" checked={editForm.preciosHabilitados} onChange={(value) => updateEditField('preciosHabilitados', value)} />
             <CheckField label="Permite turnos superpuestos" checked={editForm.turnosSuperpuestosHabilitados} onChange={(value) => updateEditField('turnosSuperpuestosHabilitados', value)} />
@@ -401,8 +407,8 @@ export default function PlatformAdmin() {
             <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} />
           </div>
           <div className="platform-action-row">
-            <button type="button" disabled={isLoadingCompany || isSubmitting || !editForm.companySlug} onClick={loadCompanyConfig}>{isLoadingCompany ? 'Cargando...' : 'Cargar'}</button>
-            <button type="submit" disabled={isSubmitting || isLoadingCompany || !editForm.companySlug}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</button>
+            <button type="button" disabled={isLoadingCompany || isSubmitting || !editForm.lookupSlug} onClick={loadCompanyConfig}>{isLoadingCompany ? 'Cargando...' : 'Cargar'}</button>
+            <button type="submit" disabled={isSubmitting || isLoadingCompany || !editForm.lookupSlug || !editForm.companySlug}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</button>
           </div>
         </form>
 
