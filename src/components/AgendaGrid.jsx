@@ -413,7 +413,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const todayInput = formatDateOnlyForDb(new Date());
   const initialDate = initialServiceDate && initialServiceDate <= todayInput ? initialServiceDate : todayInput;
   const [serviceDate] = useState(initialDate);
-  const [closureCutoff] = useState(() => new Date());
+  const [closureCutoffDate] = useState(todayInput);
   const [selectedClientKey, setSelectedClientKey] = useState('');
   const [selectedBookingIds, setSelectedBookingIds] = useState(null);
   const [lineDiscounts, setLineDiscounts] = useState({});
@@ -427,8 +427,8 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const totalDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'total' || discount.scope === 'both'));
   const pendingClosureBookings = useMemo(() => bookings
     .filter((booking) => isActiveBooking(booking) && booking.employee_id)
-    .filter((booking) => parseBookingDate(booking.end_at) <= closureCutoff)
-    .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [bookings, closureCutoff]);
+    .filter((booking) => formatDateOnlyForDb(parseBookingDate(booking.start_at)) <= closureCutoffDate)
+    .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [bookings, closureCutoffDate]);
   const clients = useMemo(() => {
     const map = new Map();
     pendingClosureBookings.forEach((booking) => {
@@ -506,7 +506,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const totalSavings = Math.max(0, grossTotal - finalTotal);
   const paidTotal = cashPaymentAmount + parseMoney(payments.transfer) + parseMoney(payments.card);
   const paymentDifference = Math.round((paidTotal - finalTotal) * 100) / 100;
-  const closureCutoffLabel = `${formatDisplayDate(closureCutoff)} ${formatTime(closureCutoff)}`;
+  const closureCutoffLabel = formatDateInputForDisplay(closureCutoffDate);
 
   const toggleLineDiscount = (bookingId, discountKey) => {
     setLineDiscounts((current) => {
@@ -548,7 +548,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         <div className="agenda-modal-header">Cerrar atención</div>
         <div className="agenda-modal-body close-attention-body">
           <div className="close-attention-controls">
-            <label>Hasta ahora<input type="text" value={closureCutoffLabel} readOnly /></label>
+            <label>Hasta hoy<input type="text" value={closureCutoffLabel} readOnly /></label>
             <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
           </div>
           <div className="close-attention-items">

@@ -1,4 +1,4 @@
--- Prevent closing bookings whose scheduled end time is still in the future.
+-- Prevent closing bookings scheduled after the current business day.
 -- Run after 063_employee_create_for_any_employee.sql.
 
 begin;
@@ -9,12 +9,12 @@ language plpgsql
 set search_path = public
 as $$
 declare
-  current_business_time timestamp without time zone := timezone('America/Argentina/Buenos_Aires', now());
+  current_business_date date := timezone('America/Argentina/Buenos_Aires', now())::date;
 begin
   if new.status in ('completed', 'closed')
     and coalesce(old.status, '') not in ('completed', 'closed')
-    and new.end_at > current_business_time then
-    raise exception 'No se pueden cerrar turnos que todavía no finalizaron.';
+    and new.start_at::date > current_business_date then
+    raise exception 'No se pueden cerrar turnos de días futuros.';
   end if;
 
   return new;
