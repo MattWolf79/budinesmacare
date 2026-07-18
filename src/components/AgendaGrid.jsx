@@ -114,6 +114,20 @@ const findPromotionByBookingDescription = (sourcePromotions, bookingDescription)
     .find(({ promotion, index }) => normalizeComparableText(getPromotionBookingLabel(promotion, index)) === normalizedDescription)?.promotion || null;
 };
 
+const formatAssignmentError = (error) => {
+  const message = String(error?.message || error || '');
+
+  if (message.includes('bookings_user_no_active_overlap_excl') || message.includes('bookings_customer_email_no_active_overlap_excl')) {
+    return 'El cliente ya tiene un turno asignado en ese horario.';
+  }
+
+  if (message.includes('bookings_employee_no_active_overlap_excl')) {
+    return 'El empleado ya tiene un turno asignado en ese horario.';
+  }
+
+  return message || 'No se pudo asignar el empleado.';
+};
+
 const formatPersonShortName = (person) => {
   if (!person) return 'Pendiente';
 
@@ -327,7 +341,7 @@ const employeeHasBookingConflict = (bookings, employeeId, range) => {
 
 const normalizeBookingEmail = (value) => String(value || '').trim().toLowerCase();
 
-const clientHasBookingConflict = (bookings, client, range) => {
+const clientHasBookingConflict = (bookings, client, range, ignoredBookingId = null) => {
   if (!range) return false;
 
   const clientUserId = client?.userId ? String(client.userId) : '';
@@ -338,6 +352,7 @@ const clientHasBookingConflict = (bookings, client, range) => {
   if (!clientUserId && !clientEmail) return false;
 
   return bookings.some((booking) => {
+    if (ignoredBookingId && String(booking.id) === String(ignoredBookingId)) return false;
     if (!isActiveBooking(booking)) return false;
 
     const matchesUser = clientUserId && String(booking.user_id || '') === clientUserId;
@@ -1618,8 +1633,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         }
       : services.find((item) => Number(item.id) === Number(booking.service));
     const range = buildRangeFromBooking(booking);
+    const hasClientConflict = clientHasBookingConflict(bookings, { userId: booking.user_id, email: booking.user_email }, range, booking.id);
 
-    setAssignmentRequest({ booking, service, range });
+    setAssignmentRequest({ booking, service, range, hasClientConflict });
     setAssignmentEmployees([]);
     setIsLoadingAssignmentEmployees(true);
 
@@ -1676,7 +1692,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           ...employee,
           assignmentHasAvailability: hasAvailability,
           assignmentHasConflict: hasConflict,
-          assignmentCanAssign: !hasConflict && (availabilityLoadFailed || hasAvailability)
+          assignmentCanAssign: !hasClientConflict && !hasConflict && (availabilityLoadFailed || hasAvailability)
         };
       })
       .sort((left, right) => String(left.name || '').localeCompare(String(right.name || ''), 'es'));
@@ -1693,6 +1709,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const assignEmployeeToRequest = async (employee) => {
     if (!assignmentRequest?.booking?.id) return;
+
+    if (assignmentRequest.hasClientConflict) {
+      alert('El cliente ya tiene un turno asignado en ese horario.');
+      return;
+    }
 
     if (employee.assignmentHasConflict) {
       alert(`${employee.name} ya tiene un turno en ese horario.`);
@@ -1722,7 +1743,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           .is('employee_id', null);
 
     if (error) {
-      alert(`No se pudo asignar el empleado: ${error.message}`);
+      alert(`No se pudo asignar el empleado: ${formatAssignmentError(error)}`);
       return;
     }
 
@@ -2101,7 +2122,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
               ) : (
                 <div className="assignment-employee-grid">
                   {assignmentEmployees.map((employee) => {
-                    const statusLabel = employee.assignmentHasConflict
+                    const statusLabel = assignmentRequest.hasClientConflict
+                      ? 'Cliente con turno superpuesto'
+                      : employee.assignmentHasConflict
                       ? 'Ocupado en este horario'
                       : employee.assignmentHasAvailability
                         ? 'Disponible'

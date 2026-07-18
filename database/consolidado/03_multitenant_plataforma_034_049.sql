@@ -2940,6 +2940,30 @@ begin
     ) then raise exception 'El empleado no estÃ¡ vinculado a esa promociÃ³n.'; end if;
   end if;
 
+  if saved_booking.user_id is not null and exists (
+    select 1
+    from public.bookings bookings
+    where bookings.company_id = target_company_id
+      and bookings.id <> saved_booking.id
+      and bookings.user_id = saved_booking.user_id
+      and bookings.status in ('reserved', 'confirmed')
+      and bookings.start_at < saved_booking.end_at
+      and bookings.end_at > saved_booking.start_at
+    limit 1
+  ) then raise exception 'El cliente ya tiene un turno asignado en ese horario.'; end if;
+
+  if nullif(trim(coalesce(saved_booking.user_email, '')), '') is not null and exists (
+    select 1
+    from public.bookings bookings
+    where bookings.company_id = target_company_id
+      and bookings.id <> saved_booking.id
+      and lower(coalesce(bookings.user_email, '')) = lower(saved_booking.user_email)
+      and bookings.status in ('reserved', 'confirmed')
+      and bookings.start_at < saved_booking.end_at
+      and bookings.end_at > saved_booking.start_at
+    limit 1
+  ) then raise exception 'El cliente ya tiene un turno asignado en ese horario.'; end if;
+
   update public.bookings
   set employee_id = employee_id_value, status = 'confirmed', updated_at = now()
   where id = booking_id_value and company_id = target_company_id
