@@ -43,6 +43,9 @@ const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
 
 const getActivityCheckDisplayName = (discount, activityIndex) => String(discount?.name || '').trim() || `Check ${activityIndex + 1}`;
 
+const getPromotionOperationalTitle = (promotion, index, pricesEnabled) =>
+  String(promotion?.title || '').trim() || (pricesEnabled ? `Promoción ${index + 1}` : `Banner ${index + 1}`);
+
 const normalizePromotions = (promotions) => {
   const source = Array.isArray(promotions) && promotions.length ? promotions : [emptyPromotion(), emptyPromotion()];
 
@@ -434,9 +437,9 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
 
   const saveConfig = async () => {
     setIsSaving(true);
-    const promotionsPayload = form.promotions.map((promotion) => ({
+    const promotionsPayload = form.promotions.map((promotion, index) => ({
       ...promotion,
-      title: preciosHabilitados ? promotion.title : '',
+      title: getPromotionOperationalTitle(promotion, index, preciosHabilitados),
       description: preciosHabilitados ? promotion.description : '',
       value: preciosHabilitados ? promotion.value : '',
       price: preciosHabilitados ? parseMoney(promotion.price) : 0
@@ -763,7 +766,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
             {promotionsOpen && form.promotions.map((promotion, index) => (
                 <div className="settings-promotion-card settings-management-card" key={index}>
                   <div className="settings-management-card-header">
-                    <strong>{preciosHabilitados ? promotion.title || `Promoción ${index + 1}` : `Banner ${index + 1}`}</strong>
+                    <strong>{getPromotionOperationalTitle(promotion, index, preciosHabilitados)}</strong>
                   </div>
                   <label className="settings-check-row">
                     <input
@@ -795,7 +798,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                   </>}
 
                   {!preciosHabilitados && (
-                    <p className="settings-empty-text">Sin precios activos, este bloque funciona como aviso visual para clientes. No usa título, descripción, valor ni descuento.</p>
+                    <p className="settings-empty-text">Sin precios activos, este bloque se guarda como promoción reservable con título {getPromotionOperationalTitle(promotion, index, preciosHabilitados)}. No usa descripción, valor ni descuento.</p>
                   )}
 
                   <label>

@@ -3,6 +3,28 @@
 
 begin;
 
+update public.app_configuration configuration
+set promotions = coalesce(promotions_with_titles.promotions, configuration.promotions)
+from (
+  select
+    configuration.company_id,
+    jsonb_agg(
+      case
+        when nullif(trim(coalesce(promotion->>'title', '')), '') is null
+          and nullif(trim(coalesce(promotion->>'description', '')), '') is null
+          and nullif(trim(coalesce(promotion->>'value', '')), '') is null
+          and nullif(trim(coalesce(promotion->>'imageDataUrl', '')), '') is not null
+        then jsonb_set(promotion, '{title}', to_jsonb(format('Banner %s', position)), true)
+        else promotion
+      end
+      order by position
+    ) as promotions
+  from public.app_configuration configuration,
+    jsonb_array_elements(coalesce(configuration.promotions, '[]'::jsonb)) with ordinality promotion_item(promotion, position)
+  group by configuration.company_id
+) promotions_with_titles
+where promotions_with_titles.company_id = configuration.company_id;
+
 create or replace function public.request_client_booking(
   service_id_value bigint default null,
   employee_id_value uuid default null,

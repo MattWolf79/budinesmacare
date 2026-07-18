@@ -103,7 +103,7 @@ const normalizeComparableText = (value) =>
     .toLowerCase();
 
 const getPromotionBookingLabel = (promotion, index) =>
-  promotion?.bookingLabel || [promotion?.title, promotion?.description, promotion?.value].filter(Boolean).join(' · ') || `Banner ${index + 1}`;
+  promotion?.bookingLabel || [promotion?.title || `Banner ${index + 1}`, promotion?.description, promotion?.value].filter(Boolean).join(' · ');
 
 const findPromotionByBookingDescription = (sourcePromotions, bookingDescription) => {
   const normalizedDescription = normalizeComparableText(bookingDescription);

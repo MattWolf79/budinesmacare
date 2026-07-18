@@ -129,7 +129,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
   const enabledPromotions = useMemo(() => (
     promocionesHabilitadas && Array.isArray(appConfig?.promotions)
       ? appConfig.promotions
-        .map((promotion, index) => ({ ...promotion, promotionIndex: index, bookingLabel: [promotion?.title, promotion?.description, promotion?.value].filter(Boolean).join(' · ') || `Banner ${index + 1}` }))
+        .map((promotion, index) => ({ ...promotion, promotionIndex: index, bookingLabel: [promotion?.title || `Banner ${index + 1}`, promotion?.description, promotion?.value].filter(Boolean).join(' · ') }))
         .filter((promotion) => promotion?.enabled && (preciosHabilitados ? (promotion?.title || promotion?.description || promotion?.value || promotion?.imageDataUrl) : promotion?.imageDataUrl))
       : []
   ), [promocionesHabilitadas, preciosHabilitados, appConfig]);
