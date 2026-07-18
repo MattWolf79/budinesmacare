@@ -7,6 +7,9 @@ const emptyPromotion = () => ({
   description: '',
   value: '',
   price: '',
+  imageDataUrl: '',
+  imageFileName: '',
+  imageMimeType: '',
   employeeIds: []
 });
 
@@ -48,6 +51,9 @@ const normalizePromotions = (promotions) => {
     description: String(promotion?.description || ''),
     value: String(promotion?.value || ''),
     price: promotion?.price === 0 || promotion?.price ? String(promotion.price) : String(parseMoney(promotion?.value) || ''),
+    imageDataUrl: String(promotion?.imageDataUrl || ''),
+    imageFileName: String(promotion?.imageFileName || ''),
+    imageMimeType: String(promotion?.imageMimeType || ''),
     employeeIds: Array.isArray(promotion?.employeeIds) ? promotion.employeeIds.map(String) : []
   }));
 };
@@ -125,7 +131,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const configuracionOperativa = form.configuracion_operativa || {};
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
-  const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
+  const promocionesHabilitadas = preciosHabilitados && configuracionOperativa.promociones_habilitadas !== false;
 
   const enabledPromotions = useMemo(() => (
     form.promotions.filter((promotion) => promotion.enabled)
@@ -219,6 +225,48 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
     }));
   };
 
+  const changePromotionImage = (index, event) => {
+    const [file] = Array.from(event.target.files || []);
+
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      alert('La imagen de la promoción debe ser JPG o PNG.');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((current) => ({
+        ...current,
+        promotions: current.promotions.map((promotion, promotionIndex) => (
+          promotionIndex === index
+            ? {
+                ...promotion,
+                imageDataUrl: String(reader.result || ''),
+                imageFileName: file.name,
+                imageMimeType: file.type
+              }
+            : promotion
+        ))
+      }));
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const clearPromotionImage = (index) => {
+    setForm((current) => ({
+      ...current,
+      promotions: current.promotions.map((promotion, promotionIndex) => (
+        promotionIndex === index
+          ? { ...promotion, imageDataUrl: '', imageFileName: '', imageMimeType: '' }
+          : promotion
+      ))
+    }));
+  };
+
   const updateDiscount = (index, field, value) => {
     setForm((current) => ({
       ...current,
@@ -268,8 +316,8 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
 
     const selectedFiles = files.slice(0, availableSlots);
 
-    if (selectedFiles.some((file) => !['image/jpeg', 'image/png'].includes(file.type))) {
-      alert('Las imágenes del banner deben ser JPG o PNG.');
+    if (selectedFiles.some((file) => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))) {
+      alert('Los flyers deben ser JPG, PNG o WebP.');
       event.target.value = '';
       return;
     }
@@ -591,21 +639,21 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
 
           <article className="admin-form-card settings-card settings-banner-card">
           <div className="agenda-modal-header admin-collapsible-form-header">
-            <span>Banner de presentación</span>
+            <span>Flyers para clientes</span>
             <button
               className="availability-form-toggle admin-collapsible-form-toggle"
               type="button"
               onClick={() => setBannerOpen((current) => !current)}
               aria-expanded={bannerOpen}
-              aria-label={bannerOpen ? 'Ocultar banner de presentación' : 'Mostrar banner de presentación'}
+              aria-label={bannerOpen ? 'Ocultar flyers para clientes' : 'Mostrar flyers para clientes'}
             >
               &gt;
             </button>
           </div>
           <div className={`agenda-modal-body settings-card-body admin-collapsible-form-body ${bannerOpen ? 'is-open' : 'is-collapsed'}`}>
             <label className="settings-upload-field">
-              <span>Hasta 4 imágenes JPG o PNG</span>
-              <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" multiple onChange={changeBanner} />
+              <span>Hasta 4 flyers JPG, PNG o WebP</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple onChange={changeBanner} />
             </label>
 
             {form.banner_images.length ? (
@@ -622,7 +670,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                 <button className="agenda-option-button" type="button" onClick={clearBanner}>Quitar todas</button>
               </div>
             ) : (
-              <p className="settings-empty-text">Todavía no hay banner cargado.</p>
+              <p className="settings-empty-text">Todavía no hay flyers cargados. Se verán en la pantalla de inicio del cliente.</p>
             )}
           </div>
           </article>
@@ -732,6 +780,19 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                     <input type="text" inputMode="decimal" value={promotion.price} onChange={(event) => updatePromotion(index, 'price', event.target.value)} placeholder="40000" />
                   </label>
                   <p className="settings-empty-text">Para cierres se usará {formatMoney(parseMoney(promotion.price))}.</p>
+
+                  <label>
+                    Imagen banner
+                    <input type="file" accept="image/jpeg,image/png" onChange={(event) => changePromotionImage(index, event)} />
+                  </label>
+                  {promotion.imageDataUrl && (
+                    <div className="settings-promotion-image-preview">
+                      <img src={promotion.imageDataUrl} alt="" />
+                      <button className="agenda-option-button" type="button" onClick={() => clearPromotionImage(index)}>
+                        Quitar imagen
+                      </button>
+                    </div>
+                  )}
 
                   <button className="agenda-option-button" type="button" onClick={() => removePromotion(index)}>
                     Eliminar

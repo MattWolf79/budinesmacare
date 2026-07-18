@@ -228,7 +228,15 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
           <h2>Promociones</h2>
           <div className="client-promotions-grid">
             {enabledPromotions.map((promotion, index) => (
-              <article className="client-promotion-card" key={index}>
+              <article className={`client-promotion-card ${promotion.imageDataUrl ? 'has-image' : ''}`} key={index}>
+                {promotion.imageDataUrl && (
+                  <div
+                    className="client-promotion-image"
+                    role="img"
+                    aria-label={promotion.title || 'Promoción'}
+                    style={{ backgroundImage: `url(${promotion.imageDataUrl})` }}
+                  />
+                )}
                 <div className="client-card-header">
                   <strong>{promotion.title || 'Promoción'}</strong>
                 </div>
