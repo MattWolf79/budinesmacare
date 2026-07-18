@@ -2413,9 +2413,21 @@ code {
 }
 
 .tarjeta-promocion.solo-imagen {
-  background-image: none;
-  min-height: 118px;
-  padding: 6px;
+  min-height: 142px;
+  padding: 0;
+  background-image: var(--imagen-promocion);
+  background-position: center;
+  background-size: cover;
+}
+
+.tarjeta-promocion.solo-imagen::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 58px;
+  content: '';
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.42) 100%);
 }
 
 .tarjeta-promocion-contenido,
@@ -2488,10 +2500,11 @@ code {
 .tarjeta-promocion-imagen {
   width: 100%;
   min-height: 106px;
-  background-image: var(--imagen-promocion);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
+}
+
+.tarjeta-promocion.solo-imagen .tarjeta-promocion-imagen {
+  min-height: 92px;
+  background-image: none;
 }
 
 .tarjeta-promocion-accion {
@@ -2501,6 +2514,14 @@ code {
   margin-top: 0;
   padding: 8px 10px;
   font-size: 12px;
+}
+
+.tarjeta-promocion.solo-imagen .tarjeta-promocion-accion {
+  width: calc(100% - 16px);
+  margin: 0 8px 8px;
+  border-color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
 }
 
 .settings-promotion-image-preview {
