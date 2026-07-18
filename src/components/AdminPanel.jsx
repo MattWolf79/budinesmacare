@@ -366,12 +366,15 @@ const getEmployeePromotionIds = (employeeId, promotions) =>
 const getPromotionServiceName = (promotion, index, pricesEnabled) =>
   promotion?.title || promotion?.name || (pricesEnabled ? `Promoción ${index + 1}` : `Banner ${index + 1}`);
 
+const promotionHasPriceData = (promotion) =>
+  Boolean(promotion?.price || promotion?.title || promotion?.description || promotion?.value);
+
 const getEmployeeActivityNames = (employeeId, links, services, promotions) => {
   const serviceIds = new Set(getEmployeeServiceIds(employeeId, links));
   const promotionNames = promotions
     .map((promotion, index) => ({ promotion, index }))
     .filter(({ promotion }) => Array.isArray(promotion?.employeeIds) && promotion.employeeIds.some((id) => String(id) === String(employeeId)))
-    .map(({ promotion, index }) => getPromotionServiceName(promotion, index, Boolean(promotion?.price || promotion?.title || promotion?.description || promotion?.value)))
+    .map(({ promotion, index }) => getPromotionServiceName(promotion, index, promotionHasPriceData(promotion)))
     .filter(Boolean);
 
   return [

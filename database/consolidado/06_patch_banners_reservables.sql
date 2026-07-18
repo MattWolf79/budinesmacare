@@ -237,4 +237,121 @@ $$;
 
 grant execute on function public.request_client_booking(bigint, uuid, text, timestamp without time zone, timestamp without time zone, text, text, text) to anon, authenticated;
 
+create or replace function public.assign_admin_booking_employee(
+  booking_id_value uuid,
+  employee_id_value uuid,
+  account_id_value uuid default null,
+  session_token_value text default null,
+  company_slug_value text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target_company_id uuid := public.get_company_id_by_slug(company_slug_value);
+  admin_account public.internal_accounts%rowtype;
+  saved_booking public.bookings%rowtype;
+  selected_promotion jsonb;
+begin
+  if target_company_id is null then
+    raise exception 'La empresa no esta disponible.';
+  end if;
+
+  if public.is_admin() then
+    if not exists (
+      select 1
+      from public.profiles profiles
+      where profiles.user_id = auth.uid()
+        and profiles.role = 'admin'::public.app_role
+        and profiles.active is not false
+        and profiles.company_id = target_company_id
+    ) then
+      raise exception 'No podes administrar otra empresa.';
+    end if;
+  else
+    admin_account := public.validate_internal_session(account_id_value, session_token_value, 'admin'::public.app_role);
+    if admin_account.company_id is distinct from target_company_id then
+      raise exception 'No podes administrar otra empresa.';
+    end if;
+  end if;
+
+  select *
+  into saved_booking
+  from public.bookings
+  where id = booking_id_value
+    and company_id = target_company_id
+  limit 1;
+
+  if saved_booking.id is null then
+    raise exception 'El turno no pertenece a esta empresa.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.employees employees
+    where employees.id = employee_id_value
+      and employees.company_id = target_company_id
+      and employees.active = true
+      and employees.deleted_at is null
+  ) then
+    raise exception 'El empleado no esta disponible.';
+  end if;
+
+  if saved_booking.service is not null and not exists (
+    select 1
+    from public.employee_services relations
+    where relations.company_id = target_company_id
+      and relations.employee_id = employee_id_value
+      and relations.service_id = saved_booking.service
+  ) then
+    raise exception 'El empleado no esta vinculado a ese servicio.';
+  end if;
+
+  if saved_booking.service is null and nullif(trim(coalesce(saved_booking.booking_description, '')), '') is not null then
+    select promotion
+    into selected_promotion
+    from public.app_configuration configuration,
+      jsonb_array_elements(coalesce(configuration.promotions, '[]'::jsonb)) with ordinality promotion_item(promotion, position)
+    where configuration.company_id = target_company_id
+      and coalesce((promotion->>'enabled')::boolean, false) is true
+      and (
+        nullif(trim(concat_ws(
+          ' · ',
+          nullif(trim(coalesce(promotion->>'title', '')), ''),
+          nullif(trim(coalesce(promotion->>'description', '')), ''),
+          nullif(trim(coalesce(promotion->>'value', '')), '')
+        )), '') = nullif(trim(coalesce(saved_booking.booking_description, '')), '')
+        or format('Banner %s', position) = nullif(trim(coalesce(saved_booking.booking_description, '')), '')
+      )
+    limit 1;
+
+    if selected_promotion is null then
+      raise exception 'La promocion seleccionada no esta disponible.';
+    end if;
+
+    if not exists (
+      select 1
+      from jsonb_array_elements_text(coalesce(selected_promotion->'employeeIds', '[]'::jsonb)) promotion_employees(employee_id_text)
+      where promotion_employees.employee_id_text = employee_id_value::text
+    ) then
+      raise exception 'El empleado no esta vinculado a esa promocion.';
+    end if;
+  end if;
+
+  update public.bookings
+  set employee_id = employee_id_value,
+      status = 'confirmed',
+      updated_at = now()
+  where id = booking_id_value
+    and company_id = target_company_id
+  returning * into saved_booking;
+
+  return to_jsonb(saved_booking);
+end;
+$$;
+
+grant execute on function public.assign_admin_booking_employee(uuid, uuid, uuid, text, text) to anon, authenticated;
+
 commit;

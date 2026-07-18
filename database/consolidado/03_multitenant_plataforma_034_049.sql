@@ -2890,6 +2890,7 @@ declare
   target_company_id uuid := public.get_company_id_by_slug(company_slug_value);
   admin_account public.internal_accounts%rowtype;
   saved_booking public.bookings%rowtype;
+  selected_promotion jsonb;
 begin
   if target_company_id is null then raise exception 'La empresa no estÃ¡ disponible.'; end if;
 
@@ -2904,6 +2905,40 @@ begin
   if saved_booking.id is null then raise exception 'El turno no pertenece a esta empresa.'; end if;
 
   if not exists (select 1 from public.employees employees where employees.id = employee_id_value and employees.company_id = target_company_id and employees.active = true and employees.deleted_at is null) then raise exception 'El empleado no estÃ¡ disponible.'; end if;
+
+  if saved_booking.service is not null and not exists (
+    select 1
+    from public.employee_services relations
+    where relations.company_id = target_company_id
+      and relations.employee_id = employee_id_value
+      and relations.service_id = saved_booking.service
+  ) then raise exception 'El empleado no estÃ¡ vinculado a ese servicio.'; end if;
+
+  if saved_booking.service is null and nullif(trim(coalesce(saved_booking.booking_description, '')), '') is not null then
+    select promotion
+    into selected_promotion
+    from public.app_configuration configuration,
+      jsonb_array_elements(coalesce(configuration.promotions, '[]'::jsonb)) with ordinality promotion_item(promotion, position)
+    where configuration.company_id = target_company_id
+      and coalesce((promotion->>'enabled')::boolean, false) is true
+      and (
+        nullif(trim(concat_ws(
+          ' Â· ',
+          nullif(trim(coalesce(promotion->>'title', '')), ''),
+          nullif(trim(coalesce(promotion->>'description', '')), ''),
+          nullif(trim(coalesce(promotion->>'value', '')), '')
+        )), '') = nullif(trim(coalesce(saved_booking.booking_description, '')), '')
+        or format('Banner %s', position) = nullif(trim(coalesce(saved_booking.booking_description, '')), '')
+      )
+    limit 1;
+
+    if selected_promotion is null then raise exception 'La promociÃ³n seleccionada no estÃ¡ disponible.'; end if;
+    if not exists (
+      select 1
+      from jsonb_array_elements_text(coalesce(selected_promotion->'employeeIds', '[]'::jsonb)) promotion_employees(employee_id_text)
+      where promotion_employees.employee_id_text = employee_id_value::text
+    ) then raise exception 'El empleado no estÃ¡ vinculado a esa promociÃ³n.'; end if;
+  end if;
 
   update public.bookings
   set employee_id = employee_id_value, status = 'confirmed', updated_at = now()

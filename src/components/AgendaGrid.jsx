@@ -102,6 +102,18 @@ const normalizeComparableText = (value) =>
     .replace(/\s+/g, ' ')
     .toLowerCase();
 
+const getPromotionBookingLabel = (promotion, index) =>
+  promotion?.bookingLabel || [promotion?.title, promotion?.description, promotion?.value].filter(Boolean).join(' · ') || `Banner ${index + 1}`;
+
+const findPromotionByBookingDescription = (sourcePromotions, bookingDescription) => {
+  const normalizedDescription = normalizeComparableText(bookingDescription);
+  if (!normalizedDescription) return null;
+
+  return (sourcePromotions || [])
+    .map((promotion, index) => ({ promotion, index }))
+    .find(({ promotion, index }) => normalizeComparableText(getPromotionBookingLabel(promotion, index)) === normalizedDescription)?.promotion || null;
+};
+
 const formatPersonShortName = (person) => {
   if (!person) return 'Pendiente';
 
@@ -767,6 +779,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [mobileRangeStart, setMobileRangeStart] = useState(null);
   const touchTapRef = useRef(null);
   const handledTouchTapRef = useRef(false);
+  const configuredPromotions = useMemo(
+    () => Array.isArray(companyContext?.promotions) && companyContext.promotions.length ? companyContext.promotions : promotions,
+    [companyContext, promotions]
+  );
   const isAdminView = accessProfile === 'admin';
   const isEmployeeView = accessProfile === 'employee';
   const isClientView = accessProfile === 'client';
@@ -1587,6 +1603,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const openAssignmentRequest = async (booking) => {
     const isPromotionBooking = !booking.service && Boolean(booking.booking_description);
+    const promotion = isPromotionBooking
+      ? findPromotionByBookingDescription(configuredPromotions, booking.booking_description)
+      : null;
     const service = isPromotionBooking
       ? {
           id: null,
@@ -1594,7 +1613,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           name: booking.booking_description,
           icon: '✨',
           color: '#67e8f9',
-          active: true
+          active: true,
+          promotion
         }
       : services.find((item) => Number(item.id) === Number(booking.service));
     const range = buildRangeFromBooking(booking);
@@ -1604,7 +1624,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setIsLoadingAssignmentEmployees(true);
 
     const relResult = isPromotionBooking
-      ? { data: employees.map((employee) => ({ employee_id: employee.id })), error: null }
+      ? { data: Array.isArray(promotion?.employeeIds) ? promotion.employeeIds.map((id) => ({ employee_id: id })) : [], error: null }
       : isAdminView
       ? { data: employeeServices.filter((relation) => Number(relation.service_id) === Number(booking.service)), error: null }
       : user?.isInternal && isEmployeeView
