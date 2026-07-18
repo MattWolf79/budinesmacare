@@ -363,6 +363,9 @@ const getEmployeePromotionIds = (employeeId, promotions) =>
     .filter(({ promotion }) => Array.isArray(promotion?.employeeIds) && promotion.employeeIds.some((id) => String(id) === String(employeeId)))
     .map(({ id }) => id);
 
+const getPromotionServiceName = (promotion, index, pricesEnabled) =>
+  promotion?.title || promotion?.name || (pricesEnabled ? `Promoción ${index + 1}` : `Banner ${index + 1}`);
+
 const getEmployeeActivityNames = (employeeId, links, services, promotions) => {
   const serviceIds = new Set(getEmployeeServiceIds(employeeId, links));
   const promotionNames = promotions
@@ -475,7 +478,11 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     [services]
   );
   const enabledPromotions = useMemo(
-    () => promocionesHabilitadas ? promotions.filter((promotion) => promotion?.enabled !== false && (preciosHabilitados ? (promotion?.title || promotion?.description || promotion?.value || promotion?.imageDataUrl) : promotion?.imageDataUrl)) : [],
+    () => promocionesHabilitadas
+      ? promotions
+        .map((promotion, index) => ({ promotion, index }))
+        .filter(({ promotion }) => promotion?.enabled !== false && (preciosHabilitados ? (promotion?.title || promotion?.description || promotion?.value || promotion?.imageDataUrl) : promotion?.imageDataUrl))
+      : [],
     [promocionesHabilitadas, preciosHabilitados, promotions]
   );
   const activityDiscountChecks = useMemo(
@@ -486,16 +493,16 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     [descuentosHabilitados, appConfig]
   );
   const promotionServices = useMemo(
-    () => enabledPromotions.map((promotion, index) => ({
+    () => enabledPromotions.map(({ promotion, index }) => ({
       id: `promotion-${index}`,
-      name: promotion.title || 'Promoción',
+      name: getPromotionServiceName(promotion, index, preciosHabilitados),
       icon: '✨',
       color: '#67e8f9',
       default_duration: 30,
       active: true,
       promotion
     })),
-    [enabledPromotions]
+    [enabledPromotions, preciosHabilitados]
   );
 
   const employeeUsernamePreview = useMemo(
@@ -1857,7 +1864,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
               </article>
             );
           })}
-          {promotionServices.map((promotionService) => (
+          {preciosHabilitados && promotionServices.map((promotionService) => (
             <article className="admin-record-card service-record-card promotion-record-card" key={promotionService.id}>
               <div className="admin-management-card-header" style={{ '--admin-management-card-color': promotionService.color || '#174c55' }}>
                 <ActivityIcon service={promotionService} size="small" />
