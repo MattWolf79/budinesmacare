@@ -468,15 +468,15 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   const [localSettledBookingIds, setLocalSettledBookingIds] = useState([]);
   const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && companyContext?.configuracion_operativa?.descuentos_habilitados !== false;
-  const promocionesHabilitadas = preciosHabilitados && companyContext?.configuracion_operativa?.promociones_habilitadas !== false;
+  const promocionesHabilitadas = companyContext?.configuracion_operativa?.promociones_habilitadas !== false;
 
   const activeServices = useMemo(
     () => services.filter((service) => service.active !== false),
     [services]
   );
   const enabledPromotions = useMemo(
-    () => promocionesHabilitadas ? promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value)) : [],
-    [promocionesHabilitadas, promotions]
+    () => promocionesHabilitadas ? promotions.filter((promotion) => promotion?.enabled !== false && (preciosHabilitados ? (promotion?.title || promotion?.description || promotion?.value || promotion?.imageDataUrl) : promotion?.imageDataUrl)) : [],
+    [promocionesHabilitadas, preciosHabilitados, promotions]
   );
   const activityDiscountChecks = useMemo(
     () => descuentosHabilitados

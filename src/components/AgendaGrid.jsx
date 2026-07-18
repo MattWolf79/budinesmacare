@@ -1044,7 +1044,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       if (!filteredIds.length) {
         if (active) {
           setAvailableEmployees([]);
-          setAvailableEmployeesMessage('No hay empleados vinculados a este servicio.');
+          setAvailableEmployeesMessage(selectedService?.isPromotion ? 'Esta promoción no tiene empleados vinculados para atenderla.' : 'No hay empleados vinculados a este servicio.');
           setIsLoadingAvailableEmployees(false);
         }
         return;
@@ -1078,11 +1078,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
       if (!available.length) {
         if (!serviceEmployees.length) {
-          setAvailableEmployeesMessage('No hay empleados vinculados a este servicio.');
+          setAvailableEmployeesMessage(selectedService?.isPromotion ? 'Esta promoción no tiene empleados vinculados para atenderla.' : 'No hay empleados vinculados a este servicio.');
         } else if (!activeEmployees.length && inactiveCount > 0) {
-          setAvailableEmployeesMessage('Los empleados vinculados a este servicio estan inactivos. Activalos desde Empleados para asignar turnos.');
+          setAvailableEmployeesMessage(selectedService?.isPromotion ? 'Los empleados vinculados a esta promoción estan inactivos. Activalos desde Empleados para asignar turnos.' : 'Los empleados vinculados a este servicio estan inactivos. Activalos desde Empleados para asignar turnos.');
         } else if (!activeWithAvailability.length) {
-          setAvailableEmployeesMessage('Los empleados activos de este servicio no tienen disponibilidad para este horario.');
+          setAvailableEmployeesMessage(selectedService?.isPromotion ? 'Los empleados activos de esta promoción no tienen disponibilidad para este horario.' : 'Los empleados activos de este servicio no tienen disponibilidad para este horario.');
         } else if (conflictCount > 0) {
           setAvailableEmployeesMessage('Los empleados disponibles ya tienen un turno en este horario.');
         } else {
@@ -2014,6 +2014,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                 <div className="agenda-empty-state">Validando disponibilidad...</div>
               ) : !selectedService?.isPromotion && availableEmployees.length === 0 && !availabilityLoadFailed ? (
                 <div className="agenda-empty-state">No hay disponibilidad para ese horario.</div>
+              ) : selectedService?.isPromotion && availableEmployees.length === 0 && !availabilityLoadFailed ? (
+                <div className="agenda-empty-state">{availableEmployeesMessage}</div>
               ) : (
                 <div className="agenda-empty-state">El administrador asignará un empleado disponible para tu turno.</div>
               )}
