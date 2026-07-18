@@ -9194,10 +9194,12 @@ body {
 
 .role-workspace-client .client-welcome-hero.has-custom-background,
 .role-workspace-client .client-reserve-hero.has-custom-background,
+.role-workspace-employee .employee-welcome-hero.has-custom-background,
 .settings-preview-hero.has-custom-background {
   position: relative;
   overflow: hidden;
   color: #fff;
+  background-image: var(--welcome-background-image) !important;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -9205,6 +9207,7 @@ body {
 
 .role-workspace-client .client-welcome-hero.has-custom-background::before,
 .role-workspace-client .client-reserve-hero.has-custom-background::before,
+.role-workspace-employee .employee-welcome-hero.has-custom-background::before,
 .settings-preview-hero.has-custom-background::before {
   content: '';
   position: absolute;
@@ -9214,6 +9217,7 @@ body {
 
 .role-workspace-client .client-welcome-hero.has-custom-background > *,
 .role-workspace-client .client-reserve-hero.has-custom-background > *,
+.role-workspace-employee .employee-welcome-hero.has-custom-background > *,
 .settings-preview-hero.has-custom-background > * {
   position: relative;
   z-index: 1;
@@ -9227,6 +9231,10 @@ body {
 .role-workspace-client .client-reserve-hero.has-custom-background h1,
 .role-workspace-client .client-reserve-hero.has-custom-background .workspace-profile-name,
 .role-workspace-client .client-reserve-hero.has-custom-background p:not(.admin-kicker),
+.role-workspace-employee .employee-welcome-hero.has-custom-background .admin-kicker,
+.role-workspace-employee .employee-welcome-hero.has-custom-background h1,
+.role-workspace-employee .employee-welcome-hero.has-custom-background .workspace-profile-name,
+.role-workspace-employee .employee-welcome-hero.has-custom-background p:not(.admin-kicker),
 .settings-preview-hero.has-custom-background .admin-kicker,
 .settings-preview-hero.has-custom-background h1,
 .settings-preview-hero.has-custom-background p:not(.admin-kicker) {
@@ -9236,6 +9244,7 @@ body {
 
 .role-workspace-client .client-welcome-hero.has-custom-background .role-workspace-icon,
 .role-workspace-client .client-reserve-hero.has-custom-background .role-workspace-icon,
+.role-workspace-employee .employee-welcome-hero.has-custom-background .role-workspace-icon,
 .settings-preview-hero.has-custom-background .role-workspace-icon {
   border-color: rgba(255, 255, 255, 0.62);
   background: rgba(255, 255, 255, 0.18);

@@ -113,7 +113,10 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const [welcomeBackground, setWelcomeBackground] = useState(null);
   const profile = profileOptions[selectedProfile];
   const isClientProfile = selectedProfile === 'client';
-  const shouldUseWelcomeBackground = isClientProfile && clientActiveView === 'home' && Boolean(welcomeBackground?.dataUrl);
+  const isEmployeeProfile = selectedProfile === 'employee';
+  const welcomeBackgroundUrl = welcomeBackground?.dataUrl || welcomeBackground?.publicUrl || '';
+  const welcomeBackgroundStyle = welcomeBackgroundUrl ? { '--welcome-background-image': `url("${welcomeBackgroundUrl}")` } : undefined;
+  const shouldUseWelcomeBackground = (isClientProfile || isEmployeeProfile) && Boolean(welcomeBackgroundUrl);
 
   useEffect(() => {
     const applyHashView = () => {
@@ -149,8 +152,9 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
 
       setCompanyName(String(data?.company_name || 'QuieroTurnoApp').trim() || 'QuieroTurnoApp');
   setBusinessHoursText(String(data?.business_hours_text || '').trim());
-      setWelcomeBackground(data?.welcome_background_data_url ? {
-        dataUrl: data.welcome_background_data_url,
+      setWelcomeBackground(data?.welcome_background_data_url || data?.welcome_background_public_url ? {
+        dataUrl: data.welcome_background_data_url || '',
+        publicUrl: data.welcome_background_public_url || '',
         fileName: data.welcome_background_file_name || '',
         mimeType: data.welcome_background_mime_type || ''
       } : null);
@@ -216,7 +220,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
       {isClientProfile ? (
         <section
           className={`role-workspace-hero ${clientActiveView === 'home' ? 'client-welcome-hero' : 'client-reserve-hero'} ${shouldUseWelcomeBackground ? 'has-custom-background' : ''}`}
-          style={shouldUseWelcomeBackground ? { backgroundImage: `url(${welcomeBackground.dataUrl})` } : undefined}
+          style={shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
         >
           <div>
             <p className="admin-kicker">{clientActiveView === 'home' ? 'Bienvenida' : 'Reserva'}</p>
@@ -231,7 +235,10 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
           <WorkspaceProfileIdentity user={user} profile={profile} />
         </section>
       ) : (
-        <section className="role-workspace-hero">
+        <section
+          className={`role-workspace-hero ${isEmployeeProfile && shouldUseWelcomeBackground ? 'employee-welcome-hero has-custom-background' : ''}`.trim()}
+          style={isEmployeeProfile && shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
+        >
           <div>
             <p className="admin-kicker">{profile.eyebrow}</p>
             <h1>{profile.title}</h1>
