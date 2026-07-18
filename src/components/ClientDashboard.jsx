@@ -160,7 +160,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
 
   return (
     <section className="client-dashboard">
-      {!showAgenda && bannerStripImages.length > 0 && (
+      {bannerStripImages.length > 0 && (
         <div className="client-home-banner-strip" aria-label="Presentación de la empresa">
           {bannerStripImages.map((image, index) => (
             <div

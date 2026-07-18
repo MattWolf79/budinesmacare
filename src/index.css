@@ -2125,7 +2125,7 @@ code {
 
 .client-home-banner-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   width: 100%;
   min-height: 150px;
   max-height: 220px;
@@ -2682,7 +2682,9 @@ code {
 }
 
 .employee-layout-summary .employee-list {
-  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(170px, 210px));
+  justify-content: start;
+  align-items: start;
 }
 
 .employee-card {
@@ -2894,14 +2896,16 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .employee-layout-summary .employee-list,
   .employee-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (min-width: 761px) and (max-width: 1180px) {
+  .employee-layout-summary .employee-list,
   .employee-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(170px, 210px));
   }
 }
 
@@ -9189,6 +9193,7 @@ body {
 }
 
 .role-workspace-client .client-welcome-hero.has-custom-background,
+.role-workspace-client .client-reserve-hero.has-custom-background,
 .settings-preview-hero.has-custom-background {
   position: relative;
   overflow: hidden;
@@ -9199,6 +9204,7 @@ body {
 }
 
 .role-workspace-client .client-welcome-hero.has-custom-background::before,
+.role-workspace-client .client-reserve-hero.has-custom-background::before,
 .settings-preview-hero.has-custom-background::before {
   content: '';
   position: absolute;
@@ -9207,6 +9213,7 @@ body {
 }
 
 .role-workspace-client .client-welcome-hero.has-custom-background > *,
+.role-workspace-client .client-reserve-hero.has-custom-background > *,
 .settings-preview-hero.has-custom-background > * {
   position: relative;
   z-index: 1;
@@ -9216,6 +9223,10 @@ body {
 .role-workspace-client .client-welcome-hero.has-custom-background h1,
 .role-workspace-client .client-welcome-hero.has-custom-background .workspace-profile-name,
 .role-workspace-client .client-welcome-hero.has-custom-background p:not(.admin-kicker),
+.role-workspace-client .client-reserve-hero.has-custom-background .admin-kicker,
+.role-workspace-client .client-reserve-hero.has-custom-background h1,
+.role-workspace-client .client-reserve-hero.has-custom-background .workspace-profile-name,
+.role-workspace-client .client-reserve-hero.has-custom-background p:not(.admin-kicker),
 .settings-preview-hero.has-custom-background .admin-kicker,
 .settings-preview-hero.has-custom-background h1,
 .settings-preview-hero.has-custom-background p:not(.admin-kicker) {
@@ -9224,6 +9235,7 @@ body {
 }
 
 .role-workspace-client .client-welcome-hero.has-custom-background .role-workspace-icon,
+.role-workspace-client .client-reserve-hero.has-custom-background .role-workspace-icon,
 .settings-preview-hero.has-custom-background .role-workspace-icon {
   border-color: rgba(255, 255, 255, 0.62);
   background: rgba(255, 255, 255, 0.18);
