@@ -758,12 +758,12 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
           </div>
           <div className={`agenda-modal-body settings-promotion-grid admin-collapsible-form-body ${promotionsOpen ? 'is-open' : 'is-collapsed'}`}>
             <div className="settings-section-toolbar">
-              <button className="agenda-option-button" type="button" onClick={addPromotion}>Agregar promoción</button>
+              <button className="agenda-option-button" type="button" onClick={addPromotion}>{preciosHabilitados ? 'Agregar promoción' : 'Agregar banner'}</button>
             </div>
             {promotionsOpen && form.promotions.map((promotion, index) => (
                 <div className="settings-promotion-card settings-management-card" key={index}>
                   <div className="settings-management-card-header">
-                    <strong>{promotion.title || `Promoción ${index + 1}`}</strong>
+                    <strong>{preciosHabilitados ? promotion.title || `Promoción ${index + 1}` : `Banner ${index + 1}`}</strong>
                   </div>
                   <label className="settings-check-row">
                     <input
@@ -795,11 +795,11 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                   </>}
 
                   {!preciosHabilitados && (
-                    <p className="settings-empty-text">Sin precios activos, la promoción se mostrará como imagen destacada.</p>
+                    <p className="settings-empty-text">Sin precios activos, este bloque funciona como aviso visual para clientes. No usa título, descripción, valor ni descuento.</p>
                   )}
 
                   <label>
-                    Imagen banner
+                    {preciosHabilitados ? 'Imagen banner' : 'Imagen de aviso'}
                     <input type="file" accept="image/jpeg,image/png" onChange={(event) => changePromotionImage(index, event)} />
                   </label>
                   {promotion.imageDataUrl && (
