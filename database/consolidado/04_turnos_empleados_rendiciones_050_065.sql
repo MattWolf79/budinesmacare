@@ -71,15 +71,18 @@ begin
     select promotion
     into selected_promotion
     from public.app_configuration configuration,
-      jsonb_array_elements(coalesce(configuration.promotions, '[]'::jsonb)) promotion
+      jsonb_array_elements(coalesce(configuration.promotions, '[]'::jsonb)) with ordinality promotion_item(promotion, position)
     where configuration.company_id = target_company_id
       and coalesce((promotion->>'enabled')::boolean, false) is true
-      and nullif(trim(concat_ws(
-        ' Â· ',
-        nullif(trim(coalesce(promotion->>'title', '')), ''),
-        nullif(trim(coalesce(promotion->>'description', '')), ''),
-        nullif(trim(coalesce(promotion->>'value', '')), '')
-      )), '') = clean_booking_description
+      and (
+        nullif(trim(concat_ws(
+          ' Â· ',
+          nullif(trim(coalesce(promotion->>'title', '')), ''),
+          nullif(trim(coalesce(promotion->>'description', '')), ''),
+          nullif(trim(coalesce(promotion->>'value', '')), '')
+        )), '') = clean_booking_description
+        or format('Banner %s', position) = clean_booking_description
+      )
     limit 1;
 
     if selected_promotion is null then

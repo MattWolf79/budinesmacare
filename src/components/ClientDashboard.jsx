@@ -128,11 +128,13 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
   const promocionesHabilitadas = appConfig?.configuracion_operativa?.promociones_habilitadas !== false;
   const enabledPromotions = useMemo(() => (
     promocionesHabilitadas && Array.isArray(appConfig?.promotions)
-      ? appConfig.promotions.filter((promotion) => promotion?.enabled && (preciosHabilitados ? (promotion?.title || promotion?.description || promotion?.value || promotion?.imageDataUrl) : promotion?.imageDataUrl))
+      ? appConfig.promotions
+        .map((promotion, index) => ({ ...promotion, promotionIndex: index, bookingLabel: [promotion?.title, promotion?.description, promotion?.value].filter(Boolean).join(' · ') || `Banner ${index + 1}` }))
+        .filter((promotion) => promotion?.enabled && (preciosHabilitados ? (promotion?.title || promotion?.description || promotion?.value || promotion?.imageDataUrl) : promotion?.imageDataUrl))
       : []
   ), [promocionesHabilitadas, preciosHabilitados, appConfig]);
   const selectedPromotionLabel = selectedPromotion
-    ? [selectedPromotion.title, selectedPromotion.value].filter(Boolean).join(' · ') || selectedPromotion.description || 'Promoción seleccionada'
+    ? selectedPromotion.bookingLabel || [selectedPromotion.title, selectedPromotion.value].filter(Boolean).join(' · ') || selectedPromotion.description || 'Promoción seleccionada'
     : '';
   const bannerImages = useMemo(() => {
     const configuredImages = Array.isArray(appConfig?.banner_images)

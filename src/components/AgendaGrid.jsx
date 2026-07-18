@@ -818,10 +818,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       .filter((promotion) => promotion?.enabled !== false)
       .map((promotion, index) => ({
         id: null,
-        promotionKey: `promotion-${index}-${promotion.title || 'promo'}`,
+        promotionKey: `promotion-${promotion.promotionIndex ?? index}-${promotion.title || promotion.bookingLabel || 'promo'}`,
         isPromotion: true,
         promotion,
-        name: promotion.title || 'Promoción',
+        name: promotion.title || promotion.bookingLabel || `Banner ${(promotion.promotionIndex ?? index) + 1}`,
         icon: '✨',
         color: '#3fc9d5',
         active: true
@@ -829,11 +829,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   }, [promotions, selectedPromotion]);
   const bookingPromotion = selectedService?.promotion || selectedPromotion;
   const bookingPromotionText = bookingPromotion
-    ? [bookingPromotion.title, bookingPromotion.description, bookingPromotion.value].filter(Boolean).join(' · ')
+    ? bookingPromotion.bookingLabel || [bookingPromotion.title, bookingPromotion.description, bookingPromotion.value].filter(Boolean).join(' · ')
     : '';
   const bookingPromotionImageUrl = bookingPromotion?.imageDataUrl || '';
   const bookingDescription = bookingPromotion
-    ? bookingPromotionText || 'Promoción'
+    ? bookingPromotionText || `Banner ${(bookingPromotion.promotionIndex ?? 0) + 1}`
     : '';
   const reservationOptions = selectedPromotion ? promotionServices : [...services, ...promotionServices];
   const pendingAssignmentBookings = useMemo(() => bookings

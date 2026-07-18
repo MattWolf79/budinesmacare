@@ -369,8 +369,9 @@ const getPromotionServiceName = (promotion, index, pricesEnabled) =>
 const getEmployeeActivityNames = (employeeId, links, services, promotions) => {
   const serviceIds = new Set(getEmployeeServiceIds(employeeId, links));
   const promotionNames = promotions
-    .filter((promotion) => Array.isArray(promotion?.employeeIds) && promotion.employeeIds.some((id) => String(id) === String(employeeId)))
-    .map((promotion) => promotion.title || promotion.name)
+    .map((promotion, index) => ({ promotion, index }))
+    .filter(({ promotion }) => Array.isArray(promotion?.employeeIds) && promotion.employeeIds.some((id) => String(id) === String(employeeId)))
+    .map(({ promotion, index }) => getPromotionServiceName(promotion, index, Boolean(promotion?.price || promotion?.title || promotion?.description || promotion?.value)))
     .filter(Boolean);
 
   return [
@@ -1864,7 +1865,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
               </article>
             );
           })}
-          {preciosHabilitados && promotionServices.map((promotionService) => (
+          {promotionServices.map((promotionService) => (
             <article className="admin-record-card service-record-card promotion-record-card" key={promotionService.id}>
               <div className="admin-management-card-header" style={{ '--admin-management-card-color': promotionService.color || '#174c55' }}>
                 <ActivityIcon service={promotionService} size="small" />
@@ -1874,11 +1875,11 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                 <div className="admin-management-card-fields">
                   <div className="admin-management-card-field">
                     <span>Tipo</span>
-                    <strong>Promo</strong>
+                    <strong>{preciosHabilitados ? 'Promo' : 'Banner reservable'}</strong>
                   </div>
                   <div className="admin-management-card-field admin-management-card-field-wide">
-                    <span>Precio</span>
-                    <strong>{formatMoney(promotionService.promotion?.price)}</strong>
+                    <span>{preciosHabilitados ? 'Precio' : 'Atención'}</span>
+                    <strong>{preciosHabilitados ? formatMoney(promotionService.promotion?.price) : 'Asignable a empleados'}</strong>
                   </div>
                   <div className="admin-management-card-field admin-management-card-field-wide">
                     <span>Administración</span>
