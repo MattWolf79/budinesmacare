@@ -112,6 +112,7 @@ const normalizeSlug = (value) => String(value || '')
 export default function PlatformAdmin() {
   const [loginForm, setLoginForm] = useState(initialLoginForm);
   const [platformSession, setPlatformSession] = useState(null);
+  const [platformCompanies, setPlatformCompanies] = useState([]);
   const [companyForm, setCompanyForm] = useState(initialCompanyForm);
   const [editForm, setEditForm] = useState(initialEditForm);
   const [resetForm, setResetForm] = useState(initialResetForm);
@@ -145,6 +146,22 @@ export default function PlatformAdmin() {
     }));
   };
 
+  const loadPlatformCompanies = async (session = platformSession) => {
+    if (!session) return;
+
+    const { data, error } = await supabase.rpc('plataforma_listar_empresas', {
+      cuenta_plataforma_id_valor: session.id,
+      token_sesion_valor: session.sessionToken
+    });
+
+    if (error) {
+      setErrorMessage(error.message || 'No se pudo cargar el listado de empresas.');
+      return;
+    }
+
+    setPlatformCompanies(Array.isArray(data) ? data : []);
+  };
+
   const submitLogin = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -170,13 +187,16 @@ export default function PlatformAdmin() {
       return;
     }
 
-    setPlatformSession({
+    const nextSession = {
       id: account.id,
       username: account.username,
       displayName: account.display_name,
       sessionToken: account.session_token
-    });
+    };
+
+    setPlatformSession(nextSession);
     setLoginForm(initialLoginForm);
+    await loadPlatformCompanies(nextSession);
   };
 
   const submitCompany = async (event) => {
@@ -209,6 +229,7 @@ export default function PlatformAdmin() {
     const result = Array.isArray(data) ? data[0] : data;
     setMessage(`Empresa creada: ${result.company_slug}. Admin: ${result.admin_username}. Password temporal: ${result.temporary_password}. URL: ${window.location.origin}/${result.company_slug}`);
     setCompanyForm(initialCompanyForm);
+    await loadPlatformCompanies();
   };
 
   const loadCompanyConfig = async (event) => {
@@ -261,6 +282,7 @@ export default function PlatformAdmin() {
 
     setEditForm(initialEditForm);
     setMessage(`Configuración actualizada para ${data.company_slug}. URL: ${window.location.origin}/${data.company_slug}`);
+    await loadPlatformCompanies();
   };
 
   const submitReset = async (event) => {
@@ -292,6 +314,7 @@ export default function PlatformAdmin() {
 
   const logout = () => {
     setPlatformSession(null);
+    setPlatformCompanies([]);
     setMessage('');
     setErrorMessage('');
   };
@@ -421,8 +444,15 @@ export default function PlatformAdmin() {
             <p>Modificar empresa</p>
             <h2>Configuración operativa</h2>
           </div>
-          <Field label="Slug empresa">
-            <input value={editForm.lookupSlug} onChange={(event) => updateEditField('lookupSlug', event.target.value)} placeholder="verificacionvehicular" required />
+          <Field label="Empresa">
+            <select value={editForm.lookupSlug} onChange={(event) => updateEditField('lookupSlug', event.target.value)} required>
+              <option value="">Seleccionar empresa</option>
+              {platformCompanies.map((company) => (
+                <option key={company.company_id || company.company_slug} value={company.company_slug}>
+                  {company.company_name} ({company.company_slug})
+                </option>
+              ))}
+            </select>
           </Field>
           {editForm.companyName && <p className="platform-company-loaded">Empresa: {editForm.companyName}</p>}
           <Field label="Slug URL">
@@ -484,8 +514,15 @@ export default function PlatformAdmin() {
             <p>Mantenimiento</p>
             <h2>Blanquear password</h2>
           </div>
-          <Field label="Slug empresa">
-            <input value={resetForm.companySlug} onChange={(event) => updateResetField('companySlug', event.target.value)} placeholder="jardinmasaje" required />
+          <Field label="Empresa">
+            <select value={resetForm.companySlug} onChange={(event) => updateResetField('companySlug', event.target.value)} required>
+              <option value="">Seleccionar empresa</option>
+              {platformCompanies.map((company) => (
+                <option key={company.company_id || company.company_slug} value={company.company_slug}>
+                  {company.company_name} ({company.company_slug})
+                </option>
+              ))}
+            </select>
           </Field>
           <Field label="Usuario administrador">
             <input value={resetForm.adminUsername} onChange={(event) => updateResetField('adminUsername', event.target.value)} placeholder="adminjardin" required />

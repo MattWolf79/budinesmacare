@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import AgendaGrid from './AgendaGrid';
+import TarjetaPromocion from './TarjetaPromocion';
 import { formatDisplayDate } from '../utils/dateFormat';
 
 const ACTIVE_BOOKING_STATUSES = ['confirmed', 'reserved', 'pending_assignment'];
@@ -124,14 +125,14 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
     service: services.find((service) => Number(service.id) === Number(booking.service))
   })), [bookings, services]);
   const preciosHabilitados = appConfig?.configuracion_operativa?.precios_habilitados !== false;
-  const promocionesHabilitadas = preciosHabilitados && appConfig?.configuracion_operativa?.promociones_habilitadas !== false;
+  const promocionesHabilitadas = appConfig?.configuracion_operativa?.promociones_habilitadas !== false;
   const enabledPromotions = useMemo(() => (
     promocionesHabilitadas && Array.isArray(appConfig?.promotions)
-      ? appConfig.promotions.filter((promotion) => promotion?.enabled)
+      ? appConfig.promotions.filter((promotion) => promotion?.enabled && (preciosHabilitados ? (promotion?.title || promotion?.description || promotion?.value || promotion?.imageDataUrl) : promotion?.imageDataUrl))
       : []
-  ), [promocionesHabilitadas, appConfig]);
+  ), [promocionesHabilitadas, preciosHabilitados, appConfig]);
   const selectedPromotionLabel = selectedPromotion
-    ? [selectedPromotion.title, selectedPromotion.value].filter(Boolean).join(' · ')
+    ? [selectedPromotion.title, selectedPromotion.value].filter(Boolean).join(' · ') || selectedPromotion.description || 'Promoción seleccionada'
     : '';
   const bannerImages = useMemo(() => {
     const configuredImages = Array.isArray(appConfig?.banner_images)
@@ -228,36 +229,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
           <h2>Promociones</h2>
           <div className="client-promotions-grid">
             {enabledPromotions.map((promotion, index) => (
-              <article className={`client-promotion-card ${promotion.imageDataUrl ? 'has-image' : ''}`} key={index}>
-                {promotion.imageDataUrl && (
-                  <div
-                    className="client-promotion-image"
-                    role="img"
-                    aria-label={promotion.title || 'Promoción'}
-                    style={{ backgroundImage: `url(${promotion.imageDataUrl})` }}
-                  />
-                )}
-                <div className="client-card-header">
-                  <strong>{promotion.title || 'Promoción'}</strong>
-                </div>
-                <div className="client-card-fields">
-                  {promotion.description && (
-                    <div className="client-card-field client-card-field-wide">
-                      <span>Detalle</span>
-                      <strong>{promotion.description}</strong>
-                    </div>
-                  )}
-                  {promotion.value && (
-                    <div className="client-card-field client-card-field-wide client-card-price-field">
-                      <span>Precio</span>
-                      <strong>{promotion.value}</strong>
-                    </div>
-                  )}
-                </div>
-                <button className="client-welcome-action client-promotion-action" type="button" onClick={() => onReservePromotion?.(promotion)}>
-                  Reservar turno
-                </button>
-              </article>
+              <TarjetaPromocion key={index} promocion={promotion} preciosHabilitados={preciosHabilitados} onReservar={onReservePromotion} />
             ))}
           </div>
         </section>

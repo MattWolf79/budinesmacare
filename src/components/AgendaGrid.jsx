@@ -828,8 +828,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       }));
   }, [promotions, selectedPromotion]);
   const bookingPromotion = selectedService?.promotion || selectedPromotion;
-  const bookingDescription = bookingPromotion
+  const bookingPromotionText = bookingPromotion
     ? [bookingPromotion.title, bookingPromotion.description, bookingPromotion.value].filter(Boolean).join(' · ')
+    : '';
+  const bookingPromotionImageUrl = bookingPromotion?.imageDataUrl || '';
+  const bookingDescription = bookingPromotion
+    ? bookingPromotionText || 'Promoción'
     : '';
   const reservationOptions = selectedPromotion ? promotionServices : [...services, ...promotionServices];
   const pendingAssignmentBookings = useMemo(() => bookings
@@ -1096,6 +1100,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       active = false;
     };
   }, [shouldLoadAvailableEmployees, selectedService, bookings, employeeAvailability, availabilityLoadFailed, offset, selectedRange, isEmployeeView, isClientView, employeeId, isAdminView, user?.isInternal, employeeServices, employees]);
+
+  useEffect(() => {
+    if (!selection || selectedService || !selectedPromotion || !promotionServices.length) return;
+
+    setSelectedService(promotionServices[0]);
+  }, [selection, selectedService, selectedPromotion, promotionServices]);
 
   /* =========================
      SELECTION
@@ -1971,7 +1981,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       })}
 
       {/* MODAL SERVICIOS */}
-      {selection && !selectedService && (
+      {selection && !selectedService && !selectedPromotion && (
         <ServiceModal
           services={reservationOptions}
           rangeLabel={selectedRangeLabel}
@@ -1989,7 +1999,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
               <div className="agenda-modal-summary client-request-service-chip">
                 <span className="agenda-summary-title"><ActivityIcon service={selectedService} size="small" /> {selectedService.name}</span>
                 <span className="client-request-time">{selectedRangeLabel}</span>
-                {bookingDescription && <span className="client-request-promotion">{bookingDescription}</span>}
+                {bookingPromotionImageUrl && (
+                  <span
+                    className="client-request-promotion-image"
+                    role="img"
+                    aria-label={selectedService.name || 'Promoción'}
+                    style={{ backgroundImage: `url(${bookingPromotionImageUrl})` }}
+                  />
+                )}
+                {bookingPromotionText && <span className="client-request-promotion">{bookingPromotionText}</span>}
               </div>
 
               {isLoadingAvailableEmployees ? (
@@ -2018,7 +2036,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           selectedService={selectedService}
           emptyMessage={availableEmployeesMessage}
           isLoading={isLoadingAvailableEmployees}
-          summaryExtra={bookingDescription}
+          summaryExtra={bookingPromotionText}
+          summaryImageUrl={bookingPromotionImageUrl}
           onClose={close}
           onReserve={chooseEmployeeForReservation}
           fallbackActionLabel="Solicitar sin elegir empleado"

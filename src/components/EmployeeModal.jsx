@@ -34,6 +34,7 @@ export default function EmployeeModal({
   emptyMessage = 'No hay empleados disponibles para ese horario.',
   isLoading = false,
   summaryExtra = '',
+  summaryImageUrl = '',
   fallbackActionLabel = '',
   onFallbackReserve,
   fallbackDisabled = false
@@ -72,6 +73,14 @@ export default function EmployeeModal({
           <div className="agenda-modal-summary">
             <span className="agenda-summary-title"><ActivityIcon service={selectedService} size="small" /> {selectedService.name}</span><br />
             {rangeLabel}
+            {summaryImageUrl && (
+              <span
+                className="client-request-promotion-image"
+                role="img"
+                aria-label={selectedService.name || 'Promoción'}
+                style={{ backgroundImage: `url(${summaryImageUrl})` }}
+              />
+            )}
             {summaryExtra && <span className="client-request-promotion">{summaryExtra}</span>}
           </div>
 

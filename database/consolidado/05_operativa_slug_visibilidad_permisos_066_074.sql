@@ -2574,5 +2574,37 @@ $$;
 grant execute on function public.plataforma_actualizar_configuracion_empresa(uuid, text, text, boolean, boolean, integer, boolean, boolean, text, boolean, text, text, text, boolean, boolean) to anon, authenticated;
 grant execute on function public.platform_create_company_admin(uuid, text, text, text, text, text, text, text, boolean, boolean, integer, boolean, boolean, text, boolean, text, text, boolean, boolean) to anon, authenticated;
 
+create or replace function public.plataforma_listar_empresas(
+  cuenta_plataforma_id_valor uuid,
+  token_sesion_valor text
+)
+returns table (
+  company_id uuid,
+  company_name text,
+  company_slug text,
+  company_status text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  platform_account public.internal_accounts%rowtype;
+begin
+  platform_account := public.validate_platform_admin_session(cuenta_plataforma_id_valor, token_sesion_valor);
+
+  return query
+  select
+    companies.id,
+    companies.name,
+    companies.slug,
+    companies.status
+  from public.companies companies
+  order by companies.name, companies.slug;
+end;
+$$;
+
+grant execute on function public.plataforma_listar_empresas(uuid, text) to anon, authenticated;
+
 commit;
 

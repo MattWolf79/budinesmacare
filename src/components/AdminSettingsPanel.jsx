@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import TarjetaPromocion from './TarjetaPromocion';
 
 const emptyPromotion = () => ({
   enabled: false,
@@ -131,11 +132,11 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const configuracionOperativa = form.configuracion_operativa || {};
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
-  const promocionesHabilitadas = preciosHabilitados && configuracionOperativa.promociones_habilitadas !== false;
+  const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
 
   const enabledPromotions = useMemo(() => (
-    form.promotions.filter((promotion) => promotion.enabled)
-  ), [form.promotions]);
+    form.promotions.filter((promotion) => promotion.enabled && (preciosHabilitados ? (promotion.title || promotion.description || promotion.value || promotion.imageDataUrl) : promotion.imageDataUrl))
+  ), [form.promotions, preciosHabilitados]);
   const previewBannerImages = useMemo(() => {
     if (!form.banner_images.length) return [];
     return Array.from({ length: 4 }, (_, index) => form.banner_images[index % form.banner_images.length]);
@@ -435,8 +436,18 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
     setIsSaving(true);
     const promotionsPayload = form.promotions.map((promotion) => ({
       ...promotion,
-      price: parseMoney(promotion.price)
+      title: preciosHabilitados ? promotion.title : '',
+      description: preciosHabilitados ? promotion.description : '',
+      value: preciosHabilitados ? promotion.value : '',
+      price: preciosHabilitados ? parseMoney(promotion.price) : 0
     }));
+
+    const invalidImagePromotion = !preciosHabilitados && promotionsPayload.find((promotion) => promotion.enabled && !promotion.imageDataUrl);
+    if (invalidImagePromotion) {
+      alert('Cuando los precios estan deshabilitados, cada promocion activa necesita una imagen.');
+      setIsSaving(false);
+      return;
+    }
 
     const invalidPercentDiscount = form.discounts.find((discount) => discount.enabled && discount.valueType === 'percent' && parseMoney(discount.value) > 100);
     if (invalidPercentDiscount) {
@@ -763,23 +774,29 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                     <span>Habilitada</span>
                   </label>
 
-                  <label>
-                    Título
-                    <input value={promotion.title} onChange={(event) => updatePromotion(index, 'title', event.target.value)} />
-                  </label>
-                  <label>
-                    Descripción
-                    <textarea value={promotion.description} onChange={(event) => updatePromotion(index, 'description', event.target.value)} />
-                  </label>
-                  <label>
-                    Valor
-                    <input value={promotion.value} onChange={(event) => updatePromotion(index, 'value', event.target.value)} />
-                  </label>
-                  <label>
-                    Precio numérico
-                    <input type="text" inputMode="decimal" value={promotion.price} onChange={(event) => updatePromotion(index, 'price', event.target.value)} placeholder="40000" />
-                  </label>
-                  <p className="settings-empty-text">Para cierres se usará {formatMoney(parseMoney(promotion.price))}.</p>
+                  {preciosHabilitados && <>
+                    <label>
+                      Título
+                      <input value={promotion.title} onChange={(event) => updatePromotion(index, 'title', event.target.value)} />
+                    </label>
+                    <label>
+                      Descripción
+                      <textarea value={promotion.description} onChange={(event) => updatePromotion(index, 'description', event.target.value)} />
+                    </label>
+                    <label>
+                      Valor
+                      <input value={promotion.value} onChange={(event) => updatePromotion(index, 'value', event.target.value)} />
+                    </label>
+                    <label>
+                      Precio numérico
+                      <input type="text" inputMode="decimal" value={promotion.price} onChange={(event) => updatePromotion(index, 'price', event.target.value)} placeholder="40000" />
+                    </label>
+                    <p className="settings-empty-text">Para cierres se usará {formatMoney(parseMoney(promotion.price))}.</p>
+                  </>}
+
+                  {!preciosHabilitados && (
+                    <p className="settings-empty-text">Sin precios activos, la promoción se mostrará como imagen destacada.</p>
+                  )}
 
                   <label>
                     Imagen banner
@@ -944,24 +961,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                   <h2>Promociones</h2>
                   <div className="client-promotions-grid">
                     {enabledPromotions.map((promotion, index) => (
-                      <article className="client-promotion-card" key={index}>
-                        <div className="client-card-header">
-                          <strong>{promotion.title || 'Promoción'}</strong>
-                        </div>
-                        <div className="client-card-fields">
-                          <div className="client-card-field client-card-field-wide">
-                            <span>Detalle</span>
-                            <strong>{promotion.description || 'Descripción de la promoción'}</strong>
-                          </div>
-                          <div className="client-card-field client-card-field-wide client-card-price-field">
-                            <span>Precio</span>
-                            <strong>{promotion.value || 'Valor'}</strong>
-                          </div>
-                        </div>
-                        <button className="client-welcome-action client-promotion-action" type="button">
-                          Reservar turno
-                        </button>
-                      </article>
+                      <TarjetaPromocion key={index} promocion={promotion} preciosHabilitados={preciosHabilitados} />
                     ))}
                   </div>
                 </section>
