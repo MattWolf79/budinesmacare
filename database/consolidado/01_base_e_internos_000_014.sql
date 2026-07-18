@@ -459,10 +459,11 @@ begin
     alter table public.bookings
       add constraint bookings_user_no_active_overlap_excl
       exclude using gist (
+        company_id with =,
         user_id with =,
         tsrange(start_at, end_at, '[)') with &&
       )
-      where (user_id is not null and status in ('reserved', 'confirmed'));
+      where (company_id is not null and user_id is not null and status in ('reserved', 'confirmed'));
   end if;
 end $$;
 
@@ -472,10 +473,11 @@ begin
     alter table public.bookings
       add constraint bookings_customer_email_no_active_overlap_excl
       exclude using gist (
+        company_id with =,
         (public.normalize_text(user_email)) with =,
         tsrange(start_at, end_at, '[)') with &&
       )
-      where (user_email is not null and trim(user_email) <> '' and status in ('reserved', 'confirmed'));
+      where (company_id is not null and user_email is not null and trim(user_email) <> '' and status in ('reserved', 'confirmed'));
   end if;
 end $$;
 
@@ -2604,10 +2606,11 @@ begin
     alter table public.bookings
       add constraint bookings_user_no_active_overlap_excl
       exclude using gist (
+        company_id with =,
         user_id with =,
         tsrange(start_at, end_at, '[)') with &&
       )
-      where (user_id is not null and status in ('reserved', 'confirmed'));
+      where (company_id is not null and user_id is not null and status in ('reserved', 'confirmed'));
   end if;
 end $$;
 
@@ -2619,10 +2622,11 @@ begin
     alter table public.bookings
       add constraint bookings_customer_email_no_active_overlap_excl
       exclude using gist (
+        company_id with =,
         (public.normalize_text(user_email)) with =,
         tsrange(start_at, end_at, '[)') with &&
       )
-      where (user_email is not null and trim(user_email) <> '' and status in ('reserved', 'confirmed'));
+      where (company_id is not null and user_email is not null and trim(user_email) <> '' and status in ('reserved', 'confirmed'));
   end if;
 end $$;
 

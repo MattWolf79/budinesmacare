@@ -3,6 +3,30 @@
 
 begin;
 
+alter table public.bookings
+  drop constraint if exists bookings_user_no_active_overlap_excl;
+
+alter table public.bookings
+  drop constraint if exists bookings_customer_email_no_active_overlap_excl;
+
+alter table public.bookings
+  add constraint bookings_user_no_active_overlap_excl
+  exclude using gist (
+    company_id with =,
+    user_id with =,
+    tsrange(start_at, end_at, '[)') with &&
+  )
+  where (company_id is not null and user_id is not null and status in ('reserved', 'confirmed'));
+
+alter table public.bookings
+  add constraint bookings_customer_email_no_active_overlap_excl
+  exclude using gist (
+    company_id with =,
+    (public.normalize_text(user_email)) with =,
+    tsrange(start_at, end_at, '[)') with &&
+  )
+  where (company_id is not null and user_email is not null and trim(user_email) <> '' and status in ('reserved', 'confirmed'));
+
 update public.app_configuration configuration
 set promotions = coalesce(promotions_with_titles.promotions, configuration.promotions)
 from (
