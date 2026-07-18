@@ -780,7 +780,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const touchTapRef = useRef(null);
   const handledTouchTapRef = useRef(false);
   const configuredPromotions = useMemo(
-    () => Array.isArray(companyContext?.promotions) && companyContext.promotions.length ? companyContext.promotions : promotions,
+    () => Array.isArray(promotions) && promotions.length ? promotions : Array.isArray(companyContext?.promotions) ? companyContext.promotions : [],
     [companyContext, promotions]
   );
   const isAdminView = accessProfile === 'admin';

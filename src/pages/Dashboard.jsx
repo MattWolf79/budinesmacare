@@ -36,7 +36,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   const [promotions, setPromotions] = useState([]);
   const configuracionOperativa = companyContext?.configuracion_operativa || {};
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
-  const promocionesHabilitadas = preciosHabilitados && configuracionOperativa.promociones_habilitadas !== false;
+  const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
 
   useEffect(() => {
     const applyHashView = () => {
@@ -74,9 +74,11 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
 
   const enabledPromotions = useMemo(() => (
     promocionesHabilitadas
-      ? promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value))
+      ? promotions
+        .map((promotion, index) => ({ ...promotion, promotionIndex: index, bookingLabel: [promotion?.title || `Banner ${index + 1}`, promotion?.description, promotion?.value].filter(Boolean).join(' · ') }))
+        .filter((promotion) => promotion?.enabled !== false && (preciosHabilitados ? (promotion?.title || promotion?.description || promotion?.value || promotion?.imageDataUrl) : promotion?.imageDataUrl))
       : []
-  ), [promocionesHabilitadas, promotions]);
+  ), [promocionesHabilitadas, preciosHabilitados, promotions]);
 
   const notifyAdminDataChanged = () => {
     setAdminDataVersion((current) => current + 1);
