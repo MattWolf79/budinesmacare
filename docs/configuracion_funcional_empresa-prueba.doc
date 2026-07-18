@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Configuracion funcional - empresa-prueba</title>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; color: #1f2933; line-height: 1.35; }
+    h1 { font-size: 24pt; margin-bottom: 0; }
+    h2 { font-size: 16pt; margin-top: 22pt; border-bottom: 1px solid #d0d7de; padding-bottom: 4pt; }
+    h3 { font-size: 13pt; margin-top: 14pt; }
+    table { border-collapse: collapse; width: 100%; margin: 8pt 0 14pt; }
+    th, td { border: 1px solid #d0d7de; padding: 6pt; vertical-align: top; }
+    th { background: #f3f4f6; text-align: left; }
+    .muted { color: #5f6b7a; }
+    .ok { color: #166534; font-weight: bold; }
+    .off { color: #92400e; font-weight: bold; }
+    code { font-family: Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <h1>Configuracion funcional de empresa-prueba</h1>
+  <p class="muted">Documento generado el 2026-07-18 a partir de la configuracion vigente consultada en Supabase mediante los RPC <code>get_company_public_context</code>, <code>get_app_configuration</code> y <code>get_client_booking_options</code>.</p>
+
+  <h2>1. Identidad de la empresa</h2>
+  <table>
+    <tr><th>Campo</th><th>Valor</th></tr>
+    <tr><td>Empresa</td><td>Empresa Prueba</td></tr>
+    <tr><td>Slug operativo</td><td><code>empresa-prueba</code></td></tr>
+    <tr><td>Estado</td><td><span class="ok">Activa</span></td></tr>
+    <tr><td>ID interno de empresa</td><td><code>dce0a5b7-b2ab-4013-8ce6-a8d7961fe97c</code></td></tr>
+  </table>
+
+  <h2>2. Accesos funcionales</h2>
+  <p>La empresa se opera por rutas multiempresa basadas en el slug <code>empresa-prueba</code>.</p>
+  <table>
+    <tr><th>Perfil</th><th>Ruta esperada</th><th>Uso</th></tr>
+    <tr><td>Cliente</td><td><code>/empresa-prueba/sacarturno</code></td><td>Solicitar turnos para servicios activos o promociones habilitadas.</td></tr>
+    <tr><td>Administrador</td><td><code>/empresa-prueba/admin</code></td><td>Gestionar agenda, empleados, servicios, descuentos, promociones, imagenes y asignaciones.</td></tr>
+    <tr><td>Empleado</td><td><code>/empresa-prueba/empleado</code></td><td>Consultar agenda, crear reservas y cancelar turnos propios segun permisos.</td></tr>
+  </table>
+
+  <h2>3. Configuracion operativa</h2>
+  <table>
+    <tr><th>Parametro</th><th>Estado actual</th><th>Implicancia funcional</th></tr>
+    <tr><td>Precios habilitados</td><td><span class="ok">Si</span></td><td>Los servicios y promociones manejan valores visibles y funcionales.</td></tr>
+    <tr><td>Descuentos habilitados</td><td><span class="ok">Si</span></td><td>La empresa puede ofrecer descuentos configurados desde administracion.</td></tr>
+    <tr><td>Promociones habilitadas</td><td><span class="ok">Si</span></td><td>Se muestran y pueden reservar promociones con precio e imagen.</td></tr>
+    <tr><td>Intervalo de grilla</td><td>30 minutos</td><td>La agenda se organiza en bloques de media hora.</td></tr>
+    <tr><td>Cliente puede elegir empleado</td><td><span class="off">No</span></td><td>El cliente solicita el turno sin seleccionar empleado; la asignacion se resuelve por disponibilidad o administracion.</td></tr>
+    <tr><td>Turnos superpuestos</td><td><span class="ok">Si</span></td><td>Se admite mas de un turno en una misma franja solo si no se repite empleado ni cliente.</td></tr>
+    <tr><td>Empleados pueden reservar turnos</td><td><span class="ok">Si</span></td><td>Los empleados pueden generar reservas desde su panel.</td></tr>
+    <tr><td>Empleados ven agenda completa</td><td><span class="ok">Si</span></td><td>El empleado puede ver la agenda completa.</td></tr>
+    <tr><td>Visibilidad del turno para empleado</td><td><code>completa</code></td><td>La vista de empleado muestra informacion completa del turno.</td></tr>
+    <tr><td>Empleados pueden cancelar turnos</td><td><code>propios</code></td><td>El empleado puede cancelar solamente turnos propios.</td></tr>
+    <tr><td>Empleados ven detalle de turnos</td><td><code>propios</code></td><td>El empleado puede ver detalle de sus propios turnos.</td></tr>
+    <tr><td>PDF detalle turno</td><td><span class="off">Deshabilitado</span></td><td>No se ofrece PDF de detalle de turno para esta empresa.</td></tr>
+  </table>
+
+  <h2>4. Servicios activos</h2>
+  <p>Todos los servicios consultados estan activos y duran 30 minutos por defecto.</p>
+  <table>
+    <tr><th>ID</th><th>Servicio</th><th>Precio base</th><th>Duracion</th><th>Estado</th><th>Empleados asignados</th></tr>
+    <tr><td>12</td><td>traumatologia</td><td>$10000</td><td>30 minutos</td><td>Activo</td><td>noelia gomez, Natalia Fernandez</td></tr>
+    <tr><td>13</td><td>gastroenterologia</td><td>$50000</td><td>30 minutos</td><td>Activo</td><td>cintia espinosa, Natalia Fernandez</td></tr>
+  </table>
+
+  <h2>5. Empleados y asignaciones</h2>
+  <table>
+    <tr><th>Empleado</th><th>Usuario/nombre interno</th><th>Estado</th><th>Servicios asignados</th><th>Promociones asignadas</th><th>Disponibilidad vigente consultada</th></tr>
+    <tr>
+      <td>cintia espinosa</td>
+      <td><code>cespinosa</code></td>
+      <td>Activa, con foto configurada</td>
+      <td>gastroenterologia</td>
+      <td>Dia de la amiga</td>
+      <td>Del 2026-07-15 al 2026-07-18, de 09:00 a 18:00 en los dias cargados.</td>
+    </tr>
+    <tr>
+      <td>Natalia Fernandez</td>
+      <td><code>nfernandez</code></td>
+      <td>Activa, con foto configurada</td>
+      <td>traumatologia, gastroenterologia</td>
+      <td>Dia del amigo</td>
+      <td>No se recibieron registros de disponibilidad en el resultado consultado.</td>
+    </tr>
+    <tr>
+      <td>noelia gomez</td>
+      <td><code>ngomez00</code></td>
+      <td>Activa, sin foto configurada</td>
+      <td>traumatologia</td>
+      <td>No asignada a promociones</td>
+      <td>Del 2026-07-15 al 2026-07-18, de 09:00 a 18:00 en los dias cargados.</td>
+    </tr>
+  </table>
+
+  <h2>6. Promociones reservables</h2>
+  <table>
+    <tr><th>Promocion</th><th>Estado</th><th>Precio</th><th>Descripcion</th><th>Imagen</th><th>Empleado habilitado</th><th>Implicancia</th></tr>
+    <tr>
+      <td>Dia del amigo</td>
+      <td>Habilitada</td>
+      <td>$30000</td>
+      <td>Veni con un amigo para masajes y pagas vos</td>
+      <td>Configurada</td>
+      <td>Natalia Fernandez</td>
+      <td>Puede reservarse como promocion con precio y debe asignarse a Natalia Fernandez.</td>
+    </tr>
+    <tr>
+      <td>Dia de la amiga</td>
+      <td>Habilitada</td>
+      <td>$50000</td>
+      <td>Veni con un amigo para masajes y pagas vos</td>
+      <td>Configurada</td>
+      <td>cintia espinosa</td>
+      <td>Puede reservarse como promocion con precio y debe asignarse a cintia espinosa.</td>
+    </tr>
+  </table>
+
+  <h2>7. Descuentos</h2>
+  <table>
+    <tr><th>Descuento</th><th>Estado</th><th>Tipo</th><th>Alcance</th><th>Valor</th><th>Implicancia</th></tr>
+    <tr><td>pago en efectivo</td><td>Habilitado</td><td>General</td><td>Total</td><td>10%</td><td>Aplica como descuento general habilitado.</td></tr>
+    <tr><td>pago con tarjeta</td><td>Deshabilitado</td><td>General</td><td>Ambos</td><td>1%</td><td>Esta configurado pero no aplica mientras siga deshabilitado.</td></tr>
+  </table>
+
+  <h2>8. Experiencia del cliente</h2>
+  <ul>
+    <li>El cliente ingresa por <code>/empresa-prueba/sacarturno</code>.</li>
+    <li>Puede seleccionar servicios activos: traumatologia o gastroenterologia.</li>
+    <li>Puede reservar promociones con precio: Dia del amigo y Dia de la amiga.</li>
+    <li>No elige empleado manualmente porque la opcion esta deshabilitada.</li>
+    <li>Ve precios y promociones, ya que ambos modulos estan habilitados.</li>
+    <li>Puede beneficiarse de descuentos habilitados segun la logica de la app.</li>
+    <li>Los turnos se validan contra disponibilidad, empleado asignable y conflictos de cliente/empleado.</li>
+  </ul>
+
+  <h2>9. Experiencia administrativa</h2>
+  <ul>
+    <li>Administracion accede por <code>/empresa-prueba/admin</code>.</li>
+    <li>Puede operar servicios con precios, descuentos y promociones.</li>
+    <li>Puede administrar imagenes de banner/carrusel, fondo de bienvenida y promociones con imagen.</li>
+    <li>Las promociones estan vinculadas a empleados especificos y esa asignacion condiciona la reserva/asignacion.</li>
+    <li>Los turnos superpuestos estan habilitados, pero no permiten duplicar empleado ni cliente en la misma franja.</li>
+  </ul>
+
+  <h2>10. Experiencia del empleado</h2>
+  <ul>
+    <li>El empleado accede por <code>/empresa-prueba/empleado</code>.</li>
+    <li>Puede ver agenda completa.</li>
+    <li>La visibilidad configurada es completa.</li>
+    <li>Puede crear reservas.</li>
+    <li>Puede cancelar solo turnos propios.</li>
+    <li>Puede ver detalle solo de turnos propios.</li>
+    <li>No tiene PDF de detalle habilitado.</li>
+  </ul>
+
+  <h2>11. Configuracion visual</h2>
+  <table>
+    <tr><th>Elemento</th><th>Estado</th><th>Detalle</th><th>Implicancia</th></tr>
+    <tr><td>Imagen de bienvenida</td><td>Configurada</td><td>Incluye fondo de bienvenida y URL publica configurada.</td><td>La experiencia cliente puede mostrar fondo personalizado.</td></tr>
+    <tr><td>Banner general</td><td>Configurado</td><td><code>estetica.jpg</code></td><td>Existe banner heredado/general configurado.</td></tr>
+    <tr><td>Carrusel/banner images</td><td>Configurado</td><td><code>estetica.jpg</code> y <code>mecanica.png</code></td><td>La empresa tiene dos imagenes disponibles para visuales publicos.</td></tr>
+    <tr><td>Imagenes de promociones</td><td>Configuradas</td><td>Dia del amigo y Dia de la amiga</td><td>Las promociones se muestran con imagen asociada.</td></tr>
+  </table>
+
+  <h2>12. Reglas de solapamiento aplicables</h2>
+  <ul>
+    <li>La empresa tiene <code>turnos_superpuestos_habilitados = true</code>.</li>
+    <li>Puede haber mas de un turno en una misma franja si son distintos empleados y distintos clientes.</li>
+    <li>Un mismo empleado no puede tener dos turnos en la misma franja.</li>
+    <li>Un mismo cliente o email no puede tener dos turnos/solicitudes activas en la misma franja dentro de esta empresa.</li>
+    <li>La correccion aplicada en el parche 06 acota las restricciones por <code>company_id</code>, por lo que un turno de otra empresa no deberia bloquear a <code>empresa-prueba</code>.</li>
+  </ul>
+
+  <h2>13. Observaciones tecnicas</h2>
+  <ul>
+    <li>Los datos visuales largos fueron omitidos en este documento y resumidos como "configurado" para evitar incluir blobs de imagen.</li>
+    <li>Este documento refleja la configuracion consultada el 2026-07-18; cambios posteriores en Supabase pueden dejarlo desactualizado.</li>
+    <li>La consulta publica de contexto para esta empresa respondio correctamente usando el parametro <code>slug_value</code>.</li>
+  </ul>
+</body>
+</html>

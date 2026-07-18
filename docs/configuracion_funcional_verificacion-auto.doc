@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Configuracion funcional - verificacion-auto</title>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; color: #1f2933; line-height: 1.35; }
+    h1 { font-size: 24pt; margin-bottom: 0; }
+    h2 { font-size: 16pt; margin-top: 22pt; border-bottom: 1px solid #d0d7de; padding-bottom: 4pt; }
+    h3 { font-size: 13pt; margin-top: 14pt; }
+    table { border-collapse: collapse; width: 100%; margin: 8pt 0 14pt; }
+    th, td { border: 1px solid #d0d7de; padding: 6pt; vertical-align: top; }
+    th { background: #f3f4f6; text-align: left; }
+    .muted { color: #5f6b7a; }
+    .ok { color: #166534; font-weight: bold; }
+    .off { color: #92400e; font-weight: bold; }
+    code { font-family: Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <h1>Configuracion funcional de verificacion-auto</h1>
+  <p class="muted">Documento generado el 2026-07-18 a partir de la configuracion vigente consultada en Supabase mediante los RPC <code>get_app_configuration</code> y <code>get_client_booking_options</code>.</p>
+
+  <h2>1. Identidad de la empresa</h2>
+  <table>
+    <tr><th>Campo</th><th>Valor</th></tr>
+    <tr><td>Empresa</td><td>QuieroTurnoApp</td></tr>
+    <tr><td>Slug operativo</td><td><code>verificacion-auto</code></td></tr>
+    <tr><td>Estado</td><td><span class="ok">Activa</span></td></tr>
+    <tr><td>ID interno de empresa</td><td><code>db9e801f-44aa-4cf1-8fb8-00d5e7fda4c4</code></td></tr>
+  </table>
+
+  <h2>2. Accesos funcionales</h2>
+  <p>La empresa se opera por rutas multiempresa basadas en el slug <code>verificacion-auto</code>.</p>
+  <table>
+    <tr><th>Perfil</th><th>Ruta esperada</th><th>Uso</th></tr>
+    <tr><td>Cliente</td><td><code>/verificacion-auto/sacarturno</code></td><td>Solicitar turnos para servicios o banners/promociones habilitadas.</td></tr>
+    <tr><td>Administrador</td><td><code>/verificacion-auto/admin</code></td><td>Gestionar agenda, empleados, servicios, configuracion y asignaciones.</td></tr>
+    <tr><td>Empleado</td><td><code>/verificacion-auto/empleado</code></td><td>Consultar agenda y detalle segun permisos configurados.</td></tr>
+  </table>
+
+  <h2>3. Configuracion operativa</h2>
+  <table>
+    <tr><th>Parametro</th><th>Estado actual</th><th>Implicancia funcional</th></tr>
+    <tr><td>Precios habilitados</td><td><span class="off">No</span></td><td>No se muestran ni gestionan precios en la experiencia funcional de esta empresa. Los valores base de servicios figuran en 0 y no operan como precio visible.</td></tr>
+    <tr><td>Descuentos habilitados</td><td><span class="off">No</span></td><td>No aplica bloque funcional de descuentos para administracion ni cliente.</td></tr>
+    <tr><td>Promociones/banners habilitados</td><td><span class="ok">Si</span></td><td>Los banners configurados se comportan como opciones reservables.</td></tr>
+    <tr><td>Intervalo de grilla</td><td>30 minutos</td><td>Los horarios de agenda se organizan en bloques de media hora.</td></tr>
+    <tr><td>Cliente puede elegir empleado</td><td><span class="off">No</span></td><td>El cliente solicita el turno sin seleccionar empleado. La asignacion queda para administracion cuando corresponda.</td></tr>
+    <tr><td>Turnos superpuestos</td><td><span class="off">No</span></td><td>No se permiten turnos superpuestos en la misma franja para disponibilidad operativa.</td></tr>
+    <tr><td>Empleados pueden reservar turnos</td><td><span class="off">No</span></td><td>El empleado no puede generar turnos desde su panel.</td></tr>
+    <tr><td>Empleados ven agenda completa</td><td><span class="ok">Si</span></td><td>El empleado puede ver la agenda completa, no solo sus propios turnos.</td></tr>
+    <tr><td>Visibilidad del turno para empleado</td><td><code>cliente_servicio</code></td><td>La vista de empleado incluye datos de cliente y servicio.</td></tr>
+    <tr><td>Empleados pueden cancelar turnos</td><td><code>ninguno</code></td><td>Los empleados no pueden cancelar turnos.</td></tr>
+    <tr><td>Empleados ven detalle de turnos</td><td><code>todos</code></td><td>Los empleados pueden abrir/ver detalle de todos los turnos visibles.</td></tr>
+    <tr><td>PDF detalle turno</td><td><span class="ok">Habilitado</span></td><td>El detalle de turno puede emitirse/descargarse en PDF cuando la interfaz lo ofrece.</td></tr>
+  </table>
+
+  <h2>4. Servicios activos</h2>
+  <p>Todos los servicios estan activos y duran 30 minutos por defecto.</p>
+  <table>
+    <tr><th>ID</th><th>Servicio</th><th>Duracion</th><th>Estado</th><th>Observacion</th></tr>
+    <tr><td>19</td><td>auto</td><td>30 minutos</td><td>Activo</td><td>Disponible para reserva. Asignado a catalina lobo y natalia fernandez.</td></tr>
+    <tr><td>20</td><td>moto</td><td>30 minutos</td><td>Activo</td><td>Disponible para reserva. Asignado a catalina lobo.</td></tr>
+    <tr><td>21</td><td>camion</td><td>30 minutos</td><td>Activo</td><td>Disponible para reserva. Asignado a catalina lobo.</td></tr>
+  </table>
+
+  <h2>5. Empleados y asignaciones</h2>
+  <table>
+    <tr><th>Empleado</th><th>Usuario/nombre interno</th><th>Estado</th><th>Servicios asignados</th><th>Banners asignados</th><th>Disponibilidad vigente consultada</th></tr>
+    <tr>
+      <td>catalina lobo</td>
+      <td><code>clobo</code></td>
+      <td>Activa, con foto configurada</td>
+      <td>auto, moto, camion</td>
+      <td>Banner 1, Banner 2</td>
+      <td>Del 2026-07-17 al 2026-07-24, de 09:00 a 18:00 todos los dias cargados.</td>
+    </tr>
+    <tr>
+      <td>natalia fernandez</td>
+      <td><code>nfernandez</code></td>
+      <td>Activa, con foto configurada</td>
+      <td>auto</td>
+      <td>No asignada a banners</td>
+      <td>Del 2026-07-17 al 2026-07-24, de 09:00 a 18:00 todos los dias cargados.</td>
+    </tr>
+  </table>
+
+  <h2>6. Banners/promociones reservables</h2>
+  <p>La empresa no maneja precios, pero si tiene promociones habilitadas. En este escenario los banners funcionan como opciones reservables con etiqueta operativa.</p>
+  <table>
+    <tr><th>Banner</th><th>Estado</th><th>Precio</th><th>Imagen</th><th>Empleado habilitado</th><th>Implicancia</th></tr>
+    <tr><td>Banner 1</td><td>Habilitado</td><td>0 / sin precio funcional</td><td>Configurada</td><td>catalina lobo</td><td>El cliente puede reservar desde el banner. La asignacion debe quedar sobre catalina lobo.</td></tr>
+    <tr><td>Banner 2</td><td>Habilitado</td><td>0 / sin precio funcional</td><td>Configurada</td><td>catalina lobo</td><td>El cliente puede reservar desde el banner. La asignacion debe quedar sobre catalina lobo.</td></tr>
+  </table>
+
+  <h2>7. Experiencia del cliente</h2>
+  <ul>
+    <li>El cliente ingresa por <code>/verificacion-auto/sacarturno</code>.</li>
+    <li>Puede seleccionar servicios activos: auto, moto o camion.</li>
+    <li>Tambien puede reservar desde los banners habilitados: Banner 1 y Banner 2.</li>
+    <li>No elige empleado manualmente porque la opcion esta deshabilitada.</li>
+    <li>Los turnos se validan contra disponibilidad de empleados activos y contra conflictos de horario.</li>
+    <li>No se muestran precios ni descuentos.</li>
+    <li>Si se reserva un banner, el sistema lo trata como promocion operativa y valida los empleados asignados al banner.</li>
+  </ul>
+
+  <h2>8. Experiencia administrativa</h2>
+  <ul>
+    <li>Administracion puede operar la agenda de la empresa desde <code>/verificacion-auto/admin</code>.</li>
+    <li>Los servicios y banners estan vinculados a empleados especificos.</li>
+    <li>Los turnos de banners/promociones sin precio deben asignarse solo a empleados vinculados al banner correspondiente.</li>
+    <li>Como precios estan deshabilitados, no corresponde mostrar ni operar el bloque de descuentos.</li>
+    <li>Los turnos superpuestos estan deshabilitados; por lo tanto, la administracion debe usar franjas libres para empleado y cliente.</li>
+  </ul>
+
+  <h2>9. Experiencia del empleado</h2>
+  <ul>
+    <li>El empleado accede por <code>/verificacion-auto/empleado</code>.</li>
+    <li>Puede ver la agenda completa.</li>
+    <li>La informacion visible incluye cliente y servicio.</li>
+    <li>Puede ver detalle de todos los turnos visibles.</li>
+    <li>No puede generar turnos.</li>
+    <li>No puede cancelar turnos.</li>
+  </ul>
+
+  <h2>10. Configuracion visual</h2>
+  <table>
+    <tr><th>Elemento</th><th>Estado</th><th>Implicancia</th></tr>
+    <tr><td>Imagen de bienvenida</td><td>No configurada</td><td>No hay fondo personalizado de bienvenida para esta empresa segun la configuracion consultada.</td></tr>
+    <tr><td>Banner general heredado</td><td>No configurado</td><td>No hay banner general antiguo configurado.</td></tr>
+    <tr><td>Carrusel/banner images</td><td>Vacio</td><td>No hay imagenes en el arreglo de banners generales.</td></tr>
+    <tr><td>Imagenes de promociones</td><td>Configuradas en Banner 1 y Banner 2</td><td>Los dos banners reservables tienen imagen asociada.</td></tr>
+  </table>
+
+  <h2>11. Reglas de solapamiento aplicables</h2>
+  <ul>
+    <li>La empresa tiene <code>turnos_superpuestos_habilitados = false</code>.</li>
+    <li>Un empleado no puede tener dos turnos en la misma franja.</li>
+    <li>Un mismo cliente o email no puede tener dos turnos/solicitudes activas en la misma franja dentro de esta empresa.</li>
+    <li>La correccion aplicada en el parche 06 acota las restricciones por <code>company_id</code>, por lo que un turno de otra empresa no deberia bloquear a <code>verificacion-auto</code>.</li>
+  </ul>
+
+  <h2>12. Observaciones tecnicas</h2>
+  <ul>
+    <li>La consulta de contexto publico con parametro <code>company_slug_value</code> devolvio que el RPC espera <code>slug_value</code>. Esto no impidio obtener configuracion y opciones funcionales mediante los RPC restantes.</li>
+    <li>Los datos visuales largos fueron omitidos en este documento y resumidos como "configurado" para evitar incluir blobs de imagen.</li>
+    <li>Este documento refleja la configuracion consultada el 2026-07-18; cambios posteriores en Supabase pueden dejarlo desactualizado.</li>
+  </ul>
+</body>
+</html>

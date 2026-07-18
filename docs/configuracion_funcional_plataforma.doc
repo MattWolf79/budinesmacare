@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Configuracion funcional - Plataforma</title>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; color: #1f2933; line-height: 1.35; }
+    h1 { font-size: 24pt; margin-bottom: 0; }
+    h2 { font-size: 16pt; margin-top: 22pt; border-bottom: 1px solid #d0d7de; padding-bottom: 4pt; }
+    h3 { font-size: 13pt; margin-top: 14pt; }
+    table { border-collapse: collapse; width: 100%; margin: 8pt 0 14pt; }
+    th, td { border: 1px solid #d0d7de; padding: 6pt; vertical-align: top; }
+    th { background: #f3f4f6; text-align: left; }
+    .muted { color: #5f6b7a; }
+    .ok { color: #166534; font-weight: bold; }
+    .warn { color: #92400e; font-weight: bold; }
+    code { font-family: Consolas, monospace; }
+  </style>
+</head>
+<body>
+  <h1>Configuracion funcional de Plataforma</h1>
+  <p class="muted">Documento generado el 2026-07-18 a partir de la implementacion vigente de la pantalla <code>PlatformAdmin</code>, la logica de rutas multiempresa y los RPCs SQL asociados.</p>
+
+  <h2>1. Alcance general</h2>
+  <p>La plataforma es el panel interno global de QuieroTurnoApp. No representa una empresa puntual, sino el modulo desde el cual se crean empresas, se inicializan administradores, se modifican parametros operativos por empresa y se blanquean accesos administrativos.</p>
+  <table>
+    <tr><th>Elemento</th><th>Valor funcional</th></tr>
+    <tr><td>Ruta de acceso</td><td><code>/plataforma</code></td></tr>
+    <tr><td>Tipo de usuario</td><td>Administrador de plataforma</td></tr>
+    <tr><td>Entidad administrada</td><td>Empresas/tenants del sistema</td></tr>
+    <tr><td>Autenticacion</td><td>Sesion interna de plataforma mediante usuario y password.</td></tr>
+    <tr><td>Separacion multiempresa</td><td>La ruta <code>/plataforma</code> esta reservada y no puede usarse como slug URL de una empresa.</td></tr>
+  </table>
+
+  <h2>2. Acceso y sesion de plataforma</h2>
+  <ul>
+    <li>El operador ingresa por <code>/plataforma</code>.</li>
+    <li>El formulario solicita usuario y password.</li>
+    <li>El login valida una cuenta interna con <code>company_id</code> nulo, rol administrador y estado activo.</li>
+    <li>Si la credencial es valida, se crea un token de sesion de plataforma.</li>
+    <li>La sesion se usa para autorizar todos los RPCs de administracion global.</li>
+    <li>Al salir, la UI limpia la sesion local y el listado de empresas cargado.</li>
+  </ul>
+
+  <h2>3. Funciones principales</h2>
+  <table>
+    <tr><th>Funcion en pantalla</th><th>RPC usado</th><th>Resultado funcional</th></tr>
+    <tr><td>Ingresar a plataforma</td><td><code>verify_platform_admin_login</code></td><td>Valida credenciales, registra ultimo acceso y devuelve token de sesion.</td></tr>
+    <tr><td>Listar empresas</td><td><code>plataforma_listar_empresas</code></td><td>Devuelve empresas ordenadas por nombre y slug, con estado.</td></tr>
+    <tr><td>Crear empresa</td><td><code>platform_create_company_admin</code></td><td>Crea o reactiva empresa, crea configuracion inicial y crea/reactiva admin inicial.</td></tr>
+    <tr><td>Cargar configuracion de empresa</td><td><code>plataforma_obtener_configuracion_empresa</code></td><td>Lee la configuracion operativa vigente para mostrarla en el formulario de edicion.</td></tr>
+    <tr><td>Guardar cambios de empresa</td><td><code>plataforma_actualizar_configuracion_empresa</code></td><td>Actualiza slug URL y parametros operativos de la empresa.</td></tr>
+    <tr><td>Blanquear password admin</td><td><code>platform_reset_company_admin_password</code></td><td>Reinicia la clave de un administrador de empresa, revoca sesiones abiertas y fuerza cambio de password.</td></tr>
+  </table>
+
+  <h2>4. Alta de nueva empresa</h2>
+  <p>El alta crea la empresa y su administrador inicial en una sola operacion.</p>
+  <table>
+    <tr><th>Campo</th><th>Uso</th><th>Validacion/impacto</th></tr>
+    <tr><td>Nombre de empresa</td><td>Nombre visible y nombre inicial de configuracion.</td><td>Obligatorio.</td></tr>
+    <tr><td>Slug URL</td><td>Identificador de rutas multiempresa.</td><td>3 a 63 caracteres, letras minusculas, numeros o guion; no puede ser <code>plataforma</code>.</td></tr>
+    <tr><td>Usuario administrador</td><td>Usuario interno admin de la empresa.</td><td>Minimo 3 caracteres; admite letras, numeros, punto, guion y guion bajo.</td></tr>
+    <tr><td>Nombre admin</td><td>Nombre del administrador inicial.</td><td>Opcional.</td></tr>
+    <tr><td>Apellido admin</td><td>Apellido del administrador inicial.</td><td>Opcional.</td></tr>
+    <tr><td>Email admin</td><td>Email de contacto/propietario e invitacion.</td><td>Opcional, pero si se informa debe ser valido.</td></tr>
+  </table>
+  <ul>
+    <li>La empresa queda activa.</li>
+    <li>Se crea una configuracion inicial en <code>app_configuration</code>.</li>
+    <li>El administrador inicial queda activo, con password temporal devuelta por pantalla y cambio obligatorio al ingresar.</li>
+    <li>Si ya existe una empresa con ese slug, la operacion actualiza/reactiva esa empresa y reinicializa el administrador indicado.</li>
+    <li>La empresa nueva queda disponible en rutas como <code>/{slug}/sacarturno</code>, <code>/{slug}/admin</code> y <code>/{slug}/empleado</code>.</li>
+  </ul>
+
+  <h2>5. Listado de empresas</h2>
+  <p>Luego de iniciar sesion y despues de crear o editar una empresa, plataforma carga el listado de empresas disponibles.</p>
+  <table>
+    <tr><th>Dato listado</th><th>Descripcion</th></tr>
+    <tr><td>ID empresa</td><td>Identificador interno del tenant.</td></tr>
+    <tr><td>Nombre</td><td>Nombre visible de la empresa.</td></tr>
+    <tr><td>Slug</td><td>Slug URL usado para las rutas de cliente, admin y empleado.</td></tr>
+    <tr><td>Estado</td><td>Estado operativo de la empresa.</td></tr>
+  </table>
+  <p>El listado alimenta los combos de edicion de configuracion y blanqueo de password.</p>
+
+  <h2>6. Edicion de empresa existente</h2>
+  <p>La edicion separa dos conceptos: el slug usado para seleccionar/cargar la empresa actual y el slug URL nuevo que se desea guardar.</p>
+  <table>
+    <tr><th>Campo</th><th>Uso funcional</th></tr>
+    <tr><td>Empresa</td><td>Selecciona la empresa actual desde el listado de plataforma.</td></tr>
+    <tr><td>Cargar</td><td>Trae la configuracion vigente de la empresa seleccionada.</td></tr>
+    <tr><td>Slug URL</td><td>Permite cambiar la URL publica de la empresa.</td></tr>
+    <tr><td>Guardar cambios</td><td>Actualiza slug URL y configuracion operativa.</td></tr>
+  </table>
+  <ul>
+    <li>El slug URL nuevo se normaliza a minusculas, numeros y guiones.</li>
+    <li>No puede ser <code>plataforma</code>.</li>
+    <li>No puede repetirse con otra empresa.</li>
+    <li>Al guardar, el mensaje final informa la URL nueva.</li>
+  </ul>
+
+  <h2>7. Configuracion operativa controlada por plataforma</h2>
+  <table>
+    <tr><th>Grupo</th><th>Parametro</th><th>Opciones</th><th>Impacto funcional</th></tr>
+    <tr><td>Sistema</td><td>Usa precios en el sistema</td><td>Si/No</td><td>Activa u oculta logica visual/operativa asociada a precios, costos y rendicion.</td></tr>
+    <tr><td>Sistema</td><td>Habilita descuentos</td><td>Si/No</td><td>Permite operar descuentos por empresa cuando precios aplica.</td></tr>
+    <tr><td>Sistema</td><td>Habilita promociones</td><td>Si/No</td><td>Permite mostrar y reservar promociones/banners segun configuracion de la empresa.</td></tr>
+    <tr><td>Sistema</td><td>Permite turnos superpuestos</td><td>Si/No</td><td>Define si puede haber mas de un turno en la misma franja, siempre respetando no duplicar empleado ni cliente.</td></tr>
+    <tr><td>Sistema</td><td>Habilita PDF de detalle de turno</td><td>Si/No</td><td>Controla si la empresa puede emitir/descargar detalle de turno en PDF.</td></tr>
+    <tr><td>Agenda</td><td>Bloque de grilla</td><td>15, 30, 45 o 60 minutos</td><td>Define el intervalo visual y operativo de la agenda.</td></tr>
+    <tr><td>Agenda</td><td>Visibilidad empleado</td><td>Completa; Cliente/Servicio; Solo ocupado; Cliente sin empleado; Solo sus turnos</td><td>Define que informacion ve el empleado sobre la agenda.</td></tr>
+    <tr><td>Permisos empleado</td><td>Pueden crear turnos</td><td>Si/No</td><td>Habilita o bloquea la generacion de turnos desde el panel empleado.</td></tr>
+    <tr><td>Permisos empleado</td><td>Cancelan turnos</td><td>Propios; Todos; Ninguno</td><td>Define el alcance de cancelacion desde empleado.</td></tr>
+    <tr><td>Permisos empleado</td><td>Ven detalle</td><td>Propios; Todos; Ninguno</td><td>Define el alcance de detalle de turnos desde empleado.</td></tr>
+  </table>
+
+  <h2>8. Valores iniciales por defecto</h2>
+  <p>Cuando se abre el formulario de nueva empresa, plataforma propone una configuracion inicial amplia:</p>
+  <table>
+    <tr><th>Parametro</th><th>Default</th></tr>
+    <tr><td>Precios</td><td>Habilitados</td></tr>
+    <tr><td>Descuentos</td><td>Habilitados</td></tr>
+    <tr><td>Promociones</td><td>Habilitadas</td></tr>
+    <tr><td>Turnos superpuestos</td><td>Habilitados</td></tr>
+    <tr><td>Bloque de grilla</td><td>30 minutos</td></tr>
+    <tr><td>Empleados pueden crear turnos</td><td>Si</td></tr>
+    <tr><td>Empleados ven agenda completa</td><td>Si</td></tr>
+    <tr><td>Visibilidad empleado</td><td>Completa</td></tr>
+    <tr><td>Cancelacion empleado</td><td>Propios</td></tr>
+    <tr><td>Detalle empleado</td><td>Propios</td></tr>
+    <tr><td>PDF detalle turno</td><td>Deshabilitado</td></tr>
+  </table>
+
+  <h2>9. Blanqueo de password administrador</h2>
+  <p>La plataforma permite reiniciar el acceso de un administrador interno de una empresa.</p>
+  <table>
+    <tr><th>Campo</th><th>Uso</th></tr>
+    <tr><td>Empresa</td><td>Se selecciona desde el listado de empresas.</td></tr>
+    <tr><td>Usuario administrador</td><td>Usuario interno admin activo que se desea blanquear.</td></tr>
+  </table>
+  <ul>
+    <li>Solo opera sobre empresas activas.</li>
+    <li>Solo opera sobre cuentas internas activas con rol administrador de esa empresa.</li>
+    <li>Revoca sesiones internas abiertas de ese administrador.</li>
+    <li>Genera password temporal y marca la cuenta con cambio obligatorio.</li>
+    <li>Devuelve por pantalla el usuario y la password temporal.</li>
+  </ul>
+
+  <h2>10. Seguridad y restricciones</h2>
+  <ul>
+    <li>Todos los RPCs de plataforma validan sesion mediante cuenta de plataforma y token.</li>
+    <li>La cuenta de plataforma no pertenece a una empresa especifica; usa <code>company_id</code> nulo.</li>
+    <li>Las funciones se ejecutan como <code>security definer</code> y exponen ejecucion a clientes anon/autenticados, pero la autorizacion real depende del token de plataforma.</li>
+    <li>Los slugs se normalizan y validan para evitar caracteres fuera del esquema de rutas.</li>
+    <li>El slug <code>plataforma</code> esta reservado.</li>
+    <li>El blanqueo revoca sesiones existentes para evitar que el acceso anterior siga vivo.</li>
+  </ul>
+
+  <h2>11. Impacto en cada empresa</h2>
+  <p>Las decisiones tomadas en plataforma modifican el comportamiento de los portales por empresa:</p>
+  <table>
+    <tr><th>Portal afectado</th><th>Impacto</th></tr>
+    <tr><td>Cliente</td><td>Precios, descuentos, promociones, grilla y disponibilidad de turnos.</td></tr>
+    <tr><td>Administrador de empresa</td><td>Bloques visibles de configuracion, descuentos, promociones, agenda y validaciones de turnos.</td></tr>
+    <tr><td>Empleado</td><td>Permisos para crear/cancelar/ver detalle, alcance de agenda y nivel de informacion visible.</td></tr>
+    <tr><td>URLs publicas</td><td>El cambio de slug URL altera las rutas de cliente, admin y empleado.</td></tr>
+  </table>
+
+  <h2>12. Observaciones funcionales</h2>
+  <ul>
+    <li>La plataforma no gestiona servicios, empleados, descuentos concretos, imagenes ni promociones concretas de una empresa; eso queda en el administrador de cada empresa.</li>
+    <li>La plataforma si define si esos modulos existen o estan habilitados para cada empresa.</li>
+    <li>La plataforma no cambia el nombre visible de una empresa durante la edicion operativa actual; en edicion se modifica principalmente slug URL y parametros operativos.</li>
+    <li>Este documento describe la funcionalidad disponible en el codigo actual; cambios posteriores en los RPCs o en <code>PlatformAdmin</code> pueden dejarlo desactualizado.</li>
+  </ul>
+</body>
+</html>
