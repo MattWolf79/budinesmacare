@@ -123,6 +123,24 @@ function EmployeeBottomNav({ activeView, onViewChange }) {
   );
 }
 
+function ClientBottomNav({ activeView, onViewChange }) {
+  return (
+    <nav className="client-bottom-nav" aria-label="Secciones cliente">
+      {clientNavItems.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          className={`client-bottom-nav-button ${activeView === item.id ? 'is-active' : ''}`}
+          onClick={() => onViewChange(item.id)}
+        >
+          <span className="client-bottom-nav-icon" aria-hidden="true">{item.icon}</span>
+          <span className="client-bottom-nav-label">{item.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canChangeProfile, companySlug, companyContext }) {
   const [clientActiveView, setClientActiveView] = useState('home');
   const [selectedPromotion, setSelectedPromotion] = useState(null);
@@ -220,7 +238,10 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             showProfileBadge
             canChangeProfile={canChangeProfile}
             navItems={isClientProfile ? clientNavItems : employeeNavItems}
+            logoSrc={isClientProfile ? companyContext?.client_logo_data_url || turnosAppLogo : turnosAppLogo}
+            logoAlt={isClientProfile ? `${companyName} - Sacar turno` : undefined}
           />
+          {isClientProfile && <ClientBottomNav activeView={clientActiveView} onViewChange={changeClientView} />}
           {isEmployeeProfile && <EmployeeBottomNav activeView={employeeActiveView} onViewChange={setEmployeeActiveView} />}
         </>
       ) : (

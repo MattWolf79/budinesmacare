@@ -451,6 +451,8 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
   const companyDisplayName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
   const visibleAccessOptions = accessOptions.filter((option) => allowedProfiles.includes(option.id));
   const isClientOnlyAccess = visibleAccessOptions.length === 1 && visibleAccessOptions[0]?.id === 'client';
+  const showPoweredBy = isClientOnlyAccess && Boolean(companyContext?.client_logo_data_url);
+  const companyLogoSrc = showPoweredBy ? companyContext.client_logo_data_url : turnosAppLogo;
   const generatedRegistrationUsername = generateInternalUsername(registrationForm.firstName, registrationForm.lastName);
   const loginCopy = isClientOnlyAccess
     ? `Acceso exclusivo para ${companyDisplayName}. Ingresá con Google para reservar y consultar tus turnos.`
@@ -459,7 +461,13 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
   return (
     <main className="login-page">
       <section className="login-card">
-        <img className="login-brand-mark" src={turnosAppLogo} alt="QuieroTurnoApp" />
+        <img className="login-brand-mark" src={companyLogoSrc} alt={showPoweredBy ? `${companyDisplayName} - Sacar turno` : 'QuieroTurnoApp'} />
+        {showPoweredBy && (
+          <div className="login-powered-by" aria-label="Powered by QuieroTurnoApp">
+            <span>Realizado por</span>
+            <a href="https://quieroturnoapp.com.ar/" target="_blank" rel="noreferrer">https://quieroturnoapp.com.ar/</a>
+          </div>
+        )}
         <p className="login-kicker">Reserva de turnos</p>
         <h1 className="login-brand-heading">{companyDisplayName}</h1>
         <p className="login-copy">

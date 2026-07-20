@@ -30,6 +30,9 @@ const initialEditForm = {
   lookupSlug: '',
   companySlug: '',
   companyName: '',
+  clientLogoDataUrl: '',
+  clientLogoFileName: '',
+  clientLogoMimeType: '',
   preciosHabilitados: true,
   descuentosHabilitados: true,
   promocionesHabilitadas: true,
@@ -90,6 +93,9 @@ const applyConfigData = (data) => {
     lookupSlug: data?.company_slug || '',
     companySlug: data?.company_slug || '',
     companyName: data?.company_name || '',
+    clientLogoDataUrl: data?.client_logo_data_url || '',
+    clientLogoFileName: data?.client_logo_file_name || '',
+    clientLogoMimeType: data?.client_logo_mime_type || '',
     preciosHabilitados: config.precios_habilitados !== false,
     descuentosHabilitados: config.descuentos_habilitados !== false,
     promocionesHabilitadas: config.promociones_habilitadas !== false,
@@ -108,6 +114,13 @@ const normalizeSlug = (value) => String(value || '')
   .trim()
   .toLowerCase()
   .replace(/[^a-z0-9-]/g, '');
+
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(file);
+});
 
 export default function PlatformAdmin() {
   const [loginForm, setLoginForm] = useState(initialLoginForm);
@@ -136,6 +149,39 @@ export default function PlatformAdmin() {
     setEditForm((current) => ({
       ...current,
       [field]: ['lookupSlug', 'companySlug'].includes(field) ? normalizeSlug(value) : value
+    }));
+  };
+
+  const changeClientLogo = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setErrorMessage('El logo debe ser una imagen JPG, PNG o WEBP.');
+      return;
+    }
+
+    if (file.size > 900 * 1024) {
+      setErrorMessage('El logo no puede superar los 900 KB.');
+      return;
+    }
+
+    const dataUrl = await fileToDataUrl(file);
+    setEditForm((current) => ({
+      ...current,
+      clientLogoDataUrl: String(dataUrl || ''),
+      clientLogoFileName: file.name,
+      clientLogoMimeType: file.type
+    }));
+  };
+
+  const removeClientLogo = () => {
+    setEditForm((current) => ({
+      ...current,
+      clientLogoDataUrl: '',
+      clientLogoFileName: '',
+      clientLogoMimeType: ''
     }));
   };
 
@@ -270,6 +316,9 @@ export default function PlatformAdmin() {
       token_sesion_valor: platformSession.sessionToken,
       slug_empresa_valor: editForm.lookupSlug.trim(),
       slug_url_valor: editForm.companySlug.trim(),
+      client_logo_data_url_valor: editForm.clientLogoDataUrl || null,
+      client_logo_file_name_valor: editForm.clientLogoFileName || null,
+      client_logo_mime_type_valor: editForm.clientLogoMimeType || null,
       ...getConfigPayload(editForm)
     });
 
@@ -458,6 +507,25 @@ export default function PlatformAdmin() {
           <Field label="Slug URL">
             <input value={editForm.companySlug} onChange={(event) => updateEditField('companySlug', event.target.value)} placeholder="verificacion" required />
           </Field>
+          <div className="platform-config-block platform-config-block-compact">
+            <ConfigSection title="Portal cliente">
+              <div className="platform-logo-upload">
+                <label className="platform-field">
+                  <span>Logo Sacar turno</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={changeClientLogo} />
+                </label>
+                {editForm.clientLogoDataUrl ? (
+                  <div className="platform-logo-preview">
+                    <img src={editForm.clientLogoDataUrl} alt="Logo configurado para Sacar turno" />
+                    <div>
+                      <strong>{editForm.clientLogoFileName || 'Logo cargado'}</strong>
+                      <button className="platform-button-secondary" type="button" onClick={removeClientLogo}>Quitar logo</button>
+                    </div>
+                  </div>
+                ) : <p className="platform-company-loaded">Si no se carga un logo, se usa QuieroTurnoApp.</p>}
+              </div>
+            </ConfigSection>
+          </div>
           <div className="platform-config-block platform-config-block-compact">
             <ConfigSection title="Sistema">
               <CheckField label="Usa precios en el sistema" checked={editForm.preciosHabilitados} onChange={(value) => updateEditField('preciosHabilitados', value)} />

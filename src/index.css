@@ -1359,6 +1359,37 @@ code {
   object-fit: contain;
 }
 
+.login-powered-by {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #d8eef1;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.login-powered-by a {
+  color: #ffffff;
+  text-decoration: none;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.login-powered-by a:hover {
+  text-decoration: underline;
+}
+
 .login-brand-heading {
   position: absolute;
   width: 1px;
@@ -2913,6 +2944,14 @@ code {
 }
 
 .employee-bottom-nav {
+  display: none;
+}
+
+.client-bottom-nav {
+  display: none;
+}
+
+.admin-bottom-nav {
   display: none;
 }
 
@@ -5479,8 +5518,8 @@ code {
 
   .role-workspace > .app-navbar .app-navbar-logo,
   .app-navbar .app-navbar-logo {
-    width: 142px !important;
-    height: 40px !important;
+    width: 107px !important;
+    height: 30px !important;
   }
 
   .app-navbar-mark {
@@ -6744,7 +6783,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 50;
-  min-height: 64px;
+  min-height: 48px;
   gap: 16px;
   padding: 0 44px;
   color: #f8fafc;
@@ -6762,8 +6801,8 @@ body {
 
 .app-navbar-logo {
   display: block;
-  width: 242px;
-  height: 48px;
+  width: 212px;
+  height: 46px;
   object-fit: contain;
 }
 
@@ -7996,8 +8035,8 @@ body {
   }
 
   .dashboard-shell > .app-navbar .app-navbar-logo {
-    width: 142px !important;
-    height: 40px !important;
+    width: 107px !important;
+    height: 30px !important;
   }
 
   .dashboard-shell > .app-navbar .app-navbar-session {
@@ -11399,8 +11438,8 @@ body {
   }
 
   .role-workspace-employee .role-workspace-brand .app-navbar-logo {
-    width: 72px !important;
-    height: 48px !important;
+    width: 54px !important;
+    height: 36px !important;
   }
 
   .role-workspace-employee .app-navbar-title {
@@ -11434,7 +11473,17 @@ body {
     display: none !important;
   }
 
-  .role-workspace-employee .employee-bottom-nav {
+  .role-workspace-client .app-navbar-menu {
+    display: none !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-menu {
+    display: none !important;
+  }
+
+  .role-workspace-employee .employee-bottom-nav,
+  .role-workspace-client .client-bottom-nav,
+  .dashboard-shell .admin-bottom-nav {
     position: fixed !important;
     left: 0 !important;
     right: 0 !important;
@@ -11450,7 +11499,25 @@ body {
     box-shadow: 0 -12px 28px rgba(15, 23, 42, 0.22) !important;
   }
 
-  .role-workspace-employee .employee-bottom-nav-button {
+  .dashboard-shell .admin-bottom-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+
+  .role-workspace-client .client-bottom-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .role-workspace-client {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .dashboard-shell .dashboard-content {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .role-workspace-employee .employee-bottom-nav-button,
+  .role-workspace-client .client-bottom-nav-button,
+  .dashboard-shell .admin-bottom-nav-button {
     display: grid !important;
     grid-template-rows: 26px auto !important;
     align-items: center !important;
@@ -11466,11 +11533,15 @@ body {
     cursor: pointer !important;
   }
 
-  .role-workspace-employee .employee-bottom-nav-button.is-active {
+  .role-workspace-employee .employee-bottom-nav-button.is-active,
+  .role-workspace-client .client-bottom-nav-button.is-active,
+  .dashboard-shell .admin-bottom-nav-button.is-active {
     color: #ffffff !important;
   }
 
-  .role-workspace-employee .employee-bottom-nav-icon {
+  .role-workspace-employee .employee-bottom-nav-icon,
+  .role-workspace-client .client-bottom-nav-icon,
+  .dashboard-shell .admin-bottom-nav-icon {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -11481,11 +11552,15 @@ body {
     line-height: 1 !important;
   }
 
-  .role-workspace-employee .employee-bottom-nav-button.is-active .employee-bottom-nav-icon {
+  .role-workspace-employee .employee-bottom-nav-button.is-active .employee-bottom-nav-icon,
+  .role-workspace-client .client-bottom-nav-button.is-active .client-bottom-nav-icon,
+  .dashboard-shell .admin-bottom-nav-button.is-active .admin-bottom-nav-icon {
     background: rgba(255, 255, 255, 0.2) !important;
   }
 
-  .role-workspace-employee .employee-bottom-nav-label {
+  .role-workspace-employee .employee-bottom-nav-label,
+  .role-workspace-client .client-bottom-nav-label,
+  .dashboard-shell .admin-bottom-nav-label {
     display: block !important;
     max-width: 100% !important;
     font-size: 10px !important;
@@ -12044,12 +12119,17 @@ body {
   grid-column: 1 / -1 !important;
 }
 
+.role-workspace > .app-navbar,
+.dashboard-shell > .app-navbar,
 .role-workspace-client .app-navbar {
   position: sticky !important;
   top: 0 !important;
-  min-height: 64px !important;
-  gap: 16px !important;
-  padding: 0 44px !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  min-height: 56px !important;
+  gap: 18px !important;
+  padding: 0 24px !important;
   color: #f8fafc !important;
   border: 0 !important;
   border-bottom: 1px solid #174c55 !important;
@@ -12058,22 +12138,29 @@ body {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16) !important;
 }
 
+.role-workspace > .app-navbar .app-navbar-brand,
+.dashboard-shell > .app-navbar .app-navbar-brand,
 .role-workspace-client .app-navbar-brand {
   flex: 0 0 auto !important;
-  min-width: 250px !important;
+  min-width: 0 !important;
+  justify-self: start !important;
 }
 
+.role-workspace > .app-navbar .app-navbar-logo,
+.dashboard-shell > .app-navbar .app-navbar-logo,
 .role-workspace-client .app-navbar-logo {
-  width: 242px !important;
-  height: 48px !important;
+  width: 72px !important;
+  height: 44px !important;
 }
 
+.role-workspace > .app-navbar .app-navbar-menu,
+.dashboard-shell > .app-navbar .app-navbar-menu,
 .role-workspace-client .app-navbar-menu {
   flex: 0 1 auto !important;
-  justify-content: center !important;
+  justify-content: start !important;
   gap: 8px !important;
   max-width: none !important;
-  margin-inline: auto !important;
+  margin-inline: 0 !important;
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
@@ -12322,7 +12409,7 @@ body {
   }
 
   .role-workspace-client .app-navbar-menu {
-    display: grid !important;
+    display: none !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     width: 100% !important;
   }
@@ -12600,9 +12687,9 @@ body {
 }
 
 .app-navbar .app-navbar-logo {
-  width: 164px !important;
+  width: 168px !important;
   height: auto !important;
-  max-height: none !important;
+  max-height: 44px !important;
   object-fit: contain !important;
 }
 
@@ -12610,10 +12697,33 @@ body {
 .role-workspace.role-workspace-client > .app-navbar .app-navbar-logo,
 .role-workspace.role-workspace-employee > .app-navbar .app-navbar-logo,
 .role-workspace .role-workspace-brand .app-navbar-logo {
-  width: 164px !important;
+  width: 168px !important;
   height: auto !important;
-  max-height: none !important;
+  max-height: 44px !important;
   object-fit: contain !important;
+}
+
+.dashboard-shell > .app-navbar .app-navbar-logo,
+.role-workspace > .app-navbar .app-navbar-logo,
+.role-workspace.role-workspace-client > .app-navbar .app-navbar-logo,
+.role-workspace.role-workspace-employee > .app-navbar .app-navbar-logo {
+  width: 72px !important;
+  height: 44px !important;
+  max-height: 44px !important;
+}
+
+@media (min-width: 761px) {
+  .dashboard-shell > .app-navbar,
+  .role-workspace > .app-navbar,
+  .role-workspace-client .app-navbar {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-menu,
+  .role-workspace > .app-navbar .app-navbar-menu,
+  .role-workspace-client .app-navbar-menu {
+    justify-content: start !important;
+  }
 }
 
 .app-navbar .app-navbar-brand {
@@ -12690,9 +12800,9 @@ body {
   .dashboard-shell > .app-navbar .app-navbar-logo,
   .role-workspace-client .app-navbar-logo,
   .role-workspace-employee .app-navbar-logo {
-    width: min(62vw, 210px) !important;
+    width: min(52vw, 176px) !important;
     height: auto !important;
-    max-height: none !important;
+    max-height: 44px !important;
   }
 
   .dashboard-shell > .app-navbar .app-navbar-logo,
@@ -12701,7 +12811,7 @@ body {
   .role-workspace .role-workspace-brand .app-navbar-logo {
     width: min(46vw, 158px) !important;
     height: auto !important;
-    max-height: none !important;
+    max-height: 42px !important;
     object-fit: contain !important;
   }
 
@@ -12923,6 +13033,7 @@ body {
 
 @media (max-width: 760px) {
   .dashboard-shell > .app-navbar .app-navbar-menu {
+    display: none !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 6px !important;
   }
@@ -12938,24 +13049,29 @@ body {
 
 .platform-admin-workspace {
   min-height: 100svh !important;
-  padding: 24px !important;
+  padding: 0 24px 24px !important;
   background: #eef4f6 !important;
   color: #334155 !important;
   text-align: left !important;
 }
 
 .platform-admin-header {
-  display: flex !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
   align-items: center !important;
-  justify-content: space-between !important;
-  gap: 16px !important;
-  max-width: 1120px !important;
-  margin: 0 auto 18px !important;
-  border: 1px solid rgba(36, 174, 187, 0.24) !important;
-  border-radius: 8px !important;
-  padding: 18px !important;
-  background: linear-gradient(135deg, #174c55, #494d56) !important;
-  box-shadow: 0 18px 42px rgba(23, 76, 85, 0.18) !important;
+  gap: 18px !important;
+  max-width: none !important;
+  min-height: 56px !important;
+  margin: 0 -24px 18px !important;
+  border: 0 !important;
+  border-bottom: 1px solid #174c55 !important;
+  border-radius: 0 !important;
+  padding: 0 24px !important;
+  background: #174c55 !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16) !important;
 }
 
 .platform-admin-header p,
@@ -12969,15 +13085,15 @@ body {
 }
 
 .platform-admin-header h1 {
-  margin: 2px 0 4px !important;
+  margin: 1px 0 0 !important;
   color: #fff !important;
-  font-size: 32px !important;
+  font-size: 18px !important;
   line-height: 1 !important;
   letter-spacing: 0 !important;
 }
 
 .platform-admin-header span {
-  display: block !important;
+  display: none !important;
   color: #d8eef1 !important;
   font-size: 13px !important;
   font-weight: 700 !important;
@@ -13142,6 +13258,44 @@ body {
   font-weight: 850 !important;
 }
 
+.platform-logo-upload {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.platform-logo-preview {
+  display: grid !important;
+  grid-template-columns: 118px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  border: 1px solid #cfe4e8 !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+  background: #ffffff !important;
+}
+
+.platform-logo-preview img {
+  display: block !important;
+  width: 118px !important;
+  height: 52px !important;
+  object-fit: contain !important;
+  border-radius: 6px !important;
+  background: #174c55 !important;
+}
+
+.platform-logo-preview div {
+  display: grid !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.platform-logo-preview strong {
+  color: #173a42 !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  overflow-wrap: anywhere !important;
+}
+
 .platform-action-row {
   display: grid !important;
   grid-template-columns: 1fr !important;
@@ -13188,8 +13342,10 @@ body {
   }
 
   .platform-admin-header {
-    align-items: flex-start !important;
-    flex-direction: column !important;
+    align-items: center !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    margin: -14px -14px 18px !important;
+    padding: 0 14px !important;
   }
 
   .platform-admin-grid,
@@ -13199,5 +13355,54 @@ body {
 
   .platform-action-row button {
     flex: 1 1 100% !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-shell > .app-navbar,
+  .role-workspace > .app-navbar,
+  .role-workspace-client .app-navbar,
+  .role-workspace-employee .app-navbar {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 6px 10px !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-brand,
+  .role-workspace > .app-navbar .app-navbar-brand,
+  .role-workspace-client .app-navbar-brand,
+  .role-workspace-employee .app-navbar-brand {
+    justify-self: start !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-logo,
+  .role-workspace > .app-navbar .app-navbar-logo,
+  .role-workspace.role-workspace-client > .app-navbar .app-navbar-logo,
+  .role-workspace.role-workspace-employee > .app-navbar .app-navbar-logo {
+    width: 64px !important;
+    height: 40px !important;
+    max-height: 40px !important;
+    object-fit: contain !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-menu,
+  .role-workspace > .app-navbar .app-navbar-menu,
+  .role-workspace-client .app-navbar-menu,
+  .role-workspace-employee .app-navbar-menu {
+    justify-content: start !important;
+    margin-inline: 0 !important;
+  }
+
+  .platform-admin-header {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    min-height: 52px !important;
+  }
+
+  .platform-admin-header h1 {
+    font-size: 16px !important;
   }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Container, Box } from "@mui/material";
 import { supabase } from "../api/supabaseClient";
-import Navbar from "../components/Navbar";
+import Navbar, { defaultNavItems } from "../components/Navbar";
 import AgendaGrid from "../components/AgendaGrid";
 import AdminPanel from "../components/AdminPanel";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
@@ -28,6 +28,24 @@ const getUserInitials = (user) => {
 };
 
 const getUserLabel = (user) => user?.displayName || user?.email || user?.username || 'Sin usuario';
+
+function AdminBottomNav({ activeView, onViewChange }) {
+  return (
+    <nav className="admin-bottom-nav" aria-label="Secciones administrador">
+      {defaultNavItems.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          className={`admin-bottom-nav-button ${activeView === item.id ? 'is-active' : ''}`}
+          onClick={() => onViewChange(item.id)}
+        >
+          <span className="admin-bottom-nav-icon" aria-hidden="true">{item.icon}</span>
+          <span className="admin-bottom-nav-label">{item.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
 
 export default function Dashboard({ user, accessProfile, onChangeProfile, onLogout, canChangeProfile = false, companySlug, companyContext }) {
 
@@ -117,6 +135,8 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         showProfileBadge
         canChangeProfile={canChangeProfile}
       />
+
+      {accessProfile === 'admin' && <AdminBottomNav activeView={activeView} onViewChange={changeView} />}
 
       <Box className="dashboard-content">
         {activeView === 'agenda' && (

@@ -1,6 +1,6 @@
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
-const defaultNavItems = [
+export const defaultNavItems = [
   { id: 'agenda', label: 'Agenda', icon: '📅' },
   { id: 'employees', label: 'Empleados', icon: '👥' },
   { id: 'services', label: 'Servicios', icon: '✨' },
@@ -26,13 +26,15 @@ export default function Navbar({
   showAdminNavigation = accessProfile === 'admin',
   showNavigation = showAdminNavigation,
   canChangeProfile = false,
-  navItems = defaultNavItems
+  navItems = defaultNavItems,
+  logoSrc = turnosAppLogo,
+  logoAlt
 }) {
 
   return (
     <div className="app-navbar">
       <div className="app-navbar-brand">
-        <img className="app-navbar-logo" src={turnosAppLogo} alt={`QuieroTurnoApp - ${getNavbarSubtitle(accessProfile)}`} />
+        <img className="app-navbar-logo" src={logoSrc || turnosAppLogo} alt={logoAlt || `QuieroTurnoApp - ${getNavbarSubtitle(accessProfile)}`} />
       </div>
 
       {showNavigation && (
