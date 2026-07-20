@@ -26,6 +26,50 @@ const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0
 }).format(Number(value) || 0);
 
+const emptyProfileForm = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  birth_date: '',
+  phone: '',
+  address_street: '',
+  address_number: '',
+  address_locality: '',
+  photo_url: ''
+};
+
+const buildProfileForm = (employee) => ({
+  first_name: employee?.first_name || '',
+  last_name: employee?.last_name || '',
+  email: employee?.email || '',
+  birth_date: employee?.birth_date || '',
+  phone: employee?.phone || '',
+  address_street: employee?.address_street || '',
+  address_number: employee?.address_number || '',
+  address_locality: employee?.address_locality || '',
+  photo_url: employee?.photo_url || ''
+});
+
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(file);
+});
+
+const calculateAge = (birthDateValue) => {
+  if (!birthDateValue) return '';
+
+  const birthDate = new Date(`${birthDateValue}T00:00:00`);
+  if (Number.isNaN(birthDate.getTime())) return '';
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age -= 1;
+  return String(Math.max(0, age));
+};
+
 const isToday = (value) => {
   const date = parseDate(value);
   const today = new Date();
@@ -83,11 +127,18 @@ const startOfWeek = (date) => {
   return weekStart;
 };
 
+const formatWeekRange = (weekStart) => {
+  const weekEnd = addDays(weekStart, 6);
+  return `${formatDisplayDate(weekStart)} al ${formatDisplayDate(weekEnd)}`;
+};
+
 const addDays = (date, days) => {
   const nextDate = new Date(date);
   nextDate.setDate(nextDate.getDate() + days);
   return nextDate;
 };
+
+const getWeekKey = (weekStart) => weekStart.toISOString().slice(0, 10);
 
 const isDateInRange = (value, start, end) => {
   const date = parseDate(value);
@@ -118,6 +169,10 @@ const buildClosedBookingAmounts = (employeeBookings, closureItems = [], closures
 
 export default function EmployeeDashboard({ user, activeView = 'summary', companySlug, companyContext }) {
   const [employee, setEmployee] = useState(null);
+  const [profileForm, setProfileForm] = useState(emptyProfileForm);
+  const [isProfileEditing, setIsProfileEditing] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [promotions, setPromotions] = useState([]);
@@ -126,6 +181,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedPaymentWeekKey, setSelectedPaymentWeekKey] = useState(() => getWeekKey(startOfWeek(new Date())));
 
   const employeeId = user?.employeeId;
   const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
@@ -328,8 +384,113 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     };
   }, [employeeId, refreshKey, user?.id, user?.isInternal, companySlug, preciosHabilitados]);
 
+  useEffect(() => {
+    setProfileForm(buildProfileForm(employee));
+    setProfileError('');
+  }, [employee]);
+
+  useEffect(() => {
+    if (activeView !== 'profile') {
+      setIsProfileEditing(false);
+      setProfileForm(buildProfileForm(employee));
+      setProfileError('');
+    }
+  }, [activeView, employee]);
+
   const refreshEmployeeWorkspace = () => {
     setRefreshKey((current) => current + 1);
+  };
+
+  const updateProfileField = (field, value) => {
+    setProfileForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const updateProfilePhoto = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Seleccioná una imagen válida.');
+      return;
+    }
+
+    if (file.size > 650 * 1024) {
+      setProfileError('La foto debe pesar menos de 650 KB.');
+      return;
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      updateProfileField('photo_url', dataUrl);
+      setProfileError('');
+    } catch {
+      setProfileError('No se pudo cargar la foto.');
+    }
+  };
+
+  const cancelProfileEdit = () => {
+    setProfileForm(buildProfileForm(employee));
+    setIsProfileEditing(false);
+    setProfileError('');
+  };
+
+  const saveEmployeeProfile = async () => {
+    const payload = {
+      first_name: profileForm.first_name.trim(),
+      last_name: profileForm.last_name.trim(),
+      email: profileForm.email.trim().toLowerCase(),
+      birth_date: profileForm.birth_date || null,
+      phone: profileForm.phone.trim(),
+      address_street: profileForm.address_street.trim(),
+      address_number: profileForm.address_number.trim(),
+      address_locality: profileForm.address_locality.trim(),
+      photo_url: profileForm.photo_url || null
+    };
+
+    if (!payload.first_name || !payload.last_name) {
+      setProfileError('Ingresá nombre y apellido.');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    setProfileError('');
+
+    if (user?.isLocalInternal) {
+      const updatedEmployee = {
+        ...employee,
+        ...payload,
+        name: [payload.first_name, payload.last_name].filter(Boolean).join(' ')
+      };
+      setEmployee(updatedEmployee);
+      setIsProfileEditing(false);
+      setIsSavingProfile(false);
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('update_internal_employee_profile', {
+      account_id_value: user.id,
+      session_token_value: user.sessionToken,
+      company_slug_value: companySlug,
+      first_name_value: payload.first_name,
+      last_name_value: payload.last_name,
+      birth_date_value: payload.birth_date,
+      phone_value: payload.phone || null,
+      email_value: payload.email || null,
+      address_street_value: payload.address_street || null,
+      address_number_value: payload.address_number || null,
+      address_locality_value: payload.address_locality || null,
+      photo_url_value: payload.photo_url
+    });
+
+    setIsSavingProfile(false);
+
+    if (error) {
+      setProfileError(error.message || 'No se pudieron guardar tus datos.');
+      return;
+    }
+
+    setEmployee(Array.isArray(data) ? data[0] : data);
+    setIsProfileEditing(false);
   };
 
   const now = useMemo(() => new Date(), []);
@@ -401,6 +562,86 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       total: summary.total + Number(closedBookingAmounts[booking.id] || 0)
     }), { count: 0, total: 0 });
   }, [bookings, closedBookingAmounts]);
+
+  const activityRows = useMemo(() => [...bookings]
+    .sort((left, right) => parseDate(right.start_at) - parseDate(left.start_at)), [bookings]);
+
+  const paymentHistoryRows = useMemo(() => activityRows
+    .filter(isClosedBooking)
+    .map((booking) => ({
+      booking,
+      amount: Number(closedBookingAmounts[booking.id] || 0),
+      employeeAmount: booking.is_settled === true ? Number(booking.settlement_employee_amount || 0) : null,
+      companyAmount: booking.is_settled === true ? Number(booking.settlement_company_amount || 0) : null
+    })), [activityRows, closedBookingAmounts]);
+
+  const paymentHistoryWeeks = useMemo(() => {
+    const weekMap = new Map();
+
+    paymentHistoryRows.forEach((row) => {
+      const weekStart = startOfWeek(parseDate(row.booking.start_at));
+      const weekKey = getWeekKey(weekStart);
+      const currentWeek = weekMap.get(weekKey) || {
+        key: weekKey,
+        start: weekStart,
+        label: formatWeekRange(weekStart),
+        rows: [],
+        total: 0,
+        employeeTotal: 0,
+        companyTotal: 0
+      };
+
+      currentWeek.rows.push(row);
+      currentWeek.total += row.amount;
+      currentWeek.employeeTotal += row.employeeAmount || 0;
+      currentWeek.companyTotal += row.companyAmount || 0;
+      weekMap.set(weekKey, currentWeek);
+    });
+
+    const currentWeekStart = startOfWeek(new Date());
+    const earliestWeekStart = paymentHistoryRows.reduce((earliest, row) => {
+      const rowWeekStart = startOfWeek(parseDate(row.booking.start_at));
+      return rowWeekStart < earliest ? rowWeekStart : earliest;
+    }, currentWeekStart);
+    const weeks = [];
+
+    for (let weekStart = currentWeekStart; weekStart >= earliestWeekStart; weekStart = addDays(weekStart, -7)) {
+      const weekKey = getWeekKey(weekStart);
+      weeks.push(weekMap.get(weekKey) || {
+        key: weekKey,
+        start: weekStart,
+        label: formatWeekRange(weekStart),
+        rows: [],
+        total: 0,
+        employeeTotal: 0,
+        companyTotal: 0
+      });
+    }
+
+    return weeks;
+  }, [paymentHistoryRows]);
+
+  useEffect(() => {
+    if (!paymentHistoryWeeks.length) return;
+    if (!paymentHistoryWeeks.some((week) => week.key === selectedPaymentWeekKey)) {
+      setSelectedPaymentWeekKey(paymentHistoryWeeks[0].key);
+    }
+  }, [paymentHistoryWeeks, selectedPaymentWeekKey]);
+
+  const selectedPaymentWeekIndex = paymentHistoryWeeks.findIndex((week) => week.key === selectedPaymentWeekKey);
+  const selectedPaymentWeek = paymentHistoryWeeks[selectedPaymentWeekIndex >= 0 ? selectedPaymentWeekIndex : 0] || null;
+  const canGoToPreviousPaymentWeek = selectedPaymentWeekIndex >= 0 && selectedPaymentWeekIndex < paymentHistoryWeeks.length - 1;
+  const canGoToNextPaymentWeek = selectedPaymentWeekIndex > 0;
+
+  const goToPreviousPaymentWeek = () => {
+    if (!canGoToPreviousPaymentWeek) return;
+    setSelectedPaymentWeekKey(paymentHistoryWeeks[selectedPaymentWeekIndex + 1].key);
+  };
+
+  const goToNextPaymentWeek = () => {
+    if (!canGoToNextPaymentWeek) return;
+    setSelectedPaymentWeekKey(paymentHistoryWeeks[selectedPaymentWeekIndex - 1].key);
+  };
 
   if (!employeeId) {
     return (
@@ -570,6 +811,133 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
             companyContext={companyContext}
           />
         </article>
+      )}
+
+      {activeView === 'profile' && (
+        <div className="employee-profile-view">
+          <article className="employee-card employee-profile-details-card">
+            <div className="employee-card-header">
+              <div>
+                <p className="admin-kicker">Mi perfil</p>
+                <h2>Mis datos</h2>
+              </div>
+              {isProfileEditing ? (
+                <span>Editar</span>
+              ) : (
+                <button className="agenda-option-button employee-profile-edit-button" type="button" onClick={() => setIsProfileEditing(true)}>Editar</button>
+              )}
+            </div>
+
+            <div className="employee-profile-data-layout">
+              <label className="employee-profile-photo-field">
+                <span>Foto de perfil</span>
+                <span className="employee-profile-avatar" aria-hidden="true">
+                  {(isProfileEditing ? profileForm.photo_url : employee?.photo_url) ? <img src={isProfileEditing ? profileForm.photo_url : employee.photo_url} alt="" /> : (employee?.name || 'E').slice(0, 1).toUpperCase()}
+                </span>
+                {isProfileEditing && <input type="file" accept="image/*" onChange={updateProfilePhoto} />}
+              </label>
+
+              <div className="employee-profile-form-grid">
+                <label>Nombre<input value={profileForm.first_name} onChange={(event) => updateProfileField('first_name', event.target.value)} disabled={!isProfileEditing} /></label>
+                <label>Apellido<input value={profileForm.last_name} onChange={(event) => updateProfileField('last_name', event.target.value)} disabled={!isProfileEditing} /></label>
+                <label className="employee-profile-field-wide">Mail para notificaciones<input type="email" value={profileForm.email} onChange={(event) => updateProfileField('email', event.target.value)} disabled={!isProfileEditing} /></label>
+                <label>Fecha de nacimiento<input type="date" value={profileForm.birth_date} max={new Date().toISOString().slice(0, 10)} onChange={(event) => updateProfileField('birth_date', event.target.value)} disabled={!isProfileEditing} /></label>
+                <label>Edad<input value={calculateAge(profileForm.birth_date)} disabled /></label>
+                <label className="employee-profile-field-wide">Celular<input value={profileForm.phone} onChange={(event) => updateProfileField('phone', event.target.value)} disabled={!isProfileEditing} /></label>
+                <label>Calle<input value={profileForm.address_street} onChange={(event) => updateProfileField('address_street', event.target.value)} disabled={!isProfileEditing} /></label>
+                <label>Nro.<input value={profileForm.address_number} onChange={(event) => updateProfileField('address_number', event.target.value)} disabled={!isProfileEditing} /></label>
+                <label className="employee-profile-field-wide">Localidad<input value={profileForm.address_locality} onChange={(event) => updateProfileField('address_locality', event.target.value)} disabled={!isProfileEditing} /></label>
+              </div>
+            </div>
+
+            {profileError && <div className="agenda-customer-error">{profileError}</div>}
+            {isProfileEditing && (
+              <div className="employee-profile-actions">
+                <button className="agenda-option-button" type="button" onClick={cancelProfileEdit} disabled={isSavingProfile}>Cancelar</button>
+                <button className="agenda-close-button" type="button" onClick={saveEmployeeProfile} disabled={isSavingProfile}>{isSavingProfile ? 'Guardando...' : 'Guardar'}</button>
+              </div>
+            )}
+          </article>
+
+          <article className="employee-card employee-profile-activity-card">
+            <div className="employee-card-header">
+              <div>
+                <p className="admin-kicker">Mis actividades</p>
+                <h2>Turnos realizados</h2>
+              </div>
+              <span>{activityRows.length}</span>
+            </div>
+            <div className="employee-profile-list">
+              {activityRows.length ? activityRows.map((booking) => {
+                const service = getServiceForBooking(booking, services);
+                const isClosed = isClosedBooking(booking);
+                return (
+                  <div className="employee-profile-row" key={booking.id}>
+                    <ActivityIcon service={service} size="small" />
+                    <div>
+                      <strong>{getBookingTitle(booking, service)}</strong>
+                      <span>{formatDate(booking.start_at)} · {formatTime(booking.start_at)}-{formatTime(booking.end_at)} · {getCustomerFields(booking).name}</span>
+                    </div>
+                    <small className={isClosed ? 'is-muted' : 'is-active'}>{isClosed ? 'Cerrado' : 'Asignado'}</small>
+                  </div>
+                );
+              }) : <div className="employee-empty-line">Todavía no tenés actividades registradas.</div>}
+            </div>
+          </article>
+
+          {preciosHabilitados && (
+            <article className="employee-card employee-profile-payments-card">
+              <div className="employee-card-header">
+                <div>
+                  <p className="admin-kicker">Cobros</p>
+                  <h2>Historial de cobros</h2>
+                </div>
+                <span>{paymentHistoryRows.length}</span>
+              </div>
+              <div className="employee-profile-list employee-payment-list">
+                {selectedPaymentWeek ? (
+                  <section className="employee-payment-week" key={selectedPaymentWeek.key}>
+                    <div className="employee-payment-week-nav">
+                      <button className="agenda-week-button" type="button" onClick={goToPreviousPaymentWeek} disabled={!canGoToPreviousPaymentWeek} aria-label="Semana anterior">←</button>
+                      <div>
+                        <strong>Semana del {selectedPaymentWeek.label}</strong>
+                        <span>{selectedPaymentWeek.rows.length} turno(s)</span>
+                      </div>
+                      <button className="agenda-week-button" type="button" onClick={goToNextPaymentWeek} disabled={!canGoToNextPaymentWeek} aria-label="Semana siguiente">→</button>
+                    </div>
+                    <div className="employee-payment-week-header">
+                      <div>
+                        <strong>Resumen semanal</strong>
+                        <span>{selectedPaymentWeekIndex + 1} de {paymentHistoryWeeks.length}</span>
+                      </div>
+                      <div className="employee-payment-week-totals">
+                        <span>Total <strong>{formatMoney(selectedPaymentWeek.total)}</strong></span>
+                        {selectedPaymentWeek.employeeTotal > 0 && <span>Empleado <strong>{formatMoney(selectedPaymentWeek.employeeTotal)}</strong></span>}
+                        {selectedPaymentWeek.companyTotal > 0 && <span>Empresa <strong>{formatMoney(selectedPaymentWeek.companyTotal)}</strong></span>}
+                      </div>
+                    </div>
+                    {selectedPaymentWeek.rows.length ? selectedPaymentWeek.rows.map(({ booking, amount, employeeAmount, companyAmount }) => {
+                      const service = getServiceForBooking(booking, services);
+                      return (
+                        <div className="employee-payment-row" key={booking.id}>
+                          <div>
+                            <strong>{getBookingTitle(booking, service)}</strong>
+                            <span>{formatDate(booking.start_at)} · {getCustomerFields(booking).name}</span>
+                          </div>
+                          <div className="employee-payment-amounts">
+                            <span>Total cobrado <strong>{formatMoney(amount)}</strong></span>
+                            {employeeAmount != null ? <span>Empleado <strong>{formatMoney(employeeAmount)}</strong></span> : <span>Rendición <strong>Pendiente</strong></span>}
+                            {companyAmount != null && <span>Empresa <strong>{formatMoney(companyAmount)}</strong></span>}
+                          </div>
+                        </div>
+                      );
+                    }) : <div className="employee-empty-line">No hay cobros registrados en esta semana.</div>}
+                  </section>
+                ) : <div className="employee-empty-line">Todavía no tenés cobros registrados.</div>}
+              </div>
+            </article>
+          )}
+        </div>
       )}
 
       {activeView === 'availability' && (

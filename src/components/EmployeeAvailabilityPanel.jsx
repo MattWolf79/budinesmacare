@@ -775,10 +775,12 @@ export default function EmployeeAvailabilityPanel({
                         <span>Fecha</span>
                         <strong>{formatDateLabel(item.available_date, item.weekday)}</strong>
                       </div>
-                      <div className="availability-card-field availability-card-field-wide">
-                        <span>Empleado</span>
-                        <strong>{getEmployeeName(employees, item.employee_id, employeeName || 'Empleado')}</strong>
-                      </div>
+                      {isAdminMode && (
+                        <div className="availability-card-field availability-card-field-wide">
+                          <span>Empleado</span>
+                          <strong>{getEmployeeName(employees, item.employee_id, employeeName || 'Empleado')}</strong>
+                        </div>
+                      )}
                       <div className="availability-card-field availability-card-field-wide">
                         <span>Horario</span>
                         <strong>{formatTime(item.start_time)} hs-{formatTime(item.end_time)} hs</strong>
@@ -788,11 +790,11 @@ export default function EmployeeAvailabilityPanel({
                   <div className="admin-record-actions availability-card-actions">
                     <button className="agenda-close-button availability-card-action" type="button" onClick={() => editAvailability(item)} disabled={isSaving}>
                       <span className="admin-action-label-full">Editar</span>
-                      <span className="admin-action-label-compact" aria-hidden="true">Ed.</span>
+                      <span className="admin-action-label-compact" aria-hidden="true">✏️</span>
                     </button>
                     <button className="agenda-danger-button availability-card-action" type="button" onClick={() => deleteAvailability(item)} disabled={isSaving}>
                       <span className="admin-action-label-full">Eliminar</span>
-                      <span className="admin-action-label-compact" aria-hidden="true">X</span>
+                      <span className="admin-action-label-compact" aria-hidden="true">🗑️</span>
                     </button>
                   </div>
                 </article>

@@ -36,9 +36,10 @@ const profileOptions = {
 const profileList = ['client', 'employee', 'admin'];
 
 const employeeNavItems = [
-  { id: 'summary', label: 'Resumen', icon: '▦' },
-  { id: 'agenda', label: 'Agenda', icon: '📅' },
-  { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
+  { id: 'summary', label: 'Resumen', mobileLabel: 'Resumen', icon: '▦' },
+  { id: 'agenda', label: 'Agenda', mobileLabel: 'Agenda', icon: '📅' },
+  { id: 'profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: '👤' },
+  { id: 'availability', label: 'Disponibilidad', mobileLabel: 'Horario', icon: '🕒' }
 ];
 
 const clientNavItems = [
@@ -101,6 +102,24 @@ function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
       <span className="profile-card-title">{profile.label}</span>
       <span className="profile-card-copy">{profile.description}</span>
     </button>
+  );
+}
+
+function EmployeeBottomNav({ activeView, onViewChange }) {
+  return (
+    <nav className="employee-bottom-nav" aria-label="Secciones empleado">
+      {employeeNavItems.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          className={`employee-bottom-nav-button ${activeView === item.id ? 'is-active' : ''}`}
+          onClick={() => onViewChange(item.id)}
+        >
+          <span className="employee-bottom-nav-icon" aria-hidden="true">{item.icon}</span>
+          <span className="employee-bottom-nav-label">{item.mobileLabel || item.label}</span>
+        </button>
+      ))}
+    </nav>
   );
 }
 
@@ -189,18 +208,21 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   return (
     <main className={`role-workspace role-workspace-${selectedProfile}`}>
       {selectedProfile === 'employee' || isClientProfile ? (
-        <Navbar
-          user={user}
-          activeView={isClientProfile ? clientActiveView : employeeActiveView}
-          accessProfile={selectedProfile}
-          onViewChange={isClientProfile ? changeClientView : setEmployeeActiveView}
-          onChangeProfile={onChangeProfile}
-          onLogout={onLogout}
-          showNavigation
-          showProfileBadge
-          canChangeProfile={canChangeProfile}
-          navItems={isClientProfile ? clientNavItems : employeeNavItems}
-        />
+        <>
+          <Navbar
+            user={user}
+            activeView={isClientProfile ? clientActiveView : employeeActiveView}
+            accessProfile={selectedProfile}
+            onViewChange={isClientProfile ? changeClientView : setEmployeeActiveView}
+            onChangeProfile={onChangeProfile}
+            onLogout={onLogout}
+            showNavigation
+            showProfileBadge
+            canChangeProfile={canChangeProfile}
+            navItems={isClientProfile ? clientNavItems : employeeNavItems}
+          />
+          {isEmployeeProfile && <EmployeeBottomNav activeView={employeeActiveView} onViewChange={setEmployeeActiveView} />}
+        </>
       ) : (
         <section className="role-workspace-topbar">
           <div className="role-workspace-brand">

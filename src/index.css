@@ -720,11 +720,26 @@ code {
 }
 
 .agenda-modal-actions .agenda-close-button,
+.agenda-modal-actions .agenda-option-button,
 .agenda-modal-actions .agenda-danger-button {
   flex: 1 1 0;
   min-width: 0;
   margin-bottom: 0;
   white-space: nowrap;
+}
+
+.close-attention-modal .agenda-modal-actions {
+  max-width: 520px;
+  flex-wrap: wrap;
+}
+
+.close-attention-modal .agenda-modal-actions .agenda-close-button,
+.close-attention-modal .agenda-modal-actions .agenda-option-button,
+.close-attention-modal .agenda-modal-actions .agenda-danger-button {
+  flex: 0 1 150px;
+  min-height: 40px;
+  padding: 9px 14px;
+  font-size: 13px;
 }
 
 .agenda-customer-card {
@@ -1068,7 +1083,7 @@ code {
   border-radius: 999px;
   padding: 3px 8px;
   color: #fff;
-  background: #494d56;
+  background: #174c55;
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
   font-size: 11px;
   font-weight: 900;
@@ -1131,7 +1146,7 @@ code {
   gap: 10px;
   padding: 10px 14px;
   color: #fff;
-  background: #494d56;
+  background: #174c55;
   border-radius: 0 0 8px 8px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
 }
@@ -1332,7 +1347,7 @@ code {
   border-radius: 8px;
   padding: 0 var(--login-card-x) var(--login-card-x);
   text-align: center;
-  background: #494d56;
+  background: #174c55;
   box-shadow: 0 22px 52px rgba(15, 23, 42, 0.18);
 }
 
@@ -2897,6 +2912,10 @@ code {
   font-weight: 800;
 }
 
+.employee-bottom-nav {
+  display: none;
+}
+
 .employee-card-header {
   display: flex;
   align-items: flex-start;
@@ -2915,6 +2934,276 @@ code {
   color: #155e75;
   background: #cffafe;
   font-weight: 900;
+}
+
+.employee-profile-view {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.25fr);
+  gap: 16px;
+}
+
+.employee-profile-payments-card {
+  grid-column: 1 / -1;
+}
+
+.employee-profile-edit-button {
+  width: auto;
+  min-height: 34px;
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.employee-profile-data-layout {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.employee-profile-photo-field {
+  display: grid;
+  gap: 8px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.employee-profile-photo-field input {
+  width: 100%;
+  font-size: 10px;
+}
+
+.employee-profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.employee-profile-form-grid label {
+  display: grid;
+  gap: 4px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.employee-profile-form-grid input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: #172033;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.employee-profile-form-grid input:disabled {
+  color: #334155;
+  opacity: 1;
+}
+
+.employee-profile-field-wide {
+  grid-column: 1 / -1;
+}
+
+.employee-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.employee-profile-actions .agenda-option-button,
+.employee-profile-actions .agenda-close-button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 96px;
+  min-height: 34px;
+  margin: 0;
+  border-radius: 999px;
+  padding: 7px 15px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.employee-profile-list {
+  display: grid;
+  gap: 8px;
+}
+
+.employee-profile-row,
+.employee-payment-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #d8e0e7;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #ffffff;
+}
+
+.employee-profile-row strong,
+.employee-payment-row strong {
+  display: block;
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.employee-profile-row span,
+.employee-payment-row span {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.employee-profile-row small {
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.employee-profile-row small.is-active {
+  color: #036c58;
+  background: #dffbf2;
+}
+
+.employee-profile-row small.is-muted {
+  color: #475569;
+  background: #eef2f7;
+}
+
+.employee-payment-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.employee-payment-week {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #d7e3ea;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fbfc;
+}
+
+.employee-payment-week-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #dbe7ee;
+  padding-bottom: 8px;
+}
+
+.employee-payment-week-nav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #dbe7ee;
+  padding-bottom: 8px;
+}
+
+.employee-payment-week-nav > div {
+  min-width: 0;
+  text-align: center;
+}
+
+.employee-payment-week-nav strong {
+  display: block;
+  color: #173a42;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.15;
+}
+
+.employee-payment-week-nav span {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.employee-payment-week-nav .agenda-week-button {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+
+.employee-payment-week-header strong {
+  display: block;
+  color: #173a42;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.employee-payment-week-header span {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.employee-payment-week-totals {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.employee-payment-week-totals span {
+  margin: 0;
+  border: 1px solid #cbdde6;
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #31515b;
+  background: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.employee-payment-week-totals strong {
+  display: inline;
+  margin-left: 4px;
+  color: #173a42;
+  font-size: 11px;
+}
+
+.employee-payment-amounts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.employee-payment-amounts span {
+  margin: 0;
+  border: 1px solid #dbe3ea;
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #475569;
+  background: #f8fafc;
+  font-size: 10px;
+}
+
+.employee-payment-amounts strong {
+  display: inline;
+  margin-left: 4px;
+  font-size: 11px;
 }
 
 .employee-list {
@@ -3052,6 +3341,53 @@ code {
 @media (max-width: 760px) {
   .employee-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .employee-profile-view,
+  .employee-profile-data-layout,
+  .employee-profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-profile-row,
+  .employee-payment-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .employee-profile-row small,
+  .employee-payment-amounts {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .employee-profile-actions,
+  .employee-payment-week-header,
+  .employee-payment-week-totals {
+    justify-content: flex-start;
+  }
+
+  .employee-payment-week-nav {
+    grid-template-columns: 30px minmax(0, 1fr) 30px;
+    gap: 6px;
+  }
+
+  .employee-payment-week-nav .agenda-week-button {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+  }
+
+  .employee-payment-week-nav strong {
+    font-size: 11px;
+  }
+
+  .employee-payment-week-nav span {
+    font-size: 10px;
+  }
+
+  .employee-payment-week-header {
+    flex-direction: column;
   }
 
   .employee-layout-summary .employee-list,
@@ -5102,6 +5438,23 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .close-attention-modal .agenda-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    max-width: 240px;
+  }
+
+  .close-attention-modal .agenda-modal-actions .agenda-close-button,
+  .close-attention-modal .agenda-modal-actions .agenda-option-button,
+  .close-attention-modal .agenda-modal-actions .agenda-danger-button,
+  .agenda-modal-actions.booking-detail-actions .agenda-option-button,
+  .agenda-modal-actions.booking-detail-actions .agenda-close-button {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
   .agenda-option-button,
   .agenda-danger-button,
   .agenda-close-button,
@@ -6395,8 +6748,8 @@ body {
   gap: 16px;
   padding: 0 44px;
   color: #f8fafc;
-  background: #494d56;
-  border-bottom: 1px solid #494d56;
+  background: #174c55;
+  border-bottom: 1px solid #174c55;
   border-radius: 0;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
 }
@@ -8672,7 +9025,7 @@ body {
   border-radius: 6px;
   padding: 0 9px;
   color: #fff;
-  background: #494d56;
+  background: #174c55;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.14) inset;
   font-size: 10px;
   font-weight: 950;
@@ -11032,6 +11385,7 @@ body {
 
   .role-workspace-employee {
     padding-inline: 8px !important;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .role-workspace-employee .role-workspace-topbar {
@@ -11077,26 +11431,67 @@ body {
   }
 
   .role-workspace-employee .app-navbar-menu {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 6px !important;
-    width: 100% !important;
+    display: none !important;
   }
 
-  .role-workspace-employee .app-navbar-button {
+  .role-workspace-employee .employee-bottom-nav {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 1200 !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    min-height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    border-top: 1px solid rgba(36, 174, 187, 0.34) !important;
+    padding: 6px 8px calc(7px + env(safe-area-inset-bottom, 0px)) !important;
+    background: #174c55 !important;
+    box-shadow: 0 -12px 28px rgba(15, 23, 42, 0.22) !important;
+  }
+
+  .role-workspace-employee .employee-bottom-nav-button {
+    display: grid !important;
+    grid-template-rows: 26px auto !important;
+    align-items: center !important;
+    justify-items: center !important;
+    gap: 2px !important;
     min-width: 0 !important;
-    min-height: 32px !important;
-    border-radius: 8px !important;
-    padding: 5px 7px !important;
-    font-size: 12px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    padding: 3px 4px 5px !important;
+    color: rgba(255, 255, 255, 0.72) !important;
+    background: transparent !important;
+    font: inherit !important;
+    cursor: pointer !important;
+  }
+
+  .role-workspace-employee .employee-bottom-nav-button.is-active {
+    color: #ffffff !important;
+  }
+
+  .role-workspace-employee .employee-bottom-nav-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    height: 26px !important;
+    border-radius: 999px !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+  }
+
+  .role-workspace-employee .employee-bottom-nav-button.is-active .employee-bottom-nav-icon {
+    background: rgba(255, 255, 255, 0.2) !important;
+  }
+
+  .role-workspace-employee .employee-bottom-nav-label {
+    display: block !important;
+    max-width: 100% !important;
+    font-size: 10px !important;
+    font-weight: 850 !important;
     line-height: 1.1 !important;
     white-space: nowrap !important;
-  }
-
-  .role-workspace-employee .app-navbar-button:nth-child(3) {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    justify-self: stretch !important;
   }
 
   .role-workspace-employee .role-workspace-hero,
@@ -11244,6 +11639,49 @@ body {
     margin: 0 !important;
     font-size: 11px !important;
     line-height: 1.1 !important;
+  }
+
+  .role-workspace-employee .employee-profile-activity-card .employee-profile-row {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    gap: 7px !important;
+    min-height: 36px !important;
+    padding: 6px 8px !important;
+  }
+
+  .role-workspace-employee .employee-profile-activity-card .employee-profile-row > div {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+  }
+
+  .role-workspace-employee .employee-profile-activity-card .employee-profile-row strong,
+  .role-workspace-employee .employee-profile-activity-card .employee-profile-row span {
+    min-width: 0 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .role-workspace-employee .employee-profile-activity-card .employee-profile-row strong {
+    flex: 0 1 auto !important;
+    font-size: 11px !important;
+  }
+
+  .role-workspace-employee .employee-profile-activity-card .employee-profile-row span {
+    flex: 1 1 auto !important;
+    font-size: 10px !important;
+  }
+
+  .role-workspace-employee .employee-profile-activity-card .employee-profile-row small {
+    padding: 4px 6px !important;
+    font-size: 9px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
   }
 
   .role-workspace-employee .employee-availability-manager .admin-shell,
@@ -11456,12 +11894,13 @@ body {
 
   .role-workspace-employee .availability-card-grid .availability-card {
     grid-template-columns: 1fr !important;
-    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    grid-template-rows: auto auto !important;
     align-items: stretch !important;
-    gap: 10px !important;
+    gap: 7px !important;
     min-height: 0 !important;
     border-radius: 10px !important;
-    padding: 0 12px 12px !important;
+    padding: 0 76px 9px 10px !important;
+    position: relative !important;
   }
 
   .role-workspace-employee .availability-card-grid .availability-card-accent {
@@ -11480,6 +11919,31 @@ body {
     gap: 0 !important;
     min-height: 0 !important;
     padding: 0 !important;
+  }
+
+  .role-workspace-employee .availability-card-grid .availability-card-fields {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) !important;
+    gap: 6px !important;
+  }
+
+  .role-workspace-employee .availability-card-grid .availability-card-field {
+    grid-template-columns: 1fr !important;
+    gap: 3px !important;
+  }
+
+  .role-workspace-employee .availability-card-grid .availability-card-field-wide {
+    grid-column: auto !important;
+  }
+
+  .role-workspace-employee .availability-card-grid .availability-card-field > span {
+    font-size: 8px !important;
+  }
+
+  .role-workspace-employee .availability-card-grid .availability-card-field > strong {
+    min-height: 26px !important;
+    padding: 5px 7px !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
   }
 
   .role-workspace-employee .availability-card-grid .admin-record-title {
@@ -11502,14 +11966,13 @@ body {
   }
 
   .role-workspace-employee .availability-card-grid .availability-card-actions {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    grid-column: auto !important;
-    grid-row: auto !important;
-    align-items: stretch !important;
-    align-self: auto !important;
-    justify-content: stretch !important;
-    gap: 5px !important;
+    position: absolute !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
     padding: 0 !important;
   }
 
@@ -11517,13 +11980,22 @@ body {
   .role-workspace-employee .availability-card-grid .admin-record-actions .agenda-close-button,
   .role-workspace-employee .availability-card-grid .admin-record-actions .agenda-danger-button {
     flex: 0 0 auto !important;
-    width: 100% !important;
-    height: 22px !important;
-    min-height: 22px !important;
-    padding: 3px 6px !important;
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
     border-radius: 999px !important;
-    font-size: 10px !important;
+    font-size: 14px !important;
     line-height: 1 !important;
+  }
+
+  .role-workspace-employee .availability-card-grid .admin-action-label-full {
+    display: none !important;
+  }
+
+  .role-workspace-employee .availability-card-grid .admin-action-label-compact {
+    display: inline !important;
   }
 }
 
@@ -11580,9 +12052,9 @@ body {
   padding: 0 44px !important;
   color: #f8fafc !important;
   border: 0 !important;
-  border-bottom: 1px solid #494d56 !important;
+  border-bottom: 1px solid #174c55 !important;
   border-radius: 0 !important;
-  background: #494d56 !important;
+  background: #174c55 !important;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16) !important;
 }
 
