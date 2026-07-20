@@ -451,7 +451,8 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
   const companyDisplayName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
   const visibleAccessOptions = accessOptions.filter((option) => allowedProfiles.includes(option.id));
   const isClientOnlyAccess = visibleAccessOptions.length === 1 && visibleAccessOptions[0]?.id === 'client';
-  const showPoweredBy = isClientOnlyAccess && Boolean(companyContext?.client_logo_data_url);
+  const isSingleCompanyAccess = visibleAccessOptions.length === 1 && ['client', 'employee', 'admin'].includes(visibleAccessOptions[0]?.id);
+  const showPoweredBy = isSingleCompanyAccess && Boolean(companyContext?.client_logo_data_url);
   const companyLogoSrc = showPoweredBy ? companyContext.client_logo_data_url : turnosAppLogo;
   const generatedRegistrationUsername = generateInternalUsername(registrationForm.firstName, registrationForm.lastName);
   const loginCopy = isClientOnlyAccess

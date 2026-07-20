@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 
+const turnosAppLogo = '/logo-quieroturnoapp.png';
+
 const initialLoginForm = {
   username: 'Admin',
   password: 'Admin'
@@ -13,6 +15,9 @@ const initialCompanyForm = {
   adminFirstName: '',
   adminLastName: '',
   adminEmail: '',
+  clientLogoDataUrl: '',
+  clientLogoFileName: '',
+  clientLogoMimeType: '',
   preciosHabilitados: true,
   descuentosHabilitados: true,
   promocionesHabilitadas: true,
@@ -152,7 +157,7 @@ export default function PlatformAdmin() {
     }));
   };
 
-  const changeClientLogo = async (event) => {
+  const changeLogo = async (event, setForm) => {
     const file = event.target.files?.[0];
     event.target.value = '';
 
@@ -168,7 +173,7 @@ export default function PlatformAdmin() {
     }
 
     const dataUrl = await fileToDataUrl(file);
-    setEditForm((current) => ({
+    setForm((current) => ({
       ...current,
       clientLogoDataUrl: String(dataUrl || ''),
       clientLogoFileName: file.name,
@@ -176,14 +181,22 @@ export default function PlatformAdmin() {
     }));
   };
 
-  const removeClientLogo = () => {
-    setEditForm((current) => ({
+  const changeCompanyLogo = (event) => changeLogo(event, setCompanyForm);
+
+  const changeClientLogo = (event) => changeLogo(event, setEditForm);
+
+  const removeLogo = (setForm) => {
+    setForm((current) => ({
       ...current,
       clientLogoDataUrl: '',
       clientLogoFileName: '',
       clientLogoMimeType: ''
     }));
   };
+
+  const removeCompanyLogo = () => removeLogo(setCompanyForm);
+
+  const removeClientLogo = () => removeLogo(setEditForm);
 
   const updateResetField = (field, value) => {
     setResetForm((current) => ({
@@ -262,6 +275,9 @@ export default function PlatformAdmin() {
       admin_first_name_value: companyForm.adminFirstName.trim() || null,
       admin_last_name_value: companyForm.adminLastName.trim() || null,
       admin_email_value: companyForm.adminEmail.trim().toLowerCase() || null,
+      client_logo_data_url_valor: companyForm.clientLogoDataUrl || null,
+      client_logo_file_name_valor: companyForm.clientLogoFileName || null,
+      client_logo_mime_type_valor: companyForm.clientLogoMimeType || null,
       ...getConfigPayload(companyForm)
     });
 
@@ -397,12 +413,15 @@ export default function PlatformAdmin() {
   return (
     <main className="platform-admin-workspace">
       <header className="platform-admin-header">
-        <div>
+        <div className="platform-admin-brand">
+          <img className="app-navbar-logo" src={turnosAppLogo} alt="QuieroTurnoApp - Plataforma" />
+        </div>
+        <div className="platform-admin-heading">
           <p>Administración plataforma</p>
           <h1>Empresas</h1>
           <span>Alta de empresas, administradores iniciales y blanqueo de accesos.</span>
         </div>
-        <button type="button" onClick={logout}>Salir</button>
+        <button className="app-navbar-logout" type="button" onClick={logout}>Salir</button>
       </header>
 
       {message && <p className="platform-admin-success">{message}</p>}
@@ -433,6 +452,25 @@ export default function PlatformAdmin() {
             <Field label="Email admin">
             <input type="email" value={companyForm.adminEmail} onChange={(event) => updateCompanyField('adminEmail', event.target.value)} placeholder="admin@empresa.com" />
             </Field>
+          </div>
+          <div className="platform-config-block">
+            <ConfigSection title="Portal cliente">
+              <div className="platform-logo-upload">
+                <label className="platform-field">
+                  <span>Logo Sacar turno</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={changeCompanyLogo} />
+                </label>
+                {companyForm.clientLogoDataUrl ? (
+                  <div className="platform-logo-preview">
+                    <img src={companyForm.clientLogoDataUrl} alt="Logo configurado para Sacar turno" />
+                    <div>
+                      <strong>{companyForm.clientLogoFileName || 'Logo cargado'}</strong>
+                      <button className="platform-button-secondary" type="button" onClick={removeCompanyLogo}>Quitar logo</button>
+                    </div>
+                  </div>
+                ) : <p className="platform-company-loaded">Si no se carga un logo, se usa QuieroTurnoApp.</p>}
+              </div>
+            </ConfigSection>
           </div>
           <div className="platform-config-block">
             <div className="platform-panel-heading">

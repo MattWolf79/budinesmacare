@@ -12717,12 +12717,36 @@ body {
   .role-workspace > .app-navbar,
   .role-workspace-client .app-navbar {
     grid-template-columns: auto minmax(0, 1fr) auto !important;
+    min-height: 76px !important;
+    gap: 24px !important;
+    padding: 0 32px !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-logo,
+  .role-workspace > .app-navbar .app-navbar-logo,
+  .role-workspace.role-workspace-client > .app-navbar .app-navbar-logo,
+  .role-workspace.role-workspace-employee > .app-navbar .app-navbar-logo {
+    width: 104px !important;
+    height: 60px !important;
+    max-height: 60px !important;
+    object-fit: contain !important;
   }
 
   .dashboard-shell > .app-navbar .app-navbar-menu,
   .role-workspace > .app-navbar .app-navbar-menu,
   .role-workspace-client .app-navbar-menu {
     justify-content: start !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-button,
+  .role-workspace > .app-navbar .app-navbar-button,
+  .role-workspace-client .app-navbar-button {
+    min-height: 44px !important;
+    border-radius: 999px !important;
+    padding: 11px 18px !important;
+    font-size: 14px !important;
+    gap: 8px !important;
   }
 }
 
@@ -12756,7 +12780,8 @@ body {
 .app-navbar .app-navbar-logout,
 .dashboard-shell > .app-navbar .app-navbar-logout,
 .role-workspace-client .app-navbar-logout,
-.role-workspace-employee .app-navbar-logout {
+.role-workspace-employee .app-navbar-logout,
+.platform-admin-header .app-navbar-logout {
   min-height: 40px !important;
   border: 1px solid #24aebb !important;
   border-radius: 6px !important;
@@ -12772,7 +12797,8 @@ body {
 .app-navbar .app-navbar-logout:hover,
 .dashboard-shell > .app-navbar .app-navbar-logout:hover,
 .role-workspace-client .app-navbar-logout:hover,
-.role-workspace-employee .app-navbar-logout:hover {
+.role-workspace-employee .app-navbar-logout:hover,
+.platform-admin-header .app-navbar-logout:hover {
   color: #fff !important;
   border-color: #24aebb !important;
   background: #3fc9d5 !important;
@@ -13060,7 +13086,7 @@ body {
   top: 0 !important;
   z-index: 30 !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
   align-items: center !important;
   gap: 18px !important;
   max-width: none !important;
@@ -13072,6 +13098,24 @@ body {
   padding: 0 24px !important;
   background: #174c55 !important;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16) !important;
+}
+
+.platform-admin-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  min-width: 0 !important;
+}
+
+.platform-admin-header .app-navbar-logo {
+  width: 104px !important;
+  height: 60px !important;
+  max-height: 60px !important;
+  object-fit: contain !important;
+}
+
+.platform-admin-heading {
+  min-width: 0 !important;
 }
 
 .platform-admin-header p,
@@ -13099,7 +13143,6 @@ body {
   font-weight: 700 !important;
 }
 
-.platform-admin-header button,
 .platform-admin-panel button {
   min-height: 40px !important;
   border: 1px solid #24aebb !important;
@@ -13124,9 +13167,18 @@ body {
   background: #f8fdfe !important;
 }
 
-.platform-admin-header button {
-  color: #cffafe !important;
-  background: rgba(255, 255, 255, 0.08) !important;
+.platform-admin-header .app-navbar-logout {
+  justify-self: end !important;
+  align-self: center !important;
+}
+
+@media (min-width: 861px) {
+  .platform-admin-header {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    min-height: 76px !important;
+    padding: 0 32px !important;
+  }
+
 }
 
 .platform-admin-grid {
@@ -13343,7 +13395,7 @@ body {
 
   .platform-admin-header {
     align-items: center !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
     margin: -14px -14px 18px !important;
     padding: 0 14px !important;
   }
@@ -13398,8 +13450,14 @@ body {
   }
 
   .platform-admin-header {
-    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
     min-height: 52px !important;
+  }
+
+  .platform-admin-header .app-navbar-logo {
+    width: 64px !important;
+    height: 40px !important;
+    max-height: 40px !important;
   }
 
   .platform-admin-header h1 {

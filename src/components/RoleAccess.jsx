@@ -151,6 +151,8 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const profile = profileOptions[selectedProfile];
   const isClientProfile = selectedProfile === 'client';
   const isEmployeeProfile = selectedProfile === 'employee';
+  const workspaceLogoSrc = companyContext?.client_logo_data_url || turnosAppLogo;
+  const workspaceLogoAlt = companyContext?.client_logo_data_url ? `${companyName} - ${profile?.label || 'QuieroTurnoApp'}` : undefined;
   const welcomeBackgroundUrl = welcomeBackground?.dataUrl || welcomeBackground?.publicUrl || '';
   const welcomeBackgroundStyle = welcomeBackgroundUrl ? { '--welcome-background-image': `url("${welcomeBackgroundUrl}")` } : undefined;
   const shouldUseWelcomeBackground = (isClientProfile || isEmployeeProfile) && Boolean(welcomeBackgroundUrl);
@@ -238,8 +240,8 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             showProfileBadge
             canChangeProfile={canChangeProfile}
             navItems={isClientProfile ? clientNavItems : employeeNavItems}
-            logoSrc={isClientProfile ? companyContext?.client_logo_data_url || turnosAppLogo : turnosAppLogo}
-            logoAlt={isClientProfile ? `${companyName} - Sacar turno` : undefined}
+            logoSrc={workspaceLogoSrc}
+            logoAlt={workspaceLogoAlt}
           />
           {isClientProfile && <ClientBottomNav activeView={clientActiveView} onViewChange={changeClientView} />}
           {isEmployeeProfile && <EmployeeBottomNav activeView={employeeActiveView} onViewChange={setEmployeeActiveView} />}
@@ -247,7 +249,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
       ) : (
         <section className="role-workspace-topbar">
           <div className="role-workspace-brand">
-            <img className="app-navbar-logo" src={turnosAppLogo} alt={`QuieroTurnoApp - ${profile.label}`} />
+            <img className="app-navbar-logo" src={workspaceLogoSrc} alt={workspaceLogoAlt || `QuieroTurnoApp - ${profile.label}`} />
           </div>
 
           <div className="role-workspace-session">

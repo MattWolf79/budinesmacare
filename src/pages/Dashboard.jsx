@@ -7,6 +7,8 @@ import AdminPanel from "../components/AdminPanel";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
 import EmployeeAvailabilityPanel from "../components/EmployeeAvailabilityPanel";
 
+const turnosAppLogo = '/logo-quieroturnoapp.png';
+
 const getAdminViewFromHash = () => {
   const hash = window.location.hash.replace(/^#/, '');
 
@@ -55,6 +57,9 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   const configuracionOperativa = companyContext?.configuracion_operativa || {};
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
+  const companyName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
+  const navbarLogoSrc = companyContext?.client_logo_data_url || turnosAppLogo;
+  const navbarLogoAlt = companyContext?.client_logo_data_url ? `${companyName} - Administrador` : undefined;
 
   useEffect(() => {
     const applyHashView = () => {
@@ -134,6 +139,8 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         showAdminNavigation={accessProfile === 'admin'}
         showProfileBadge
         canChangeProfile={canChangeProfile}
+        logoSrc={navbarLogoSrc}
+        logoAlt={navbarLogoAlt}
       />
 
       {accessProfile === 'admin' && <AdminBottomNav activeView={activeView} onViewChange={changeView} />}
