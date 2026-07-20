@@ -3582,6 +3582,54 @@ code {
   }
 }
 
+body .app-navbar .app-navbar-logout,
+body .platform-admin-header .app-navbar-logout {
+  border: 1px solid #24aebb !important;
+  color: #cffafe !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+body .app-navbar .app-navbar-logout:hover,
+body .platform-admin-header .app-navbar-logout:hover {
+  color: #fff !important;
+  border-color: #24aebb !important;
+  background: #3fc9d5 !important;
+}
+
+@media (max-width: 760px) {
+  body .role-workspace-employee .agenda-modal-card.assignment-employee-modal,
+  body .role-workspace-employee .agenda-modal-card.employee-reservation-modal,
+  body .role-workspace-employee .agenda-modal-card.service-select-modal,
+  body .dashboard-shell .agenda-modal-card.assignment-employee-modal,
+  body .dashboard-shell .agenda-modal-card.employee-reservation-modal,
+  body .dashboard-shell .agenda-modal-card.service-select-modal {
+    position: fixed !important;
+    top: max(88px, env(safe-area-inset-top, 0px) + 72px) !important;
+    right: 12px !important;
+    bottom: auto !important;
+    left: 12px !important;
+    z-index: 1400 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: calc(100vh - 176px - env(safe-area-inset-bottom, 0px)) !important;
+    overflow: hidden !important;
+    border-radius: 10px !important;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28) !important;
+  }
+
+  body .role-workspace-employee .agenda-modal-card.assignment-employee-modal .agenda-modal-body,
+  body .role-workspace-employee .agenda-modal-card.employee-reservation-modal .agenda-modal-body,
+  body .role-workspace-employee .agenda-modal-card.service-select-modal .agenda-modal-body,
+  body .dashboard-shell .agenda-modal-card.assignment-employee-modal .agenda-modal-body,
+  body .dashboard-shell .agenda-modal-card.employee-reservation-modal .agenda-modal-body,
+  body .dashboard-shell .agenda-modal-card.service-select-modal .agenda-modal-body {
+    max-height: calc(100vh - 224px - env(safe-area-inset-bottom, 0px)) !important;
+    overflow: auto !important;
+  }
+}
+
 .platform-admin-header .app-navbar-logout {
   border: 1px solid #24aebb !important;
   color: #cffafe !important;
