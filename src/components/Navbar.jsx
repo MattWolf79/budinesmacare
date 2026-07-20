@@ -16,6 +16,30 @@ const getNavbarSubtitle = (accessProfile) => (
       : 'Panel comercial'
 );
 
+const navbarLogoFrameStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  width: '86px',
+  minWidth: '86px',
+  maxWidth: '86px',
+  height: '54px',
+  minHeight: '54px',
+  maxHeight: '54px',
+  overflow: 'hidden'
+};
+
+const navbarLogoImageStyle = {
+  display: 'block',
+  width: '86px',
+  minWidth: 0,
+  maxWidth: '86px',
+  height: '54px',
+  maxHeight: '54px',
+  objectFit: 'contain',
+  flex: '0 0 auto'
+};
+
 export default function Navbar({
   user,
   activeView,
@@ -33,8 +57,10 @@ export default function Navbar({
 
   return (
     <div className="app-navbar">
-      <div className="app-navbar-brand">
-        <img className="app-navbar-logo" src={logoSrc || turnosAppLogo} alt={logoAlt || `QuieroTurnoApp - ${getNavbarSubtitle(accessProfile)}`} />
+      <div className="app-navbar-brand app-navbar-logo-box">
+        <span className="app-navbar-logo-frame" style={navbarLogoFrameStyle}>
+          <img className="app-navbar-logo-image" style={navbarLogoImageStyle} src={logoSrc || turnosAppLogo} alt={logoAlt || `QuieroTurnoApp - ${getNavbarSubtitle(accessProfile)}`} />
+        </span>
       </div>
 
       {showNavigation && (
