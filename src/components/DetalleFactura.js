@@ -22,14 +22,14 @@ const parseBookingDate = (value) => {
 const formatTime = (date) =>
   `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 
-export const generateDetalleFacturaPdf = async ({ companyContext, clientName, clientEmail, items, discountDetails = [], surchargeDetails = [], totals, payments }) => {
+export const generateDetalleFacturaPdf = async ({ companyContext, clientName, clientEmail, items, discountDetails = [], surchargeDetails = [], totals, payments, invoiceDate: providedInvoiceDate, invoiceNumber: providedInvoiceNumber }) => {
   if (!items?.length) return alert('Seleccioná al menos un turno para facturar.');
 
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const companyName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
-  const invoiceDate = formatDisplayDate(new Date());
-  const invoiceNumber = String(Date.now()).slice(-8);
+  const invoiceDate = providedInvoiceDate ? formatDisplayDate(providedInvoiceDate) : formatDisplayDate(new Date());
+  const invoiceNumber = providedInvoiceNumber || String(Date.now()).slice(-8);
   const safeClientName = clientName || 'Cliente sin datos';
   const safeClientEmail = clientEmail || 'Sin mail cargado';
   const margin = 14;

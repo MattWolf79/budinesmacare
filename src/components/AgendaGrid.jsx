@@ -249,6 +249,8 @@ const getSurchargeAmount = (surcharge, baseAmount) => {
 
 const roundMoneyAmount = (amount) => Math.round((Number(amount) || 0) * 100) / 100;
 
+const formatClosureInvoiceNumber = (closure) => `FAC-${String(closure?.id || '').replace(/-/g, '').slice(0, 8).toUpperCase() || String(Date.now()).slice(-8)}`;
+
 const getClientKey = (booking) => {
   const email = String(booking.user_email || '').trim().toLowerCase();
   if (email) return `email:${email}`;
@@ -480,7 +482,9 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const [totalDiscountIds, setTotalDiscountIds] = useState([]);
   const [payments, setPayments] = useState({ cash: '', transfer: '', card: '' });
   const [isClosing, setIsClosing] = useState(false);
+  const [confirmedInvoiceDetails, setConfirmedInvoiceDetails] = useState(null);
   const isEmployeeView = accessProfile === 'employee';
+  const isClosureConfirmed = Boolean(confirmedInvoiceDetails);
   const activeDiscounts = useMemo(() => (discounts || []).filter((discount) => discount?.enabled !== false && discount?.name && getDiscountValue(discount) > 0), [discounts]);
   const activeSurcharges = useMemo(() => (surcharges || []).filter((surcharge) => surcharge?.enabled !== false && surcharge?.name && getSurchargeValue(surcharge) > 0), [surcharges]);
   const lineDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'line' || discount.scope === 'both'));
@@ -628,17 +632,59 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const closureCutoffLabel = formatDateInputForDisplay(closureCutoffDate);
 
   const toggleLineDiscount = (bookingId, discountKey) => {
+    if (isClosureConfirmed) return;
     setLineDiscounts((current) => {
       const currentDiscounts = current[bookingId] || [];
       return { ...current, [bookingId]: currentDiscounts.includes(discountKey) ? currentDiscounts.filter((key) => key !== discountKey) : [...currentDiscounts, discountKey] };
     });
   };
 
+  const closeModal = () => {
+    onClose();
+    if (isClosureConfirmed) onClosed?.();
+  };
+
+  const buildCurrentInvoiceDetails = (closure = null) => ({
+    invoiceNumber: closure ? formatClosureInvoiceNumber(closure) : undefined,
+    invoiceDate: closure?.created_at || closure?.closed_at || new Date(),
+    clientName: selectedClient?.name,
+    clientEmail: selectedClient?.email,
+    items: selectedItems.map((item) => ({
+      serviceName: item.serviceName,
+      employeeName: item.employeeName,
+      basePrice: item.basePrice,
+      startAt: item.booking.start_at,
+      endAt: item.booking.end_at
+    })),
+    discountDetails: [
+      ...selectedItems.flatMap((item) => item.appliedDiscounts.map((discount) => ({
+        label: `Desc. ${formatDiscountOption(discount)}`,
+        amount: getDiscountAmount(discount, item.basePrice)
+      }))),
+      ...selectedTotalDiscountDetails.map(({ discount, amount }) => ({
+        label: `Desc. ${formatDiscountOption(discount)}`,
+        amount
+      }))
+    ].filter((item) => item.amount > 0),
+    surchargeDetails: selectedSurchargeDetails.map(({ surcharge, amount }) => ({
+      label: formatSurchargeInvoiceLabel(surcharge),
+      amount
+    })),
+    totals: {
+      grossTotal,
+      discountTotal: lineDiscountTotal + totalDiscountTotal,
+      surchargeTotal,
+      finalTotal
+    },
+    payments: chargedPaymentAmounts
+  });
+
   const confirmClosure = async () => {
+    if (isClosureConfirmed) return;
     if (!selectedItems.length) return alert('Seleccioná al menos un turno para cerrar.');
     if (Math.abs(paymentDifference) > 0.01) return alert('La suma de pagos debe coincidir con el total real a cobrar.');
     setIsClosing(true);
-    const { error } = await supabase.rpc('close_booking_attention', {
+    const { data, error } = await supabase.rpc('close_booking_attention', {
       service_date_value: selectedClient?.serviceDate || serviceDate,
       client_name_value: selectedClient?.name || null,
       client_email_value: selectedClient?.email || null,
@@ -659,47 +705,25 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     });
     setIsClosing(false);
     if (error) return alert(`No se pudo cerrar la atención: ${error.message}`);
-    alert('Atención cerrada.');
-    onClosed?.();
+    setConfirmedInvoiceDetails(buildCurrentInvoiceDetails(data || { id: data?.id }));
+    alert('Atención cerrada. Ya podés abrir la factura.');
   };
 
   const generateInvoice = async () => {
-    const invoiceDiscountDetails = [
-      ...selectedItems.flatMap((item) => item.appliedDiscounts.map((discount) => ({
-        label: `Desc. ${formatDiscountOption(discount)}`,
-        amount: getDiscountAmount(discount, item.basePrice)
-      }))),
-      ...selectedTotalDiscountDetails.map(({ discount, amount }) => ({
-        label: `Desc. ${formatDiscountOption(discount)}`,
-        amount
-      }))
-    ].filter((item) => item.amount > 0);
-
-    const invoiceSurchargeDetails = selectedSurchargeDetails.map(({ surcharge, amount }) => ({
-      label: formatSurchargeInvoiceLabel(surcharge),
-      amount
-    }));
+    const invoiceDetails = confirmedInvoiceDetails;
+    if (!invoiceDetails) return alert('Confirmá el cierre antes de abrir la factura.');
 
     await generateDetalleFacturaPdf({
       companyContext,
-      clientName: selectedClient?.name,
-      clientEmail: selectedClient?.email,
-      items: selectedItems.map((item) => ({
-        serviceName: item.serviceName,
-        employeeName: item.employeeName,
-        basePrice: item.basePrice,
-        startAt: item.booking.start_at,
-        endAt: item.booking.end_at
-      })),
-      discountDetails: invoiceDiscountDetails,
-      surchargeDetails: invoiceSurchargeDetails,
-      totals: {
-        grossTotal,
-        discountTotal: lineDiscountTotal + totalDiscountTotal,
-        surchargeTotal,
-        finalTotal
-      },
-      payments: chargedPaymentAmounts
+      clientName: invoiceDetails.clientName,
+      clientEmail: invoiceDetails.clientEmail,
+      items: invoiceDetails.items,
+      discountDetails: invoiceDetails.discountDetails,
+      surchargeDetails: invoiceDetails.surchargeDetails,
+      totals: invoiceDetails.totals,
+      payments: invoiceDetails.payments,
+      invoiceDate: invoiceDetails.invoiceDate,
+      invoiceNumber: invoiceDetails.invoiceNumber
     });
   };
 
@@ -710,7 +734,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         <div className="agenda-modal-body close-attention-body">
           <div className="close-attention-controls">
             <label>Hasta hoy<input type="text" value={closureCutoffLabel} readOnly /></label>
-            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
+            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { if (isClosureConfirmed) return; setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }} disabled={isClosureConfirmed}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
           </div>
           <div className="close-attention-items">
             {clientBookings.length ? clientBookings.map((booking) => {
@@ -724,21 +748,21 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
               );
               const availableLineDiscounts = activityDiscount ? [...lineDiscountOptions, activityDiscount] : lineDiscountOptions;
               return <article className="close-attention-item" key={booking.id}>
-                <label className="settings-check-row close-attention-item-check"><input type="checkbox" checked={isSelected} onChange={() => setSelectedBookingIds((current) => { const currentIds = Array.isArray(current) ? current : clientBookings.map((itemBooking) => itemBooking.id); return currentIds.includes(booking.id) ? currentIds.filter((id) => id !== booking.id) : [...currentIds, booking.id]; })} /><span>{getBookingActivityLabel(booking, service)}</span></label>
+                <label className="settings-check-row close-attention-item-check"><input type="checkbox" checked={isSelected} disabled={isClosureConfirmed} onChange={() => setSelectedBookingIds((current) => { if (isClosureConfirmed) return current; const currentIds = Array.isArray(current) ? current : clientBookings.map((itemBooking) => itemBooking.id); return currentIds.includes(booking.id) ? currentIds.filter((id) => id !== booking.id) : [...currentIds, booking.id]; })} /><span>{getBookingActivityLabel(booking, service)}</span></label>
                 <div className="close-attention-item-meta">{formatDisplayDate(booking.start_at)} · {formatTime(parseBookingDate(booking.start_at))} - {formatTime(parseBookingDate(booking.end_at))} · {formatPersonShortName(employee)}</div>
                 <div className="close-attention-price-row"><span>Base: {formatMoney(item?.basePrice ?? bookingPriceById.get(booking.id) ?? 0)}</span><strong>Subtotal: {formatMoney(item?.subtotal || 0)}</strong></div>
                 {isSelected && availableLineDiscounts.length > 0 && <div className="close-attention-discounts">{availableLineDiscounts.map((discount) => {
                   const discountKey = getDiscountKey(discount);
-                  return <label className="settings-check-row" key={`${booking.id}-${discountKey}`}><input type="checkbox" checked={(lineDiscounts[booking.id] || []).includes(discountKey)} onChange={() => toggleLineDiscount(booking.id, discountKey)} /><span>{formatDiscountOption(discount)}</span></label>;
+                  return <label className="settings-check-row" key={`${booking.id}-${discountKey}`}><input type="checkbox" checked={(lineDiscounts[booking.id] || []).includes(discountKey)} disabled={isClosureConfirmed} onChange={() => toggleLineDiscount(booking.id, discountKey)} /><span>{formatDiscountOption(discount)}</span></label>;
                 })}</div>}
               </article>;
             }) : <div className="agenda-empty-state">No hay turnos pendientes de cierre.</div>}
           </div>
           {totalDiscountOptions.length > 0 && <div className="close-attention-section"><strong>Descuentos sobre total</strong><div className="close-attention-discounts">{totalDiscountOptions.map((discount) => {
             const discountKey = getDiscountKey(discount);
-            return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} onChange={() => setTotalDiscountIds((current) => current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey])} /><span>{formatDiscountOption(discount)}</span></label>;
+            return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} disabled={isClosureConfirmed} onChange={() => setTotalDiscountIds((current) => { if (isClosureConfirmed) return current; return current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey]; })} /><span>{formatDiscountOption(discount)}</span></label>;
           })}</div></div>}
-          <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => setPayments((current) => ({ ...current, cash: event.target.value }))} placeholder="0" /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => setPayments((current) => ({ ...current, transfer: event.target.value }))} placeholder="0" /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => setPayments((current) => ({ ...current, card: event.target.value }))} placeholder="0" /></label></div>
+          <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => setPayments((current) => ({ ...current, cash: event.target.value }))} placeholder="0" disabled={isClosureConfirmed} /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => setPayments((current) => ({ ...current, transfer: event.target.value }))} placeholder="0" disabled={isClosureConfirmed} /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => setPayments((current) => ({ ...current, card: event.target.value }))} placeholder="0" disabled={isClosureConfirmed} /></label></div>
           {activeSurcharges.length > 0 && <div className="close-attention-section"><strong>Recargos aplicados</strong><div className="close-attention-discounts">{activeSurcharges.map((surcharge) => {
             const baseAmount = paymentBaseAmounts[surcharge.paymentMethod] || 0;
             const amount = getSurchargeAmount(surcharge, baseAmount);
@@ -755,7 +779,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
             <span>Pagado: {formatMoney(chargedTotal)}</span>
             {Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">Diferencia: {formatMoney(Math.abs(chargedPaymentDifference))} {chargedPaymentDifference > 0 ? 'de más' : 'pendiente'}</span>}
           </div>
-          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={onClose}>Cerrar</button><button className="agenda-option-button" type="button" onClick={generateInvoice} disabled={!selectedItems.length}>Generar factura</button><button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !selectedItems.length || Math.abs(paymentDifference) > 0.01}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button></div>
+          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>Cerrar</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !selectedItems.length || Math.abs(paymentDifference) > 0.01}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button>}</div>
         </div>
       </div>
     </div>
@@ -829,24 +853,20 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
 
     await generateDetalleFacturaPdf({
       companyContext,
-      clientName: customerName,
-      clientEmail: customerEmail,
-      items: [{
-        serviceName: activityLabel,
-        employeeName: employeeLabel,
-        basePrice: invoiceDetails.basePrice,
-        startAt: booking.start_at,
-        endAt: booking.end_at
-      }],
+      clientName: invoiceDetails.clientName || customerName,
+      clientEmail: invoiceDetails.clientEmail || customerEmail,
+      items: invoiceDetails.items,
       discountDetails: invoiceDetails.discountDetails,
       surchargeDetails: invoiceDetails.surchargeDetails,
       totals: {
-        grossTotal: invoiceDetails.basePrice,
+        grossTotal: invoiceDetails.grossTotal,
         discountTotal: invoiceDetails.discountTotal,
         surchargeTotal: invoiceDetails.surchargeTotal,
         finalTotal: invoiceDetails.finalTotal
       },
-      payments: invoiceDetails.payments
+      payments: invoiceDetails.payments,
+      invoiceDate: invoiceDetails.invoiceDate,
+      invoiceNumber: invoiceDetails.invoiceNumber
     });
   };
 
@@ -901,7 +921,7 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
             ) : (
               <>
                 <button className="agenda-option-button" type="button" onClick={onClose}>Cerrar</button>
-                {booking.priceDetails?.invoice && <button className="agenda-option-button" type="button" onClick={generateClosedBookingInvoice}>Generar factura</button>}
+                {booking.priceDetails?.invoice && <button className="agenda-option-button" type="button" onClick={generateClosedBookingInvoice}>Abrir factura</button>}
                 {canDownloadPdf && <button className="agenda-option-button" type="button" onClick={downloadBookingPdf}>PDF</button>}
                 {canEditCustomer && <button className="agenda-close-button" type="button" onClick={() => setIsEditing(true)}>Editar datos</button>}
               </>
@@ -921,6 +941,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [employeeAvailability, setEmployeeAvailability] = useState([]);
   const [bookingClosureItems, setBookingClosureItems] = useState([]);
   const [bookingClosures, setBookingClosures] = useState([]);
+  const [bookingClosureInvoices, setBookingClosureInvoices] = useState([]);
   const [availabilityLoadFailed, setAvailabilityLoadFailed] = useState(false);
 
   const [offset, setOffset] = useState(0);
@@ -1059,7 +1080,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           employees: mockData.employees,
           employeeServices: mockData.employeeServices,
           employeeAvailability: mockData.employeeAvailability
-        }, error: null }
+        }, error: null },
+        { data: [], error: null }
       ];
     }
 
@@ -1083,6 +1105,13 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           company_slug_value: companySlug
         })
       : Promise.resolve({ data: null, error: null });
+    const closureInvoicesRequest = isAdminView || (isEmployeeView && user?.isInternal)
+      ? supabase.rpc('get_booking_closure_invoices', {
+          account_id_value: user?.isInternal ? user.id : null,
+          session_token_value: user?.isInternal ? user.sessionToken : null,
+          company_slug_value: companySlug
+        })
+      : Promise.resolve({ data: [], error: null });
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
 
     return Promise.all([
@@ -1092,11 +1121,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('employee_availability').select('*')),
       adminDataRequest,
       internalEmployeeDataRequest,
-      bookingOptionsRequest
+      bookingOptionsRequest,
+      closureInvoicesRequest
     ]);
   };
 
-  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}, adminDataResult = {}, internalEmployeeDataResult = {}, bookingOptionsResult = {}]) => {
+  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}, adminDataResult = {}, internalEmployeeDataResult = {}, bookingOptionsResult = {}, closureInvoicesResult = {}]) => {
     const adminData = adminDataResult.data || {};
     const internalEmployeeData = internalEmployeeDataResult.data || {};
     const bookingOptions = bookingOptionsResult.data || {};
@@ -1118,14 +1148,24 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setEmployeeAvailability(usesInternalEmployeeData ? internalEmployeeData.agendaAvailability || internalEmployeeData.availability || fallbackAvailability : isClientView || isAdminView ? fallbackAvailability : availabilityResult.data || []);
     setBookingClosureItems(isAdminView ? adminData.bookingClosureItems || [] : usesInternalEmployeeData ? internalEmployeeData.bookingClosureItems || [] : []);
     setBookingClosures(isAdminView ? adminData.bookingClosures || [] : usesInternalEmployeeData ? internalEmployeeData.bookingClosures || [] : []);
+    setBookingClosureInvoices(Array.isArray(closureInvoicesResult.data) ? closureInvoicesResult.data : []);
     setAvailabilityLoadFailed(isClientView || isAdminView || usesInternalEmployeeData ? Boolean(bookingOptionsResult.error) : Boolean(availabilityResult.error));
   };
 
   const bookingPriceDetailsById = useMemo(() => {
     const closuresById = new Map((bookingClosures || []).map((closure) => [String(closure.id), closure]));
+    const invoicesByClosureId = new Map((bookingClosureInvoices || []).map((invoice) => [String(invoice.closure_id), invoice]));
+    const bookingsById = new Map((bookings || []).map((booking) => [String(booking.id), booking]));
     const subtotalByClosure = (bookingClosureItems || []).reduce((map, item) => {
       const closureId = String(item.closure_id || '');
       map.set(closureId, (map.get(closureId) || 0) + Number(item.subtotal || 0));
+      return map;
+    }, new Map());
+    const itemsByClosure = (bookingClosureItems || []).reduce((map, item) => {
+      const closureId = String(item.closure_id || '');
+      const current = map.get(closureId) || [];
+      current.push(item);
+      map.set(closureId, current);
       return map;
     }, new Map());
 
@@ -1152,6 +1192,38 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         const appliedDiscounts = Array.isArray(closureItem.applied_discounts) ? closureItem.applied_discounts : [];
         const totalDiscounts = Array.isArray(closure?.total_discounts) ? closure.total_discounts : [];
         const closureSurcharges = Array.isArray(closure?.surcharges) ? closure.surcharges : [];
+        const closureItems = itemsByClosure.get(String(closureItem.closure_id || '')) || [closureItem];
+        const invoiceSnapshot = invoicesByClosureId.get(String(closureItem.closure_id || ''));
+        const invoiceItems = closureItems.map((item) => {
+          const itemBooking = bookingsById.get(String(item.booking_id)) || booking;
+          const itemService = services.find((serviceItem) => Number(serviceItem.id) === Number(itemBooking?.service));
+          const itemEmployee = employees.find((employeeItem) => String(employeeItem.id) === String(item.employee_id || itemBooking?.employee_id));
+          return {
+            serviceName: item.service_name || getBookingActivityLabel(itemBooking, itemService),
+            employeeName: item.employee_name || formatPersonShortName(itemEmployee),
+            basePrice: Number(item.base_price || 0),
+            startAt: itemBooking?.start_at || booking.start_at,
+            endAt: itemBooking?.end_at || booking.end_at
+          };
+        });
+        const closureLineDiscountDetails = closureItems.flatMap((item) => {
+          const itemDiscountTotal = Number(item.line_discount_total || 0);
+          const itemDiscounts = Array.isArray(item.applied_discounts) ? item.applied_discounts : [];
+          if (itemDiscountTotal <= 0) return [];
+          return [{
+            label: itemDiscounts[0] ? `Desc. ${formatDiscountOption(itemDiscounts[0])}` : `Desc. ${item.service_name || 'servicio'}`,
+            amount: itemDiscountTotal
+          }];
+        });
+        const closureTotalDiscountAmount = Number(closure?.total_discount_total || 0);
+        const closureTotalDiscountDetails = closureTotalDiscountAmount > 0 ? [{
+          label: totalDiscounts.length === 1 ? `Desc. ${formatDiscountOption(totalDiscounts[0])}` : 'Desc. sobre total',
+          amount: closureTotalDiscountAmount
+        }] : [];
+        const closureSurchargeDetails = closureSurcharges.map((surcharge) => ({
+          label: formatSurchargeInvoiceLabel(surcharge),
+          amount: Number(surcharge.amount || 0) || getSurchargeAmount(surcharge, Number(surcharge.baseAmount || 0))
+        })).filter((item) => item.amount > 0);
 
         map[booking.id] = {
           isClosed: true,
@@ -1159,19 +1231,31 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           netLabel: formatMoney(netAmount),
           employeeLabel: booking.is_settled ? formatMoney(employeeAmount) : 'Aún no liquidada',
           companyLabel: booking.is_settled ? formatMoney(companyAmount) : 'Aún no liquidada',
-          invoice: {
-            basePrice: baseAmount,
-            discountTotal: lineDiscountTotal + proportionalDiscount,
-            surchargeTotal: proportionalSurcharge,
-            finalTotal: netAmount,
-            discountDetails: [
-              lineDiscountTotal > 0 && appliedDiscounts[0] ? {
-                label: `Desc. ${formatDiscountOption(appliedDiscounts[0])}`,
-                amount: lineDiscountTotal
-              } : null,
-              proportionalDiscount > 0 ? { label: totalDiscounts[0] ? `Desc. ${formatDiscountOption(totalDiscounts[0])}` : 'Desc. sobre total', amount: proportionalDiscount } : null
-            ].filter(Boolean),
-            surchargeDetails: proportionalSurcharge > 0 ? [{ label: closureSurcharges[0] ? formatSurchargeInvoiceLabel(closureSurcharges[0]) : 'Recargo sobre pago', amount: proportionalSurcharge }] : [],
+          invoice: invoiceSnapshot ? {
+            invoiceNumber: invoiceSnapshot.invoice_number,
+            invoiceDate: invoiceSnapshot.invoiced_at || invoiceSnapshot.created_at,
+            clientName: invoiceSnapshot.client_name || booking.customer_name,
+            clientEmail: invoiceSnapshot.client_email || booking.user_email,
+            items: Array.isArray(invoiceSnapshot.items) ? invoiceSnapshot.items : [],
+            grossTotal: Number(invoiceSnapshot.totals?.grossTotal || invoiceSnapshot.totals?.gross_total || 0),
+            discountTotal: Number(invoiceSnapshot.totals?.discountTotal || invoiceSnapshot.totals?.discount_total || 0),
+            surchargeTotal: Number(invoiceSnapshot.totals?.surchargeTotal || invoiceSnapshot.totals?.surcharge_total || 0),
+            finalTotal: Number(invoiceSnapshot.totals?.finalTotal || invoiceSnapshot.totals?.final_total || 0),
+            discountDetails: Array.isArray(invoiceSnapshot.discount_details) ? invoiceSnapshot.discount_details : [],
+            surchargeDetails: Array.isArray(invoiceSnapshot.surcharge_details) ? invoiceSnapshot.surcharge_details : [],
+            payments: invoiceSnapshot.payments || { cash: 0, transfer: 0, card: 0 }
+          } : {
+            invoiceNumber: formatClosureInvoiceNumber(closure || { id: closureItem.closure_id }),
+            invoiceDate: closure?.closed_at || booking.closed_at || closure?.service_date,
+            clientName: closure?.client_name || booking.customer_name,
+            clientEmail: closure?.client_email || booking.user_email,
+            items: invoiceItems,
+            grossTotal: Number(closure?.gross_total || 0),
+            discountTotal: Number(closure?.line_discount_total || 0) + Number(closure?.total_discount_total || 0),
+            surchargeTotal: Number(closure?.total_surcharge_total || 0),
+            finalTotal: Number(closure?.final_total || 0),
+            discountDetails: [...closureLineDiscountDetails, ...closureTotalDiscountDetails],
+            surchargeDetails: closureSurchargeDetails,
             payments: {
               cash: Number(closure?.cash_amount || 0),
               transfer: Number(closure?.transfer_amount || 0),
@@ -1191,7 +1275,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
       return map;
     }, {});
-  }, [bookingClosureItems, bookingClosures, bookings, promotions, services]);
+  }, [bookingClosureInvoices, bookingClosureItems, bookingClosures, bookings, employees, promotions, services]);
 
   const loadAll = async () => {
     const results = await fetchAll();
@@ -2391,7 +2475,6 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           companyContext={companyContext}
           onClose={() => setCloseAttentionOpen(false)}
           onClosed={async () => {
-            setCloseAttentionOpen(false);
             await loadAll();
             onBookingsChanged?.();
           }}
