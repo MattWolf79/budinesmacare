@@ -864,11 +864,42 @@ code {
   max-width: min(94vw, 820px) !important;
 }
 
+.settlement-modal-empty {
+  width: min(92vw, 520px);
+  max-width: min(92vw, 520px) !important;
+}
+
 .settlement-body {
   display: grid;
   gap: 12px;
   max-height: min(78vh, 720px);
   overflow: auto;
+}
+
+.settlement-modal-empty .settlement-body {
+  gap: 18px;
+  max-height: none;
+  overflow: visible;
+}
+
+.settlement-modal-empty .agenda-empty-state {
+  padding: 24px 18px 12px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.settlement-modal-empty .agenda-modal-actions.booking-detail-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  max-width: none;
+  margin: 0 auto;
+}
+
+.settlement-modal-empty .agenda-modal-actions.booking-detail-actions .agenda-option-button {
+  flex: 0 0 auto;
+  width: min(100%, 220px);
 }
 
 .settlement-toolbar {
@@ -3599,7 +3630,9 @@ body .platform-admin-header .app-navbar-logout:hover {
 
 @media (max-width: 760px) {
   body .role-workspace-employee .agenda-modal-card.close-attention-modal,
-  body .dashboard-shell .agenda-modal-card.close-attention-modal {
+  body .dashboard-shell .agenda-modal-card.close-attention-modal,
+  body .dashboard-shell .agenda-modal-card.booking-detail-modal,
+  body .dashboard-shell .agenda-modal-card.settlement-modal {
     position: fixed !important;
     top: max(88px, env(safe-area-inset-top, 0px) + 72px) !important;
     right: 12px !important;
@@ -3618,12 +3651,60 @@ body .platform-admin-header .app-navbar-logout:hover {
   }
 
   body .role-workspace-employee .agenda-modal-card.close-attention-modal .close-attention-body,
-  body .dashboard-shell .agenda-modal-card.close-attention-modal .close-attention-body {
+  body .dashboard-shell .agenda-modal-card.close-attention-modal .close-attention-body,
+  body .dashboard-shell .agenda-modal-card.booking-detail-modal .booking-detail-body,
+  body .dashboard-shell .agenda-modal-card.settlement-modal .settlement-body {
     flex: 1 1 auto !important;
     min-height: 0 !important;
     max-height: none !important;
     overflow: auto !important;
     padding-bottom: 18px !important;
+  }
+
+  body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions,
+  body .dashboard-shell .agenda-modal-card.settlement-modal .agenda-modal-actions {
+    position: sticky !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 2 !important;
+    margin: 0 !important;
+    padding: 10px 0 0 !important;
+    background: #fff !important;
+  }
+
+  body .dashboard-shell .agenda-modal-card.settlement-modal.settlement-modal-empty {
+    top: max(110px, env(safe-area-inset-top, 0px) + 94px) !important;
+    bottom: auto !important;
+    height: auto !important;
+    max-height: calc(100vh - 210px - env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body .dashboard-shell .agenda-modal-card.settlement-modal.settlement-modal-empty .settlement-body {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    padding-bottom: 16px !important;
+  }
+
+  body .dashboard-shell .agenda-modal-card.settlement-modal.settlement-modal-empty .agenda-empty-state {
+    padding: 22px 18px 10px !important;
+    font-size: 14px !important;
+  }
+
+  body .dashboard-shell .agenda-modal-card.settlement-modal.settlement-modal-empty .agenda-modal-actions {
+    position: static !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px 0 0 !important;
+  }
+
+  body .dashboard-shell .agenda-modal-card.settlement-modal.settlement-modal-empty .agenda-modal-actions .agenda-option-button {
+    flex: 0 0 auto !important;
+    width: min(100%, 220px) !important;
+    height: auto !important;
+    min-height: 38px !important;
   }
 
   body .role-workspace-employee .agenda-modal-card.assignment-employee-modal,
@@ -10247,6 +10328,21 @@ body {
   padding: 0 !important;
 }
 
+.dashboard-shell .service-button-grid .service-record-card .admin-management-card-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+.dashboard-shell .service-button-grid .service-record-card .admin-management-card-field:not(.admin-management-card-field-wide) {
+  grid-template-columns: 1fr !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+}
+
+.dashboard-shell .service-button-grid .service-record-card .admin-management-card-field-wide {
+  grid-column: 1 / -1 !important;
+}
+
 .dashboard-shell .employee-button-list .admin-management-card-actions,
 .dashboard-shell .service-button-grid .admin-management-card-actions {
   grid-column: 1 !important;
@@ -10401,7 +10497,9 @@ body {
 .dashboard-shell .employee-form-card .admin-switch-row,
 .dashboard-shell .service-form-card .admin-switch-row {
   display: flex !important;
+  flex-direction: row !important;
   align-items: center !important;
+  justify-content: flex-start !important;
   gap: 8px !important;
   min-height: 30px !important;
   margin: 0 !important;
@@ -10409,6 +10507,21 @@ body {
   font-size: 11px !important;
   font-weight: 900 !important;
   text-transform: none !important;
+}
+
+.dashboard-shell .employee-form-card .admin-switch-row input[type='checkbox'],
+.dashboard-shell .service-form-card .admin-switch-row input[type='checkbox'] {
+  flex: 0 0 auto !important;
+  width: 16px !important;
+  min-width: 16px !important;
+  max-width: 16px !important;
+  height: 16px !important;
+  min-height: 16px !important;
+  max-height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 3px !important;
+  accent-color: #174c55 !important;
 }
 
 .dashboard-shell .employee-form-card .admin-actions,
@@ -11581,12 +11694,29 @@ body {
 
   .service-admin-manager .service-metric-grid,
   .dashboard-shell .service-admin-manager .service-metric-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .service-admin-manager .service-metric-grid .admin-metric-card,
   .dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card {
-    min-height: 82px !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .service-admin-manager .service-metric-grid .admin-metric-card > *,
+  .dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card > * {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .service-admin-manager .service-metric-grid .admin-booking-cost-summary-card,
+  .dashboard-shell .service-admin-manager .service-metric-grid .admin-booking-cost-summary-card {
+    grid-column: 1 / -1 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   .booking-assignment-card .admin-record-main {

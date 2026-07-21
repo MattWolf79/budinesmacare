@@ -1071,13 +1071,16 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     }
 
     setIsSettling(true);
+    const settledIdSet = new Set(selectedSettlementRows.map((row) => String(row.id)));
+    const remainingSettlementRows = settlementRows.filter((row) => !settledIdSet.has(String(row.id)));
 
     if (user?.isLocalInternal) {
       await downloadSettlementPdf({ employee: settlementEmployee, rows: selectedSettlementRows, percent });
       setIsSettling(false);
       setLocalSettledBookingIds((current) => Array.from(new Set([...current, ...selectedSettlementIds])));
-      setSettlementRows((current) => current.filter((row) => !selectedSettlementIds.includes(String(row.id))));
+      setSettlementRows(remainingSettlementRows);
       setSelectedSettlementIds([]);
+      if (!remainingSettlementRows.length) setSettlementEmployee(null);
       return;
     }
 
@@ -1101,8 +1104,9 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     await downloadSettlementPdf({ employee: settlementEmployee, rows: reportRows, percent });
 
     setIsSettling(false);
-    setSettlementRows((current) => current.filter((row) => !selectedSettlementIds.includes(String(row.id))));
+    setSettlementRows(remainingSettlementRows);
     setSelectedSettlementIds([]);
+    if (!remainingSettlementRows.length) setSettlementEmployee(null);
     await loadAdminData();
     onDataChanged?.();
   };
@@ -1595,7 +1599,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
 
         {preciosHabilitados && settlementEmployee && (
           <div className="modal" role="dialog" aria-modal="true" aria-label="Rendición de empleado">
-            <div className="agenda-modal-card settlement-modal">
+            <div className={`agenda-modal-card settlement-modal ${settlementRows.length === 0 ? 'settlement-modal-empty' : ''}`}>
               <div className="agenda-modal-header">Rendición · {settlementEmployee.name}</div>
               <div className="agenda-modal-body settlement-body">
                 {isSettlementLoading ? (
@@ -1647,9 +1651,11 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
 
                 <div className="agenda-modal-actions booking-detail-actions">
                   <button className="agenda-option-button" type="button" onClick={closeSettlement} disabled={isSettling}>Cerrar</button>
-                  <button className="agenda-close-button" type="button" onClick={confirmSettlement} disabled={isSettlementLoading || isSettling || !selectedSettlementRows.length}>
-                    {isSettling ? 'Confirmando...' : 'Confirmar rendición'}
-                  </button>
+                  {settlementRows.length > 0 && (
+                    <button className="agenda-close-button" type="button" onClick={confirmSettlement} disabled={isSettlementLoading || isSettling || !selectedSettlementRows.length}>
+                      {isSettling ? 'Confirmando...' : 'Confirmar rendición'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

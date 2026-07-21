@@ -934,7 +934,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const bookingDescription = bookingPromotion
     ? bookingPromotionText || `Banner ${(bookingPromotion.promotionIndex ?? 0) + 1}`
     : '';
-  const reservationOptions = selectedPromotion ? promotionServices : [...services, ...promotionServices];
+  const reservationOptions = selectedPromotion ? promotionServices : services;
   const pendingAssignmentBookings = useMemo(() => bookings
     .filter(isPendingAssignmentBooking)
     .filter((booking) => parseBookingDate(booking.start_at) >= new Date())
