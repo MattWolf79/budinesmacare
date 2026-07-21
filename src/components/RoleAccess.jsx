@@ -214,10 +214,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
 
   const changeClientView = (view) => {
     setClientActiveView(view);
-
-    if (view !== 'reserve') {
-      setSelectedPromotion(null);
-    }
+    setSelectedPromotion(null);
   };
 
   const reservePromotion = (promotion) => {
