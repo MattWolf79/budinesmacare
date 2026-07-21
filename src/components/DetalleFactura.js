@@ -88,14 +88,16 @@ export const generateDetalleFacturaPdf = async ({ companyContext, clientName, cl
 
   currentY += 8;
   const totalsX = 196;
-  const labelX = 132;
-  const detailLabelX = 124;
+  const labelX = 92;
+  const detailLabelX = 92;
+  const totalsBandX = 86;
+  const totalsBandWidth = 110;
   doc.setFont('helvetica', 'normal');
   doc.text('Subtotal', labelX, currentY);
   doc.text(formatMoney(totals.grossTotal), totalsX, currentY, { align: 'right' });
   currentY += 6;
   discountDetails.filter((item) => item.amount > 0).forEach((discountDetail) => {
-    doc.text(doc.splitTextToSize(discountDetail.label, 42), labelX, currentY);
+    doc.text(doc.splitTextToSize(discountDetail.label, 80), labelX, currentY);
     doc.text(`-${formatMoney(discountDetail.amount)}`, totalsX, currentY, { align: 'right' });
     currentY += 6;
   });
@@ -114,7 +116,7 @@ export const generateDetalleFacturaPdf = async ({ companyContext, clientName, cl
     currentY += 7;
   }
   doc.setFillColor(239, 246, 255);
-  doc.rect(labelX - 4, currentY - 5, 64, 9, 'F');
+  doc.rect(totalsBandX, currentY - 5, totalsBandWidth, 9, 'F');
   doc.setFont('helvetica', 'bold');
   doc.text('TOTAL', labelX, currentY + 1);
   doc.text(formatMoney(totals.finalTotal), totalsX, currentY + 1, { align: 'right' });
