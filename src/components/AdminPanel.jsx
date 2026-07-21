@@ -148,13 +148,15 @@ const downloadSettlementPdf = async ({ employee, rows, percent }) => {
   const normalizedPercent = Number(percent) || 0;
   const totals = employeeRows.reduce((summary, row) => {
     const total = Number(row.total_amount ?? row.totalAmount ?? 0);
+    const surcharge = Number(row.surcharge_amount ?? row.surchargeAmount ?? 0);
     const employeeAmount = total * normalizedPercent / 100;
     return {
       total: summary.total + total,
+      surcharge: summary.surcharge + surcharge,
       employee: summary.employee + employeeAmount,
       company: summary.company + total - employeeAmount
     };
-  }, { total: 0, employee: 0, company: 0 });
+  }, { total: 0, surcharge: 0, employee: 0, company: 0 });
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -176,6 +178,7 @@ const downloadSettlementPdf = async ({ employee, rows, percent }) => {
   currentY += 10;
   doc.setFont('helvetica', 'bold');
   doc.text(`Total cobrado: ${formatMoney(totals.total)}`, margin, currentY);
+  if (totals.surcharge > 0) doc.text(`Recargos: ${formatMoney(totals.surcharge)}`, margin + 56, currentY);
   doc.text(`Empleado: ${formatMoney(totals.employee)}`, pageWidth / 2 - 20, currentY);
   doc.text(`Empresa: ${formatMoney(totals.company)}`, pageWidth - 70, currentY);
 
@@ -186,10 +189,11 @@ const downloadSettlementPdf = async ({ employee, rows, percent }) => {
     { label: 'Fecha', x: 106, width: 24 },
     { label: 'Inicio', x: 132, width: 18 },
     { label: 'Fin', x: 152, width: 18 },
-    { label: 'Total', x: 174, width: 26 },
-    { label: '%', x: 202, width: 12 },
-    { label: 'Empleado', x: 218, width: 28 },
-    { label: 'Empresa', x: 250, width: 28 }
+    { label: 'Total', x: 172, width: 24 },
+    { label: 'Recargo', x: 198, width: 24 },
+    { label: '%', x: 224, width: 12 },
+    { label: 'Empleado', x: 238, width: 26 },
+    { label: 'Empresa', x: 266, width: 24 }
   ];
 
   doc.setFillColor(232, 245, 247);
@@ -202,6 +206,7 @@ const downloadSettlementPdf = async ({ employee, rows, percent }) => {
   doc.setFont('helvetica', 'normal');
   employeeRows.forEach((row) => {
     const total = Number(row.total_amount ?? row.totalAmount ?? 0);
+    const surcharge = Number(row.surcharge_amount ?? row.surchargeAmount ?? 0);
     const employeeAmount = total * normalizedPercent / 100;
     const companyAmount = total - employeeAmount;
 
@@ -217,6 +222,7 @@ const downloadSettlementPdf = async ({ employee, rows, percent }) => {
       formatSettlementTime(row.start_at || row.startAt),
       formatSettlementTime(row.end_at || row.endAt),
       formatMoney(total),
+      surcharge > 0 ? `+${formatMoney(surcharge)}` : '-',
       `${normalizedPercent}%`,
       formatMoney(employeeAmount),
       formatMoney(companyAmount)
@@ -740,6 +746,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       banner_images_value: Array.isArray(sourceConfig.banner_images) ? sourceConfig.banner_images : [],
       promotions_value: Array.isArray(sourceConfig.promotions) ? sourceConfig.promotions : promotions,
       discounts_value: nextDiscounts,
+      surcharges_value: Array.isArray(sourceConfig.surcharges) ? sourceConfig.surcharges : [],
       client_can_choose_employee_value: Boolean(sourceConfig.client_can_choose_employee),
       account_id_value: internalAdminAccountId,
       session_token_value: internalSessionToken,
@@ -800,6 +807,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       banner_images_value: Array.isArray(sourceConfig.banner_images) ? sourceConfig.banner_images : [],
       promotions_value: nextPromotions,
       discounts_value: Array.isArray(sourceConfig.discounts) ? sourceConfig.discounts : [],
+      surcharges_value: Array.isArray(sourceConfig.surcharges) ? sourceConfig.surcharges : [],
       client_can_choose_employee_value: Boolean(sourceConfig.client_can_choose_employee),
       account_id_value: internalAdminAccountId,
       session_token_value: internalSessionToken,
@@ -1622,6 +1630,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                     <div className="settlement-list">
                       {settlementRows.map((row) => {
                         const total = Number(row.total_amount || 0);
+                        const surcharge = Number(row.surcharge_amount || row.surchargeAmount || 0);
                         const employeeAmount = total * (Number(settlementPercent) || 0) / 100;
                         const companyAmount = total - employeeAmount;
 
@@ -1634,6 +1643,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                             </span>
                             <span className="settlement-row-amounts">
                               <strong>{formatMoney(total)}</strong>
+                              {surcharge > 0 && <small>Incluye recargo +{formatMoney(surcharge)}</small>}
                               <small>Empleado {formatMoney(employeeAmount)} · Empresa {formatMoney(companyAmount)}</small>
                             </span>
                           </label>

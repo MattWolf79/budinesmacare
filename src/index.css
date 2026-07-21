@@ -1038,8 +1038,9 @@ code {
 }
 
 .agenda-modal-actions.booking-detail-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
   max-width: none;
   margin-top: 2px;
@@ -1047,7 +1048,8 @@ code {
 
 .agenda-modal-actions.booking-detail-actions .agenda-option-button,
 .agenda-modal-actions.booking-detail-actions .agenda-close-button {
-  width: 100%;
+  flex: 0 0 auto;
+  width: min(100%, 220px);
   min-width: 0;
   min-height: 38px;
   margin: 0;
@@ -1057,6 +1059,11 @@ code {
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
+}
+
+.agenda-modal-actions.booking-detail-actions .agenda-option-button:only-child,
+.agenda-modal-actions.booking-detail-actions .agenda-close-button:only-child {
+  width: min(100%, 220px);
 }
 
 .agenda-customer-cancel {
@@ -3671,6 +3678,21 @@ body .platform-admin-header .app-navbar-logout:hover {
     margin: 0 !important;
     padding: 10px 0 0 !important;
     background: #fff !important;
+  }
+
+  body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions .agenda-option-button,
+  body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions .agenda-close-button {
+    flex: 0 0 auto !important;
+    width: min(100%, 220px) !important;
+    height: auto !important;
+    min-height: 38px !important;
   }
 
   body .dashboard-shell .agenda-modal-card.settlement-modal.settlement-modal-empty {

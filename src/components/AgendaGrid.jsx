@@ -232,6 +232,23 @@ const getDiscountAmount = (discount, baseAmount) => {
   return Math.round(cleanBaseAmount * Math.min(100, Math.max(0, discountValue))) / 100;
 };
 
+const getSurchargeValue = (surcharge) => Number(surcharge?.value ?? surcharge?.percent) || 0;
+
+const getSurchargeKey = (surcharge) => `${surcharge?.paymentMethod || 'card'}-${surcharge?.name}-${getSurchargeValue(surcharge)}`;
+
+const formatPaymentMethod = (method) => ({ cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta' }[method] || 'Tarjeta');
+
+const formatSurchargeOption = (surcharge) => `${surcharge.name || formatPaymentMethod(surcharge.paymentMethod)} +${getSurchargeValue(surcharge)}%`;
+
+const formatSurchargeInvoiceLabel = (surcharge) => `Recargo ${surcharge.name || formatPaymentMethod(surcharge.paymentMethod)} (+${getSurchargeValue(surcharge)}%)`;
+
+const getSurchargeAmount = (surcharge, baseAmount) => {
+  const cleanBaseAmount = Math.max(0, Number(baseAmount) || 0);
+  return Math.round(cleanBaseAmount * Math.min(100, Math.max(0, getSurchargeValue(surcharge))) / 100 * 100) / 100;
+};
+
+const roundMoneyAmount = (amount) => Math.round((Number(amount) || 0) * 100) / 100;
+
 const getClientKey = (booking) => {
   const email = String(booking.user_email || '').trim().toLowerCase();
   if (email) return `email:${email}`;
@@ -452,7 +469,7 @@ const isPastBookingStart = (booking) =>
    COMPONENT
 ========================= */
 
-function CloseAttentionModal({ bookings, services, employees, promotions, discounts, accessProfile, employeeId, user, initialServiceDate, companyContext, onClose, onClosed }) {
+function CloseAttentionModal({ bookings, services, employees, promotions, discounts, surcharges, accessProfile, employeeId, user, initialServiceDate, companyContext, onClose, onClosed }) {
   const todayInput = formatDateOnlyForDb(new Date());
   const initialDate = initialServiceDate && initialServiceDate <= todayInput ? initialServiceDate : todayInput;
   const [serviceDate] = useState(initialDate);
@@ -465,6 +482,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const [isClosing, setIsClosing] = useState(false);
   const isEmployeeView = accessProfile === 'employee';
   const activeDiscounts = useMemo(() => (discounts || []).filter((discount) => discount?.enabled !== false && discount?.name && getDiscountValue(discount) > 0), [discounts]);
+  const activeSurcharges = useMemo(() => (surcharges || []).filter((surcharge) => surcharge?.enabled !== false && surcharge?.name && getSurchargeValue(surcharge) > 0), [surcharges]);
   const lineDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'line' || discount.scope === 'both'));
   const activityDiscountOptions = activeDiscounts.filter((discount) => discount.discountType === 'activity');
   const totalDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'total' || discount.scope === 'both'));
@@ -540,7 +558,26 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const lineDiscountTotal = selectedItems.reduce((total, item) => total + item.lineDiscountTotal, 0);
   const subtotal = selectedItems.reduce((total, item) => total + item.subtotal, 0);
   const selectedTotalDiscounts = totalDiscountOptions.filter((discount) => totalDiscountIds.includes(getDiscountKey(discount)));
-  const cashPaymentAmount = parseMoney(payments.cash);
+  const selectedCashPaymentDiscounts = selectedTotalDiscounts.filter(isCashPaymentDiscount);
+  const paymentInputAmounts = {
+    cash: parseMoney(payments.cash),
+    transfer: parseMoney(payments.transfer),
+    card: parseMoney(payments.card)
+  };
+  const surchargeRateByMethod = ['cash', 'transfer', 'card'].reduce((summary, method) => ({
+    ...summary,
+    [method]: activeSurcharges
+      .filter((surcharge) => surcharge.paymentMethod === method)
+      .reduce((total, surcharge) => total + Math.min(100, Math.max(0, getSurchargeValue(surcharge))) / 100, 0)
+  }), { cash: 0, transfer: 0, card: 0 });
+  const paymentBaseAmounts = {
+    cash: selectedCashPaymentDiscounts.length
+      ? paymentInputAmounts.cash
+      : roundMoneyAmount(paymentInputAmounts.cash / (1 + surchargeRateByMethod.cash)),
+    transfer: roundMoneyAmount(paymentInputAmounts.transfer / (1 + surchargeRateByMethod.transfer)),
+    card: roundMoneyAmount(paymentInputAmounts.card / (1 + surchargeRateByMethod.card))
+  };
+  const cashPaymentAmount = paymentBaseAmounts.cash;
   const selectedTotalDiscountDetails = selectedTotalDiscounts.map((discount) => {
     const discountBaseAmount = isCashPaymentDiscount(discount) ? cashPaymentAmount : subtotal;
     return {
@@ -548,11 +585,46 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       amount: getDiscountAmount(discount, discountBaseAmount)
     };
   });
+  const cashPaymentDiscountTotal = selectedTotalDiscountDetails
+    .filter(({ discount }) => isCashPaymentDiscount(discount))
+    .reduce((total, item) => total + item.amount, 0);
+  const nonCashTotalDiscountTotal = selectedTotalDiscountDetails
+    .filter(({ discount }) => !isCashPaymentDiscount(discount))
+    .reduce((total, item) => total + item.amount, 0);
   const totalDiscountTotal = Math.min(subtotal, selectedTotalDiscountDetails.reduce((total, item) => total + item.amount, 0));
-  const finalTotal = Math.max(0, subtotal - totalDiscountTotal);
-  const totalSavings = Math.max(0, grossTotal - finalTotal);
-  const paidTotal = cashPaymentAmount + parseMoney(payments.transfer) + parseMoney(payments.card);
-  const paymentDifference = Math.round((paidTotal - finalTotal) * 100) / 100;
+  const netTotal = Math.max(0, subtotal - totalDiscountTotal);
+  const selectedSurchargeDetails = activeSurcharges
+    .map((surcharge) => ({
+      surcharge,
+      baseAmount: paymentBaseAmounts[surcharge.paymentMethod] || 0,
+      amount: getSurchargeAmount(surcharge, paymentBaseAmounts[surcharge.paymentMethod] || 0)
+    }))
+    .filter((item) => item.amount > 0);
+  const paymentSurchargeAmounts = ['cash', 'transfer', 'card'].reduce((summary, method) => ({
+    ...summary,
+    [method]: selectedSurchargeDetails.filter((item) => item.surcharge.paymentMethod === method).reduce((total, item) => total + item.amount, 0)
+  }), { cash: 0, transfer: 0, card: 0 });
+  const chargedPaymentAmounts = {
+    cash: selectedCashPaymentDiscounts.length
+      ? roundMoneyAmount(Math.max(0, paymentBaseAmounts.cash - cashPaymentDiscountTotal) + paymentSurchargeAmounts.cash)
+      : paymentInputAmounts.cash,
+    transfer: paymentInputAmounts.transfer,
+    card: paymentInputAmounts.card
+  };
+  const surchargeTotal = selectedSurchargeDetails.reduce((total, item) => total + item.amount, 0);
+  const finalTotal = roundMoneyAmount(Math.max(0, netTotal + surchargeTotal));
+  const totalSavings = Math.max(0, grossTotal - netTotal);
+  const paymentBaseTotal = roundMoneyAmount(paymentBaseAmounts.cash + paymentBaseAmounts.transfer + paymentBaseAmounts.card);
+  const chargedTotal = roundMoneyAmount(chargedPaymentAmounts.cash + chargedPaymentAmounts.transfer + chargedPaymentAmounts.card);
+  const paymentTargetTotal = roundMoneyAmount(Math.max(0, subtotal - nonCashTotalDiscountTotal));
+  const paymentDifference = roundMoneyAmount(paymentBaseTotal - paymentTargetTotal);
+  const differenceSurchargeRate = ['card', 'transfer', 'cash'].map((method) => ({
+    method,
+    rate: surchargeRateByMethod[method],
+    amount: paymentInputAmounts[method]
+  })).find((item) => item.rate > 0 && item.amount > 0)?.rate || 0;
+  const chargedPaymentDifference = roundMoneyAmount(paymentDifference * (1 + differenceSurchargeRate));
+  const displayFinalTotal = roundMoneyAmount(chargedTotal - chargedPaymentDifference);
   const closureCutoffLabel = formatDateInputForDisplay(closureCutoffDate);
 
   const toggleLineDiscount = (bookingId, discountKey) => {
@@ -564,7 +636,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
 
   const confirmClosure = async () => {
     if (!selectedItems.length) return alert('Seleccioná al menos un turno para cerrar.');
-    if (Math.abs(paymentDifference) > 0.01) return alert('La suma de pagos debe coincidir con el total final.');
+    if (Math.abs(paymentDifference) > 0.01) return alert('La suma de pagos debe coincidir con el total real a cobrar.');
     setIsClosing(true);
     const { error } = await supabase.rpc('close_booking_attention', {
       service_date_value: selectedClient?.serviceDate || serviceDate,
@@ -573,13 +645,15 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       booking_ids_value: selectedItems.map((item) => item.booking.id),
       closure_items_value: selectedItems.map((item) => ({ bookingId: item.booking.id, serviceName: item.serviceName, employeeId: item.employee?.id || item.booking.employee_id || null, employeeName: item.employeeName, basePrice: item.basePrice, lineDiscountTotal: item.lineDiscountTotal, subtotal: item.subtotal, appliedDiscounts: item.appliedDiscounts })),
       total_discounts_value: selectedTotalDiscounts,
+      surcharges_value: selectedSurchargeDetails.map(({ surcharge, baseAmount, amount }) => ({ ...surcharge, baseAmount, amount })),
       gross_total_value: grossTotal,
       line_discount_total_value: lineDiscountTotal,
       total_discount_total_value: totalDiscountTotal,
+      total_surcharge_total_value: surchargeTotal,
       final_total_value: finalTotal,
-      cash_amount_value: parseMoney(payments.cash),
-      transfer_amount_value: parseMoney(payments.transfer),
-      card_amount_value: parseMoney(payments.card),
+      cash_amount_value: chargedPaymentAmounts.cash,
+      transfer_amount_value: chargedPaymentAmounts.transfer,
+      card_amount_value: chargedPaymentAmounts.card,
       account_id_value: user?.isInternal ? user.id : null,
       session_token_value: user?.isInternal ? user.sessionToken : null
     });
@@ -601,6 +675,11 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       }))
     ].filter((item) => item.amount > 0);
 
+    const invoiceSurchargeDetails = selectedSurchargeDetails.map(({ surcharge, amount }) => ({
+      label: formatSurchargeInvoiceLabel(surcharge),
+      amount
+    }));
+
     await generateDetalleFacturaPdf({
       companyContext,
       clientName: selectedClient?.name,
@@ -613,16 +692,14 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         endAt: item.booking.end_at
       })),
       discountDetails: invoiceDiscountDetails,
+      surchargeDetails: invoiceSurchargeDetails,
       totals: {
         grossTotal,
         discountTotal: lineDiscountTotal + totalDiscountTotal,
+        surchargeTotal,
         finalTotal
       },
-      payments: {
-        cash: parseMoney(payments.cash),
-        transfer: parseMoney(payments.transfer),
-        card: parseMoney(payments.card)
-      }
+      payments: chargedPaymentAmounts
     });
   };
 
@@ -662,16 +739,23 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
             return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} onChange={() => setTotalDiscountIds((current) => current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey])} /><span>{formatDiscountOption(discount)}</span></label>;
           })}</div></div>}
           <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => setPayments((current) => ({ ...current, cash: event.target.value }))} placeholder="0" /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => setPayments((current) => ({ ...current, transfer: event.target.value }))} placeholder="0" /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => setPayments((current) => ({ ...current, card: event.target.value }))} placeholder="0" /></label></div>
+          {activeSurcharges.length > 0 && <div className="close-attention-section"><strong>Recargos aplicados</strong><div className="close-attention-discounts">{activeSurcharges.map((surcharge) => {
+            const baseAmount = paymentBaseAmounts[surcharge.paymentMethod] || 0;
+            const amount = getSurchargeAmount(surcharge, baseAmount);
+            return <span className="settings-check-row" key={getSurchargeKey(surcharge)}><span>{formatSurchargeOption(surcharge)} sobre {formatPaymentMethod(surcharge.paymentMethod)}: +{formatMoney(amount)}{amount > 0 ? ` · Base: ${formatMoney(baseAmount)}` : ''}</span></span>;
+          })}</div></div>}
           <div className="close-attention-total">
             <span>Bruto: {formatMoney(grossTotal)}</span>
             <span>Desc. servicios: -{formatMoney(lineDiscountTotal)}</span>
             <span>Desc. total: -{formatMoney(totalDiscountTotal)}</span>
+            <span>Base cubierta: {formatMoney(paymentBaseTotal)}</span>
+            <span>Recargos: +{formatMoney(surchargeTotal)}</span>
             <span>Ahorro: {formatMoney(totalSavings)}</span>
-            <strong>Total final: {formatMoney(finalTotal)}</strong>
-            <span>Pagado: {formatMoney(paidTotal)}</span>
-            {Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">Diferencia: {formatMoney(Math.abs(paymentDifference))} {paymentDifference > 0 ? 'de más' : 'pendiente'}</span>}
+            <strong>Total final: {formatMoney(displayFinalTotal)}</strong>
+            <span>Pagado: {formatMoney(chargedTotal)}</span>
+            {Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">Diferencia: {formatMoney(Math.abs(chargedPaymentDifference))} {chargedPaymentDifference > 0 ? 'de más' : 'pendiente'}</span>}
           </div>
-          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={onClose}>Cerrar</button><button className="agenda-option-button" type="button" onClick={generateInvoice} disabled={!selectedItems.length}>Generar factura</button><button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !selectedItems.length}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button></div>
+          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={onClose}>Cerrar</button><button className="agenda-option-button" type="button" onClick={generateInvoice} disabled={!selectedItems.length}>Generar factura</button><button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !selectedItems.length || Math.abs(paymentDifference) > 0.01}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button></div>
         </div>
       </div>
     </div>
@@ -755,9 +839,11 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
         endAt: booking.end_at
       }],
       discountDetails: invoiceDetails.discountDetails,
+      surchargeDetails: invoiceDetails.surchargeDetails,
       totals: {
         grossTotal: invoiceDetails.basePrice,
         discountTotal: invoiceDetails.discountTotal,
+        surchargeTotal: invoiceDetails.surchargeTotal,
         finalTotal: invoiceDetails.finalTotal
       },
       payments: invoiceDetails.payments
@@ -855,6 +941,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [closeAttentionOpen, setCloseAttentionOpen] = useState(false);
   const [closeAttentionInitialDate, setCloseAttentionInitialDate] = useState(formatDateOnlyForDb(new Date()));
   const [closureDiscounts, setClosureDiscounts] = useState([]);
+  const [closureSurcharges, setClosureSurcharges] = useState([]);
   const [closurePromotions, setClosurePromotions] = useState(promotions);
 
   const [dragStart, setDragStart] = useState(null);
@@ -874,6 +961,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const totalSlots = Math.max(1, Math.floor(AGENDA_TOTAL_MINUTES / slotMinutes));
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
+  const recargosHabilitados = preciosHabilitados && configuracionOperativa.recargos_habilitados !== false;
   const promocionesHabilitadas = preciosHabilitados && configuracionOperativa.promociones_habilitadas !== false;
   const turnosSuperpuestosHabilitados = configuracionOperativa.turnos_superpuestos_habilitados !== false;
   const empleadosPuedenReservar = configuracionOperativa.empleados_pueden_reservar !== false;
@@ -1054,13 +1142,16 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         const itemSubtotal = Number(closureItem.subtotal || 0);
         const closureSubtotal = subtotalByClosure.get(String(closureItem.closure_id || '')) || 0;
         const closureTotalDiscount = Number(closure?.total_discount_total || 0);
+        const closureTotalSurcharge = Number(closure?.total_surcharge_total || 0);
         const proportionalDiscount = closureSubtotal > 0 ? (itemSubtotal / closureSubtotal) * closureTotalDiscount : 0;
-        const netAmount = Math.max(0, itemSubtotal - proportionalDiscount);
+        const proportionalSurcharge = closureSubtotal > 0 ? (itemSubtotal / closureSubtotal) * closureTotalSurcharge : 0;
+        const netAmount = Math.max(0, itemSubtotal - proportionalDiscount + proportionalSurcharge);
         const employeeAmount = Number(booking.settlement_employee_amount ?? 0);
         const companyAmount = Number(booking.settlement_company_amount ?? 0);
         const lineDiscountTotal = Number(closureItem.line_discount_total || 0);
         const appliedDiscounts = Array.isArray(closureItem.applied_discounts) ? closureItem.applied_discounts : [];
         const totalDiscounts = Array.isArray(closure?.total_discounts) ? closure.total_discounts : [];
+        const closureSurcharges = Array.isArray(closure?.surcharges) ? closure.surcharges : [];
 
         map[booking.id] = {
           isClosed: true,
@@ -1071,6 +1162,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           invoice: {
             basePrice: baseAmount,
             discountTotal: lineDiscountTotal + proportionalDiscount,
+            surchargeTotal: proportionalSurcharge,
             finalTotal: netAmount,
             discountDetails: [
               lineDiscountTotal > 0 && appliedDiscounts[0] ? {
@@ -1079,6 +1171,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
               } : null,
               proportionalDiscount > 0 ? { label: totalDiscounts[0] ? `Desc. ${formatDiscountOption(totalDiscounts[0])}` : 'Desc. sobre total', amount: proportionalDiscount } : null
             ].filter(Boolean),
+            surchargeDetails: proportionalSurcharge > 0 ? [{ label: closureSurcharges[0] ? formatSurchargeInvoiceLabel(closureSurcharges[0]) : 'Recargo sobre pago', amount: proportionalSurcharge }] : [],
             payments: {
               cash: Number(closure?.cash_amount || 0),
               transfer: Number(closure?.transfer_amount || 0),
@@ -1112,6 +1205,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       company_slug_value: companySlug
     });
     setClosureDiscounts(descuentosHabilitados && Array.isArray(data?.discounts) ? data.discounts : []);
+    setClosureSurcharges(recargosHabilitados && Array.isArray(data?.surcharges) ? data.surcharges : []);
     setClosurePromotions(promocionesHabilitadas && Array.isArray(data?.promotions) ? data.promotions : []);
     setCloseAttentionInitialDate(formatDateOnlyForDb(new Date()));
     setCloseAttentionOpen(true);
@@ -2289,6 +2383,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           employees={employees}
           promotions={closurePromotions}
           discounts={closureDiscounts}
+          surcharges={closureSurcharges}
           accessProfile={accessProfile}
           employeeId={employeeId}
           user={user}

@@ -22,7 +22,7 @@ const parseBookingDate = (value) => {
 const formatTime = (date) =>
   `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 
-export const generateDetalleFacturaPdf = async ({ companyContext, clientName, clientEmail, items, discountDetails = [], totals, payments }) => {
+export const generateDetalleFacturaPdf = async ({ companyContext, clientName, clientEmail, items, discountDetails = [], surchargeDetails = [], totals, payments }) => {
   if (!items?.length) return alert('Seleccioná al menos un turno para facturar.');
 
   const { jsPDF } = await import('jspdf');
@@ -88,7 +88,8 @@ export const generateDetalleFacturaPdf = async ({ companyContext, clientName, cl
 
   currentY += 8;
   const totalsX = 196;
-  const labelX = 136;
+  const labelX = 132;
+  const detailLabelX = 124;
   doc.setFont('helvetica', 'normal');
   doc.text('Subtotal', labelX, currentY);
   doc.text(formatMoney(totals.grossTotal), totalsX, currentY, { align: 'right' });
@@ -98,10 +99,20 @@ export const generateDetalleFacturaPdf = async ({ companyContext, clientName, cl
     doc.text(`-${formatMoney(discountDetail.amount)}`, totalsX, currentY, { align: 'right' });
     currentY += 6;
   });
+  surchargeDetails.filter((item) => item.amount > 0).forEach((surchargeDetail) => {
+    doc.text(surchargeDetail.label, detailLabelX, currentY);
+    doc.text(`+${formatMoney(surchargeDetail.amount)}`, totalsX, currentY, { align: 'right' });
+    currentY += 6;
+  });
   doc.setFont('helvetica', 'bold');
   doc.text('Descuento total', labelX, currentY);
   doc.text(`-${formatMoney(totals.discountTotal)}`, totalsX, currentY, { align: 'right' });
   currentY += 7;
+  if (Number(totals.surchargeTotal || 0) > 0) {
+    doc.text('Recargo total', labelX, currentY);
+    doc.text(`+${formatMoney(totals.surchargeTotal)}`, totalsX, currentY, { align: 'right' });
+    currentY += 7;
+  }
   doc.setFillColor(239, 246, 255);
   doc.rect(labelX - 4, currentY - 5, 64, 9, 'F');
   doc.setFont('helvetica', 'bold');

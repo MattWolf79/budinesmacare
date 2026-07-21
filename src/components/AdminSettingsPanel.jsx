@@ -26,6 +26,16 @@ const emptyDiscount = () => ({
   scope: 'both'
 });
 
+const emptySurcharge = () => ({
+  enabled: true,
+  id: '',
+  name: '',
+  description: '',
+  paymentMethod: 'card',
+  value: '',
+  percent: ''
+});
+
 const parseMoney = (value) => {
   const normalized = String(value || '')
     .replace(/[^\d,.-]/g, '')
@@ -79,6 +89,20 @@ const normalizeDiscounts = (discounts) => {
   }));
 };
 
+const normalizeSurcharges = (surcharges) => {
+  const source = Array.isArray(surcharges) ? surcharges : [];
+
+  return source.map((surcharge) => ({
+    enabled: surcharge?.enabled !== false,
+    id: String(surcharge?.id || ''),
+    name: String(surcharge?.name || ''),
+    description: String(surcharge?.description || ''),
+    paymentMethod: ['cash', 'transfer', 'card'].includes(surcharge?.paymentMethod) ? surcharge.paymentMethod : 'card',
+    value: surcharge?.value === 0 || surcharge?.value ? String(surcharge.value) : (surcharge?.percent === 0 || surcharge?.percent ? String(surcharge.percent) : ''),
+    percent: surcharge?.percent === 0 || surcharge?.percent ? String(surcharge.percent) : ''
+  }));
+};
+
 const defaultConfig = {
   company_name: 'QuieroTurnoApp',
   business_hours_text: '',
@@ -92,6 +116,7 @@ const defaultConfig = {
   banner_images: [],
   promotions: [emptyPromotion(), emptyPromotion()],
   discounts: [],
+  surcharges: [],
   client_can_choose_employee: false,
   configuracion_operativa: null
 };
@@ -130,11 +155,13 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const [businessHoursOpen, setBusinessHoursOpen] = useState(false);
   const [promotionsOpen, setPromotionsOpen] = useState(false);
   const [discountsOpen, setDiscountsOpen] = useState(false);
+  const [surchargesOpen, setSurchargesOpen] = useState(false);
   const [activityChecksOpen, setActivityChecksOpen] = useState(false);
   const [selectedActivityCheckIndex, setSelectedActivityCheckIndex] = useState(null);
   const configuracionOperativa = form.configuracion_operativa || {};
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
+  const recargosHabilitados = preciosHabilitados && configuracionOperativa.recargos_habilitados !== false;
   const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
 
   const enabledPromotions = useMemo(() => (
@@ -146,6 +173,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   }, [form.banner_images]);
   const generalDiscounts = useMemo(() => form.discounts.map((discount, index) => ({ discount, index })).filter(({ discount }) => discount.discountType !== 'activity'), [form.discounts]);
   const activityDiscounts = useMemo(() => form.discounts.map((discount, index) => ({ discount, index })).filter(({ discount }) => discount.discountType === 'activity'), [form.discounts]);
+  const activeSurcharges = useMemo(() => form.surcharges.map((surcharge, index) => ({ surcharge, index })), [form.surcharges]);
   const selectedActivityCheck = useMemo(() => (
     activityDiscounts.find(({ index }) => index === selectedActivityCheckIndex) || activityDiscounts[0] || null
   ), [activityDiscounts, selectedActivityCheckIndex]);
@@ -167,6 +195,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       banner_images: bannerImages,
       promotions: normalizePromotions(config?.promotions),
       discounts: normalizeDiscounts(config?.discounts),
+      surcharges: normalizeSurcharges(config?.surcharges),
       client_can_choose_employee: Boolean(config?.client_can_choose_employee),
       configuracion_operativa: config?.configuracion_operativa || null
     };
@@ -303,6 +332,30 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       discounts: current.discounts.filter((_, discountIndex) => discountIndex !== index)
     }));
     if (selectedActivityCheckIndex === index) setSelectedActivityCheckIndex(null);
+  };
+
+  const updateSurcharge = (index, field, value) => {
+    setForm((current) => ({
+      ...current,
+      surcharges: current.surcharges.map((surcharge, surchargeIndex) => (
+        surchargeIndex === index ? { ...surcharge, [field]: value } : surcharge
+      ))
+    }));
+  };
+
+  const addSurcharge = () => {
+    setForm((current) => ({
+      ...current,
+      surcharges: [...current.surcharges, emptySurcharge()]
+    }));
+    setSurchargesOpen(true);
+  };
+
+  const removeSurcharge = (index) => {
+    setForm((current) => ({
+      ...current,
+      surcharges: current.surcharges.filter((_, surchargeIndex) => surchargeIndex !== index)
+    }));
   };
 
   const changeBanner = (event) => {
@@ -459,6 +512,13 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       return;
     }
 
+    const invalidPercentSurcharge = form.surcharges.find((surcharge) => surcharge.enabled && parseMoney(surcharge.value) > 100);
+    if (invalidPercentSurcharge) {
+      alert(`El recargo ${invalidPercentSurcharge.name || 'sin nombre'} no puede superar el 100%.`);
+      setIsSaving(false);
+      return;
+    }
+
     let generalDiscountCounter = 0;
     let activityDiscountCounter = 0;
     const discountsPayload = form.discounts.map((discount) => {
@@ -478,6 +538,19 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       };
     });
 
+    let surchargeCounter = 0;
+    const surchargesPayload = form.surcharges.map((surcharge) => {
+      surchargeCounter += 1;
+
+      return {
+        ...surcharge,
+        id: surcharge.id || `recargo_${String(surchargeCounter).padStart(2, '0')}`,
+        paymentMethod: ['cash', 'transfer', 'card'].includes(surcharge.paymentMethod) ? surcharge.paymentMethod : 'card',
+        value: Math.min(100, Math.max(0, parseMoney(surcharge.value))),
+        percent: Math.min(100, Math.max(0, parseMoney(surcharge.value)))
+      };
+    });
+
     const { data, error } = await supabase.rpc('save_admin_app_configuration', {
       company_name_value: form.company_name.trim() || null,
       business_hours_text_value: form.business_hours_text.trim(),
@@ -491,6 +564,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       banner_images_value: form.banner_images,
       promotions_value: promotionsPayload,
       discounts_value: discountsPayload,
+      surcharges_value: surchargesPayload,
       client_can_choose_employee_value: form.client_can_choose_employee,
       account_id_value: user?.isInternal ? user.id : null,
       session_token_value: user?.isInternal ? user.sessionToken : null,
@@ -884,6 +958,68 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                 </label>
 
                 <button className="agenda-option-button" type="button" onClick={() => removeDiscount(index)}>
+                  Eliminar
+                </button>
+              </div>
+            )))}
+          </div>
+        </article>}
+
+        {recargosHabilitados && <article className="admin-form-card settings-card settings-promotions-card">
+          <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
+            <span>Recargos por medio de pago</span>
+            <button
+              className="availability-form-toggle admin-collapsible-form-toggle"
+              type="button"
+              onClick={() => setSurchargesOpen((current) => !current)}
+              aria-expanded={surchargesOpen}
+              aria-label={surchargesOpen ? 'Ocultar recargos' : 'Mostrar recargos'}
+            >
+              &gt;
+            </button>
+          </div>
+          <div className={`agenda-modal-body settings-promotion-grid settings-discount-grid admin-collapsible-form-body ${surchargesOpen ? 'is-open' : 'is-collapsed'}`}>
+            <div className="settings-section-toolbar">
+              <button className="agenda-option-button" type="button" onClick={addSurcharge}>Agregar recargo</button>
+            </div>
+            {surchargesOpen && (activeSurcharges.length === 0 ? (
+              <p className="settings-empty-text">Todavía no hay recargos configurados.</p>
+            ) : activeSurcharges.map(({ surcharge, index }) => (
+              <div className="settings-promotion-card settings-discount-card settings-management-card" key={index}>
+                <div className="settings-management-card-header">
+                  <strong>{surcharge.name || `Recargo ${index + 1}`}</strong>
+                </div>
+                <label className="settings-check-row">
+                  <input
+                    type="checkbox"
+                    checked={surcharge.enabled}
+                    onChange={(event) => updateSurcharge(index, 'enabled', event.target.checked)}
+                  />
+                  <span>Habilitado</span>
+                </label>
+
+                <label>
+                  Nombre
+                  <input value={surcharge.name} onChange={(event) => updateSurcharge(index, 'name', event.target.value)} placeholder="Tarjeta Santander" />
+                </label>
+                <label>
+                  Medio de pago
+                  <select value={surcharge.paymentMethod} onChange={(event) => updateSurcharge(index, 'paymentMethod', event.target.value)}>
+                    <option value="card">Tarjeta</option>
+                    <option value="transfer">Transferencia</option>
+                    <option value="cash">Efectivo</option>
+                  </select>
+                </label>
+                <label>
+                  Porcentaje
+                  <input type="text" inputMode="decimal" value={surcharge.value} onChange={(event) => updateSurcharge(index, 'value', event.target.value)} placeholder="10" />
+                </label>
+                <label>
+                  Descripción
+                  <textarea value={surcharge.description} onChange={(event) => updateSurcharge(index, 'description', event.target.value)} placeholder="Ej: recargo por pago con tarjeta" />
+                </label>
+
+                <button className="agenda-option-button" type="button" onClick={() => removeSurcharge(index)}>
                   Eliminar
                 </button>
               </div>
