@@ -3598,10 +3598,40 @@ body .platform-admin-header .app-navbar-logout:hover {
 }
 
 @media (max-width: 760px) {
+  body .role-workspace-employee .agenda-modal-card.close-attention-modal,
+  body .dashboard-shell .agenda-modal-card.close-attention-modal {
+    position: fixed !important;
+    top: max(88px, env(safe-area-inset-top, 0px) + 72px) !important;
+    right: 12px !important;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 12px !important;
+    z-index: 1400 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    border-radius: 10px !important;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28) !important;
+  }
+
+  body .role-workspace-employee .agenda-modal-card.close-attention-modal .close-attention-body,
+  body .dashboard-shell .agenda-modal-card.close-attention-modal .close-attention-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: auto !important;
+    padding-bottom: 18px !important;
+  }
+
   body .role-workspace-employee .agenda-modal-card.assignment-employee-modal,
+  body .role-workspace-employee .agenda-modal-card.agenda-customer-card,
   body .role-workspace-employee .agenda-modal-card.employee-reservation-modal,
   body .role-workspace-employee .agenda-modal-card.service-select-modal,
   body .dashboard-shell .agenda-modal-card.assignment-employee-modal,
+  body .dashboard-shell .agenda-modal-card.agenda-customer-card,
   body .dashboard-shell .agenda-modal-card.employee-reservation-modal,
   body .dashboard-shell .agenda-modal-card.service-select-modal {
     position: fixed !important;
@@ -3620,9 +3650,11 @@ body .platform-admin-header .app-navbar-logout:hover {
   }
 
   body .role-workspace-employee .agenda-modal-card.assignment-employee-modal .agenda-modal-body,
+  body .role-workspace-employee .agenda-modal-card.agenda-customer-card .agenda-modal-body,
   body .role-workspace-employee .agenda-modal-card.employee-reservation-modal .agenda-modal-body,
   body .role-workspace-employee .agenda-modal-card.service-select-modal .agenda-modal-body,
   body .dashboard-shell .agenda-modal-card.assignment-employee-modal .agenda-modal-body,
+  body .dashboard-shell .agenda-modal-card.agenda-customer-card .agenda-modal-body,
   body .dashboard-shell .agenda-modal-card.employee-reservation-modal .agenda-modal-body,
   body .dashboard-shell .agenda-modal-card.service-select-modal .agenda-modal-body {
     max-height: calc(100vh - 224px - env(safe-area-inset-bottom, 0px)) !important;
