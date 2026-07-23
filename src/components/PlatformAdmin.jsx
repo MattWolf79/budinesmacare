@@ -570,7 +570,10 @@ export default function PlatformAdmin() {
                     ))}
                   </select>
                 </Field>
-                <button className="platform-button-secondary platform-load-button" type="button" disabled={isLoadingCompany || isSubmitting || !editForm.lookupSlug} onClick={loadCompanyConfig}>{isLoadingCompany ? 'Cargando...' : 'Cargar'}</button>
+                <div className="platform-load-button-wrap" aria-hidden="true">
+                  <span className="platform-load-button-label" aria-hidden="true">&nbsp;</span>
+                  <button className="platform-button-secondary platform-load-button" type="button" disabled={isLoadingCompany || isSubmitting || !editForm.lookupSlug} onClick={loadCompanyConfig}>{isLoadingCompany ? 'Cargando...' : 'Cargar'}</button>
+                </div>
               </div>
               {editForm.companyName && <p className="platform-company-loaded">Empresa: {editForm.companyName}</p>}
               <Field label="Slug URL">

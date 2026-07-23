@@ -13611,11 +13611,24 @@ body {
   margin: 0 !important;
 }
 
+.platform-load-button-wrap {
+  display: grid !important;
+  grid-template-rows: auto 42px !important;
+  gap: 6px !important;
+  align-items: end !important;
+}
+
+.platform-load-button-label {
+  display: block !important;
+  min-height: 16px !important;
+}
+
 .platform-load-button {
   min-width: 120px !important;
   min-height: 42px !important;
-  width: auto !important;
+  width: 100% !important;
   align-self: end !important;
+  justify-self: stretch !important;
   white-space: nowrap !important;
 }
 
@@ -13786,6 +13799,15 @@ body {
   .platform-load-row {
     grid-template-columns: 1fr !important;
     align-items: stretch !important;
+  }
+
+  .platform-load-button-wrap {
+    grid-template-rows: 1fr !important;
+    gap: 0 !important;
+  }
+
+  .platform-load-button-label {
+    display: none !important;
   }
 
   .platform-load-button {
