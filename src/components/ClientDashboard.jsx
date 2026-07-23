@@ -39,6 +39,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
   const [services, setServices] = useState([]);
   const [appConfig, setAppConfig] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [configRefreshKey, setConfigRefreshKey] = useState(0);
 
@@ -47,6 +48,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
 
     const timeoutId = window.setTimeout(async () => {
       setIsLoading(true);
+      setLoadErrorMessage('');
 
       const now = formatDateForDb(new Date());
 
@@ -84,7 +86,7 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
       if (!active) return;
 
       if (bookingResult.error) {
-        alert('No se pudieron cargar tus próximos turnos.');
+        setLoadErrorMessage(bookingResult.error.message || 'No se pudieron cargar tus próximos turnos.');
         setIsLoading(false);
         return;
       }
@@ -198,9 +200,13 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
           </button>
         </div>
 
+        {loadErrorMessage && (
+          <p className="client-summary-empty">{loadErrorMessage}</p>
+        )}
+
         {isLoading ? (
           <p className="client-summary-empty">Cargando tus turnos...</p>
-        ) : bookingDetails.length === 0 ? (
+        ) : loadErrorMessage ? null : bookingDetails.length === 0 ? (
           <p className="client-summary-empty">Todavía no tenés turnos próximos.</p>
         ) : (
           <div className="client-booking-list">

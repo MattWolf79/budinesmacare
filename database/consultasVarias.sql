@@ -188,3 +188,86 @@ left join public.employees employees
 where companies.slug = 'empresa-prueba'
   and bookings.client_account_id is not null
 order by bookings.created_at desc;
+
+-- -----------------------------------------------------------------------------
+-- Borrado fisico por empresa solo de reservas ajenas a los flujos válidos.
+-- Se preservan:
+-- 1. Reservas hechas con Google -> bookings.user_id is not null
+-- 2. Reservas hechas con cliente por DNI -> bookings.client_account_id is not null
+-- Se eliminan fisicamente solo las reservas sin user_id y sin client_account_id.
+-- Reemplazar 'empresa-prueba' antes de ejecutar.
+-- Recomendado: correr dentro de una transaccion y revisar los select previos.
+-- -----------------------------------------------------------------------------
+
+-- 1. Revisar reservas válidas que se van a conservar en la empresa.
+select
+  bookings.id,
+  companies.slug as company_slug,
+  case
+    when bookings.user_id is not null then 'google'
+    when bookings.client_account_id is not null then 'dni'
+    else 'otro'
+  end as booking_origin,
+  bookings.user_id,
+  bookings.client_account_id,
+  accounts.username as client_username,
+  accounts.client_dni,
+  bookings.user_email,
+  bookings.customer_name,
+  bookings.start_at,
+  bookings.end_at,
+  bookings.status,
+  bookings.created_at
+from public.bookings bookings
+join public.companies companies
+  on companies.id = bookings.company_id
+left join public.internal_accounts accounts
+  on accounts.id = bookings.client_account_id
+where companies.slug = 'empresa-prueba'
+  and (
+    bookings.user_id is not null
+    or bookings.client_account_id is not null
+  )
+order by bookings.created_at desc;
+
+-- 2. Revisar reservas que SI se van a borrar fisicamente.
+select
+  bookings.id,
+  companies.slug as company_slug,
+  bookings.user_id,
+  bookings.client_account_id,
+  bookings.user_email,
+  bookings.customer_name,
+  bookings.service,
+  services.name as service_name,
+  bookings.employee_id,
+  employees.name as employee_name,
+  bookings.start_at,
+  bookings.end_at,
+  bookings.status,
+  bookings.created_at
+from public.bookings bookings
+join public.companies companies
+  on companies.id = bookings.company_id
+left join public.services services
+  on services.id = bookings.service
+left join public.employees employees
+  on employees.id = bookings.employee_id
+where companies.slug = 'empresa-prueba'
+  and bookings.user_id is null
+  and bookings.client_account_id is null
+order by bookings.created_at desc;
+
+-- 3. Borrado fisico recomendado dentro de transaccion.
+-- begin;
+
+-- 3.a. Borrar solo reservas sin Google y sin DNI en la empresa.
+delete from public.bookings bookings
+using public.companies companies
+where companies.id = bookings.company_id
+  and companies.slug = 'empresa-prueba'
+  and bookings.user_id is null
+  and bookings.client_account_id is null;
+
+-- commit;
+-- rollback;
