@@ -1119,7 +1119,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
 
     return Promise.all([
-      isAdminView || usesInternalEmployeeData ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('bookings').select('*')),
+      isAdminView || usesInternalEmployeeData
+        ? Promise.resolve({ data: null, error: null })
+        : isClientView
+          ? applyCompanyFilter(supabase
+              .from('bookings')
+              .select('*')
+              .in('status', ['confirmed', 'reserved', 'pending_assignment', 'completed', 'closed'])
+            )
+          : applyCompanyFilter(supabase.from('bookings').select('*')),
       isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('services').select('*')),
       isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('employees').select('*').is('deleted_at', null)),
       usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('employee_availability').select('*')),
@@ -1140,7 +1148,14 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const fallbackEmployeeServices = bookingOptions.employeeServices || [];
     const fallbackAvailability = bookingOptions.employeeAvailability || [];
 
-    const loadedBookings = isAdminView ? adminData.bookings || [] : usesInternalEmployeeData ? internalEmployeeData.bookings || [] : bk || [];
+    const bookingOptionsBookings = Array.isArray(bookingOptions.bookings) ? bookingOptions.bookings : [];
+    const loadedBookings = isAdminView
+      ? adminData.bookings || []
+      : usesInternalEmployeeData
+        ? internalEmployeeData.bookings || []
+        : isClientView
+          ? (bookingOptionsBookings.length ? bookingOptionsBookings : (bk || []))
+          : bk || [];
     const visibleBookings = isEmployeeView && (!empleadosVenAgendaCompleta || visibilidadTurnosEmpleado === 'solo_propios')
       ? loadedBookings.filter((booking) => String(booking.employee_id) === String(employeeId))
       : loadedBookings;

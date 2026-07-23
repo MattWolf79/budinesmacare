@@ -255,7 +255,13 @@ update public.internal_accounts
 set company_id = first_company.id,
     updated_at = now()
 from first_company
-where internal_accounts.company_id is null;
+where internal_accounts.company_id is null
+  and not exists (
+    select 1
+    from public.internal_accounts existing
+    where existing.company_id = first_company.id
+      and existing.username_normalized = internal_accounts.username_normalized
+  );
 
 with first_company as (
   select id from public.companies where slug = 'esteticatopbody' limit 1
@@ -588,7 +594,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select regexp_replace(public.get_mail_app_url(), '/+$', '') || '/' ||
+  select regexp_replace(public.get_mail_app_url(null::uuid), '/+$', '') || '/' ||
     case
       when nullif(trim(coalesce(hash_value, '')), '') is null then ''
       when left(trim(hash_value), 1) = '#' then trim(hash_value)
@@ -1516,6 +1522,15 @@ as $$
   )
   select jsonb_build_object(
     'companyId', (select id from selected_company),
+    'bookings', coalesce((
+      select jsonb_agg(to_jsonb(booking_rows) order by booking_rows.start_at)
+      from (
+        select bookings.*
+        from public.bookings bookings, selected_company
+        where bookings.company_id = selected_company.id
+          and bookings.status in ('confirmed', 'reserved', 'pending_assignment', 'completed', 'closed')
+      ) booking_rows
+    ), '[]'::jsonb),
     'services', coalesce((
       select jsonb_agg(to_jsonb(service_rows) order by service_rows.id)
       from (
@@ -2047,6 +2062,48 @@ $$;
 drop index if exists public.internal_accounts_username_uidx;
 drop index if exists public.internal_registration_requests_username_pending_uidx;
 drop index if exists public.internal_registration_requests_username_uidx;
+
+-- Limpieza idempotente: conserva un solo usuario por (company_id, username_normalized)
+-- para permitir crear el índice único en bases con datos históricos duplicados.
+with duplicated_accounts as (
+  select
+    accounts.id,
+    row_number() over (
+      partition by accounts.company_id, accounts.username_normalized
+      order by
+        case when accounts.active then 0 else 1 end,
+        accounts.updated_at desc nulls last,
+        accounts.created_at desc nulls last,
+        accounts.id desc
+    ) as row_priority
+  from public.internal_accounts accounts
+  where accounts.company_id is not null
+    and accounts.username_normalized is not null
+)
+delete from public.internal_accounts accounts
+using duplicated_accounts duplicates
+where accounts.id = duplicates.id
+  and duplicates.row_priority > 1;
+
+-- Limpieza idempotente de solicitudes pendientes duplicadas por empresa/usuario.
+with duplicated_requests as (
+  select
+    requests.id,
+    row_number() over (
+      partition by requests.company_id, requests.username_normalized
+      order by
+        requests.created_at desc nulls last,
+        requests.id desc
+    ) as row_priority
+  from public.internal_registration_requests requests
+  where requests.company_id is not null
+    and requests.username_normalized is not null
+    and requests.status = 'pending'
+)
+delete from public.internal_registration_requests requests
+using duplicated_requests duplicates
+where requests.id = duplicates.id
+  and duplicates.row_priority > 1;
 
 create unique index if not exists internal_accounts_company_username_uidx
   on public.internal_accounts(company_id, username_normalized)
@@ -3060,10 +3117,22 @@ begin
   perform public.delete_internal_employee_availability_legacy(account_id_value, availability_id_value);
 end; $$;
 
-alter function public.save_admin_app_configuration(text, text, text, text, text, text, text, text, jsonb, jsonb, jsonb, boolean, uuid, text, text)
-  rename to save_admin_app_configuration_039;
+do $$
+begin
+  if to_regprocedure('public.save_admin_app_configuration_039(text,text,text,text,text,text,text,text,jsonb,jsonb,jsonb,boolean,uuid,text,text)') is null
+     and to_regprocedure('public.save_admin_app_configuration(text,text,text,text,text,text,text,text,jsonb,jsonb,jsonb,boolean,uuid,text,text)') is not null then
+    execute 'alter function public.save_admin_app_configuration(text, text, text, text, text, text, text, text, jsonb, jsonb, jsonb, boolean, uuid, text, text) rename to save_admin_app_configuration_039';
+  end if;
+end;
+$$;
 
-revoke execute on function public.save_admin_app_configuration_039(text, text, text, text, text, text, text, text, jsonb, jsonb, jsonb, boolean, uuid, text, text) from anon, authenticated;
+do $$
+begin
+  if to_regprocedure('public.save_admin_app_configuration_039(text,text,text,text,text,text,text,text,jsonb,jsonb,jsonb,boolean,uuid,text,text)') is not null then
+    execute 'revoke execute on function public.save_admin_app_configuration_039(text, text, text, text, text, text, text, text, jsonb, jsonb, jsonb, boolean, uuid, text, text) from anon, authenticated';
+  end if;
+end;
+$$;
 
 create or replace function public.save_admin_app_configuration(
   company_name_value text default 'Turnos App',
@@ -3443,46 +3512,42 @@ begin
     and accounts.username_normalized = public.normalize_text(clean_admin_username)
   limit 1;
 
-  if saved_account.id is null then
-    insert into public.internal_accounts (
-      company_id,
-      role,
-      username,
-      display_name,
-      first_name,
-      last_name,
-      username_normalized,
-      password_hash,
-      employee_id,
-      active,
-      must_change_password
-    ) values (
-      saved_company.id,
-      'admin'::public.app_role,
-      clean_admin_username,
-      next_display_name,
-      clean_admin_first_name,
-      clean_admin_last_name,
-      public.normalize_text(clean_admin_username),
-      extensions.crypt(temp_password, extensions.gen_salt('bf')),
-      null,
-      true,
-      true
-    )
-    returning * into saved_account;
-  else
-    update public.internal_accounts
-    set role = 'admin'::public.app_role,
-        display_name = next_display_name,
-        first_name = clean_admin_first_name,
-        last_name = clean_admin_last_name,
-        password_hash = extensions.crypt(temp_password, extensions.gen_salt('bf')),
-        active = true,
-        must_change_password = true,
-        updated_at = now()
-    where internal_accounts.id = saved_account.id
-    returning * into saved_account;
-  end if;
+  insert into public.internal_accounts (
+    company_id,
+    role,
+    username,
+    display_name,
+    first_name,
+    last_name,
+    username_normalized,
+    password_hash,
+    employee_id,
+    active,
+    must_change_password
+  ) values (
+    saved_company.id,
+    'admin'::public.app_role,
+    clean_admin_username,
+    next_display_name,
+    clean_admin_first_name,
+    clean_admin_last_name,
+    public.normalize_text(clean_admin_username),
+    extensions.crypt(temp_password, extensions.gen_salt('bf')),
+    null,
+    true,
+    true
+  )
+  on conflict on constraint internal_accounts_company_username_uidx do update
+  set role = 'admin'::public.app_role,
+      username = excluded.username,
+      display_name = excluded.display_name,
+      first_name = excluded.first_name,
+      last_name = excluded.last_name,
+      password_hash = excluded.password_hash,
+      active = true,
+      must_change_password = true,
+      updated_at = now()
+  returning * into saved_account;
 
   if clean_admin_email is not null then
     insert into public.company_memberships (company_id, email, role, employee_id, status)
@@ -4124,46 +4189,42 @@ begin
     and accounts.username_normalized = public.normalize_text(clean_admin_username)
   limit 1;
 
-  if saved_account.id is null then
-    insert into public.internal_accounts (
-      company_id,
-      role,
-      username,
-      display_name,
-      first_name,
-      last_name,
-      username_normalized,
-      password_hash,
-      employee_id,
-      active,
-      must_change_password
-    ) values (
-      saved_company.id,
-      'admin'::public.app_role,
-      clean_admin_username,
-      next_display_name,
-      clean_admin_first_name,
-      clean_admin_last_name,
-      public.normalize_text(clean_admin_username),
-      extensions.crypt(temp_password, extensions.gen_salt('bf')),
-      null,
-      true,
-      true
-    )
-    returning * into saved_account;
-  else
-    update public.internal_accounts
-    set role = 'admin'::public.app_role,
-        display_name = next_display_name,
-        first_name = clean_admin_first_name,
-        last_name = clean_admin_last_name,
-        password_hash = extensions.crypt(temp_password, extensions.gen_salt('bf')),
-        active = true,
-        must_change_password = true,
-        updated_at = now()
-    where internal_accounts.id = saved_account.id
-    returning * into saved_account;
-  end if;
+  insert into public.internal_accounts (
+    company_id,
+    role,
+    username,
+    display_name,
+    first_name,
+    last_name,
+    username_normalized,
+    password_hash,
+    employee_id,
+    active,
+    must_change_password
+  ) values (
+    saved_company.id,
+    'admin'::public.app_role,
+    clean_admin_username,
+    next_display_name,
+    clean_admin_first_name,
+    clean_admin_last_name,
+    public.normalize_text(clean_admin_username),
+    extensions.crypt(temp_password, extensions.gen_salt('bf')),
+    null,
+    true,
+    true
+  )
+  on conflict on constraint internal_accounts_company_username_uidx do update
+  set role = 'admin'::public.app_role,
+      username = excluded.username,
+      display_name = excluded.display_name,
+      first_name = excluded.first_name,
+      last_name = excluded.last_name,
+      password_hash = excluded.password_hash,
+      active = true,
+      must_change_password = true,
+      updated_at = now()
+  returning * into saved_account;
 
   if clean_admin_email is not null then
     update public.company_memberships memberships

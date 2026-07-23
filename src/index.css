@@ -13889,3 +13889,8 @@ body {
     box-shadow: none !important;
   }
 }
+
+.role-workspace-client .app-navbar .app-navbar-logout,
+.role-workspace-client .app-navbar-logout {
+  border-radius: 6px !important;
+}
