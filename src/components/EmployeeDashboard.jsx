@@ -182,15 +182,26 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const [promotions, setPromotions] = useState([]);
   const [availability, setAvailability] = useState([]);
   const [closedBookingAmounts, setClosedBookingAmounts] = useState({});
+  const [appConfig, setAppConfig] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [configRefreshKey, setConfigRefreshKey] = useState(0);
   const [activityHistoryMode, setActivityHistoryMode] = useState('week');
   const [selectedActivityWeekKey, setSelectedActivityWeekKey] = useState(() => getWeekKey(startOfWeek(new Date())));
   const [selectedPaymentWeekKey, setSelectedPaymentWeekKey] = useState(() => getWeekKey(startOfWeek(new Date())));
 
   const employeeId = user?.employeeId;
-  const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
+  const effectiveCompanyContext = useMemo(() => {
+    if (!appConfig) return companyContext;
+
+    return {
+      ...companyContext,
+      ...appConfig,
+      configuracion_operativa: appConfig.configuracion_operativa || companyContext?.configuracion_operativa || {}
+    };
+  }, [appConfig, companyContext]);
+  const preciosHabilitados = effectiveCompanyContext?.configuracion_operativa?.precios_habilitados !== false;
 
   useEffect(() => {
     if (!employeeId) {
@@ -319,8 +330,12 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
           return;
         }
 
+        setAppConfig({
+          ...(configResult.data || {}),
+          configuracion_operativa: data?.configuracion_operativa || configResult.data?.configuracion_operativa || null
+        });
         setEmployee(data?.employee || null);
-        const employeeBookings = (data?.bookings || []).filter((booking) => String(booking.employee_id) === String(employeeId));
+        const employeeBookings = data?.bookings || [];
         setBookings(employeeBookings);
         setServices(data?.services || []);
         setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
@@ -377,6 +392,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         return;
       }
 
+      setAppConfig(configResult.data || null);
       setEmployee(employeeResult.data || null);
       setBookings(bookingsResult.data || []);
       setServices(servicesResult.data || []);
@@ -395,7 +411,29 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     return () => {
       active = false;
     };
-  }, [employeeId, refreshKey, user?.id, user?.isInternal, companySlug, preciosHabilitados]);
+  }, [employeeId, refreshKey, configRefreshKey, user?.id, user?.isInternal, companySlug, preciosHabilitados]);
+
+  useEffect(() => {
+    const refreshConfiguration = () => {
+      setConfigRefreshKey((current) => current + 1);
+    };
+
+    const refreshFromStorage = (event) => {
+      if (event.key === 'turnos_app_configuration_updated_at') {
+        refreshConfiguration();
+      }
+    };
+
+    window.addEventListener('turnos-app-configuration-saved', refreshConfiguration);
+    window.addEventListener('storage', refreshFromStorage);
+    window.addEventListener('focus', refreshConfiguration);
+
+    return () => {
+      window.removeEventListener('turnos-app-configuration-saved', refreshConfiguration);
+      window.removeEventListener('storage', refreshFromStorage);
+      window.removeEventListener('focus', refreshConfiguration);
+    };
+  }, []);
 
   useEffect(() => {
     setProfileForm(buildProfileForm(employee));
@@ -936,7 +974,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
             onBookingsChanged={refreshEmployeeWorkspace}
             promotions={enabledPromotions}
             companySlug={companySlug}
-            companyContext={companyContext}
+            companyContext={effectiveCompanyContext}
           />
         </article>
       )}

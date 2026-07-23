@@ -58,6 +58,12 @@ const initialResetForm = {
   adminUsername: ''
 };
 
+const platformSections = [
+  { id: 'setup', label: 'Crear empresa', shortLabel: 'Crear', icon: '＋' },
+  { id: 'edit', label: 'Configuración operativa', shortLabel: 'Config', icon: '⚙' },
+  { id: 'maintenance', label: 'Mantenimiento', shortLabel: 'Mant.', icon: '↺' }
+];
+
 const Field = ({ label, children }) => (
   <label className="platform-field">
     <span>{label}</span>
@@ -142,6 +148,7 @@ export default function PlatformAdmin() {
   const [isLoadingCompany, setIsLoadingCompany] = useState(false);
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [activeSection, setActiveSection] = useState('setup');
 
   const updateLoginField = (field, value) => {
     setLoginForm((current) => ({ ...current, [field]: value }));
@@ -425,225 +432,260 @@ export default function PlatformAdmin() {
           <h1>Empresas</h1>
           <span>Alta de empresas, administradores iniciales y blanqueo de accesos.</span>
         </div>
+        <nav className="platform-admin-nav" aria-label="Secciones plataforma">
+          {platformSections.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              className={`platform-admin-nav-button ${activeSection === section.id ? 'is-active' : ''}`}
+              onClick={() => setActiveSection(section.id)}
+            >
+              <span aria-hidden="true">{section.icon}</span>
+              {section.label}
+            </button>
+          ))}
+        </nav>
         <button className="app-navbar-logout" type="button" onClick={logout}>Salir</button>
       </header>
 
       {message && <p className="platform-admin-success">{message}</p>}
       {errorMessage && <p className="platform-admin-error">{errorMessage}</p>}
 
-      <section className="platform-admin-grid">
-        <form className="platform-admin-panel" onSubmit={submitCompany}>
-          <div className="platform-panel-heading">
-            <p>Configuración inicial</p>
-            <h2>Nueva empresa</h2>
-          </div>
-          <div className="platform-form-grid">
-            <Field label="Nombre de empresa">
-            <input value={companyForm.companyName} onChange={(event) => updateCompanyField('companyName', event.target.value)} placeholder="Jardin Masajes" required />
-            </Field>
-            <Field label="Slug URL">
-            <input value={companyForm.companySlug} onChange={(event) => updateCompanyField('companySlug', event.target.value)} placeholder="jardinmasaje" required />
-            </Field>
-            <Field label="Usuario administrador">
-            <input value={companyForm.adminUsername} onChange={(event) => updateCompanyField('adminUsername', event.target.value)} placeholder="adminjardin" required />
-            </Field>
-            <Field label="Nombre admin">
-            <input value={companyForm.adminFirstName} onChange={(event) => updateCompanyField('adminFirstName', event.target.value)} placeholder="Nombre" />
-            </Field>
-            <Field label="Apellido admin">
-            <input value={companyForm.adminLastName} onChange={(event) => updateCompanyField('adminLastName', event.target.value)} placeholder="Apellido" />
-            </Field>
-            <Field label="Email admin">
-            <input type="email" value={companyForm.adminEmail} onChange={(event) => updateCompanyField('adminEmail', event.target.value)} placeholder="admin@empresa.com" />
-            </Field>
-          </div>
-          <div className="platform-config-block">
-            <ConfigSection title="Portal cliente">
-              <div className="platform-logo-upload">
-                <label className="platform-field">
-                  <span>Logo Sacar turno</span>
-                  <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={changeCompanyLogo} />
-                </label>
-                {companyForm.clientLogoDataUrl ? (
-                  <div className="platform-logo-preview">
-                    <img src={companyForm.clientLogoDataUrl} alt="Logo configurado para Sacar turno" />
-                    <div>
-                      <strong>{companyForm.clientLogoFileName || 'Logo cargado'}</strong>
-                      <button className="platform-button-secondary" type="button" onClick={removeCompanyLogo}>Quitar logo</button>
-                    </div>
-                  </div>
-                ) : <p className="platform-company-loaded">Si no se carga un logo, se usa QuieroTurnoApp.</p>}
-              </div>
-            </ConfigSection>
-          </div>
-          <div className="platform-config-block">
+      <section className="platform-admin-shell">
+        {activeSection === 'setup' && (
+          <form className="platform-admin-panel platform-admin-panel-single" onSubmit={submitCompany}>
             <div className="platform-panel-heading">
-              <p>Modo operativo</p>
-              <h2>Agenda y permisos</h2>
+              <p>Configuración inicial</p>
+              <h2>Nueva empresa</h2>
             </div>
-            <ConfigSection title="Sistema">
-              <CheckField label="Usa precios en el sistema" checked={companyForm.preciosHabilitados} onChange={(value) => updateCompanyField('preciosHabilitados', value)} />
-              <CheckField label="Habilita descuentos" checked={companyForm.descuentosHabilitados} onChange={(value) => updateCompanyField('descuentosHabilitados', value)} />
-              <CheckField label="Habilita recargos" checked={companyForm.recargosHabilitados} onChange={(value) => updateCompanyField('recargosHabilitados', value)} />
-              <CheckField label="Habilita promociones" checked={companyForm.promocionesHabilitadas} onChange={(value) => updateCompanyField('promocionesHabilitadas', value)} />
-              <CheckField label="Permite turnos superpuestos" checked={companyForm.turnosSuperpuestosHabilitados} onChange={(value) => updateCompanyField('turnosSuperpuestosHabilitados', value)} />
-              <CheckField label="Habilita PDF de detalle de turno" checked={companyForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateCompanyField('pdfDetalleTurnoHabilitado', value)} />
-            </ConfigSection>
-            <ConfigSection title="Agenda">
-              <Field label="Bloque de grilla">
-                <select value={companyForm.intervaloGrillaMinutos} onChange={(event) => updateCompanyField('intervaloGrillaMinutos', event.target.value)}>
-                  <option value="15">15 minutos</option>
-                  <option value="30">30 minutos</option>
-                  <option value="45">45 minutos</option>
-                  <option value="60">60 minutos</option>
-                </select>
-              </Field>
-              <Field label="Visibilidad empleado">
-                <select value={companyForm.visibilidadTurnosEmpleado} onChange={(event) => updateCompanyField('visibilidadTurnosEmpleado', event.target.value)}>
-                  <option value="completa">Completa</option>
-                  <option value="cliente_servicio">Cliente/Servicio</option>
-                  <option value="solo_ocupado">Solo ocupado</option>
-                  <option value="cliente_sin_empleado">Cliente sin empleado</option>
-                  <option value="solo_propios">Solo sus turnos</option>
-                </select>
-              </Field>
-            </ConfigSection>
-            <ConfigSection title="Permisos empleado">
-              <CheckField label="Pueden crear turnos" checked={companyForm.empleadosPuedenReservar} onChange={(value) => updateCompanyField('empleadosPuedenReservar', value)} />
-              <Field label="Cancelan turnos">
-                <select value={companyForm.empleadosCancelanTurnos} onChange={(event) => updateCompanyField('empleadosCancelanTurnos', event.target.value)}>
-                  <option value="propios">Propios</option>
-                  <option value="todos">Todos</option>
-                  <option value="ninguno">Ninguno</option>
-                </select>
-              </Field>
-              <Field label="Ven detalle">
-                <select value={companyForm.empleadosVenDetalleTurnos} onChange={(event) => updateCompanyField('empleadosVenDetalleTurnos', event.target.value)}>
-                  <option value="propios">Propios</option>
-                  <option value="todos">Todos</option>
-                  <option value="ninguno">Ninguno</option>
-                </select>
-              </Field>
-            </ConfigSection>
-          </div>
-          <div className="platform-action-row platform-action-row-end">
-            <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Crear empresa'}</button>
-          </div>
-        </form>
-
-        <form className="platform-admin-panel" onSubmit={submitEditCompany}>
-          <div className="platform-panel-heading">
-            <p>Modificar empresa</p>
-            <h2>Configuración operativa</h2>
-          </div>
-          <Field label="Empresa">
-            <select value={editForm.lookupSlug} onChange={(event) => updateEditField('lookupSlug', event.target.value)} required>
-              <option value="">Seleccionar empresa</option>
-              {platformCompanies.map((company) => (
-                <option key={company.company_id || company.company_slug} value={company.company_slug}>
-                  {company.company_name} ({company.company_slug})
-                </option>
-              ))}
-            </select>
-          </Field>
-          {editForm.companyName && <p className="platform-company-loaded">Empresa: {editForm.companyName}</p>}
-          <Field label="Slug URL">
-            <input value={editForm.companySlug} onChange={(event) => updateEditField('companySlug', event.target.value)} placeholder="verificacion" required />
-          </Field>
-          <div className="platform-config-block platform-config-block-compact">
-            <ConfigSection title="Portal cliente">
-              <div className="platform-logo-upload">
-                <label className="platform-field">
-                  <span>Logo Sacar turno</span>
-                  <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={changeClientLogo} />
-                </label>
-                {editForm.clientLogoDataUrl ? (
-                  <div className="platform-logo-preview">
-                    <img src={editForm.clientLogoDataUrl} alt="Logo configurado para Sacar turno" />
-                    <div>
-                      <strong>{editForm.clientLogoFileName || 'Logo cargado'}</strong>
-                      <button className="platform-button-secondary" type="button" onClick={removeClientLogo}>Quitar logo</button>
-                    </div>
-                  </div>
-                ) : <p className="platform-company-loaded">Si no se carga un logo, se usa QuieroTurnoApp.</p>}
+              <div className="platform-form-grid">
+                <Field label="Nombre de empresa">
+                <input value={companyForm.companyName} onChange={(event) => updateCompanyField('companyName', event.target.value)} placeholder="Jardin Masajes" required />
+                </Field>
+                <Field label="Slug URL">
+                <input value={companyForm.companySlug} onChange={(event) => updateCompanyField('companySlug', event.target.value)} placeholder="jardinmasaje" required />
+                </Field>
+                <Field label="Usuario administrador">
+                <input value={companyForm.adminUsername} onChange={(event) => updateCompanyField('adminUsername', event.target.value)} placeholder="adminjardin" required />
+                </Field>
+                <Field label="Nombre admin">
+                <input value={companyForm.adminFirstName} onChange={(event) => updateCompanyField('adminFirstName', event.target.value)} placeholder="Nombre" />
+                </Field>
+                <Field label="Apellido admin">
+                <input value={companyForm.adminLastName} onChange={(event) => updateCompanyField('adminLastName', event.target.value)} placeholder="Apellido" />
+                </Field>
+                <Field label="Email admin">
+                <input type="email" value={companyForm.adminEmail} onChange={(event) => updateCompanyField('adminEmail', event.target.value)} placeholder="admin@empresa.com" />
+                </Field>
               </div>
-            </ConfigSection>
-          </div>
-          <div className="platform-config-block platform-config-block-compact">
-            <ConfigSection title="Sistema">
-              <CheckField label="Usa precios en el sistema" checked={editForm.preciosHabilitados} onChange={(value) => updateEditField('preciosHabilitados', value)} />
-              <CheckField label="Habilita descuentos" checked={editForm.descuentosHabilitados} onChange={(value) => updateEditField('descuentosHabilitados', value)} />
-              <CheckField label="Habilita recargos" checked={editForm.recargosHabilitados} onChange={(value) => updateEditField('recargosHabilitados', value)} />
-              <CheckField label="Habilita promociones" checked={editForm.promocionesHabilitadas} onChange={(value) => updateEditField('promocionesHabilitadas', value)} />
-              <CheckField label="Permite turnos superpuestos" checked={editForm.turnosSuperpuestosHabilitados} onChange={(value) => updateEditField('turnosSuperpuestosHabilitados', value)} />
-              <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} />
-            </ConfigSection>
-            <ConfigSection title="Agenda">
-              <Field label="Bloque de grilla">
-                <select value={editForm.intervaloGrillaMinutos} onChange={(event) => updateEditField('intervaloGrillaMinutos', event.target.value)}>
-                  <option value="15">15 minutos</option>
-                  <option value="30">30 minutos</option>
-                  <option value="45">45 minutos</option>
-                  <option value="60">60 minutos</option>
-                </select>
-              </Field>
-              <Field label="Visibilidad empleado">
-                <select value={editForm.visibilidadTurnosEmpleado} onChange={(event) => updateEditField('visibilidadTurnosEmpleado', event.target.value)}>
-                  <option value="completa">Completa</option>
-                  <option value="cliente_servicio">Cliente/Servicio</option>
-                  <option value="solo_ocupado">Solo ocupado</option>
-                  <option value="cliente_sin_empleado">Cliente sin empleado</option>
-                  <option value="solo_propios">Solo sus turnos</option>
-                </select>
-              </Field>
-            </ConfigSection>
-            <ConfigSection title="Permisos empleado">
-              <CheckField label="Pueden crear turnos" checked={editForm.empleadosPuedenReservar} onChange={(value) => updateEditField('empleadosPuedenReservar', value)} />
-              <Field label="Cancelan turnos">
-                <select value={editForm.empleadosCancelanTurnos} onChange={(event) => updateEditField('empleadosCancelanTurnos', event.target.value)}>
-                  <option value="propios">Propios</option>
-                  <option value="todos">Todos</option>
-                  <option value="ninguno">Ninguno</option>
-                </select>
-              </Field>
-              <Field label="Ven detalle">
-                <select value={editForm.empleadosVenDetalleTurnos} onChange={(event) => updateEditField('empleadosVenDetalleTurnos', event.target.value)}>
-                  <option value="propios">Propios</option>
-                  <option value="todos">Todos</option>
-                  <option value="ninguno">Ninguno</option>
-                </select>
-              </Field>
-            </ConfigSection>
-          </div>
-          <div className="platform-action-row">
-            <button className="platform-button-secondary" type="button" disabled={isLoadingCompany || isSubmitting || !editForm.lookupSlug} onClick={loadCompanyConfig}>{isLoadingCompany ? 'Cargando...' : 'Cargar'}</button>
-            <button type="submit" disabled={isSubmitting || isLoadingCompany || !editForm.lookupSlug || !editForm.companySlug}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</button>
-          </div>
-        </form>
+              <div className="platform-config-block">
+                <ConfigSection title="Portal cliente">
+                  <div className="platform-logo-upload">
+                    <label className="platform-field">
+                      <span>Logo Sacar turno</span>
+                      <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={changeCompanyLogo} />
+                    </label>
+                    {companyForm.clientLogoDataUrl ? (
+                      <div className="platform-logo-preview">
+                        <img src={companyForm.clientLogoDataUrl} alt="Logo configurado para Sacar turno" />
+                        <div>
+                          <strong>{companyForm.clientLogoFileName || 'Logo cargado'}</strong>
+                          <button className="platform-button-secondary" type="button" onClick={removeCompanyLogo}>Quitar logo</button>
+                        </div>
+                      </div>
+                    ) : <p className="platform-company-loaded">Si no se carga un logo, se usa QuieroTurnoApp.</p>}
+                  </div>
+                </ConfigSection>
+              </div>
+              <div className="platform-config-block">
+                <div className="platform-panel-heading">
+                  <p>Modo operativo</p>
+                  <h2>Agenda y permisos</h2>
+                </div>
+                <ConfigSection title="Sistema">
+                  <CheckField label="Usa precios en el sistema" checked={companyForm.preciosHabilitados} onChange={(value) => updateCompanyField('preciosHabilitados', value)} />
+                  <CheckField label="Habilita descuentos" checked={companyForm.descuentosHabilitados} onChange={(value) => updateCompanyField('descuentosHabilitados', value)} />
+                  <CheckField label="Habilita recargos" checked={companyForm.recargosHabilitados} onChange={(value) => updateCompanyField('recargosHabilitados', value)} />
+                  <CheckField label="Habilita promociones" checked={companyForm.promocionesHabilitadas} onChange={(value) => updateCompanyField('promocionesHabilitadas', value)} />
+                  <CheckField label="Permite turnos superpuestos" checked={companyForm.turnosSuperpuestosHabilitados} onChange={(value) => updateCompanyField('turnosSuperpuestosHabilitados', value)} />
+                  <CheckField label="Habilita PDF de detalle de turno" checked={companyForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateCompanyField('pdfDetalleTurnoHabilitado', value)} />
+                </ConfigSection>
+                <ConfigSection title="Agenda">
+                  <Field label="Bloque de grilla">
+                    <select value={companyForm.intervaloGrillaMinutos} onChange={(event) => updateCompanyField('intervaloGrillaMinutos', event.target.value)}>
+                      <option value="15">15 minutos</option>
+                      <option value="30">30 minutos</option>
+                      <option value="45">45 minutos</option>
+                      <option value="60">60 minutos</option>
+                    </select>
+                  </Field>
+                  <Field label="Visibilidad empleado">
+                    <select value={companyForm.visibilidadTurnosEmpleado} onChange={(event) => updateCompanyField('visibilidadTurnosEmpleado', event.target.value)}>
+                      <option value="completa">Completa</option>
+                      <option value="cliente_servicio">Cliente/Servicio</option>
+                      <option value="solo_ocupado">Solo ocupado</option>
+                      <option value="cliente_sin_empleado">Cliente sin empleado</option>
+                      <option value="solo_propios">Solo sus turnos</option>
+                    </select>
+                  </Field>
+                </ConfigSection>
+                <ConfigSection title="Permisos empleado">
+                  <CheckField label="Pueden crear turnos" checked={companyForm.empleadosPuedenReservar} onChange={(value) => updateCompanyField('empleadosPuedenReservar', value)} />
+                  <Field label="Cancelan turnos">
+                    <select value={companyForm.empleadosCancelanTurnos} onChange={(event) => updateCompanyField('empleadosCancelanTurnos', event.target.value)}>
+                      <option value="propios">Propios</option>
+                      <option value="todos">Todos</option>
+                      <option value="ninguno">Ninguno</option>
+                    </select>
+                  </Field>
+                  <Field label="Ven detalle">
+                    <select value={companyForm.empleadosVenDetalleTurnos} onChange={(event) => updateCompanyField('empleadosVenDetalleTurnos', event.target.value)}>
+                      <option value="propios">Propios</option>
+                      <option value="todos">Todos</option>
+                      <option value="ninguno">Ninguno</option>
+                    </select>
+                  </Field>
+                </ConfigSection>
+              </div>
+              <div className="platform-action-row platform-action-row-end">
+                <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Crear empresa'}</button>
+              </div>
+            </form>
+        )}
 
-        <form className="platform-admin-panel" onSubmit={submitReset}>
-          <div className="platform-panel-heading">
-            <p>Mantenimiento</p>
-            <h2>Blanquear password</h2>
-          </div>
-          <Field label="Empresa">
-            <select value={resetForm.companySlug} onChange={(event) => updateResetField('companySlug', event.target.value)} required>
-              <option value="">Seleccionar empresa</option>
-              {platformCompanies.map((company) => (
-                <option key={company.company_id || company.company_slug} value={company.company_slug}>
-                  {company.company_name} ({company.company_slug})
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Usuario administrador">
-            <input value={resetForm.adminUsername} onChange={(event) => updateResetField('adminUsername', event.target.value)} placeholder="adminjardin" required />
-          </Field>
-          <div className="platform-action-row platform-action-row-end">
-            <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Procesando...' : 'Blanquear password'}</button>
-          </div>
-        </form>
+        {activeSection === 'edit' && (
+          <form className="platform-admin-panel platform-admin-panel-single" onSubmit={submitEditCompany}>
+            <div className="platform-panel-heading">
+              <p>Modificar empresa</p>
+              <h2>Configuración operativa</h2>
+            </div>
+              <div className="platform-load-row">
+                <Field label="Empresa">
+                  <select value={editForm.lookupSlug} onChange={(event) => updateEditField('lookupSlug', event.target.value)} required>
+                    <option value="">Seleccionar empresa</option>
+                    {platformCompanies.map((company) => (
+                      <option key={company.company_id || company.company_slug} value={company.company_slug}>
+                        {company.company_name} ({company.company_slug})
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <button className="platform-button-secondary platform-load-button" type="button" disabled={isLoadingCompany || isSubmitting || !editForm.lookupSlug} onClick={loadCompanyConfig}>{isLoadingCompany ? 'Cargando...' : 'Cargar'}</button>
+              </div>
+              {editForm.companyName && <p className="platform-company-loaded">Empresa: {editForm.companyName}</p>}
+              <Field label="Slug URL">
+                <input value={editForm.companySlug} onChange={(event) => updateEditField('companySlug', event.target.value)} placeholder="verificacion" required />
+              </Field>
+              <div className="platform-config-block platform-config-block-compact">
+                <ConfigSection title="Portal cliente">
+                  <div className="platform-logo-upload">
+                    <label className="platform-field">
+                      <span>Logo Sacar turno</span>
+                      <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={changeClientLogo} />
+                    </label>
+                    {editForm.clientLogoDataUrl ? (
+                      <div className="platform-logo-preview">
+                        <img src={editForm.clientLogoDataUrl} alt="Logo configurado para Sacar turno" />
+                        <div>
+                          <strong>{editForm.clientLogoFileName || 'Logo cargado'}</strong>
+                          <button className="platform-button-secondary" type="button" onClick={removeClientLogo}>Quitar logo</button>
+                        </div>
+                      </div>
+                    ) : <p className="platform-company-loaded">Si no se carga un logo, se usa QuieroTurnoApp.</p>}
+                  </div>
+                </ConfigSection>
+              </div>
+              <div className="platform-config-block platform-config-block-compact">
+                <ConfigSection title="Sistema">
+                  <CheckField label="Usa precios en el sistema" checked={editForm.preciosHabilitados} onChange={(value) => updateEditField('preciosHabilitados', value)} />
+                  <CheckField label="Habilita descuentos" checked={editForm.descuentosHabilitados} onChange={(value) => updateEditField('descuentosHabilitados', value)} />
+                  <CheckField label="Habilita recargos" checked={editForm.recargosHabilitados} onChange={(value) => updateEditField('recargosHabilitados', value)} />
+                  <CheckField label="Habilita promociones" checked={editForm.promocionesHabilitadas} onChange={(value) => updateEditField('promocionesHabilitadas', value)} />
+                  <CheckField label="Permite turnos superpuestos" checked={editForm.turnosSuperpuestosHabilitados} onChange={(value) => updateEditField('turnosSuperpuestosHabilitados', value)} />
+                  <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} />
+                </ConfigSection>
+                <ConfigSection title="Agenda">
+                  <Field label="Bloque de grilla">
+                    <select value={editForm.intervaloGrillaMinutos} onChange={(event) => updateEditField('intervaloGrillaMinutos', event.target.value)}>
+                      <option value="15">15 minutos</option>
+                      <option value="30">30 minutos</option>
+                      <option value="45">45 minutos</option>
+                      <option value="60">60 minutos</option>
+                    </select>
+                  </Field>
+                  <Field label="Visibilidad empleado">
+                    <select value={editForm.visibilidadTurnosEmpleado} onChange={(event) => updateEditField('visibilidadTurnosEmpleado', event.target.value)}>
+                      <option value="completa">Completa</option>
+                      <option value="cliente_servicio">Cliente/Servicio</option>
+                      <option value="solo_ocupado">Solo ocupado</option>
+                      <option value="cliente_sin_empleado">Cliente sin empleado</option>
+                      <option value="solo_propios">Solo sus turnos</option>
+                    </select>
+                  </Field>
+                </ConfigSection>
+                <ConfigSection title="Permisos empleado">
+                  <CheckField label="Pueden crear turnos" checked={editForm.empleadosPuedenReservar} onChange={(value) => updateEditField('empleadosPuedenReservar', value)} />
+                  <Field label="Cancelan turnos">
+                    <select value={editForm.empleadosCancelanTurnos} onChange={(event) => updateEditField('empleadosCancelanTurnos', event.target.value)}>
+                      <option value="propios">Propios</option>
+                      <option value="todos">Todos</option>
+                      <option value="ninguno">Ninguno</option>
+                    </select>
+                  </Field>
+                  <Field label="Ven detalle">
+                    <select value={editForm.empleadosVenDetalleTurnos} onChange={(event) => updateEditField('empleadosVenDetalleTurnos', event.target.value)}>
+                      <option value="propios">Propios</option>
+                      <option value="todos">Todos</option>
+                      <option value="ninguno">Ninguno</option>
+                    </select>
+                  </Field>
+                </ConfigSection>
+              </div>
+              <div className="platform-action-row platform-action-row-end">
+                <button type="submit" disabled={isSubmitting || isLoadingCompany || !editForm.lookupSlug || !editForm.companySlug}>{isSubmitting ? 'Guardando...' : 'Guardar cambios'}</button>
+              </div>
+            </form>
+        )}
+
+        {activeSection === 'maintenance' && (
+          <form className="platform-admin-panel platform-admin-panel-single" onSubmit={submitReset}>
+            <div className="platform-panel-heading">
+              <p>Mantenimiento</p>
+              <h2>Blanquear password</h2>
+            </div>
+              <Field label="Empresa">
+                <select value={resetForm.companySlug} onChange={(event) => updateResetField('companySlug', event.target.value)} required>
+                  <option value="">Seleccionar empresa</option>
+                  {platformCompanies.map((company) => (
+                    <option key={company.company_id || company.company_slug} value={company.company_slug}>
+                      {company.company_name} ({company.company_slug})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Usuario administrador">
+                <input value={resetForm.adminUsername} onChange={(event) => updateResetField('adminUsername', event.target.value)} placeholder="adminjardin" required />
+              </Field>
+              <div className="platform-action-row platform-action-row-end">
+                <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Procesando...' : 'Blanquear password'}</button>
+              </div>
+            </form>
+        )}
       </section>
+
+      <nav className="platform-admin-bottom-nav" aria-label="Secciones plataforma mobile">
+        {platformSections.map((section) => (
+          <button
+            key={section.id}
+            type="button"
+            className={`platform-admin-bottom-button ${activeSection === section.id ? 'is-active' : ''}`}
+            onClick={() => setActiveSection(section.id)}
+          >
+            <span className="platform-admin-bottom-icon" aria-hidden="true">{section.icon}</span>
+            <span className="platform-admin-bottom-label">{section.shortLabel}</span>
+          </button>
+        ))}
+      </nav>
     </main>
   );
 }

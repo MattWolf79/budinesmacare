@@ -2626,6 +2626,7 @@ declare
   account_record public.internal_accounts%rowtype;
   target_company_id uuid;
   payload jsonb;
+  visibilidad text := 'completa';
 begin
   account_record := public.validate_internal_session(account_id_value, session_token_value, 'employee'::public.app_role);
   target_company_id := coalesce(public.get_company_id_by_slug(company_slug_value), account_record.company_id);
@@ -2633,6 +2634,12 @@ begin
   if target_company_id is null or account_record.company_id is distinct from target_company_id or account_record.employee_id is null then
     raise exception 'La cuenta interna no pertenece a esta empresa.';
   end if;
+
+  select coalesce(configurations.visibilidad_turnos_empleado, 'completa')
+  into visibilidad
+  from public.app_configuration configurations
+  where configurations.company_id = target_company_id
+  limit 1;
 
   select jsonb_build_object(
     'employee', coalesce((
@@ -2643,6 +2650,10 @@ begin
         and employees.deleted_at is null
       limit 1
     ), 'null'::jsonb),
+    'configuracion_operativa', jsonb_build_object(
+      'visibilidad_turnos_empleado', visibilidad,
+      'empleados_ven_agenda_completa', visibilidad <> 'solo_propios'
+    ),
     'employees', coalesce((
       select jsonb_agg(to_jsonb(employee_rows) order by employee_rows.name)
       from (
@@ -2658,8 +2669,12 @@ begin
         select *
         from public.bookings bookings
         where bookings.company_id = target_company_id
-          and bookings.employee_id = account_record.employee_id
           and bookings.status in ('reserved', 'confirmed', 'pending_assignment', 'completed')
+          and (
+            visibilidad <> 'solo_propios'
+            or bookings.employee_id = account_record.employee_id
+            or (bookings.employee_id is null and bookings.status = 'pending_assignment')
+          )
         order by bookings.start_at
       ) booking_rows
     ), '[]'::jsonb),

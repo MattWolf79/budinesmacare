@@ -1381,6 +1381,7 @@ begin
           and (
             visibilidad <> 'solo_propios'
             or bookings.employee_id = account_record.employee_id
+            or (bookings.employee_id is null and bookings.status = 'pending_assignment')
           )
         order by bookings.start_at
       ) booking_rows

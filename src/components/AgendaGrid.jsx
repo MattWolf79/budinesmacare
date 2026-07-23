@@ -1157,7 +1157,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           ? (bookingOptionsBookings.length ? bookingOptionsBookings : (bk || []))
           : bk || [];
     const visibleBookings = isEmployeeView && (!empleadosVenAgendaCompleta || visibilidadTurnosEmpleado === 'solo_propios')
-      ? loadedBookings.filter((booking) => String(booking.employee_id) === String(employeeId))
+      ? loadedBookings.filter((booking) =>
+          String(booking.employee_id) === String(employeeId)
+          || (String(booking.status || '').toLowerCase() === 'pending_assignment' && !booking.employee_id)
+        )
       : loadedBookings;
 
     setBookings(visibleBookings);

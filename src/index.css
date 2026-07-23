@@ -13399,7 +13399,7 @@ body {
   top: 0 !important;
   z-index: 30 !important;
   display: grid !important;
-  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, auto) auto !important;
   align-items: center !important;
   gap: 18px !important;
   max-width: none !important;
@@ -13487,17 +13487,52 @@ body {
 
 @media (min-width: 861px) {
   .platform-admin-header {
-    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    grid-template-columns: auto minmax(180px, 1fr) minmax(420px, auto) auto !important;
     min-height: 76px !important;
     padding: 0 32px !important;
   }
 
 }
 
-.platform-admin-grid {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr) minmax(280px, 0.8fr) !important;
-  gap: 16px !important;
+.platform-admin-nav {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.platform-admin-nav-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 38px !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-radius: 8px !important;
+  padding: 8px 14px !important;
+  color: #e2e8f0 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease !important;
+}
+
+.platform-admin-nav-button:hover {
+  color: #ffffff !important;
+  border-color: #24aebb !important;
+  background: #3fc9d5 !important;
+}
+
+.platform-admin-nav-button.is-active {
+  color: #164e9a !important;
+  border-color: #dbeafe !important;
+  background: #ffffff !important;
+}
+
+.platform-admin-shell {
   max-width: 1120px !important;
   margin: 0 auto !important;
 }
@@ -13511,6 +13546,10 @@ body {
   padding: 18px !important;
   background: #fff !important;
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08) !important;
+}
+
+.platform-admin-panel-single {
+  max-width: 100% !important;
 }
 
 .platform-panel-heading {
@@ -13559,6 +13598,25 @@ body {
 
 .platform-field select {
   appearance: auto !important;
+}
+
+.platform-load-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 132px !important;
+  align-items: end !important;
+  gap: 10px !important;
+}
+
+.platform-load-row .platform-field {
+  margin: 0 !important;
+}
+
+.platform-load-button {
+  min-width: 120px !important;
+  min-height: 42px !important;
+  width: auto !important;
+  align-self: end !important;
+  white-space: nowrap !important;
 }
 
 .platform-config-block {
@@ -13701,6 +13759,10 @@ body {
   background: #fff1f2 !important;
 }
 
+.platform-admin-bottom-nav {
+  display: none !important;
+}
+
 @media (max-width: 860px) {
   .platform-admin-workspace {
     padding: 14px !important;
@@ -13713,13 +13775,80 @@ body {
     padding: 0 14px !important;
   }
 
-  .platform-admin-grid,
+  .platform-admin-nav {
+    display: none !important;
+  }
+
   .platform-form-grid {
     grid-template-columns: 1fr !important;
   }
 
+  .platform-load-row {
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  .platform-load-button {
+    width: 100% !important;
+    align-self: stretch !important;
+  }
+
+  .platform-admin-shell {
+    padding-bottom: 82px !important;
+  }
+
+  .platform-admin-bottom-nav {
+    position: fixed !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 1200 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    min-height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    border-top: 1px solid rgba(36, 174, 187, 0.34) !important;
+    padding: 6px 8px calc(7px + env(safe-area-inset-bottom, 0px)) !important;
+    background: #174c55 !important;
+    box-shadow: 0 -12px 28px rgba(15, 23, 42, 0.22) !important;
+  }
+
+  .platform-admin-bottom-button {
+    display: grid !important;
+    justify-items: center !important;
+    gap: 4px !important;
+    min-height: 50px !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    padding: 6px 4px !important;
+    color: #d8eef1 !important;
+    background: transparent !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+  }
+
+  .platform-admin-bottom-button.is-active {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.14) !important;
+  }
+
+  .platform-admin-bottom-icon {
+    font-size: 15px !important;
+    line-height: 1 !important;
+  }
+
+  .platform-admin-bottom-label {
+    line-height: 1 !important;
+  }
+
   .platform-action-row button {
     flex: 1 1 100% !important;
+  }
+}
+
+@media (min-width: 861px) {
+  .platform-load-row .platform-load-button {
+    justify-self: end !important;
   }
 }
 
