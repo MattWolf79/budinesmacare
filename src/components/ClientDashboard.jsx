@@ -50,16 +50,21 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
 
       const now = formatDateForDb(new Date());
 
-      let bookingRequest = user?.id
-        ? supabase
-            .from('bookings')
-            .select('*')
-            .eq('user_id', user.id)
-            .in('status', ACTIVE_BOOKING_STATUSES)
-            .gte('start_at', now)
-            .order('start_at', { ascending: true })
-            .limit(6)
-        : null;
+      let bookingRequest = null;
+
+      if (user?.id) {
+        bookingRequest = supabase
+          .from('bookings')
+          .select('*')
+          .in('status', ACTIVE_BOOKING_STATUSES)
+          .gte('start_at', now)
+          .order('start_at', { ascending: true })
+          .limit(6);
+
+        bookingRequest = user?.isInternal && user?.role === 'client'
+          ? bookingRequest.eq('client_account_id', user.id)
+          : bookingRequest.eq('user_id', user.id);
+      }
       let serviceRequest = supabase.from('services').select('*');
 
       if (companyContext?.id) {

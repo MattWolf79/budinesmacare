@@ -139,6 +139,9 @@ const addDays = (date, days) => {
 };
 
 const getWeekKey = (weekStart) => weekStart.toISOString().slice(0, 10);
+const getActivityHistoryModeStorageKey = (employeeId) => `turnos.employee.activity.mode.${employeeId || 'unknown'}`;
+const getActivityHistoryWeekStorageKey = (employeeId) => `turnos.employee.activity.week.${employeeId || 'unknown'}`;
+const getPaymentHistoryWeekStorageKey = (employeeId) => `turnos.employee.payment.week.${employeeId || 'unknown'}`;
 
 const isDateInRange = (value, start, end) => {
   const date = parseDate(value);
@@ -169,6 +172,7 @@ const buildClosedBookingAmounts = (employeeBookings, closureItems = [], closures
 
 export default function EmployeeDashboard({ user, activeView = 'summary', companySlug, companyContext }) {
   const [employee, setEmployee] = useState(null);
+  const [employeeServices, setEmployeeServices] = useState([]);
   const [profileForm, setProfileForm] = useState(emptyProfileForm);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -181,6 +185,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activityHistoryMode, setActivityHistoryMode] = useState('week');
+  const [selectedActivityWeekKey, setSelectedActivityWeekKey] = useState(() => getWeekKey(startOfWeek(new Date())));
   const [selectedPaymentWeekKey, setSelectedPaymentWeekKey] = useState(() => getWeekKey(startOfWeek(new Date())));
 
   const employeeId = user?.employeeId;
@@ -231,6 +237,10 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         { id: 2, name: 'Control general', icon: '✨', color: '#20a6b2', active: true }
       ]);
       setPromotions([]);
+      setEmployeeServices([
+        { employee_id: employeeId, service_id: 1 },
+        { employee_id: employeeId, service_id: 2 }
+      ]);
       setAvailability([]);
       setClosedBookingAmounts({
         '00000000-0000-4000-8000-000000000401': 10000,
@@ -314,6 +324,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         setBookings(employeeBookings);
         setServices(data?.services || []);
         setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
+        setEmployeeServices(data?.employeeServices || []);
         setAvailability(data?.availability || []);
         if (!preciosHabilitados) {
           setClosedBookingAmounts({});
@@ -337,7 +348,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
             .order('weekday', { ascending: true })
             .order('start_time', { ascending: true });
 
-      const [employeeResult, bookingsResult, servicesResult, availabilityResult, configResult] = await Promise.all([
+      const [employeeResult, bookingsResult, servicesResult, employeeServicesResult, availabilityResult, configResult] = await Promise.all([
         supabase.from('employees').select('*').eq('id', employeeId).is('deleted_at', null).maybeSingle(),
         supabase
           .from('bookings')
@@ -346,6 +357,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
           .in('status', ['confirmed', 'reserved', 'completed'])
           .order('start_at', { ascending: true }),
         supabase.from('services').select('*'),
+        supabase.from('employee_services').select('employee_id, service_id').eq('employee_id', employeeId),
         availabilityRequest,
         supabase.rpc('get_app_configuration', {
           company_slug_value: companySlug
@@ -358,7 +370,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
 
       setIsLoading(false);
 
-      const firstError = employeeResult.error || bookingsResult.error || servicesResult.error || availabilityResult.error;
+      const firstError = employeeResult.error || bookingsResult.error || servicesResult.error || employeeServicesResult.error || availabilityResult.error;
 
       if (firstError) {
         setError(firstError.message || 'No se pudo cargar la información del empleado.');
@@ -368,6 +380,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       setEmployee(employeeResult.data || null);
       setBookings(bookingsResult.data || []);
       setServices(servicesResult.data || []);
+      setEmployeeServices(employeeServicesResult.data || []);
       setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
       setAvailability(availabilityResult.data || []);
       if (preciosHabilitados) {
@@ -518,6 +531,23 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     promotions.filter((promotion) => promotion?.enabled !== false && (promotion?.title || promotion?.description || promotion?.value))
   ), [promotions]);
 
+  const assignedServiceNames = useMemo(() => {
+    const employeeServiceIds = new Set(
+      (employeeServices || [])
+        .filter((relation) => String(relation.employee_id) === String(employeeId))
+        .map((relation) => String(relation.service_id))
+    );
+
+    if (Array.isArray(employee?.service_ids)) {
+      employee.service_ids.forEach((serviceId) => employeeServiceIds.add(String(serviceId)));
+    }
+
+    return services
+      .filter((service) => employeeServiceIds.has(String(service.id)))
+      .map((service) => service.name)
+      .filter(Boolean);
+  }, [employeeServices, services, employeeId, employee]);
+
   const availabilityDayCount = useMemo(
     () => new Set(activeAvailability.map((item) => Number(item.weekday))).size,
     [activeAvailability]
@@ -565,6 +595,104 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
 
   const activityRows = useMemo(() => [...bookings]
     .sort((left, right) => parseDate(right.start_at) - parseDate(left.start_at)), [bookings]);
+
+  const activityHistoryWeeks = useMemo(() => {
+    const weekMap = new Map();
+
+    activityRows.forEach((booking) => {
+      const weekStart = startOfWeek(parseDate(booking.start_at));
+      const weekKey = getWeekKey(weekStart);
+      const currentWeek = weekMap.get(weekKey) || {
+        key: weekKey,
+        start: weekStart,
+        label: formatWeekRange(weekStart),
+        rows: []
+      };
+
+      currentWeek.rows.push(booking);
+      weekMap.set(weekKey, currentWeek);
+    });
+
+    const currentWeekStart = startOfWeek(new Date());
+    const earliestWeekStart = activityRows.reduce((earliest, booking) => {
+      const bookingWeekStart = startOfWeek(parseDate(booking.start_at));
+      return bookingWeekStart < earliest ? bookingWeekStart : earliest;
+    }, currentWeekStart);
+    const weeks = [];
+
+    for (let weekStart = currentWeekStart; weekStart >= earliestWeekStart; weekStart = addDays(weekStart, -7)) {
+      const weekKey = getWeekKey(weekStart);
+      weeks.push(weekMap.get(weekKey) || {
+        key: weekKey,
+        start: weekStart,
+        label: formatWeekRange(weekStart),
+        rows: []
+      });
+    }
+
+    return weeks;
+  }, [activityRows]);
+
+  useEffect(() => {
+    if (!activityHistoryWeeks.length) return;
+    if (!activityHistoryWeeks.some((week) => week.key === selectedActivityWeekKey)) {
+      setSelectedActivityWeekKey(activityHistoryWeeks[0].key);
+    }
+  }, [activityHistoryWeeks, selectedActivityWeekKey]);
+
+  const selectedActivityWeekIndex = activityHistoryWeeks.findIndex((week) => week.key === selectedActivityWeekKey);
+  const selectedActivityWeek = activityHistoryWeeks[selectedActivityWeekIndex >= 0 ? selectedActivityWeekIndex : 0] || null;
+  const canGoToPreviousActivityWeek = selectedActivityWeekIndex >= 0 && selectedActivityWeekIndex < activityHistoryWeeks.length - 1;
+  const canGoToNextActivityWeek = selectedActivityWeekIndex > 0;
+
+  useEffect(() => {
+    if (!employeeId) return;
+
+    const storedMode = sessionStorage.getItem(getActivityHistoryModeStorageKey(employeeId));
+    const storedWeekKey = sessionStorage.getItem(getActivityHistoryWeekStorageKey(employeeId));
+    const storedPaymentWeekKey = sessionStorage.getItem(getPaymentHistoryWeekStorageKey(employeeId));
+
+    if (storedMode === 'week' || storedMode === 'all') {
+      setActivityHistoryMode(storedMode);
+    }
+
+    if (storedWeekKey) {
+      setSelectedActivityWeekKey(storedWeekKey);
+    }
+
+    if (storedPaymentWeekKey) {
+      setSelectedPaymentWeekKey(storedPaymentWeekKey);
+    }
+  }, [employeeId]);
+
+  useEffect(() => {
+    if (!employeeId) return;
+    sessionStorage.setItem(getActivityHistoryModeStorageKey(employeeId), activityHistoryMode);
+  }, [employeeId, activityHistoryMode]);
+
+  useEffect(() => {
+    if (!employeeId || !selectedActivityWeekKey) return;
+    sessionStorage.setItem(getActivityHistoryWeekStorageKey(employeeId), selectedActivityWeekKey);
+  }, [employeeId, selectedActivityWeekKey]);
+
+  useEffect(() => {
+    if (!employeeId || !selectedPaymentWeekKey) return;
+    sessionStorage.setItem(getPaymentHistoryWeekStorageKey(employeeId), selectedPaymentWeekKey);
+  }, [employeeId, selectedPaymentWeekKey]);
+
+  const goToPreviousActivityWeek = () => {
+    if (!canGoToPreviousActivityWeek) return;
+    setSelectedActivityWeekKey(activityHistoryWeeks[selectedActivityWeekIndex + 1].key);
+  };
+
+  const goToNextActivityWeek = () => {
+    if (!canGoToNextActivityWeek) return;
+    setSelectedActivityWeekKey(activityHistoryWeeks[selectedActivityWeekIndex - 1].key);
+  };
+
+  const visibleActivityRows = activityHistoryMode === 'all'
+    ? activityRows
+    : selectedActivityWeek?.rows || [];
 
   const paymentHistoryRows = useMemo(() => activityRows
     .filter(isClosedBooking)
@@ -847,6 +975,16 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                 <label>Calle<input value={profileForm.address_street} onChange={(event) => updateProfileField('address_street', event.target.value)} disabled={!isProfileEditing} /></label>
                 <label>Nro.<input value={profileForm.address_number} onChange={(event) => updateProfileField('address_number', event.target.value)} disabled={!isProfileEditing} /></label>
                 <label className="employee-profile-field-wide">Localidad<input value={profileForm.address_locality} onChange={(event) => updateProfileField('address_locality', event.target.value)} disabled={!isProfileEditing} /></label>
+                <label className="employee-profile-field-wide employee-profile-services-field">
+                  Servicios que atiende
+                  <div className="employee-profile-services-list" role="list" aria-label="Servicios asignados por administración">
+                    {assignedServiceNames.length ? assignedServiceNames.map((serviceName) => (
+                      <span className="employee-profile-service-chip" role="listitem" key={serviceName}>{serviceName}</span>
+                    )) : (
+                      <span className="employee-profile-service-empty">Sin servicios asignados por administración.</span>
+                    )}
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -865,10 +1003,45 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                 <p className="admin-kicker">Mis actividades</p>
                 <h2>Turnos realizados</h2>
               </div>
-              <span>{activityRows.length}</span>
+              <span>{visibleActivityRows.length}</span>
             </div>
+
+            <div className="employee-activity-filter-row" aria-label="Filtro de historial de turnos">
+              <div className="employee-activity-filter-tabs" role="tablist" aria-label="Rango">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activityHistoryMode === 'week'}
+                  className={activityHistoryMode === 'week' ? 'is-active' : ''}
+                  onClick={() => setActivityHistoryMode('week')}
+                >
+                  Semana
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activityHistoryMode === 'all'}
+                  className={activityHistoryMode === 'all' ? 'is-active' : ''}
+                  onClick={() => setActivityHistoryMode('all')}
+                >
+                  Todos
+                </button>
+              </div>
+
+              {activityHistoryMode === 'week' && selectedActivityWeek && (
+                <div className="employee-activity-week-nav">
+                  <button className="agenda-week-button" type="button" onClick={goToPreviousActivityWeek} disabled={!canGoToPreviousActivityWeek} aria-label="Semana anterior">←</button>
+                  <div>
+                    <strong>Semana del {selectedActivityWeek.label}</strong>
+                    <span>Lunes a domingo</span>
+                  </div>
+                  <button className="agenda-week-button" type="button" onClick={goToNextActivityWeek} disabled={!canGoToNextActivityWeek} aria-label="Semana siguiente">→</button>
+                </div>
+              )}
+            </div>
+
             <div className="employee-profile-list">
-              {activityRows.length ? activityRows.map((booking) => {
+              {visibleActivityRows.length ? visibleActivityRows.map((booking) => {
                 const service = getServiceForBooking(booking, services);
                 const isClosed = isClosedBooking(booking);
                 return (
@@ -881,7 +1054,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                     <small className={isClosed ? 'is-muted' : 'is-active'}>{isClosed ? 'Cerrado' : 'Asignado'}</small>
                   </div>
                 );
-              }) : <div className="employee-empty-line">Todavía no tenés actividades registradas.</div>}
+              }) : <div className="employee-empty-line">No hay turnos para el rango seleccionado.</div>}
             </div>
           </article>
 

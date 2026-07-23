@@ -1586,6 +1586,14 @@ code {
   background: #24aebb;
 }
 
+.client-access-separator {
+  margin: 10px 0 12px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .login-local-client-button {
   width: 100%;
   min-height: 38px;
@@ -1717,6 +1725,18 @@ code {
   color: #475569;
   font-size: 13px;
   font-weight: 700;
+}
+
+.internal-required-hint {
+  margin: -6px 0 12px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.internal-required-mark {
+  color: #b4232f;
+  font-weight: 900;
 }
 
 .internal-register-field {
@@ -3103,6 +3123,43 @@ code {
   grid-column: 1 / -1;
 }
 
+.employee-profile-services-field {
+  gap: 6px;
+}
+
+.employee-profile-services-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 6px;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.employee-profile-service-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #bdeef3;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #0f515c;
+  background: #e9fbfd;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.employee-profile-service-empty {
+  align-self: center;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: none;
+}
+
 .employee-profile-actions {
   display: flex;
   justify-content: flex-end;
@@ -3126,6 +3183,73 @@ code {
 .employee-profile-list {
   display: grid;
   gap: 8px;
+}
+
+.employee-activity-filter-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.employee-activity-filter-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+  gap: 6px;
+  width: fit-content;
+  border: 1px solid #cbe5ea;
+  border-radius: 999px;
+  padding: 4px;
+  background: #f4fbfc;
+}
+
+.employee-activity-filter-tabs button {
+  min-height: 30px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 12px;
+  color: #3d5760;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.employee-activity-filter-tabs button.is-active {
+  border-color: #24aebb;
+  color: #ffffff;
+  background: linear-gradient(135deg, #24aebb, #3fc9d5);
+}
+
+.employee-activity-week-nav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #dbe7ee;
+  border-radius: 10px;
+  padding: 7px;
+  background: #f8fbfc;
+}
+
+.employee-activity-week-nav > div {
+  min-width: 0;
+  text-align: center;
+}
+
+.employee-activity-week-nav strong {
+  display: block;
+  color: #173a42;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1.15;
+}
+
+.employee-activity-week-nav span {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 850;
 }
 
 .employee-profile-row,

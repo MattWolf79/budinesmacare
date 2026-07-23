@@ -533,7 +533,7 @@ export default function App() {
 
   const internalSessionAllowed = internalSession && routeAllowedProfiles.includes(internalSession.role);
 
-  if (isClientPortal && !session && !localClientSession) {
+  if (isClientPortal && !session && !localClientSession && !internalSessionAllowed) {
     return loginView;
   }
 

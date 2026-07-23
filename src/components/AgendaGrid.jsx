@@ -252,6 +252,8 @@ const roundMoneyAmount = (amount) => Math.round((Number(amount) || 0) * 100) / 1
 const formatClosureInvoiceNumber = (closure) => `FAC-${String(closure?.id || '').replace(/-/g, '').slice(0, 8).toUpperCase() || String(Date.now()).slice(-8)}`;
 
 const getClientKey = (booking) => {
+  const clientAccountId = String(booking.client_account_id || '').trim();
+  if (clientAccountId) return `account:${clientAccountId}`;
   const email = String(booking.user_email || '').trim().toLowerCase();
   if (email) return `email:${email}`;
   return `name:${String(booking.customer_name || 'Cliente sin datos').trim().toLowerCase()}`;
@@ -365,20 +367,22 @@ const clientHasBookingConflict = (bookings, client, range, ignoredBookingId = nu
   if (!range) return false;
 
   const clientUserId = client?.userId ? String(client.userId) : '';
+  const clientAccountId = client?.accountId ? String(client.accountId) : '';
   const clientEmail = normalizeBookingEmail(client?.email);
   const newStart = range.startLocal.getTime();
   const newEnd = range.endLocal.getTime();
 
-  if (!clientUserId && !clientEmail) return false;
+  if (!clientUserId && !clientAccountId && !clientEmail) return false;
 
   return bookings.some((booking) => {
     if (ignoredBookingId && String(booking.id) === String(ignoredBookingId)) return false;
     if (!isActiveBooking(booking)) return false;
 
     const matchesUser = clientUserId && String(booking.user_id || '') === clientUserId;
+    const matchesAccount = clientAccountId && String(booking.client_account_id || '') === clientAccountId;
     const matchesEmail = clientEmail && normalizeBookingEmail(booking.user_email) === clientEmail;
 
-    if (!matchesUser && !matchesEmail) return false;
+    if (!matchesUser && !matchesAccount && !matchesEmail) return false;
 
     return rangesOverlap(
       parseBookingDate(booking.start_at).getTime(),
@@ -1556,7 +1560,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     handledTouchTapRef.current = false;
   };
 
-  const isOwnBooking = (booking) => String(booking.user_id) === String(user?.id);
+  const isOwnBooking = (booking) => (
+    (String(booking.user_id || '') === String(user?.id || '')) ||
+    (user?.isInternal && user?.role === 'client' && String(booking.client_account_id || '') === String(user?.id || ''))
+  );
   const isAssignedBooking = (booking) => String(booking.employee_id) === String(employeeId);
   const canEmployeeCancelBooking = (booking) => {
     if (!isEmployeeView) return true;
@@ -1675,7 +1682,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const customerName = user?.displayName || user?.email || '';
     const customerEmail = user?.email || '';
     const clientIdentity = {
-      userId: user?.id,
+      userId: user?.isInternal ? null : user?.id,
+      accountId: user?.isInternal && user?.role === 'client' ? user?.id : null,
       email: customerEmail
     };
 
@@ -1702,7 +1710,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       end_at_value: range.end_at,
       customer_name_value: customerName || null,
       customer_email_value: customerEmail || null,
-      company_slug_value: companySlug
+      company_slug_value: companySlug,
+      account_id_value: user?.isInternal && user?.role === 'client' ? user.id : null,
+      session_token_value: user?.isInternal && user?.role === 'client' ? user.sessionToken : null
     });
 
     if (error) {
@@ -1729,7 +1739,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const customerName = customer?.name?.trim() || user?.displayName || user?.email || '';
     const customerEmail = customer?.email?.trim() || user?.email || '';
     const clientIdentity = {
-      userId: isClientView ? user?.id : null,
+      userId: isClientView && !user?.isInternal ? user?.id : null,
+      accountId: isClientView && user?.isInternal && user?.role === 'client' ? user?.id : null,
       email: customerEmail
     };
 
@@ -1826,7 +1837,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           end_at_value: range.end_at,
           customer_name_value: customerName || null,
           customer_email_value: customerEmail || null,
-          company_slug_value: companySlug
+          company_slug_value: companySlug,
+          account_id_value: user?.isInternal && user?.role === 'client' ? user.id : null,
+          session_token_value: user?.isInternal && user?.role === 'client' ? user.sessionToken : null
         })
       : isAdminView
       ? await supabase.rpc('create_admin_booking', {

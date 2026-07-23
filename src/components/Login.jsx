@@ -16,8 +16,8 @@ const accessOptions = [
     id: 'client',
     icon: '🙋',
     title: 'Clientes',
-    badge: 'Google',
-    description: 'Para reservar turnos y consultar reservas propias.'
+    badge: 'Google o usuario',
+    description: 'Para reservar turnos y consultar reservas con Google o usuario propio.'
   },
   {
     id: 'employee',
@@ -35,7 +35,8 @@ const accessOptions = [
   }
 ];
 
-const internalProfileLabels = {
+const accessProfileLabels = {
+  client: 'Cliente',
   employee: 'Empleado',
   admin: 'Administrador'
 };
@@ -44,6 +45,7 @@ const emptyRegistrationForm = {
   username: '',
   firstName: '',
   lastName: '',
+  dni: '',
   birthDate: '',
   phone: '',
   email: '',
@@ -69,6 +71,7 @@ const emptyPasswordChangeForm = {
 const isAlphanumeric = (value) => /^[a-z0-9]+$/i.test(value);
 const isUsername = (value) => /^[a-z0-9._-]+$/i.test(value);
 const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+const isDni = (value) => /^\d{7,10}$/.test(String(value || '').trim());
 
 const normalizeUsernamePart = (value) =>
   String(value || '')
@@ -238,8 +241,10 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
   const submitRegistration = async (event) => {
     event.preventDefault();
 
+    const isClientAccess = registrationProfile === 'client';
     const firstName = registrationForm.firstName.trim();
     const lastName = registrationForm.lastName.trim();
+    const dni = String(registrationForm.dni || '').trim();
     const username = internalAccessMode === 'register'
       ? generateInternalUsername(firstName, lastName)
       : registrationForm.username.trim();
@@ -257,8 +262,8 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
         return;
       }
 
-      if (!registrationForm.birthDate || !calculateAge(registrationForm.birthDate)) {
-        setRegistrationError('Ingresá una fecha de nacimiento válida.');
+      if (isClientAccess && !isDni(dni)) {
+        setRegistrationError('Ingresá un DNI válido de 7 a 10 dígitos.');
         return;
       }
 
@@ -267,11 +272,21 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
         return;
       }
 
-      if (!isEmail(registrationForm.email)) {
+      if (!isClientAccess && (!registrationForm.birthDate || !calculateAge(registrationForm.birthDate))) {
+        setRegistrationError('Ingresá una fecha de nacimiento válida.');
+        return;
+      }
+
+      if (!isClientAccess && !isEmail(registrationForm.email)) {
         setRegistrationError('Ingresá un mail válido para recibir notificaciones.');
         return;
       }
-    } else if (username.length < 3 || !isUsername(username)) {
+
+      if (isClientAccess && registrationForm.email.trim() && !isEmail(registrationForm.email)) {
+        setRegistrationError('Si ingresás mail, debe tener un formato válido.');
+        return;
+      }
+    } else if (!isClientAccess && (username.length < 3 || !isUsername(username))) {
       setRegistrationError('El usuario debe tener al menos 3 caracteres y solo puede usar letras, números, punto, guion o guion bajo.');
       return;
     }
@@ -292,6 +307,35 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
     }
 
     setIsSubmittingInternalAccess(true);
+
+    if (internalAccessMode === 'register' && isClientAccess) {
+      const { data, error } = await supabase.rpc('register_client_access', {
+        first_name_value: firstName,
+        last_name_value: lastName,
+        dni_value: dni,
+        phone_value: registrationForm.phone.trim() || null,
+        email_value: registrationForm.email.trim().toLowerCase() || null,
+        password_value: password,
+        company_slug_value: companySlug
+      });
+
+      setIsSubmittingInternalAccess(false);
+
+      if (error) {
+        setRegistrationError(error.message || 'No se pudo crear la cuenta de cliente.');
+        return;
+      }
+
+      const account = Array.isArray(data) ? data[0] : data;
+
+      setRegistrationForm((current) => ({
+        ...emptyRegistrationForm,
+        username: account?.username || ''
+      }));
+      setInternalAccessMode('login');
+      setRegistrationSuccess('Cuenta creada. Ya podés ingresar con DNI y contraseña.');
+      return;
+    }
 
     if (internalAccessMode === 'register') {
       const { data, error } = await supabase.rpc('request_internal_registration', {
@@ -325,12 +369,26 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
       return;
     }
 
-    const { data, error } = await supabase.rpc('verify_internal_login', {
-      account_role: registrationProfile,
-      username_value: username,
-      password_value: password,
-      company_slug_value: companySlug
-    });
+    if (isClientAccess && !isDni(dni)) {
+      setIsSubmittingInternalAccess(false);
+      setRegistrationError('Ingresá el DNI con 7 a 10 dígitos para continuar.');
+      return;
+    }
+
+    const loginResult = isClientAccess
+      ? await supabase.rpc('verify_client_login', {
+        dni_value: dni,
+        password_value: password,
+        company_slug_value: companySlug
+      })
+      : await supabase.rpc('verify_internal_login', {
+        account_role: registrationProfile,
+        username_value: username,
+        password_value: password,
+        company_slug_value: companySlug
+      });
+
+    const { data, error } = loginResult;
 
     setIsSubmittingInternalAccess(false);
 
@@ -362,6 +420,18 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
 
     onInternalAccess(account);
     closeRegistration();
+  };
+
+  const handleClientGoogleAccess = async () => {
+    if (isInAppBrowser()) {
+      sessionStorage.setItem(requestedProfileStorageKey, 'client');
+      setCopyLinkStatus('');
+      setInAppBrowserNoticeOpen(true);
+      return;
+    }
+
+    closeRegistration();
+    await handleLogin('client');
   };
 
   const submitPasswordChange = async (event) => {
@@ -424,14 +494,7 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
 
   const handleAccessOption = (profileId) => {
     if (profileId === 'client') {
-      if (isInAppBrowser()) {
-        sessionStorage.setItem(requestedProfileStorageKey, profileId);
-        setCopyLinkStatus('');
-        setInAppBrowserNoticeOpen(true);
-        return;
-      }
-
-      handleLogin(profileId);
+      openRegistration(profileId);
       return;
     }
 
@@ -454,9 +517,10 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
   const isSingleCompanyAccess = visibleAccessOptions.length === 1 && ['client', 'employee', 'admin'].includes(visibleAccessOptions[0]?.id);
   const showPoweredBy = isSingleCompanyAccess && Boolean(companyContext?.client_logo_data_url);
   const companyLogoSrc = showPoweredBy ? companyContext.client_logo_data_url : turnosAppLogo;
+  const isClientRegistration = registrationProfile === 'client';
   const generatedRegistrationUsername = generateInternalUsername(registrationForm.firstName, registrationForm.lastName);
   const loginCopy = isClientOnlyAccess
-    ? `Acceso exclusivo para ${companyDisplayName}. Ingresá con Google para reservar y consultar tus turnos.`
+    ? `Acceso exclusivo para ${companyDisplayName}. Ingresá con Google o creá un usuario para reservar y consultar tus turnos.`
     : `Acceso interno para ${companyDisplayName}. Empleados y administrador usan nombre y contraseña internos.`;
 
   return (
@@ -520,10 +584,10 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
       </section>
 
       {registrationProfile && (
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Acceso interno">
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Acceso">
           <form className="internal-register-modal" onSubmit={passwordChangeAccount ? submitPasswordChange : submitRegistration}>
             <div className="agenda-modal-header">
-              {passwordChangeAccount ? 'Cambiar contraseña' : `Acceso ${internalProfileLabels[registrationProfile]}`}
+              {passwordChangeAccount ? 'Cambiar contraseña' : `Acceso ${accessProfileLabels[registrationProfile]}`}
             </div>
 
             <div className="agenda-modal-body">
@@ -532,9 +596,10 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
                   <p className="internal-register-copy">
                     Tu cuenta fue creada con una contraseña inicial. Para continuar, definí una nueva contraseña.
                   </p>
+                  <p className="internal-required-hint"><span className="internal-required-mark" aria-hidden="true">*</span> Campo obligatorio</p>
 
                   <label className="internal-register-field">
-                    Nueva contraseña
+                    Nueva contraseña <span className="internal-required-mark" aria-hidden="true">*</span>
                     <span className="internal-password-control">
                       <input
                         type={visiblePasswords.password ? 'text' : 'password'}
@@ -559,7 +624,7 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
                   </label>
 
                   <label className="internal-register-field">
-                    Repetir contraseña
+                    Repetir contraseña <span className="internal-required-mark" aria-hidden="true">*</span>
                     <span className="internal-password-control">
                       <input
                         type={visiblePasswords.confirmPassword ? 'text' : 'password'}
@@ -603,31 +668,66 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
               </div>
 
               <p className="internal-register-copy">
-                {internalAccessMode === 'register'
-                  ? 'Creá un acceso interno con datos personales y contraseña. El usuario se genera con la inicial del nombre y el apellido.'
-                  : 'Ingresá con tu usuario y contraseña internos si ya tenés una cuenta aprobada.'}
+                {isClientRegistration
+                  ? internalAccessMode === 'register'
+                    ? 'Creá tu cuenta de cliente con datos obligatorios. El usuario se genera con la inicial del nombre y el apellido.'
+                    : 'Ingresá con DNI y contraseña. También podés continuar con Google.'
+                  : internalAccessMode === 'register'
+                    ? 'Creá un acceso interno con datos personales y contraseña. El usuario se genera con la inicial del nombre y el apellido.'
+                    : 'Ingresá con tu usuario y contraseña internos si ya tenés una cuenta aprobada.'}
               </p>
+                    <p className="internal-required-hint"><span className="internal-required-mark" aria-hidden="true">*</span> Campo obligatorio</p>
+
+              {isClientRegistration && internalAccessMode === 'login' && (
+                <>
+                  <button className="login-google-button" type="button" onClick={handleClientGoogleAccess}>
+                    <span className="login-google-icon" aria-hidden="true">G</span>
+                    Continuar con Google
+                  </button>
+                  <p className="client-access-separator">o ingresar con dni</p>
+                </>
+              )}
 
               {internalAccessMode === 'login' && (
-                <label className="internal-register-field">
-                  Usuario
-                  <input
-                    type="text"
-                    value={registrationForm.username}
-                    minLength="3"
-                    maxLength="40"
-                    autoComplete="username"
-                    placeholder="Ej: mperez"
-                    onChange={(event) => updateRegistrationField('username', event.target.value)}
-                  />
-                </label>
+                <>
+                  {!isClientRegistration && (
+                    <label className="internal-register-field">
+                      Usuario <span className="internal-required-mark" aria-hidden="true">*</span>
+                      <input
+                        type="text"
+                        value={registrationForm.username}
+                        minLength="3"
+                        maxLength="40"
+                        autoComplete="username"
+                        placeholder="Ej: mperez"
+                        onChange={(event) => updateRegistrationField('username', event.target.value)}
+                      />
+                    </label>
+                  )}
+
+                  {isClientRegistration && (
+                    <label className="internal-register-field">
+                      DNI <span className="internal-required-mark" aria-hidden="true">*</span>
+                      <input
+                        type="text"
+                        value={registrationForm.dni}
+                        maxLength="10"
+                        autoComplete="off"
+                        inputMode="numeric"
+                        pattern="[0-9]{7,10}"
+                        placeholder="Solo números"
+                        onChange={(event) => updateRegistrationField('dni', event.target.value.replace(/\D/g, ''))}
+                      />
+                    </label>
+                  )}
+                </>
               )}
 
               {internalAccessMode === 'register' && (
                 <>
                   <div className="internal-register-two-columns">
                     <label className="internal-register-field">
-                      Nombre
+                      Nombre <span className="internal-required-mark" aria-hidden="true">*</span>
                       <input
                         type="text"
                         value={registrationForm.firstName}
@@ -639,7 +739,7 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
                     </label>
 
                     <label className="internal-register-field">
-                      Apellido
+                      Apellido <span className="internal-required-mark" aria-hidden="true">*</span>
                       <input
                         type="text"
                         value={registrationForm.lastName}
@@ -656,76 +756,122 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
                     <input value={generatedRegistrationUsername} disabled placeholder="Ej: mperez" />
                   </label>
 
-                  <div className="internal-register-two-columns internal-register-age-row">
-                    <label className="internal-register-field">
-                      Fecha de nacimiento
-                      <input
-                        type="date"
-                        value={registrationForm.birthDate}
-                        max={new Date().toISOString().slice(0, 10)}
-                        onChange={(event) => updateRegistrationField('birthDate', event.target.value)}
-                      />
-                    </label>
+                  {isClientRegistration ? (
+                    <>
+                      <div className="internal-register-two-columns">
+                        <label className="internal-register-field">
+                          DNI <span className="internal-required-mark" aria-hidden="true">*</span>
+                          <input
+                            type="text"
+                            value={registrationForm.dni}
+                            maxLength="10"
+                            autoComplete="off"
+                            inputMode="numeric"
+                            pattern="[0-9]{7,10}"
+                            placeholder="Solo números"
+                            onChange={(event) => updateRegistrationField('dni', event.target.value.replace(/\D/g, ''))}
+                          />
+                        </label>
 
-                    <label className="internal-register-field">
-                      Edad
-                      <input value={calculateAge(registrationForm.birthDate)} disabled placeholder="Auto" />
-                    </label>
-                  </div>
+                        <label className="internal-register-field">
+                          Celular <span className="internal-required-mark" aria-hidden="true">*</span>
+                          <input
+                            type="tel"
+                            value={registrationForm.phone}
+                            maxLength="30"
+                            autoComplete="tel"
+                            placeholder="Ej: 11 5555 5555"
+                            onChange={(event) => updateRegistrationField('phone', event.target.value)}
+                          />
+                        </label>
+                      </div>
 
-                  <label className="internal-register-field">
-                    Celular
-                    <input
-                      type="tel"
-                      value={registrationForm.phone}
-                      maxLength="30"
-                      autoComplete="tel"
-                      placeholder="Ej: 11 5555 5555"
-                      onChange={(event) => updateRegistrationField('phone', event.target.value)}
-                    />
-                  </label>
+                      <label className="internal-register-field">
+                        Mail (opcional)
+                        <input
+                          type="email"
+                          value={registrationForm.email}
+                          maxLength="120"
+                          autoComplete="email"
+                          placeholder="nombre@correo.com"
+                          onChange={(event) => updateRegistrationField('email', event.target.value)}
+                        />
+                      </label>
+                    </>
+                  ) : (
+                    <>
+                      <div className="internal-register-two-columns internal-register-age-row">
+                        <label className="internal-register-field">
+                          Fecha de nacimiento <span className="internal-required-mark" aria-hidden="true">*</span>
+                          <input
+                            type="date"
+                            value={registrationForm.birthDate}
+                            max={new Date().toISOString().slice(0, 10)}
+                            onChange={(event) => updateRegistrationField('birthDate', event.target.value)}
+                          />
+                        </label>
 
-                  <label className="internal-register-field">
-                    Mail
-                    <input
-                      type="email"
-                      value={registrationForm.email}
-                      maxLength="120"
-                      autoComplete="email"
-                      placeholder="martina@correo.com"
-                      onChange={(event) => updateRegistrationField('email', event.target.value)}
-                    />
-                  </label>
+                        <label className="internal-register-field">
+                          Edad
+                          <input value={calculateAge(registrationForm.birthDate)} disabled placeholder="Auto" />
+                        </label>
+                      </div>
 
-                  <div className="internal-register-address-grid">
-                    <label className="internal-register-field">
-                      Calle
-                      <input value={registrationForm.addressStreet} maxLength="80" autoComplete="address-line1" onChange={(event) => updateRegistrationField('addressStreet', event.target.value)} />
-                    </label>
-                    <label className="internal-register-field">
-                      Nro.
-                      <input value={registrationForm.addressNumber} maxLength="12" onChange={(event) => updateRegistrationField('addressNumber', event.target.value)} />
-                    </label>
-                    <label className="internal-register-field">
-                      Localidad
-                      <input value={registrationForm.addressLocality} maxLength="60" autoComplete="address-level2" onChange={(event) => updateRegistrationField('addressLocality', event.target.value)} />
-                    </label>
-                  </div>
+                      <label className="internal-register-field">
+                        Celular <span className="internal-required-mark" aria-hidden="true">*</span>
+                        <input
+                          type="tel"
+                          value={registrationForm.phone}
+                          maxLength="30"
+                          autoComplete="tel"
+                          placeholder="Ej: 11 5555 5555"
+                          onChange={(event) => updateRegistrationField('phone', event.target.value)}
+                        />
+                      </label>
 
-                  <label className="internal-register-field internal-photo-field">
-                    Foto de perfil
-                    <span className="internal-photo-control">
-                      <span className="internal-photo-preview" aria-hidden="true">
-                        {registrationForm.photoUrl ? <img src={registrationForm.photoUrl} alt="" /> : 'Foto'}
-                      </span>
-                      <input type="file" accept="image/*" onChange={updatePhoto} />
-                    </span>
-                  </label>
+                      <label className="internal-register-field">
+                        Mail <span className="internal-required-mark" aria-hidden="true">*</span>
+                        <input
+                          type="email"
+                          value={registrationForm.email}
+                          maxLength="120"
+                          autoComplete="email"
+                          placeholder="martina@correo.com"
+                          onChange={(event) => updateRegistrationField('email', event.target.value)}
+                        />
+                      </label>
+
+                      <div className="internal-register-address-grid">
+                        <label className="internal-register-field">
+                          Calle
+                          <input value={registrationForm.addressStreet} maxLength="80" autoComplete="address-line1" onChange={(event) => updateRegistrationField('addressStreet', event.target.value)} />
+                        </label>
+                        <label className="internal-register-field">
+                          Nro.
+                          <input value={registrationForm.addressNumber} maxLength="12" onChange={(event) => updateRegistrationField('addressNumber', event.target.value)} />
+                        </label>
+                        <label className="internal-register-field">
+                          Localidad
+                          <input value={registrationForm.addressLocality} maxLength="60" autoComplete="address-level2" onChange={(event) => updateRegistrationField('addressLocality', event.target.value)} />
+                        </label>
+                      </div>
+
+                      <label className="internal-register-field internal-photo-field">
+                        Foto de perfil
+                        <span className="internal-photo-control">
+                          <span className="internal-photo-preview" aria-hidden="true">
+                            {registrationForm.photoUrl ? <img src={registrationForm.photoUrl} alt="" /> : 'Foto'}
+                          </span>
+                          <input type="file" accept="image/*" onChange={updatePhoto} />
+                        </span>
+                      </label>
+                    </>
+                  )}
                 </>
               )}
 
               <label className="internal-register-field">
-                Contraseña
+                Contraseña <span className="internal-required-mark" aria-hidden="true">*</span>
                 <span className="internal-password-control">
                   <input
                     type={visiblePasswords.password ? 'text' : 'password'}
@@ -751,7 +897,7 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
 
               {internalAccessMode === 'register' && (
                 <label className="internal-register-field">
-                  Repetir contraseña
+                  Repetir contraseña <span className="internal-required-mark" aria-hidden="true">*</span>
                   <span className="internal-password-control">
                     <input
                       type={visiblePasswords.confirmPassword ? 'text' : 'password'}

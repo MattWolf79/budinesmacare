@@ -74,3 +74,117 @@ join public.companies companies
   on companies.id = accounts.company_id
 where companies.slug = 'empresa-prueba'
   and accounts.role = 'admin';
+
+-- -----------------------------------------------------------------------------
+-- Verificaciones para acceso cliente con DNI + contraseña.
+-- Reemplazar 'empresa-prueba' y los datos de ejemplo antes de ejecutar.
+-- -----------------------------------------------------------------------------
+
+-- Confirmar que la columna client_account_id existe en bookings.
+select
+  columns.column_name,
+  columns.data_type,
+  columns.is_nullable
+from information_schema.columns columns
+where columns.table_schema = 'public'
+  and columns.table_name = 'bookings'
+  and columns.column_name = 'client_account_id';
+
+-- Confirmar que la funcion request_client_booking quedo con soporte para cuenta interna cliente.
+select
+  routine_name,
+  specific_name,
+  data_type
+from information_schema.routines
+where specific_schema = 'public'
+  and routine_name in ('register_client_access', 'verify_client_login', 'request_client_booking', 'cancel_booking')
+order by routine_name, specific_name;
+
+-- Ver parametros de request_client_booking.
+select
+  parameters.specific_name,
+  parameters.ordinal_position,
+  parameters.parameter_name,
+  parameters.data_type
+from information_schema.parameters parameters
+where parameters.specific_schema = 'public'
+  and parameters.specific_name in (
+    select routines.specific_name
+    from information_schema.routines routines
+    where routines.specific_schema = 'public'
+      and routines.routine_name = 'request_client_booking'
+  )
+order by parameters.specific_name, parameters.ordinal_position;
+
+-- Registrar cliente de prueba por DNI.
+select *
+from public.register_client_access(
+  'Juan',
+  'Perez',
+  '30123456',
+  '11 5555 5555',
+  null,
+  'abc123',
+  'empresa-prueba'
+);
+
+-- Login cliente por DNI.
+select *
+from public.verify_client_login(
+  '30123456',
+  'abc123',
+  'empresa-prueba'
+);
+
+-- Ver cliente interno creado por DNI dentro de una empresa.
+select
+  accounts.id,
+  accounts.company_id,
+  companies.name as company_name,
+  companies.slug as company_slug,
+  accounts.role,
+  accounts.username,
+  accounts.display_name,
+  accounts.email,
+  accounts.client_dni,
+  accounts.active,
+  accounts.created_at,
+  accounts.last_login_at
+from public.internal_accounts accounts
+join public.companies companies
+  on companies.id = accounts.company_id
+where companies.slug = 'empresa-prueba'
+  and accounts.role = 'client'
+order by accounts.created_at desc;
+
+-- Ver reservas vinculadas a cliente interno por DNI.
+select
+  bookings.id,
+  bookings.company_id,
+  companies.slug as company_slug,
+  bookings.client_account_id,
+  accounts.username as client_username,
+  accounts.client_dni,
+  bookings.user_id,
+  bookings.user_email,
+  bookings.customer_name,
+  bookings.service,
+  services.name as service_name,
+  bookings.employee_id,
+  employees.name as employee_name,
+  bookings.start_at,
+  bookings.end_at,
+  bookings.status,
+  bookings.created_at
+from public.bookings bookings
+join public.companies companies
+  on companies.id = bookings.company_id
+left join public.internal_accounts accounts
+  on accounts.id = bookings.client_account_id
+left join public.services services
+  on services.id = bookings.service
+left join public.employees employees
+  on employees.id = bookings.employee_id
+where companies.slug = 'empresa-prueba'
+  and bookings.client_account_id is not null
+order by bookings.created_at desc;
