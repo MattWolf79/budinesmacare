@@ -597,6 +597,14 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       0
     )
   );
+
+  // Build discount details for invoice
+  const selectedTotalDiscountDetails = selectedTotalDiscounts.map((discount) => ({
+    discount,
+    amount: isCashPaymentDiscount(discount) 
+      ? getDiscountAmount(discount, paymentInputAmounts.cash) 
+      : getDiscountAmount(discount, subtotal)
+  }));
   
   // Total discount is sum of both, but never exceeds what's available
   const totalDiscountTotal = Math.min(subtotal, nonCashDiscountTotal + cashPaymentDiscountTotal);

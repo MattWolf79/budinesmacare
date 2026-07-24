@@ -411,7 +411,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     return () => {
       active = false;
     };
-  }, [employeeId, refreshKey, configRefreshKey, user?.id, user?.isInternal, companySlug, preciosHabilitados]);
+  }, [employeeId, refreshKey, configRefreshKey, user?.id, user?.isInternal, companySlug]);
 
   useEffect(() => {
     const refreshConfiguration = () => {
