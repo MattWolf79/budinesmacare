@@ -739,19 +739,24 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     const { data, error } = await supabase.rpc('close_booking_attention', rpcPayload);
     setIsClosing(false);
     
-    // Check if we have an actual error (not just an empty error object)
-    if (error && error.message) {
-      console.error('Close booking error:', error);
-      return alert(`No se pudo cerrar la atención: ${error.message}`);
+    console.log('CLOSE_BOOKING - Response:', { data, error });
+    
+    // Check if we have valid data with an ID (successful closure)
+    if (data && data.id) {
+      console.log('CLOSE_BOOKING - Success:', data.id);
+      setConfirmedInvoiceDetails(buildCurrentInvoiceDetails(data));
+      alert('✅ Atención cerrada correctamente.');
+      return;
     }
     
-    // If we have data, the operation succeeded despite any error object
-    if (data && data.id) {
-      setConfirmedInvoiceDetails(buildCurrentInvoiceDetails({ id: data.id }));
-      alert('Atención cerrada. Ya podés abrir la factura.');
-    } else {
-      alert('Error: No se pudo completar el cierre.');
+    // If we have an actual error message, show it
+    if (error && error.message) {
+      console.error('Close booking error:', error);
+      return alert(`❌ No se pudo cerrar la atención: ${error.message}`);
     }
+    
+    // Fallback: unknown error
+    alert('❌ Error desconocido al cerrar la atención.');
   };
 
   const generateInvoice = async () => {
