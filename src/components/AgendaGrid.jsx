@@ -14,9 +14,9 @@ const START_HOUR = 8;
 const SLOTS = 30;
 const AGENDA_TOTAL_MINUTES = SLOT_MINUTES * SLOTS;
 const ALLOWED_SLOT_MINUTES = new Set([15, 30, 45, 60]);
-const EMPTY_SLOT_HEIGHT = 30;
-const BOOKED_SLOT_PADDING_HEIGHT = 5;
-const BOOKING_STACK_HEIGHT = 24;
+const EMPTY_SLOT_HEIGHT = 60;
+const BOOKED_SLOT_PADDING_HEIGHT = 10;
+const BOOKING_STACK_HEIGHT = 48;
 const ACTIVE_BOOKING_STATUSES = new Set(['confirmed', 'reserved', 'pending_assignment']);
 const TOUCH_TAP_MOVE_TOLERANCE = 8;
 
@@ -2340,19 +2340,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
                   {isCompactAgenda && slotBookings.length > 0 && !isDisabled && turnosSuperpuestosHabilitados && (
                     <div className="agenda-slot-add-actions">
-                      <button
-                        className="agenda-slot-add-overlap"
-                        type="button"
-                        aria-label="Agregar turno en este horario"
-                        title="Agregar turno en este horario"
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          selectMobileRangePoint(dayIndex, slotIndex);
-                        }}
-                      >
-                        + turno
-                      </button>
+                      {/* Espacio vacío - botón removido */}
                     </div>
                   )}
 
