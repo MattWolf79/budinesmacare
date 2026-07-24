@@ -579,21 +579,22 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       .filter((surcharge) => surcharge.paymentMethod === method)
       .reduce((total, surcharge) => total + Math.min(100, Math.max(0, getSurchargeValue(surcharge))) / 100, 0)
   }), { cash: 0, transfer: 0, card: 0 });
-  const selectedTotalDiscountDetails = selectedTotalDiscounts.map((discount) => {
-    const isCashDiscount = isCashPaymentDiscount(discount);
-    const discountBaseAmount = isCashDiscount ? paymentInputAmounts.cash : subtotal;
-    return {
-      discount,
-      amount: getDiscountAmount(discount, discountBaseAmount)
-    };
-  });
-  const cashPaymentDiscountTotal = selectedTotalDiscountDetails
-    .filter(({ discount }) => isCashPaymentDiscount(discount))
-    .reduce((total, item) => total + item.amount, 0);
-  const nonCashTotalDiscountTotal = selectedTotalDiscountDetails
-    .filter(({ discount }) => !isCashPaymentDiscount(discount))
-    .reduce((total, item) => total + item.amount, 0);
-  const nonCashDiscountTotal = Math.min(subtotal, nonCashTotalDiscountTotal);
+  // Separate cash and non-cash discounts
+  const cashPaymentDiscounts = selectedTotalDiscounts.filter(isCashPaymentDiscount);
+  const nonCashTotalDiscounts = selectedTotalDiscounts.filter((discount) => !isCashPaymentDiscount(discount));
+  
+  // Calculate non-cash discounts applied to subtotal
+  const nonCashDiscountTotal = Math.min(
+    subtotal,
+    nonCashTotalDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, subtotal), 0)
+  );
+  
+  // Calculate cash discounts applied ONLY to the cash payment amount
+  const cashPaymentDiscountTotal = cashPaymentDiscounts.reduce(
+    (total, discount) => total + getDiscountAmount(discount, paymentInputAmounts.cash),
+    0
+  );
+  
   const totalDiscountTotal = nonCashDiscountTotal + cashPaymentDiscountTotal;
   const netTotal = Math.max(0, subtotal - totalDiscountTotal);
   console.log('DEBUG CIERRE:', {
@@ -601,7 +602,8 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     nonCashDiscountTotal,
     cashPaymentDiscountTotal,
     totalDiscountTotal,
-    selectedTotalDiscountDetails: selectedTotalDiscountDetails.map(d => ({ name: d.discount.name, amount: d.amount })),
+    nonCashCount: nonCashTotalDiscounts.length,
+    cashCount: cashPaymentDiscounts.length,
     netTotal,
     paymentInputAmounts,
     chargedPaymentAmounts
