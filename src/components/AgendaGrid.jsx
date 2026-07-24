@@ -738,9 +738,20 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     
     const { data, error } = await supabase.rpc('close_booking_attention', rpcPayload);
     setIsClosing(false);
-    if (error) return alert(`No se pudo cerrar la atención: ${error.message}`);
-    setConfirmedInvoiceDetails(buildCurrentInvoiceDetails(data || { id: data?.id }));
-    alert('Atención cerrada. Ya podés abrir la factura.');
+    
+    // Check if we have an actual error (not just an empty error object)
+    if (error && error.message) {
+      console.error('Close booking error:', error);
+      return alert(`No se pudo cerrar la atención: ${error.message}`);
+    }
+    
+    // If we have data, the operation succeeded despite any error object
+    if (data && data.id) {
+      setConfirmedInvoiceDetails(buildCurrentInvoiceDetails({ id: data.id }));
+      alert('Atención cerrada. Ya podés abrir la factura.');
+    } else {
+      alert('Error: No se pudo completar el cierre.');
+    }
   };
 
   const generateInvoice = async () => {
