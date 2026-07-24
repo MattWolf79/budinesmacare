@@ -42,11 +42,11 @@ begin
   end if;
 
   if auth.uid() is null then
-    raise exception 'IniciÃ¡ sesiÃ³n para solicitar un turno.';
+    raise exception 'Inicia sesión para solicitar un turno.';
   end if;
 
   if start_at_value is null or end_at_value is null or end_at_value <= start_at_value then
-    raise exception 'El horario seleccionado no es vÃ¡lido.';
+    raise exception 'El horario seleccionado no es válido.';
   end if;
 
   if start_at_value < current_business_time then
@@ -54,7 +54,7 @@ begin
   end if;
 
   if service_id_value is null and clean_booking_description is null then
-    raise exception 'SeleccionÃ¡ un servicio o promociÃ³n.';
+    raise exception 'Selecciona un servicio o promoción.';
   end if;
 
   if service_id_value is not null and not exists (
@@ -64,7 +64,7 @@ begin
       and services.company_id = target_company_id
       and services.active is not false
   ) then
-    raise exception 'El servicio seleccionado no estÃ¡ disponible.';
+    raise exception 'El servicio seleccionado no está disponible.';
   end if;
 
   if service_id_value is null then
@@ -86,7 +86,7 @@ begin
     limit 1;
 
     if selected_promotion is null then
-      raise exception 'La promociÃ³n seleccionada no estÃ¡ disponible.';
+      raise exception 'La promoción seleccionada no está disponible.';
     end if;
   end if;
 
@@ -106,7 +106,7 @@ begin
       )
     limit 1
   ) then
-    raise exception 'Ya tenÃ©s un turno o solicitud en ese horario.';
+    raise exception 'Ya tenés un turno o solicitud en ese horario.';
   end if;
 
   if employee_id_value is null then
@@ -163,7 +163,7 @@ begin
         )
       limit 1
     ) then
-      raise exception 'No hay disponibilidad para esa promociÃ³n en ese horario.';
+      raise exception 'No hay disponibilidad para esa promoción en ese horario.';
     end if;
   end if;
 
@@ -176,7 +176,7 @@ begin
         and employees.active is true
         and employees.deleted_at is null
     ) then
-      raise exception 'El empleado seleccionado no estÃ¡ disponible.';
+      raise exception 'El empleado seleccionado no está disponible.';
     end if;
 
     if service_id_value is not null and not exists (
@@ -186,7 +186,7 @@ begin
         and relations.employee_id = employee_id_value
         and relations.service_id = service_id_value
     ) then
-      raise exception 'El empleado no estÃ¡ vinculado a ese servicio.';
+      raise exception 'El empleado no está vinculado a ese servicio.';
     end if;
 
     if not exists (
@@ -563,14 +563,14 @@ declare
 begin
   if public.is_admin() then
     target_company_id := public.get_company_id_by_slug(company_slug_value);
-    if target_company_id is null then raise exception 'La empresa no estÃ¡ disponible.'; end if;
+    if target_company_id is null then raise exception 'La empresa no está disponible.'; end if;
     if not exists (select 1 from public.profiles profiles where profiles.user_id = auth.uid() and profiles.role = 'admin'::public.app_role and profiles.active is not false and profiles.company_id = target_company_id) then
       raise exception 'No podÃ©s administrar otra empresa.';
     end if;
   else
     admin_account := public.validate_internal_session(account_id_value, session_token_value, 'admin'::public.app_role);
     target_company_id := coalesce(public.get_company_id_by_slug(company_slug_value), admin_account.company_id);
-    if target_company_id is null or admin_account.company_id is distinct from target_company_id then raise exception 'No podÃ©s administrar otra empresa.'; end if;
+    if target_company_id is null or admin_account.company_id is distinct from target_company_id then raise exception 'No podés administrar otra empresa.'; end if;
   end if;
 
   if employee_id_value is null or start_at_value is null or end_at_value is null or end_at_value <= start_at_value then
@@ -639,7 +639,7 @@ begin
   target_company_id := coalesce(public.get_company_id_by_slug(company_slug_value), employee_account.company_id);
 
   if target_company_id is null or employee_account.company_id is distinct from target_company_id or employee_account.employee_id is distinct from employee_id_value then
-    raise exception 'No podÃ©s crear turnos para otra empresa o empleado.';
+    raise exception 'No podés crear turnos para otra empresa o empleado.';
   end if;
 
   if employee_id_value is null or start_at_value is null or end_at_value is null or end_at_value <= start_at_value then
@@ -816,7 +816,7 @@ begin
     'Cliente: ' || coalesce(nullif(booking_value.customer_name, ''), nullif(booking_value.user_email, ''), 'Cliente sin datos'),
     case when public.is_valid_email(booking_value.user_email) then 'Mail cliente: ' || booking_value.user_email else null end,
     'Servicio: ' || coalesce(nullif(booking_value.booking_description, ''), service_name, 'Turno'),
-    case when employee_name is not null then 'Profesional: ' || employee_name else 'Profesional: pendiente de asignaciÃ³n' end,
+    case when employee_name is not null then 'Profesional: ' || employee_name else 'Profesional: pendiente de asignación' end,
     'Inicio: ' || to_char(booking_value.start_at, 'DD/MM/YYYY HH24:MI'),
     'Fin: ' || to_char(booking_value.end_at, 'DD/MM/YYYY HH24:MI')
   );
@@ -877,23 +877,23 @@ begin
 
   event_intro := case
     when event_label ilike '%recordatorio%' then 'Te esperamos pronto. Te dejamos los datos del turno para que los tengas a mano.'
-    when event_label ilike '%confirmado%' then 'Tu reserva ya tiene profesional asignado. GuardÃ¡ este detalle para llegar con tranquilidad.'
-    when event_label ilike '%pendiente%' then 'Hay una solicitud esperando asignaciÃ³n de profesional. Revisala desde la agenda para confirmar el turno.'
-    when event_label ilike '%asignado%' then 'Se agregÃ³ un nuevo turno a tu agenda laboral. RevisÃ¡ los datos antes de la atenciÃ³n.'
-    when event_label ilike '%cancelÃ³%' then 'Te avisamos que este turno fue cancelado y ya no figura como atenciÃ³n pendiente.'
+    when event_label ilike '%confirmado%' then 'Tu reserva ya tiene profesional asignado. Guarda este detalle para llegar con tranquilidad.'
+    when event_label ilike '%pendiente%' then 'Hay una solicitud esperando asignación de profesional. Revisala desde la agenda para confirmar el turno.'
+    when event_label ilike '%asignado%' then 'Se agregó un nuevo turno a tu agenda laboral. Revisa los datos antes de la atención.'
+    when event_label ilike '%cancelado%' then 'Te avisamos que este turno fue cancelado y ya no figura como atención pendiente.'
     else 'Te compartimos el detalle actualizado del turno.'
   end;
 
   badge_label := case
     when event_label ilike '%recordatorio%' then 'Recordatorio'
-    when event_label ilike '%confirmado%' then 'ConfirmaciÃ³n'
-    when event_label ilike '%pendiente%' then 'AcciÃ³n requerida'
+    when event_label ilike '%confirmado%' then 'Confirmación'
+    when event_label ilike '%pendiente%' then 'Acción requerida'
     when event_label ilike '%asignado%' then 'Agenda'
-    when event_label ilike '%cancelÃ³%' then 'CancelaciÃ³n'
+    when event_label ilike '%cancelado%' then 'Cancelación'
     else 'Quiero Turno App'
   end;
 
-  return '<div style="margin:0;padding:0;background:#eef7f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937">'
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;padding:0;background:#eef7f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937">'
     || '<div style="display:none;max-height:0;overflow:hidden;color:#eef7f8">' || public.html_escape(company_name || ' - ' || event_intro) || '</div>'
     || '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;background:#eef7f8;padding:0;margin:0"><tr><td align="center" style="padding:28px 12px">'
     || '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;max-width:620px;background:#ffffff;border:1px solid #d6e7ea;border-radius:16px;overflow:hidden;box-shadow:0 14px 34px rgba(15,23,42,0.10)">'
@@ -910,7 +910,7 @@ begin
     || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Cliente</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(client_name) || '</td></tr>'
     || case when public.is_valid_email(booking_value.user_email) then '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Mail</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(booking_value.user_email) || '</td></tr>' else '' end
     || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Servicio</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(activity_name) || '</td></tr>'
-    || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Profesional</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(coalesce(employee_name, 'Pendiente de asignaciÃ³n')) || '</td></tr>'
+    || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Profesional</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(coalesce(employee_name, 'Pendiente de asignación')) || '</td></tr>'
     || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Inicio</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(to_char(booking_value.start_at, 'DD/MM/YYYY HH24:MI')) || '</td></tr>'
     || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Fin</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(to_char(booking_value.end_at, 'DD/MM/YYYY HH24:MI')) || '</td></tr>'
     || '</table>'
@@ -918,7 +918,7 @@ begin
       '<div style="padding:10px 0 22px;text-align:center"><a href="' || public.html_escape(clean_cta_url) || '" style="display:inline-block;background:#24aebb;color:#ffffff;text-decoration:none;border-radius:999px;padding:13px 20px;font-size:15px;font-weight:800;box-shadow:0 8px 18px rgba(36,174,187,.22)">' || public.html_escape(clean_cta_label) || '</a></div>'
       else '' end
     || '</td></tr>'
-    || '<tr><td style="padding:18px 26px;background:#f6fbfc;border-top:1px solid #e3edf0;color:#64748b;font-size:13px;line-height:1.5;text-align:center">Este es un mensaje automÃ¡tico de ' || public.html_escape(company_name) || ' enviado mediante Quiero Turno App. No respondas este mail.</td></tr>'
+    || '<tr><td style="padding:18px 26px;background:#f6fbfc;border-top:1px solid #e3edf0;color:#64748b;font-size:13px;line-height:1.5;text-align:center">Este es un mensaje automático de ' || public.html_escape(company_name) || ' enviado mediante Quiero Turno App. No respondas este mail.</td></tr>'
     || '</table>'
     || '</td></tr></table>'
     || '</div>';
@@ -1077,7 +1077,7 @@ begin
   end if;
 
   if length(clean_first_name) < 2 or length(clean_last_name) < 2 then
-    raise exception 'IngresÃ¡ nombre y apellido.';
+    raise exception 'Ingresa nombre y apellido.';
   end if;
 
   base_username := regexp_replace(
@@ -1121,11 +1121,11 @@ begin
   end if;
 
   if clean_email is null or not public.is_valid_email(clean_email) then
-    raise exception 'IngresÃ¡ un mail vÃ¡lido.';
+    raise exception 'Ingresa un mail válido.';
   end if;
 
   if length(clean_password) < 6 or clean_password !~ '^[A-Za-z0-9]+$' then
-    raise exception 'La contraseÃ±a debe ser alfanumerica y tener al menos 6 caracteres.';
+    raise exception 'La contraseña debe ser alfanumerica y tener al menos 6 caracteres.';
   end if;
 
   if employee_id_value is not null and not exists (
@@ -1687,23 +1687,23 @@ begin
 
   event_intro := case
     when event_label ilike '%recordatorio%' then 'Te esperamos pronto. Te dejamos los datos del turno para que los tengas a mano.'
-    when event_label ilike '%confirmado%' then 'Tu reserva ya tiene profesional asignado. GuardÃ¡ este detalle para llegar con tranquilidad.'
-    when event_label ilike '%pendiente%' then 'Hay una solicitud esperando asignaciÃ³n de profesional. Revisala desde la agenda para confirmar el turno.'
-    when event_label ilike '%asignado%' then 'Se agregÃ³ un nuevo turno a tu agenda laboral. RevisÃ¡ los datos antes de la atenciÃ³n.'
-    when event_label ilike '%cancelÃ³%' then 'Te avisamos que este turno fue cancelado y ya no figura como atenciÃ³n pendiente.'
+    when event_label ilike '%confirmado%' then 'Tu reserva ya tiene profesional asignado. Guarda este detalle para llegar con tranquilidad.'
+    when event_label ilike '%pendiente%' then 'Hay una solicitud esperando asignación de profesional. Revisala desde la agenda para confirmar el turno.'
+    when event_label ilike '%asignado%' then 'Se agregó un nuevo turno a tu agenda laboral. Revisa los datos antes de la atención.'
+    when event_label ilike '%cancelado%' then 'Te avisamos que este turno fue cancelado y ya no figura como atención pendiente.'
     else 'Te compartimos el detalle actualizado del turno.'
   end;
 
   badge_label := case
     when event_label ilike '%recordatorio%' then 'Recordatorio'
-    when event_label ilike '%confirmado%' then 'ConfirmaciÃ³n'
-    when event_label ilike '%pendiente%' then 'AcciÃ³n requerida'
+    when event_label ilike '%confirmado%' then 'Confirmación'
+    when event_label ilike '%pendiente%' then 'Acción requerida'
     when event_label ilike '%asignado%' then 'Agenda'
-    when event_label ilike '%cancelÃ³%' then 'CancelaciÃ³n'
+    when event_label ilike '%cancelado%' then 'Cancelación'
     else 'Quiero Turno App'
   end;
 
-  return '<div style="margin:0;padding:0;background:#eef7f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937">'
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;padding:0;background:#eef7f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937">'
     || '<div style="display:none;max-height:0;overflow:hidden;color:#eef7f8">' || public.html_escape(company_name || ' - ' || event_intro) || '</div>'
     || '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;background:#eef7f8;padding:0;margin:0"><tr><td align="center" style="padding:28px 12px">'
     || '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;max-width:620px;background:#ffffff;border:1px solid #d6e7ea;border-radius:16px;overflow:hidden;box-shadow:0 14px 34px rgba(15,23,42,0.10)">'
@@ -1720,7 +1720,7 @@ begin
     || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Cliente</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(client_name) || '</td></tr>'
     || case when public.is_valid_email(booking_value.user_email) then '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Mail</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(booking_value.user_email) || '</td></tr>' else '' end
     || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Servicio</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(activity_name) || '</td></tr>'
-    || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Profesional</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(coalesce(employee_name, 'Pendiente de asignaciÃ³n')) || '</td></tr>'
+    || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Profesional</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(coalesce(employee_name, 'Pendiente de asignación')) || '</td></tr>'
     || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Inicio</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(to_char(booking_value.start_at, 'DD/MM/YYYY HH24:MI')) || '</td></tr>'
     || '<tr><td style="width:42%;padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-right:0;border-radius:10px 0 0 10px;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em">Fin</td><td style="padding:12px 14px;background:#f8fafc;border:1px solid #e3edf0;border-left:0;border-radius:0 10px 10px 0;color:#0f172a;font-size:15px;font-weight:700">' || public.html_escape(to_char(booking_value.end_at, 'DD/MM/YYYY HH24:MI')) || '</td></tr>'
     || '</table>'
@@ -1728,10 +1728,10 @@ begin
       '<div style="padding:10px 0 22px;text-align:center"><a href="' || public.html_escape(clean_cta_url) || '" style="display:inline-block;background:#24aebb;color:#ffffff;text-decoration:none;border-radius:999px;padding:13px 20px;font-size:15px;font-weight:800;box-shadow:0 8px 18px rgba(36,174,187,.22)">' || public.html_escape(clean_cta_label) || '</a></div>'
       else '' end
     || '</td></tr>'
-    || '<tr><td style="padding:18px 26px;background:#f6fbfc;border-top:1px solid #e3edf0;color:#64748b;font-size:13px;line-height:1.5;text-align:center">Este es un mensaje automÃ¡tico de ' || public.html_escape(company_name) || ' enviado mediante Quiero Turno App. No respondas este mail.</td></tr>'
+    || '<tr><td style="padding:18px 26px;background:#f6fbfc;border-top:1px solid #e3edf0;color:#64748b;font-size:13px;line-height:1.5;text-align:center">Este es un mensaje automático de ' || public.html_escape(company_name) || ' enviado mediante Quiero Turno App. No respondas este mail.</td></tr>'
     || '</table>'
     || '</td></tr></table>'
-    || '</div>';
+    || '</body></html>';
 end;
 $$;
 
@@ -2090,8 +2090,8 @@ begin
       where employees.id = NEW.employee_id
         and employees.company_id = NEW.company_id;
 
-      employee_message := public.format_booking_notification_message(NEW, 'TenÃ©s un nuevo turno asignado.') || E'\n\nIr a Agenda: ' || employee_agenda_url;
-      employee_html := public.format_booking_notification_html(NEW, 'TenÃ©s un nuevo turno asignado.', 'Ir a Agenda', employee_agenda_url);
+      employee_message := public.format_booking_notification_message(NEW, 'Tenés un nuevo turno asignado.') || E'\n\nIr a Agenda: ' || employee_agenda_url;
+      employee_html := public.format_booking_notification_html(NEW, 'Tenés un nuevo turno asignado.', 'Ir a Agenda', employee_agenda_url);
       perform public.send_resend_email(employee_email, 'TenÃ©s un nuevo turno asignado', employee_message, 'Quiero Turno App - No responder', NEW.user_email, employee_html, NEW.company_id);
     end if;
   end if;
@@ -2111,8 +2111,8 @@ begin
     where employees.id = NEW.employee_id
       and employees.company_id = NEW.company_id;
 
-    employee_message := public.format_booking_notification_message(NEW, 'TenÃ©s un nuevo turno asignado.') || E'\n\nIr a Agenda: ' || employee_agenda_url;
-    employee_html := public.format_booking_notification_html(NEW, 'TenÃ©s un nuevo turno asignado.', 'Ir a Agenda', employee_agenda_url);
+    employee_message := public.format_booking_notification_message(NEW, 'Tenés un nuevo turno asignado.') || E'\n\nIr a Agenda: ' || employee_agenda_url;
+    employee_html := public.format_booking_notification_html(NEW, 'Tenés un nuevo turno asignado.', 'Ir a Agenda', employee_agenda_url);
     perform public.send_resend_email(employee_email, 'TenÃ©s un nuevo turno asignado', employee_message, 'Quiero Turno App - No responder', NEW.user_email, employee_html, NEW.company_id);
   end if;
 
@@ -2125,8 +2125,8 @@ begin
     where employees.id = NEW.employee_id
       and employees.company_id = NEW.company_id;
 
-    employee_message := public.format_booking_notification_message(NEW, 'Se cancelÃ³ este turno.') || E'\n\nIr a Agenda: ' || employee_agenda_url;
-    employee_html := public.format_booking_notification_html(NEW, 'Se cancelÃ³ este turno.', 'Ir a Agenda', employee_agenda_url);
+    employee_message := public.format_booking_notification_message(NEW, 'Se canceló este turno.') || E'\n\nIr a Agenda: ' || employee_agenda_url;
+    employee_html := public.format_booking_notification_html(NEW, 'Se canceló este turno.', 'Ir a Agenda', employee_agenda_url);
     perform public.send_resend_email(employee_email, 'Se cancelÃ³ un turno', employee_message, 'Quiero Turno App - No responder', NEW.user_email, employee_html, NEW.company_id);
   end if;
 
@@ -2160,8 +2160,8 @@ begin
     for update skip locked
   loop
     client_booking_url := public.build_client_booking_link(booking_record.company_id);
-    reminder_message := public.format_booking_notification_message(booking_record, 'Recordatorio: tenÃ©s un turno reservado para maÃ±ana.') || E'\n\nIr al Turno: ' || client_booking_url;
-    reminder_html := public.format_booking_notification_html(booking_record, 'Recordatorio: tenÃ©s un turno reservado para maÃ±ana.', 'Ir al Turno', client_booking_url);
+    reminder_message := public.format_booking_notification_message(booking_record, 'Recordatorio: tenés un turno reservado para mañana.') || E'\n\nIr al Turno: ' || client_booking_url;
+    reminder_html := public.format_booking_notification_html(booking_record, 'Recordatorio: tenés un turno reservado para mañana.', 'Ir al Turno', client_booking_url);
 
     perform public.send_resend_email(
       booking_record.user_email,

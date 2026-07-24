@@ -574,7 +574,7 @@ as $$
     '''', '&#39;')
 $$;
 
-create or replace function public.get_mail_app_url()
+create or replace function public.get_mail_app_url(company_id_value uuid default null)
 returns text
 language sql
 stable
@@ -587,18 +587,30 @@ as $$
   )
 $$;
 
-create or replace function public.build_mail_app_link(hash_value text default '')
+create or replace function public.build_mail_app_link(company_id_value uuid default null, hash_value text default '')
 returns text
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select regexp_replace(public.get_mail_app_url(null::uuid), '/+$', '') || '/' ||
+  with selected_company as (
+    select companies.slug
+    from public.companies companies
+    where companies.id = company_id_value
+    limit 1
+  ), base_url as (
+    select regexp_replace(public.get_mail_app_url(company_id_value), '/+$', '') as value
+  ), normalized_hash as (
+    select trim(coalesce(hash_value, '')) as value
+  )
+  select (select value from base_url) ||
+    coalesce('/' || (select slug from selected_company), '') ||
     case
-      when nullif(trim(coalesce(hash_value, '')), '') is null then ''
-      when left(trim(hash_value), 1) = '#' then trim(hash_value)
-      else '#' || trim(hash_value)
+      when nullif((select value from normalized_hash), '') is null then ''
+      when (select value from normalized_hash) in ('admin-agenda', 'employee-agenda') then '/admin#' || (select value from normalized_hash)
+      when left((select value from normalized_hash), 1) = '#' then (select value from normalized_hash)
+      else '#' || (select value from normalized_hash)
     end
 $$;
 
@@ -780,8 +792,8 @@ declare
   client_html text;
   admin_html text;
   employee_html text;
-  employee_agenda_url text := public.build_mail_app_link('employee-agenda');
-  admin_assignment_url text := public.build_mail_app_link('admin-agenda');
+  employee_agenda_url text := public.build_mail_app_link(NEW.company_id, 'employee-agenda');
+  admin_assignment_url text := public.build_mail_app_link(NEW.company_id, 'admin-agenda');
 begin
   if TG_OP = 'INSERT' and NEW.status in ('reserved', 'confirmed', 'pending_assignment') then
     if NEW.status = 'pending_assignment' or NEW.employee_id is null then
