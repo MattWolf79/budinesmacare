@@ -691,7 +691,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     if (!selectedItems.length) return alert('Seleccioná al menos un turno para cerrar.');
     if (Math.abs(paymentDifference) > 0.01) return alert('La suma de pagos debe coincidir con el total real a cobrar.');
     setIsClosing(true);
-    const { data, error } = await supabase.rpc('close_booking_attention', {
+    const rpcPayload = {
       service_date_value: selectedClient?.serviceDate || serviceDate,
       client_name_value: selectedClient?.name || null,
       client_email_value: selectedClient?.email || null,
@@ -709,7 +709,24 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       card_amount_value: chargedPaymentAmounts.card,
       account_id_value: user?.isInternal ? user.id : null,
       session_token_value: user?.isInternal ? user.sessionToken : null
+    };
+    
+    console.log('CLOSE_BOOKING - RPC Payload:', {
+      service_date: rpcPayload.service_date_value,
+      client_name: rpcPayload.client_name_value,
+      client_email: rpcPayload.client_email_value,
+      booking_ids: rpcPayload.booking_ids_value,
+      num_items: selectedItems.length,
+      selectedItems: selectedItems.map(item => ({
+        id: item.booking.id,
+        customer_name: item.booking.customer_name,
+        user_email: item.booking.user_email,
+        status: item.booking.status,
+        start_at: item.booking.start_at
+      }))
     });
+    
+    const { data, error } = await supabase.rpc('close_booking_attention', rpcPayload);
     setIsClosing(false);
     if (error) return alert(`No se pudo cerrar la atención: ${error.message}`);
     setConfirmedInvoiceDetails(buildCurrentInvoiceDetails(data || { id: data?.id }));
