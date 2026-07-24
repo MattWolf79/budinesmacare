@@ -491,7 +491,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const isClosureConfirmed = Boolean(confirmedInvoiceDetails);
   const activeDiscounts = useMemo(() => (discounts || []).filter((discount) => discount?.enabled !== false && discount?.name && getDiscountValue(discount) > 0), [discounts]);
   const activeSurcharges = useMemo(() => (surcharges || []).filter((surcharge) => surcharge?.enabled !== false && surcharge?.name && getSurchargeValue(surcharge) > 0), [surcharges]);
-  const lineDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'line' || discount.scope === 'both'));
+  const lineDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && !isCashPaymentDiscount(discount) && (discount.scope === 'line' || discount.scope === 'both'));
   const activityDiscountOptions = activeDiscounts.filter((discount) => discount.discountType === 'activity');
   const totalDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'total' || discount.scope === 'both'));
   const pendingClosureBookings = useMemo(() => bookings
