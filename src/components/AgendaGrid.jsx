@@ -572,22 +572,16 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     transfer: parseMoney(payments.transfer),
     card: parseMoney(payments.card)
   };
+  const hasCashPayment = paymentInputAmounts.cash > 0;
   const surchargeRateByMethod = ['cash', 'transfer', 'card'].reduce((summary, method) => ({
     ...summary,
     [method]: activeSurcharges
       .filter((surcharge) => surcharge.paymentMethod === method)
       .reduce((total, surcharge) => total + Math.min(100, Math.max(0, getSurchargeValue(surcharge))) / 100, 0)
   }), { cash: 0, transfer: 0, card: 0 });
-  const paymentBaseAmounts = {
-    cash: selectedCashPaymentDiscounts.length
-      ? paymentInputAmounts.cash
-      : roundMoneyAmount(paymentInputAmounts.cash / (1 + surchargeRateByMethod.cash)),
-    transfer: roundMoneyAmount(paymentInputAmounts.transfer / (1 + surchargeRateByMethod.transfer)),
-    card: roundMoneyAmount(paymentInputAmounts.card / (1 + surchargeRateByMethod.card))
-  };
-  const cashPaymentAmount = paymentBaseAmounts.cash;
   const selectedTotalDiscountDetails = selectedTotalDiscounts.map((discount) => {
-    const discountBaseAmount = isCashPaymentDiscount(discount) ? cashPaymentAmount : subtotal;
+    const isCashDiscount = isCashPaymentDiscount(discount);
+    const discountBaseAmount = isCashDiscount ? paymentInputAmounts.cash : subtotal;
     return {
       discount,
       amount: getDiscountAmount(discount, discountBaseAmount)
@@ -604,8 +598,8 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const selectedSurchargeDetails = activeSurcharges
     .map((surcharge) => ({
       surcharge,
-      baseAmount: paymentBaseAmounts[surcharge.paymentMethod] || 0,
-      amount: getSurchargeAmount(surcharge, paymentBaseAmounts[surcharge.paymentMethod] || 0)
+      baseAmount: paymentInputAmounts[surcharge.paymentMethod] || 0,
+      amount: getSurchargeAmount(surcharge, paymentInputAmounts[surcharge.paymentMethod] || 0)
     }))
     .filter((item) => item.amount > 0);
   const paymentSurchargeAmounts = ['cash', 'transfer', 'card'].reduce((summary, method) => ({
@@ -613,26 +607,18 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     [method]: selectedSurchargeDetails.filter((item) => item.surcharge.paymentMethod === method).reduce((total, item) => total + item.amount, 0)
   }), { cash: 0, transfer: 0, card: 0 });
   const chargedPaymentAmounts = {
-    cash: selectedCashPaymentDiscounts.length
-      ? roundMoneyAmount(Math.max(0, paymentBaseAmounts.cash - cashPaymentDiscountTotal) + paymentSurchargeAmounts.cash)
-      : paymentInputAmounts.cash,
-    transfer: paymentInputAmounts.transfer,
-    card: paymentInputAmounts.card
+    cash: roundMoneyAmount(paymentInputAmounts.cash + paymentSurchargeAmounts.cash),
+    transfer: roundMoneyAmount(paymentInputAmounts.transfer + paymentSurchargeAmounts.transfer),
+    card: roundMoneyAmount(paymentInputAmounts.card + paymentSurchargeAmounts.card)
   };
   const surchargeTotal = selectedSurchargeDetails.reduce((total, item) => total + item.amount, 0);
   const finalTotal = roundMoneyAmount(Math.max(0, netTotal + surchargeTotal));
   const totalSavings = Math.max(0, grossTotal - netTotal);
-  const paymentBaseTotal = roundMoneyAmount(paymentBaseAmounts.cash + paymentBaseAmounts.transfer + paymentBaseAmounts.card);
   const chargedTotal = roundMoneyAmount(chargedPaymentAmounts.cash + chargedPaymentAmounts.transfer + chargedPaymentAmounts.card);
-  const paymentTargetTotal = roundMoneyAmount(Math.max(0, subtotal - nonCashTotalDiscountTotal));
-  const paymentDifference = roundMoneyAmount(paymentBaseTotal - paymentTargetTotal);
-  const differenceSurchargeRate = ['card', 'transfer', 'cash'].map((method) => ({
-    method,
-    rate: surchargeRateByMethod[method],
-    amount: paymentInputAmounts[method]
-  })).find((item) => item.rate > 0 && item.amount > 0)?.rate || 0;
-  const chargedPaymentDifference = roundMoneyAmount(paymentDifference * (1 + differenceSurchargeRate));
-  const displayFinalTotal = roundMoneyAmount(chargedTotal - chargedPaymentDifference);
+  const paymentTargetTotal = roundMoneyAmount(Math.max(0, netTotal));
+  const totalPaymentInputAmount = roundMoneyAmount(paymentInputAmounts.cash + paymentInputAmounts.transfer + paymentInputAmounts.card);
+  const paymentDifference = roundMoneyAmount(chargedTotal - finalTotal);
+  const displayFinalTotal = finalTotal;
   const closureCutoffLabel = formatDateInputForDisplay(closureCutoffDate);
 
   const toggleLineDiscount = (bookingId, discountKey) => {
@@ -776,12 +762,12 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
             <span>Bruto: {formatMoney(grossTotal)}</span>
             <span>Desc. servicios: -{formatMoney(lineDiscountTotal)}</span>
             <span>Desc. total: -{formatMoney(totalDiscountTotal)}</span>
-            <span>Base cubierta: {formatMoney(paymentBaseTotal)}</span>
+            <span>Base cubierta: {formatMoney(netTotal)}</span>
             <span>Recargos: +{formatMoney(surchargeTotal)}</span>
             <span>Ahorro: {formatMoney(totalSavings)}</span>
             <strong>Total final: {formatMoney(displayFinalTotal)}</strong>
-            <span>Pagado: {formatMoney(chargedTotal)}</span>
-            {Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">Diferencia: {formatMoney(Math.abs(chargedPaymentDifference))} {chargedPaymentDifference > 0 ? 'de más' : 'pendiente'}</span>}
+            <span>Pagado: {formatMoney(totalPaymentInputAmount)}</span>
+            {Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">Diferencia: {formatMoney(Math.abs(paymentDifference))} {paymentDifference > 0 ? 'de más' : 'pendiente'}</span>}
           </div>
           <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>Cerrar</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !selectedItems.length || Math.abs(paymentDifference) > 0.01}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button>}</div>
         </div>
