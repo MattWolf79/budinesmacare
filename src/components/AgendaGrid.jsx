@@ -595,6 +595,14 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     .reduce((total, item) => total + item.amount, 0);
   const totalDiscountTotal = Math.min(subtotal, selectedTotalDiscountDetails.reduce((total, item) => total + item.amount, 0));
   const netTotal = Math.max(0, subtotal - totalDiscountTotal);
+  console.log('DEBUG CIERRE:', {
+    subtotal,
+    totalDiscountTotal,
+    selectedTotalDiscountDetails: selectedTotalDiscountDetails.map(d => ({ name: d.discount.name, amount: d.amount })),
+    netTotal,
+    paymentInputAmounts,
+    chargedPaymentAmounts
+  });
   const selectedSurchargeDetails = activeSurcharges
     .map((surcharge) => ({
       surcharge,
