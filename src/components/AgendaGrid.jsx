@@ -589,24 +589,28 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     nonCashTotalDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, subtotal), 0)
   );
   
-  // Calculate cash discounts applied ONLY to the cash payment amount
-  const cashPaymentDiscountTotal = cashPaymentDiscounts.reduce(
-    (total, discount) => total + getDiscountAmount(discount, paymentInputAmounts.cash),
-    0
+  // Calculate cash discounts applied ONLY to the cash payment amount (never to the service subtotal)
+  // This ensures 10% of $25k cash = $2.5k discount, not 10% of the total service price
+  const cashPaymentDiscountTotal = Math.max(0, 
+    cashPaymentDiscounts.reduce(
+      (total, discount) => total + getDiscountAmount(discount, paymentInputAmounts.cash),
+      0
+    )
   );
   
-  const totalDiscountTotal = nonCashDiscountTotal + cashPaymentDiscountTotal;
+  // Total discount is sum of both, but never exceeds what's available
+  const totalDiscountTotal = Math.min(subtotal, nonCashDiscountTotal + cashPaymentDiscountTotal);
   const netTotal = Math.max(0, subtotal - totalDiscountTotal);
-  console.log('DEBUG CIERRE:', {
+  
+  console.log('DEBUG CIERRE - Discount Calculation:', {
     subtotal,
+    'non-cash discounts': nonCashTotalDiscounts.length,
+    'cash discounts': cashPaymentDiscounts.length,
     nonCashDiscountTotal,
+    'cash payment input': paymentInputAmounts.cash,
     cashPaymentDiscountTotal,
     totalDiscountTotal,
-    nonCashCount: nonCashTotalDiscounts.length,
-    cashCount: cashPaymentDiscounts.length,
-    netTotal,
-    paymentInputAmounts,
-    chargedPaymentAmounts
+    netTotal
   });
   const selectedSurchargeDetails = activeSurcharges
     .map((surcharge) => ({
