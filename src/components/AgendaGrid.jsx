@@ -593,10 +593,13 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const nonCashTotalDiscountTotal = selectedTotalDiscountDetails
     .filter(({ discount }) => !isCashPaymentDiscount(discount))
     .reduce((total, item) => total + item.amount, 0);
-  const totalDiscountTotal = Math.min(subtotal, selectedTotalDiscountDetails.reduce((total, item) => total + item.amount, 0));
+  const nonCashDiscountTotal = Math.min(subtotal, nonCashTotalDiscountTotal);
+  const totalDiscountTotal = nonCashDiscountTotal + cashPaymentDiscountTotal;
   const netTotal = Math.max(0, subtotal - totalDiscountTotal);
   console.log('DEBUG CIERRE:', {
     subtotal,
+    nonCashDiscountTotal,
+    cashPaymentDiscountTotal,
     totalDiscountTotal,
     selectedTotalDiscountDetails: selectedTotalDiscountDetails.map(d => ({ name: d.discount.name, amount: d.amount })),
     netTotal,
