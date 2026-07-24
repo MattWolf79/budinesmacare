@@ -721,9 +721,19 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         id: item.booking.id,
         customer_name: item.booking.customer_name,
         user_email: item.booking.user_email,
+        client_account_id: item.booking.client_account_id,
         status: item.booking.status,
-        start_at: item.booking.start_at
-      }))
+        start_at: item.booking.start_at,
+        start_at_date: formatDateOnlyForDb(parseBookingDate(item.booking.start_at))
+      })),
+      selectedClient: {
+        key: selectedClient?.key,
+        clientKey: selectedClient?.clientKey,
+        serviceDate: selectedClient?.serviceDate,
+        name: selectedClient?.name,
+        email: selectedClient?.email,
+        canEmployeeClose: selectedClient?.canEmployeeClose
+      }
     });
     
     const { data, error } = await supabase.rpc('close_booking_attention', rpcPayload);
