@@ -1167,6 +1167,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
           employeeName={employee?.name || user?.email || 'Empleado'}
           onAvailabilityChanged={refreshEmployeeWorkspace}
           companySlug={companySlug}
+          companyContext={effectiveCompanyContext}
         />
       )}
     </section>

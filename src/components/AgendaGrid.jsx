@@ -398,7 +398,7 @@ const timeToMinutes = (value) => {
   return (hours * 60) + minutes;
 };
 
-const employeeHasAvailability = (availability, employeeId, range, skipAvailabilityCheck = false) => {
+const employeeHasAvailability = (availability, employeeId, range, skipAvailabilityCheck = false, branchId = null) => {
   if (skipAvailabilityCheck) return true;
   if (!range) return false;
 
@@ -415,6 +415,7 @@ const employeeHasAvailability = (availability, employeeId, range, skipAvailabili
   return availability.some((item) => {
     if (item.active === false) return false;
     if (String(item.employee_id) !== String(employeeId)) return false;
+    if (branchId && item.branch_id && String(item.branch_id) !== String(branchId)) return false;
     if (item.available_date) {
       if (String(item.available_date) !== rangeDate) return false;
     } else if (Number(item.weekday) !== weekday) {
@@ -863,6 +864,10 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
   const statusLabel = getBookingStatusLabel(booking);
   const customerName = booking.customer_name || 'Cliente sin datos';
   const customerEmail = booking.user_email || 'Sin mail cargado';
+  const sucursalesHabilitadas = companyContext?.configuracion_operativa?.sucursales_habilitadas === true;
+  const branchLabel = sucursalesHabilitadas && booking.branch_id
+    ? (Array.isArray(companyContext?.branches) ? companyContext.branches : []).find((branch) => String(branch.id) === String(booking.branch_id))?.name || null
+    : null;
 
   const downloadBookingPdf = async () => {
     const { jsPDF } = await import('jspdf');
@@ -880,6 +885,7 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
     ];
 
     if (booking.booking_description) rows.push(['Detalle', booking.booking_description]);
+    if (branchLabel) rows.push(['Sucursal', branchLabel]);
     if (booking.priceDetails?.baseLabel) rows.push(['Costo', booking.priceDetails.baseLabel]);
     if (booking.priceDetails?.netLabel) rows.push(['Neto', booking.priceDetails.netLabel]);
 
@@ -953,6 +959,7 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
             <div><b>Mail:</b> {customerEmail}</div>
             <div><b>Empleado:</b> {employeeLabel}</div>
             <div><b>Estado:</b> {statusLabel}</div>
+            {branchLabel && <div><b>Sucursal:</b> {branchLabel}</div>}
             {booking.priceDetails?.baseLabel && <div><b>Costo:</b> {booking.priceDetails.baseLabel}</div>}
             {booking.priceDetails?.isClosed && booking.priceDetails.netLabel && <div><b>Neto:</b> {booking.priceDetails.netLabel}</div>}
             {booking.priceDetails?.isClosed && booking.priceDetails.employeeLabel && <div><b>Rendición empleado:</b> {booking.priceDetails.employeeLabel}</div>}
@@ -1051,6 +1058,23 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const empleadosCancelanTurnos = configuracionOperativa.empleados_cancelan_turnos || 'propios';
   const empleadosVenDetalleTurnos = configuracionOperativa.empleados_ven_detalle_turnos || 'propios';
   const pdfDetalleTurnoHabilitado = configuracionOperativa.pdf_detalle_turno_habilitado === true;
+  const sucursalesHabilitadas = configuracionOperativa.sucursales_habilitadas === true;
+  const branches = useMemo(
+    () => (Array.isArray(companyContext?.branches) ? companyContext.branches : []),
+    [companyContext]
+  );
+  const showBranchSelector = sucursalesHabilitadas && branches.length > 0;
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const activeBranchId = showBranchSelector ? (selectedBranchId || branches[0]?.id || null) : null;
+  const [branchServices, setBranchServices] = useState([]);
+  const showAgendaBranchFilter = showBranchSelector && !isClientView;
+  const serviceOfferedAtBranch = (serviceId, branchId) => {
+    if (!showBranchSelector || !branchId) return true;
+    if (serviceId === null || serviceId === undefined) return true; // promociones / sin id
+    return branchServices.some((rel) => String(rel.branch_id) === String(branchId) && String(rel.service_id) === String(serviceId));
+  };
+  const matchesAgendaBranchFilter = (booking) =>
+    !showAgendaBranchFilter || !activeBranchId || String(booking?.branch_id || '') === String(activeBranchId);
   const applyCompanyFilter = (query) => companyContext?.id ? query.eq('company_id', companyContext.id) : query;
   const canGoBack = !isClientView || offset > 0;
   const isCompactAgenda = visibleDayCount <= 3;
@@ -1079,6 +1103,23 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const selectedRangeLabel = selection && selectedRange
     ? `${formatTime(selectedRange.startLocal)} - ${formatTime(selectedRange.endLocal)} (${formatDuration(selection.start, selection.end, slotMinutes)})`
     : '';
+  const branchSelectorNode = showBranchSelector ? (
+    <div className="booking-branch-selector" role="group" aria-label="Seleccionar sucursal">
+      <span className="booking-branch-selector-label">Sucursal</span>
+      <div className="booking-branch-pills">
+        {branches.map((branch) => (
+          <button
+            key={branch.id}
+            type="button"
+            className={`booking-branch-pill ${String(selectedBranchId) === String(branch.id) ? 'is-selected' : ''}`}
+            onClick={() => setSelectedBranchId(branch.id)}
+          >
+            {branch.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  ) : null;
   const promotionServices = useMemo(() => {
     const source = selectedPromotion ? [selectedPromotion] : promotions;
 
@@ -1103,7 +1144,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const bookingDescription = bookingPromotion
     ? bookingPromotionText || `Banner ${(bookingPromotion.promotionIndex ?? 0) + 1}`
     : '';
-  const reservationOptions = selectedPromotion ? promotionServices : services;
+  const reservationOptions = (selectedPromotion ? promotionServices : services)
+    .filter((option) => option?.isPromotion || serviceOfferedAtBranch(option?.id, activeBranchId));
   const pendingAssignmentBookings = useMemo(() => bookings
     .filter(isPendingAssignmentBooking)
     .filter((booking) => parseBookingDate(booking.start_at) >= new Date())
@@ -1141,7 +1183,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           employeeServices: mockData.employeeServices,
           employeeAvailability: mockData.employeeAvailability
         }, error: null },
-        { data: [], error: null }
+        { data: [], error: null },
+        { data: { branchServices: [], employeeBranches: [] }, error: null }
       ];
     }
 
@@ -1174,6 +1217,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       : Promise.resolve({ data: [], error: null });
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
 
+    const branchRelationsRequest = showBranchSelector
+      ? supabase.rpc('get_branch_relations', { company_slug_value: companySlug })
+      : Promise.resolve({ data: { branchServices: [], employeeBranches: [] }, error: null });
+
     return Promise.all([
       isAdminView || usesInternalEmployeeData
         ? Promise.resolve({ data: null, error: null })
@@ -1190,14 +1237,16 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       adminDataRequest,
       internalEmployeeDataRequest,
       bookingOptionsRequest,
-      closureInvoicesRequest
+      closureInvoicesRequest,
+      branchRelationsRequest
     ]);
   };
 
-  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}, adminDataResult = {}, internalEmployeeDataResult = {}, bookingOptionsResult = {}, closureInvoicesResult = {}]) => {
+  const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}, adminDataResult = {}, internalEmployeeDataResult = {}, bookingOptionsResult = {}, closureInvoicesResult = {}, branchRelationsResult = {}]) => {
     const adminData = adminDataResult.data || {};
     const internalEmployeeData = internalEmployeeDataResult.data || {};
     const bookingOptions = bookingOptionsResult.data || {};
+    const branchRelations = branchRelationsResult.data || {};
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
     const fallbackServices = bookingOptions.services || [];
     const fallbackEmployees = bookingOptions.employees || [];
@@ -1227,6 +1276,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setBookingClosureItems(isAdminView ? adminData.bookingClosureItems || [] : usesInternalEmployeeData ? internalEmployeeData.bookingClosureItems || [] : []);
     setBookingClosures(isAdminView ? adminData.bookingClosures || [] : usesInternalEmployeeData ? internalEmployeeData.bookingClosures || [] : []);
     setBookingClosureInvoices(Array.isArray(closureInvoicesResult.data) ? closureInvoicesResult.data : []);
+    setBranchServices(Array.isArray(branchRelations.branchServices) ? branchRelations.branchServices : []);
     setAvailabilityLoadFailed(isClientView || isAdminView || usesInternalEmployeeData ? Boolean(bookingOptionsResult.error) : Boolean(availabilityResult.error));
   };
 
@@ -1403,6 +1453,14 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const shouldLoadAvailableEmployees = Boolean((selectedService?.id || selectedService?.isPromotion) && selection);
 
   useEffect(() => {
+    if (!showBranchSelector) return;
+    setSelectedBranchId((current) => {
+      if (current && branches.some((branch) => String(branch.id) === String(current))) return current;
+      return branches[0]?.id || '';
+    });
+  }, [showBranchSelector, branches]);
+
+  useEffect(() => {
     if (!shouldLoadAvailableEmployees) return;
 
     let active = true;
@@ -1450,13 +1508,13 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       const activeEmployees = serviceEmployees.filter((employee) => employee.active !== false);
       const available = activeEmployees.filter((employee) =>
         employee.active !== false &&
-        employeeHasAvailability(employeeAvailability, employee.id, selectedRange, availabilityLoadFailed) &&
+        employeeHasAvailability(employeeAvailability, employee.id, selectedRange, availabilityLoadFailed, activeBranchId) &&
         !employeeHasBookingConflict(bookings, employee.id, selectedRange)
       );
 
       const inactiveCount = serviceEmployees.length - activeEmployees.length;
       const activeWithAvailability = activeEmployees.filter((employee) =>
-        employeeHasAvailability(employeeAvailability, employee.id, selectedRange, availabilityLoadFailed)
+        employeeHasAvailability(employeeAvailability, employee.id, selectedRange, availabilityLoadFailed, activeBranchId)
       );
       const conflictCount = activeWithAvailability.filter((employee) =>
         employeeHasBookingConflict(bookings, employee.id, selectedRange)
@@ -1485,7 +1543,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     return () => {
       active = false;
     };
-  }, [shouldLoadAvailableEmployees, selectedService, bookings, employeeAvailability, availabilityLoadFailed, offset, selectedRange, isEmployeeView, isClientView, employeeId, isAdminView, user?.isInternal, employeeServices, employees]);
+  }, [shouldLoadAvailableEmployees, selectedService, bookings, employeeAvailability, availabilityLoadFailed, offset, selectedRange, isEmployeeView, isClientView, employeeId, isAdminView, user?.isInternal, employeeServices, employees, activeBranchId, branchServices]);
 
   useEffect(() => {
     if (!selection || selectedService || !selectedPromotion || !promotionServices.length) return;
@@ -1645,6 +1703,30 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     handledTouchTapRef.current = false;
   };
 
+  // Cantidad de casillas de grilla que ocupa una duracion (redondea hacia arriba).
+  const slotsForDuration = (durationMinutes) => {
+    const minutes = Number(durationMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) return 1;
+    return Math.max(1, Math.ceil(minutes / slotMinutes));
+  };
+
+  // Al elegir el servicio, el turno abarca automaticamente las casillas segun su duracion,
+  // tomando como inicio la primera casilla seleccionada.
+  const handleSelectService = (service) => {
+    setSelectedService(service);
+
+    const duration = service?.default_duration;
+    if (!service || service.isPromotion || !(Number(duration) > 0)) return;
+
+    setSelection((current) => {
+      if (!current) return current;
+      const span = slotsForDuration(duration);
+      const startSlot = Math.min(current.start, totalSlots - 1);
+      const endSlot = Math.min(startSlot + span - 1, totalSlots - 1);
+      return { ...current, start: startSlot, end: endSlot };
+    });
+  };
+
   const isOwnBooking = (booking) => (
     (String(booking.user_id || '') === String(user?.id || '')) ||
     (user?.isInternal && user?.role === 'client' && String(booking.client_account_id || '') === String(user?.id || ''))
@@ -1759,6 +1841,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setPendingEmployee(employee);
   };
 
+  const stampBookingBranch = async (bookingRow) => {
+    if (!activeBranchId || !bookingRow?.id) return;
+    await supabase.rpc('set_booking_branch', {
+      booking_id_value: bookingRow.id,
+      branch_id_value: activeBranchId,
+      company_slug_value: companySlug
+    });
+  };
+
   const reserveClientRequest = async () => {
     const range = selectedRange;
 
@@ -1787,7 +1878,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    const { error } = await supabase.rpc('request_client_booking', {
+    const { data, error } = await supabase.rpc('request_client_booking', {
       service_id_value: selectedService.id || null,
       employee_id_value: null,
       booking_description_value: bookingDescription || null,
@@ -1804,6 +1895,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       alert(`No se pudo solicitar el turno: ${error.message}`);
       return;
     }
+
+    await stampBookingBranch(data);
 
     alert('Solicitud enviada. El administrador asignará un empleado y confirmará el turno.');
     close();
@@ -1844,7 +1937,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    if (!employeeHasAvailability(employeeAvailability, employee.id, range, availabilityLoadFailed)) {
+    if (!employeeHasAvailability(employeeAvailability, employee.id, range, availabilityLoadFailed, activeBranchId)) {
       alert(`${employee.name} no tiene disponibilidad configurada para ese horario`);
       return;
     }
@@ -1913,7 +2006,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
-    const { error } = isClientView
+    const { data, error } = isClientView
       ? await supabase.rpc('request_client_booking', {
           service_id_value: selectedService.id || null,
           employee_id_value: employee.id,
@@ -1954,6 +2047,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         })
         : await supabase.from('bookings').insert({
           company_id: companyContext?.id || null,
+          branch_id: activeBranchId,
           user_id: isClientView ? user.id : null,
           user_email: customerEmail,
           customer_name: customerName || null,
@@ -1969,6 +2063,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       alert(isClientView ? `No se pudo solicitar el turno: ${error.message}` : `No se pudo reservar ese horario: ${error.message}`);
       return;
     }
+
+    await stampBookingBranch(data);
 
     close();
     await loadAll();
@@ -2220,6 +2316,16 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
             Cerrar atención
           </button>
         )}
+        {showAgendaBranchFilter && (
+          <label className="agenda-branch-filter">
+            <span>Sucursal</span>
+            <select value={selectedBranchId} onChange={(event) => setSelectedBranchId(event.target.value)}>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>{branch.name}</option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       {/* HEADER */}
@@ -2249,7 +2355,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           const slotTime = buildSlotDate(day, slotIndex, slotMinutes);
 
           return bookings.filter((booking) =>
-            isVisibleGridBooking(booking) && isBooked(booking, slotTime)
+            isVisibleGridBooking(booking) && isBooked(booking, slotTime) && matchesAgendaBranchFilter(booking)
           );
         });
         const rowMaxBookings = Math.max(0, ...rowSlotBookings.map((slotBookings) => slotBookings.length));
@@ -2402,8 +2508,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         <ServiceModal
           services={reservationOptions}
           rangeLabel={selectedRangeLabel}
+          startLabel={selectedRange ? formatTime(selectedRange.startLocal) : ''}
+          slotMinutes={slotMinutes}
+          branchSelector={isClientView ? branchSelectorNode : null}
           onClose={close}
-          onSelectService={setSelectedService}
+          onSelectService={handleSelectService}
         />
       )}
 
@@ -2426,6 +2535,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                 )}
                 {bookingPromotionText && <span className="client-request-promotion">{bookingPromotionText}</span>}
               </div>
+
+              {branchSelectorNode}
 
               {isLoadingAvailableEmployees ? (
                 <div className="agenda-empty-state">Validando disponibilidad...</div>
@@ -2462,6 +2573,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           fallbackActionLabel="Solicitar sin elegir empleado"
           onFallbackReserve={reserveClientRequest}
           fallbackDisabled={isLoadingAvailableEmployees || (!selectedService?.isPromotion && availableEmployees.length === 0 && !availabilityLoadFailed)}
+          branchSelector={branchSelectorNode}
         />
       )}
 
@@ -2473,6 +2585,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           emptyMessage={availableEmployeesMessage}
           onClose={close}
           onReserve={chooseEmployeeForReservation}
+          branchSelector={branchSelectorNode}
         />
       )}
 

@@ -52,11 +52,26 @@ export default function Navbar({
   canChangeProfile = false,
   navItems = defaultNavItems,
   logoSrc = turnosAppLogo,
-  logoAlt
+  logoAlt,
+  showMenuToggle = false,
+  onMenuToggle
 }) {
 
   return (
     <div className="app-navbar">
+      {showMenuToggle && (
+        <button
+          className="app-navbar-menu-toggle"
+          type="button"
+          onClick={onMenuToggle}
+          aria-label="Abrir menú"
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+      )}
+
       <div className="app-navbar-brand app-navbar-logo-box">
         <span className="app-navbar-logo-frame" style={navbarLogoFrameStyle}>
           <img className="app-navbar-logo-image" style={navbarLogoImageStyle} src={logoSrc || turnosAppLogo} alt={logoAlt || `QuieroTurnoApp - ${getNavbarSubtitle(accessProfile)}`} />

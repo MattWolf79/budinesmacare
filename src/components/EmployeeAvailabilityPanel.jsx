@@ -15,13 +15,10 @@ const weekdayOptions = [
 
 const emptyAvailabilityForm = {
   employeeId: '',
+  branchId: '',
   startDate: '',
   endDate: '',
-  startTime: '09:00',
-  endTime: '18:00',
-  splitSchedule: false,
-  secondStartTime: '14:00',
-  secondEndTime: '18:00'
+  ranges: [{ startTime: '09:00', endTime: '18:00' }]
 };
 
 const normalizeTimeInput = (value) => String(value || '').slice(0, 5);
@@ -124,17 +121,28 @@ export default function EmployeeAvailabilityPanel({
   employees: adminEmployees = [],
   onAvailabilityChanged,
   adminProfileSummary = null,
-  companySlug
+  companySlug,
+  companyContext = null
 }) {
   const isAdminMode = mode === 'admin';
+  const sucursalesHabilitadas = companyContext?.configuracion_operativa?.sucursales_habilitadas === true;
+  const branches = useMemo(
+    () => (Array.isArray(companyContext?.branches) ? companyContext.branches : []),
+    [companyContext]
+  );
+  const showBranchSelector = sucursalesHabilitadas && branches.length > 0;
+  const getBranchName = (branchIdValue) =>
+    branches.find((branch) => String(branch.id) === String(branchIdValue))?.name || 'Sucursal';
   const availabilityFilterStorageKey = `turnos.availability.weekday.${isAdminMode ? 'admin' : employeeId || user?.id || 'employee'}`;
   const [employees, setEmployees] = useState(adminEmployees);
   const [availability, setAvailability] = useState([]);
   const [form, setForm] = useState(() => ({
     ...emptyAvailabilityForm,
     employeeId: employeeId || adminEmployees[0]?.id || '',
+    branchId: '',
     startDate: getTodayInput(),
-    endDate: getTodayInput()
+    endDate: getTodayInput(),
+    ranges: [{ startTime: '09:00', endTime: '18:00' }]
   }));
   const [editingAvailabilityId, setEditingAvailabilityId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -242,6 +250,16 @@ export default function EmployeeAvailabilityPanel({
     return () => window.clearTimeout(timeoutId);
   }, [loadAvailability]);
 
+  useEffect(() => {
+    if (!showBranchSelector) return;
+    setForm((current) => {
+      if (current.branchId && branches.some((branch) => String(branch.id) === String(current.branchId))) {
+        return current;
+      }
+      return { ...current, branchId: branches[0]?.id || '' };
+    });
+  }, [showBranchSelector, branches]);
+
   const updateWeekdayFilter = (value) => {
     const nextValue = String(value);
     setSelectedWeekdayFilter(nextValue);
@@ -253,8 +271,10 @@ export default function EmployeeAvailabilityPanel({
     setForm({
       ...emptyAvailabilityForm,
       employeeId: selectedEmployeeId || employees[0]?.id || '',
+      branchId: showBranchSelector ? (branches[0]?.id || '') : '',
       startDate: getTodayInput(),
-      endDate: getTodayInput()
+      endDate: getTodayInput(),
+      ranges: [{ startTime: '09:00', endTime: '18:00' }]
     });
   };
 
@@ -272,18 +292,43 @@ export default function EmployeeAvailabilityPanel({
     });
   };
 
+  const updateRange = (index, field, value) => {
+    setForm((current) => ({
+      ...current,
+      ranges: current.ranges.map((range, rangeIndex) =>
+        rangeIndex === index ? { ...range, [field]: value } : range
+      )
+    }));
+  };
+
+  const addRange = () => {
+    setForm((current) => {
+      const last = current.ranges[current.ranges.length - 1];
+      return {
+        ...current,
+        ranges: [...current.ranges, { startTime: last?.endTime || '09:00', endTime: last?.endTime || '18:00' }]
+      };
+    });
+  };
+
+  const removeRange = (index) => {
+    setForm((current) => ({
+      ...current,
+      ranges: current.ranges.length > 1
+        ? current.ranges.filter((_, rangeIndex) => rangeIndex !== index)
+        : current.ranges
+    }));
+  };
+
   const editAvailability = (item) => {
     setEditingAvailabilityId(item.id);
     setIsAvailabilityFormOpen(true);
     setForm({
       employeeId: item.employee_id,
+      branchId: item.branch_id || (showBranchSelector ? (branches[0]?.id || '') : ''),
       startDate: item.available_date || getTodayInput(),
       endDate: item.available_date || getTodayInput(),
-      startTime: formatTime(item.start_time),
-      endTime: formatTime(item.end_time),
-      splitSchedule: false,
-      secondStartTime: '14:00',
-      secondEndTime: '18:00'
+      ranges: [{ startTime: formatTime(item.start_time), endTime: formatTime(item.end_time) }]
     });
   };
 
@@ -309,16 +354,18 @@ export default function EmployeeAvailabilityPanel({
     event.preventDefault();
 
     const employeeIdValue = isAdminMode ? form.employeeId : employeeId;
+    const branchIdValue = showBranchSelector ? (form.branchId || null) : null;
     const availabilityDates = editingAvailabilityId
       ? [form.startDate || getTodayInput()]
       : getDatesBetween(form.startDate || getTodayInput(), form.endDate || form.startDate || getTodayInput());
-    const startTime = normalizeTimeInput(form.startTime);
-    const endTime = normalizeTimeInput(form.endTime);
-    const secondStartTime = normalizeTimeInput(form.secondStartTime);
-    const secondEndTime = normalizeTimeInput(form.secondEndTime);
 
     if (!employeeIdValue) {
       alert('Seleccioná un empleado.');
+      return;
+    }
+
+    if (showBranchSelector && !branchIdValue) {
+      alert('Seleccioná una sucursal.');
       return;
     }
 
@@ -327,25 +374,31 @@ export default function EmployeeAvailabilityPanel({
       return;
     }
 
-    if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
-      alert('La hora fin debe ser posterior a la hora inicio.');
+    const ranges = form.ranges.map((range) => ({
+      startTime: normalizeTimeInput(range.startTime),
+      endTime: normalizeTimeInput(range.endTime)
+    }));
+
+    if (!ranges.length) {
+      alert('Agregá al menos un horario.');
       return;
     }
 
-    const ranges = [{ startTime, endTime }];
-
-    if (form.splitSchedule) {
-      if (timeToMinutes(secondEndTime) <= timeToMinutes(secondStartTime)) {
-        alert('La segunda hora fin debe ser posterior a la segunda hora inicio.');
+    for (const range of ranges) {
+      if (timeToMinutes(range.endTime) <= timeToMinutes(range.startTime)) {
+        alert('En cada horario, la hora fin debe ser posterior a la hora inicio.');
         return;
       }
+    }
 
-      if (timeToMinutes(startTime) < timeToMinutes(secondEndTime) && timeToMinutes(endTime) > timeToMinutes(secondStartTime)) {
-        alert('Los horarios fraccionados no pueden superponerse.');
-        return;
+    for (let i = 0; i < ranges.length; i += 1) {
+      for (let j = i + 1; j < ranges.length; j += 1) {
+        if (timeToMinutes(ranges[i].startTime) < timeToMinutes(ranges[j].endTime)
+          && timeToMinutes(ranges[i].endTime) > timeToMinutes(ranges[j].startTime)) {
+          alert('Los horarios que agregaste se superponen entre sí.');
+          return;
+        }
       }
-
-      ranges.push({ startTime: secondStartTime, endTime: secondEndTime });
     }
 
     const duplicatedDate = availabilityDates.find((availabilityDate) => {
@@ -368,27 +421,35 @@ export default function EmployeeAvailabilityPanel({
             availability_id_value: String(editingAvailabilityId),
             employee_id_value: employeeIdValue,
             available_date_value: availabilityDate,
-            start_time_value: startTime,
-            end_time_value: endTime,
+            start_time_value: ranges[0].startTime,
+            end_time_value: ranges[0].endTime,
             active_value: true,
             account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
             session_token_value: user?.isInternal ? user.sessionToken : null,
-            company_slug_value: companySlug
+            company_slug_value: companySlug,
+            branch_id_value: branchIdValue
           });
 
-          if (updateResult.error || !form.splitSchedule) return updateResult;
+          if (updateResult.error) return updateResult;
 
-          return supabase.rpc('save_admin_employee_availability', {
-            availability_id_value: null,
-            employee_id_value: employeeIdValue,
-            available_date_value: availabilityDate,
-            start_time_value: secondStartTime,
-            end_time_value: secondEndTime,
-            active_value: true,
-            account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
-            session_token_value: user?.isInternal ? user.sessionToken : null,
-            company_slug_value: companySlug
-          });
+          for (const range of ranges.slice(1)) {
+            const extraResult = await supabase.rpc('save_admin_employee_availability', {
+              availability_id_value: null,
+              employee_id_value: employeeIdValue,
+              available_date_value: availabilityDate,
+              start_time_value: range.startTime,
+              end_time_value: range.endTime,
+              active_value: true,
+              account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
+              session_token_value: user?.isInternal ? user.sessionToken : null,
+              company_slug_value: companySlug,
+              branch_id_value: branchIdValue
+            });
+
+            if (extraResult.error) return extraResult;
+          }
+
+          return updateResult;
         }
 
         for (const availabilityDate of availabilityDates) {
@@ -402,7 +463,8 @@ export default function EmployeeAvailabilityPanel({
               active_value: true,
               account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
               session_token_value: user?.isInternal ? user.sessionToken : null,
-              company_slug_value: companySlug
+              company_slug_value: companySlug,
+              branch_id_value: branchIdValue
             });
 
             if (result.error) return result;
@@ -420,23 +482,31 @@ export default function EmployeeAvailabilityPanel({
             session_token_value: user.sessionToken,
             availability_id_value: String(editingAvailabilityId),
             available_date_value: availabilityDate,
-            start_time_value: startTime,
-            end_time_value: endTime,
+            start_time_value: ranges[0].startTime,
+            end_time_value: ranges[0].endTime,
             active_value: true,
-            company_slug_value: companySlug
+            company_slug_value: companySlug,
+            branch_id_value: branchIdValue
           });
 
-          if (updateResult.error || !form.splitSchedule) return updateResult;
+          if (updateResult.error) return updateResult;
 
-          return supabase.rpc('create_internal_employee_availability', {
-            account_id_value: user.id,
-            session_token_value: user.sessionToken,
-            available_date_value: availabilityDate,
-            start_time_value: secondStartTime,
-            end_time_value: secondEndTime,
-            active_value: true,
-            company_slug_value: companySlug
-          });
+          for (const range of ranges.slice(1)) {
+            const extraResult = await supabase.rpc('create_internal_employee_availability', {
+              account_id_value: user.id,
+              session_token_value: user.sessionToken,
+              available_date_value: availabilityDate,
+              start_time_value: range.startTime,
+              end_time_value: range.endTime,
+              active_value: true,
+              company_slug_value: companySlug,
+              branch_id_value: branchIdValue
+            });
+
+            if (extraResult.error) return extraResult;
+          }
+
+          return updateResult;
         }
 
         for (const availabilityDate of availabilityDates) {
@@ -448,7 +518,8 @@ export default function EmployeeAvailabilityPanel({
               start_time_value: range.startTime,
               end_time_value: range.endTime,
               active_value: true,
-              company_slug_value: companySlug
+              company_slug_value: companySlug,
+              branch_id_value: branchIdValue
             });
 
             if (result.error) return result;
@@ -460,7 +531,8 @@ export default function EmployeeAvailabilityPanel({
 
       const basePayload = {
         employee_id: employeeIdValue,
-        active: true
+        active: true,
+        ...(branchIdValue ? { branch_id: branchIdValue } : {})
       };
 
       if (editingAvailabilityId) {
@@ -471,8 +543,8 @@ export default function EmployeeAvailabilityPanel({
             ...basePayload,
             available_date: availabilityDate,
             weekday: getWeekdayFromDateInput(availabilityDate),
-            start_time: startTime,
-            end_time: endTime
+            start_time: ranges[0].startTime,
+            end_time: ranges[0].endTime
           })
           .eq('id', editingAvailabilityId);
 
@@ -481,15 +553,17 @@ export default function EmployeeAvailabilityPanel({
         }
 
         const updateResult = await query;
-        if (updateResult.error || !form.splitSchedule) return updateResult;
+        if (updateResult.error || ranges.length === 1) return updateResult;
 
-        return supabase.from('employee_availability').insert({
-          ...basePayload,
-          available_date: availabilityDate,
-          weekday: getWeekdayFromDateInput(availabilityDate),
-          start_time: secondStartTime,
-          end_time: secondEndTime
-        });
+        return supabase.from('employee_availability').insert(
+          ranges.slice(1).map((range) => ({
+            ...basePayload,
+            available_date: availabilityDate,
+            weekday: getWeekdayFromDateInput(availabilityDate),
+            start_time: range.startTime,
+            end_time: range.endTime
+          }))
+        );
       }
 
       return supabase.from('employee_availability').insert(
@@ -659,6 +733,24 @@ export default function EmployeeAvailabilityPanel({
           toggleLabel={isAvailabilityFormOpen ? 'Ocultar formulario de disponibilidad' : 'Mostrar formulario de disponibilidad'}
           onSubmit={saveAvailability}
         >
+            {showBranchSelector && (
+              <div className="admin-fieldset availability-branch-fieldset">
+                <div className="admin-fieldset-title">Sucursal</div>
+                <div className="availability-branch-pills" role="group" aria-label="Seleccionar sucursal">
+                  {branches.map((branch) => (
+                    <button
+                      key={branch.id}
+                      type="button"
+                      className={`availability-branch-pill ${String(form.branchId) === String(branch.id) ? 'is-selected' : ''}`}
+                      onClick={() => updateField('branchId', branch.id)}
+                    >
+                      {branch.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <label>
               Empleado
               {isAdminMode ? (
@@ -705,38 +797,47 @@ export default function EmployeeAvailabilityPanel({
               </div>
             </div>
 
-            <div className="availability-range-card">
-              <div className="admin-two-columns">
-                <label>
-                  Hora inicio
-                  <input type="time" step="1800" value={form.startTime} onChange={(event) => updateField('startTime', event.target.value)} />
-                </label>
-                <label>
-                  Hora fin
-                  <input type="time" step="1800" min={form.startTime} value={form.endTime} onChange={(event) => updateField('endTime', event.target.value)} />
-                </label>
-              </div>
-            </div>
-
-            <label className="admin-switch-row">
-              <input type="checkbox" checked={form.splitSchedule} onChange={(event) => updateField('splitSchedule', event.target.checked)} />
-              Fraccionar horario
-            </label>
-
-            {form.splitSchedule && (
-              <div className="availability-range-card">
-                <div className="admin-two-columns">
-                  <label>
-                    Segundo inicio
-                    <input type="time" step="1800" value={form.secondStartTime} onChange={(event) => updateField('secondStartTime', event.target.value)} />
-                  </label>
-                  <label>
-                    Segundo fin
-                    <input type="time" step="1800" min={form.secondStartTime} value={form.secondEndTime} onChange={(event) => updateField('secondEndTime', event.target.value)} />
-                  </label>
+            <div className="admin-fieldset availability-ranges-fieldset">
+              <div className="admin-fieldset-title">Horarios disponibles</div>
+              {form.ranges.map((range, index) => (
+                <div className="availability-range-card" key={index}>
+                  <div className="admin-two-columns">
+                    <label>
+                      Hora inicio
+                      <input
+                        type="time"
+                        step="1800"
+                        value={range.startTime}
+                        onChange={(event) => updateRange(index, 'startTime', event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Hora fin
+                      <input
+                        type="time"
+                        step="1800"
+                        min={range.startTime}
+                        value={range.endTime}
+                        onChange={(event) => updateRange(index, 'endTime', event.target.value)}
+                      />
+                    </label>
+                  </div>
+                  {form.ranges.length > 1 && (
+                    <button
+                      type="button"
+                      className="availability-range-remove"
+                      onClick={() => removeRange(index)}
+                      aria-label={`Quitar horario ${index + 1}`}
+                    >
+                      Quitar horario
+                    </button>
+                  )}
                 </div>
-              </div>
-            )}
+              ))}
+              <button type="button" className="availability-range-add" onClick={addRange}>
+                + Agregar horario
+              </button>
+            </div>
 
             <div className="admin-actions">
               <button className="agenda-close-button" type="submit" disabled={isSaving || isLoading}>
@@ -785,6 +886,12 @@ export default function EmployeeAvailabilityPanel({
                         <span>Horario</span>
                         <strong>{formatTime(item.start_time)} hs-{formatTime(item.end_time)} hs</strong>
                       </div>
+                      {showBranchSelector && (
+                        <div className="availability-card-field availability-card-field-wide">
+                          <span>Sucursal</span>
+                          <strong>{getBranchName(item.branch_id)}</strong>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="admin-record-actions availability-card-actions">

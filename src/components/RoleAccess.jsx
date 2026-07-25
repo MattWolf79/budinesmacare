@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import Navbar from './Navbar';
+import AdminSidebar from './AdminSidebar';
 import { supabase } from '../api/supabaseClient';
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
@@ -40,6 +41,15 @@ const employeeNavItems = [
   { id: 'agenda', label: 'Agenda', mobileLabel: 'Agenda', icon: '📅' },
   { id: 'profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: '👤' },
   { id: 'availability', label: 'Disponibilidad', mobileLabel: 'Horario', icon: '🕒' }
+];
+
+const employeeBottomNavItems = employeeNavItems.filter((item) => item.id !== 'profile');
+
+const employeeSidebarGroups = [
+  {
+    label: 'MI ESPACIO',
+    items: employeeNavItems.map((item) => ({ id: item.id, label: item.label, icon: item.icon }))
+  }
 ];
 
 const clientNavItems = [
@@ -108,7 +118,7 @@ function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
 function EmployeeBottomNav({ activeView, onViewChange }) {
   return (
     <nav className="employee-bottom-nav" aria-label="Secciones empleado">
-      {employeeNavItems.map((item) => (
+      {employeeBottomNavItems.map((item) => (
         <button
           key={item.id}
           type="button"
@@ -145,6 +155,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const [clientActiveView, setClientActiveView] = useState('home');
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [companyName, setCompanyName] = useState('QuieroTurnoApp');
   const [businessHoursText, setBusinessHoursText] = useState('');
   const [welcomeBackground, setWelcomeBackground] = useState(null);
@@ -217,10 +228,62 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
     setSelectedPromotion(null);
   };
 
+  const changeEmployeeView = (view) => {
+    setEmployeeActiveView(view);
+    setSidebarOpen(false);
+  };
+
   const reservePromotion = (promotion) => {
     setSelectedPromotion(promotion);
     setClientActiveView('reserve');
   };
+
+  if (isEmployeeProfile) {
+    return (
+      <main className="role-workspace role-workspace-employee has-role-sidebar">
+        <Navbar
+          user={user}
+          activeView={employeeActiveView}
+          accessProfile="employee"
+          onViewChange={changeEmployeeView}
+          onChangeProfile={onChangeProfile}
+          onLogout={onLogout}
+          showNavigation={false}
+          showMenuToggle
+          onMenuToggle={() => setSidebarOpen((current) => !current)}
+          canChangeProfile={canChangeProfile}
+          logoSrc={workspaceLogoSrc}
+          logoAlt={workspaceLogoAlt}
+        />
+        <div className="role-workspace-body">
+          <AdminSidebar
+            groups={employeeSidebarGroups}
+            activeView={employeeActiveView}
+            onViewChange={changeEmployeeView}
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            companyName={companyName}
+            logoSrc={workspaceLogoSrc}
+          />
+          <div className="role-workspace-content">
+            <section
+              className={`role-workspace-hero ${shouldUseWelcomeBackground ? 'employee-welcome-hero has-custom-background' : ''}`.trim()}
+              style={shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
+            >
+              <div>
+                <p className="admin-kicker">{profile.eyebrow}</p>
+                <h1>{profile.title}</h1>
+                <p>{profile.description}</p>
+              </div>
+              <WorkspaceProfileIdentity user={user} profile={profile} />
+            </section>
+            <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} />
+          </div>
+        </div>
+        <EmployeeBottomNav activeView={employeeActiveView} onViewChange={changeEmployeeView} />
+      </main>
+    );
+  }
 
   return (
     <main className={`role-workspace role-workspace-${selectedProfile}`}>
