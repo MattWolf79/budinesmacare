@@ -1001,6 +1001,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [bookingClosures, setBookingClosures] = useState([]);
   const [bookingClosureInvoices, setBookingClosureInvoices] = useState([]);
   const [availabilityLoadFailed, setAvailabilityLoadFailed] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [offset, setOffset] = useState(0);
   const [visibleDayCount, setVisibleDayCount] = useState(getVisibleDayCount);
@@ -1016,6 +1017,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [bookingDetails, setBookingDetails] = useState(null);
   const [assignmentRequest, setAssignmentRequest] = useState(null);
   const [assignmentEmployees, setAssignmentEmployees] = useState([]);
+  const [assignmentEmptyReason, setAssignmentEmptyReason] = useState('');
   const [isLoadingAssignmentEmployees, setIsLoadingAssignmentEmployees] = useState(false);
   const [closeAttentionOpen, setCloseAttentionOpen] = useState(false);
   const [closeAttentionInitialDate, setCloseAttentionInitialDate] = useState(formatDateOnlyForDb(new Date()));
@@ -1358,6 +1360,17 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     applyAll(results);
   };
 
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await loadAll();
+      onBookingsChanged?.();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const openCloseAttention = async () => {
     if (!preciosHabilitados) return;
 
@@ -1652,11 +1665,11 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const canCancelBooking = (booking) =>
     !isClosedBooking(booking) &&
-    !isPastDay(parseBookingDate(booking.start_at)) &&
+    (isAdminView || !isPastDay(parseBookingDate(booking.start_at))) &&
     (isAdminView || (!isEmployeeView && isOwnBooking(booking)) || (isEmployeeView && canEmployeeCancelBooking(booking)));
 
   const cancelBooking = async (booking) => {
-    if (isPastDay(parseBookingDate(booking.start_at))) {
+    if (!isAdminView && isPastDay(parseBookingDate(booking.start_at))) {
       setBookingToCancel(null);
       alert('No se pueden cancelar turnos de días pasados.');
       return;
@@ -1988,6 +2001,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     setAssignmentRequest({ booking, service, range, hasClientConflict });
     setAssignmentEmployees([]);
+    setAssignmentEmptyReason('');
     setIsLoadingAssignmentEmployees(true);
 
     const relResult = isPromotionBooking
@@ -2013,6 +2027,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     if (!ids.length) {
       setAssignmentEmployees([]);
+      setAssignmentEmptyReason(isPromotionBooking
+        ? 'Esta promoción no tiene empleados vinculados para atenderla. Vinculá empleados a la promoción para poder asignarla.'
+        : 'No hay empleados vinculados a este servicio. Vinculá empleados al servicio para poder asignarlos.');
       setIsLoadingAssignmentEmployees(false);
       return;
     }
@@ -2033,6 +2050,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       return;
     }
 
+    const canOverrideAvailability = isAdminView || (user?.isInternal && isEmployeeView);
+
     const assignmentOptions = (emp || [])
       .filter((employee) => employee.active !== false)
       .map((employee) => {
@@ -2043,18 +2062,20 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           ...employee,
           assignmentHasAvailability: hasAvailability,
           assignmentHasConflict: hasConflict,
-          assignmentCanAssign: !hasClientConflict && !hasConflict && (availabilityLoadFailed || hasAvailability)
+          assignmentCanAssign: !hasClientConflict && !hasConflict && (canOverrideAvailability || availabilityLoadFailed || hasAvailability)
         };
       })
       .sort((left, right) => String(left.name || '').localeCompare(String(right.name || ''), 'es'));
 
     setAssignmentEmployees(assignmentOptions);
+    setAssignmentEmptyReason(assignmentOptions.length ? '' : 'Los empleados vinculados a este servicio están inactivos.');
     setIsLoadingAssignmentEmployees(false);
   };
 
   const closeAssignmentRequest = () => {
     setAssignmentRequest(null);
     setAssignmentEmployees([]);
+    setAssignmentEmptyReason('');
     setIsLoadingAssignmentEmployees(false);
   };
 
@@ -2156,6 +2177,13 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                     <span className="admin-record-meta booking-assignment-meta">{booking.customer_name || booking.user_email || 'Cliente'} · {formatBookingRangeLabel(booking)}</span>
                   </div>
                   <div className="admin-record-actions">
+                    <button
+                      className="agenda-option-button"
+                      type="button"
+                      onClick={() => setBookingDetails({ booking, service, employee: null })}
+                    >
+                      Ver detalle
+                    </button>
                     <button className="agenda-close-button" type="button" onClick={() => openAssignmentRequest(booking)}>
                       Asignar empleado
                     </button>
@@ -2178,6 +2206,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           ←
         </button>
         <button className="agenda-week-button" onClick={() => setOffset(offset + visibleDayCount)} aria-label="Siguientes dias">→</button>
+        <button
+          className="agenda-refresh-button"
+          type="button"
+          onClick={handleManualRefresh}
+          disabled={isRefreshing}
+          title="Actualizar turnos"
+        >
+          {isRefreshing ? 'Actualizando…' : 'Actualizar'}
+        </button>
         {!isClientView && preciosHabilitados && (
           <button className="agenda-close-attention-button" type="button" onClick={openCloseAttention}>
             Cerrar atención
@@ -2457,7 +2494,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
               {isLoadingAssignmentEmployees ? (
                 <div className="agenda-empty-state">Buscando empleados de este servicio...</div>
               ) : assignmentEmployees.length === 0 ? (
-                <div className="agenda-empty-state">No hay empleados activos disponibles para esta solicitud.</div>
+                <div className="agenda-empty-state">{assignmentEmptyReason || 'No hay empleados activos disponibles para esta solicitud.'}</div>
               ) : (
                 <div className="assignment-employee-grid">
                   {assignmentEmployees.map((employee) => {

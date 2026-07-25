@@ -230,6 +230,9 @@ code {
 }
 
 .agenda-close-attention-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 34px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -239,12 +242,44 @@ code {
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   font-size: 12px;
   font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
 }
 
 .agenda-close-attention-button:hover {
   border-color: #20c6d4;
   background: #effbfd;
+}
+
+.agenda-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 7px 14px;
+  color: #334155;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.agenda-refresh-button:hover {
+  border-color: #20c6d4;
+  background: #effbfd;
+}
+
+.agenda-refresh-button:disabled {
+  color: #94a3b8;
+  background: #f1f5f9;
+  cursor: progress;
 }
 
 .agenda-days-header {
@@ -2771,16 +2806,16 @@ code {
 }
 
 .employee-panel {
-  margin-top: 28px;
+  margin-top: 20px;
   text-align: left;
 }
 
 .employee-panel-empty {
-  border: 1px solid #d8e0eb;
+  border: 1px solid #e0e5ec;
   border-radius: 8px;
-  padding: 22px;
+  padding: 18px;
   background: #fff;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 
 .employee-panel-empty h2 {
@@ -2797,42 +2832,54 @@ code {
 
 .employee-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin: 8px 0 24px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: stretch;
+  gap: 10px;
+  margin: 2px 0 16px;
+}
+
+@media (min-width: 901px) {
+  .employee-summary-grid {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-template-columns: none;
+  }
 }
 
 .employee-summary-card,
 .employee-card {
-  border: 1px solid #d8e0eb;
+  border: 1px solid #e0e5ec;
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 
 .employee-summary-card {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px;
 }
 
 .employee-summary-card span {
   color: #24aebb;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .employee-summary-card strong {
   display: block;
-  margin-top: 6px;
+  margin-top: 5px;
   color: #1f2937;
-  font-size: 30px;
+  font-size: 22px;
   line-height: 1;
 }
 
 .employee-summary-card p {
-  margin-top: 5px;
+  margin-top: 4px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -2951,7 +2998,7 @@ code {
 .employee-layout {
   display: grid;
   grid-template-columns: minmax(220px, 280px) 1fr;
-  gap: 16px;
+  gap: 12px;
   align-items: start;
 }
 
@@ -2960,13 +3007,13 @@ code {
 }
 
 .employee-layout-summary .employee-list {
-  grid-template-columns: repeat(auto-fill, minmax(170px, 210px));
-  justify-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  justify-content: stretch;
   align-items: start;
 }
 
 .employee-card {
-  padding: 16px;
+  padding: 12px;
 }
 
 .employee-agenda-card {
@@ -3005,7 +3052,7 @@ code {
 .employee-card h2 {
   margin: 0;
   color: #1f2937;
-  font-size: 21px;
+  font-size: 16px;
   line-height: 1.15;
   letter-spacing: 0;
 }
@@ -3038,6 +3085,24 @@ code {
 }
 
 .employee-card-header > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: #155e75;
+  background: #cffafe;
+  font-weight: 900;
+}
+
+.employee-card-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.employee-card-header-actions > span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5922,8 +5987,9 @@ body .platform-admin-header .app-navbar-logout:hover {
   }
 
   .modal {
-    align-items: flex-end;
+    align-items: center;
     padding: 12px;
+    overflow-y: auto;
   }
 
   .modal > div,

@@ -598,7 +598,7 @@ export default function EmployeeAvailabilityPanel({
       </div>
 
       <div className="admin-external-actions">
-        <button className="admin-link-button admin-refresh-button" type="button" onClick={loadAvailability} disabled={isLoading}>
+        <button className="agenda-refresh-button" type="button" onClick={loadAvailability} disabled={isLoading}>
           Actualizar
         </button>
       </div>

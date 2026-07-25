@@ -426,12 +426,10 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
 
     window.addEventListener('turnos-app-configuration-saved', refreshConfiguration);
     window.addEventListener('storage', refreshFromStorage);
-    window.addEventListener('focus', refreshConfiguration);
 
     return () => {
       window.removeEventListener('turnos-app-configuration-saved', refreshConfiguration);
       window.removeEventListener('storage', refreshFromStorage);
-      window.removeEventListener('focus', refreshConfiguration);
     };
   }, []);
 
@@ -547,7 +545,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const now = useMemo(() => new Date(), []);
 
   const visibleUpcomingBookings = useMemo(
-    () => bookings.filter((booking) => parseDate(booking.end_at) >= now || isClosedBooking(booking)),
+    () => bookings.filter((booking) => parseDate(booking.end_at) >= now && !isClosedBooking(booking)),
     [bookings, now]
   );
 
@@ -888,7 +886,17 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                   <p className="admin-kicker">Agenda</p>
                   <h2>Próximos turnos</h2>
                 </div>
-                <span>{activeUpcomingBookings.length}</span>
+                <div className="employee-card-header-actions">
+                  <button
+                    className="client-summary-refresh"
+                    type="button"
+                    onClick={refreshEmployeeWorkspace}
+                    title="Actualizar turnos"
+                  >
+                    Actualizar
+                  </button>
+                  <span>{activeUpcomingBookings.length}</span>
+                </div>
               </div>
 
               <div className="employee-list">

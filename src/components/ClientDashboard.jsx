@@ -118,12 +118,10 @@ export default function ClientDashboard({ user, showAgenda = true, selectedPromo
 
     window.addEventListener('turnos-app-configuration-saved', refreshConfiguration);
     window.addEventListener('storage', refreshFromStorage);
-    window.addEventListener('focus', refreshConfiguration);
 
     return () => {
       window.removeEventListener('turnos-app-configuration-saved', refreshConfiguration);
       window.removeEventListener('storage', refreshFromStorage);
-      window.removeEventListener('focus', refreshConfiguration);
     };
   }, []);
 
