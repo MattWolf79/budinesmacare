@@ -3,6 +3,7 @@ import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import Navbar from './Navbar';
 import AdminSidebar from './AdminSidebar';
+import NewBookingPanel from './NewBookingPanel';
 import { supabase } from '../api/supabaseClient';
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
@@ -115,10 +116,10 @@ function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
   );
 }
 
-function EmployeeBottomNav({ activeView, onViewChange }) {
+function EmployeeBottomNav({ activeView, onViewChange, items = employeeBottomNavItems }) {
   return (
     <nav className="employee-bottom-nav" aria-label="Secciones empleado">
-      {employeeBottomNavItems.map((item) => (
+      {items.map((item) => (
         <button
           key={item.id}
           type="button"
@@ -155,6 +156,8 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const [clientActiveView, setClientActiveView] = useState('home');
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [employeeActiveView, setEmployeeActiveView] = useState('summary');
+  const [isNewBookingOpen, setIsNewBookingOpen] = useState(false);
+  const [newBookingInitial, setNewBookingInitial] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [companyName, setCompanyName] = useState('QuieroTurnoApp');
   const [businessHoursText, setBusinessHoursText] = useState('');
@@ -229,7 +232,19 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   };
 
   const changeEmployeeView = (view) => {
+    if (view === 'new-booking') {
+      setNewBookingInitial(null);
+      setIsNewBookingOpen(true);
+      setSidebarOpen(false);
+      return;
+    }
     setEmployeeActiveView(view);
+    setSidebarOpen(false);
+  };
+
+  const openEmployeeNewBooking = (options = null) => {
+    setNewBookingInitial(options);
+    setIsNewBookingOpen(true);
     setSidebarOpen(false);
   };
 
@@ -239,6 +254,22 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   };
 
   if (isEmployeeProfile) {
+    const empleadosPuedenReservar = companyContext?.configuracion_operativa?.empleados_pueden_reservar !== false;
+    const employeeNavItemsForUser = empleadosPuedenReservar
+      ? [
+          employeeNavItems[0],
+          { id: 'new-booking', label: 'Nueva reserva', mobileLabel: 'Reservar', icon: '➕' },
+          ...employeeNavItems.slice(1)
+        ]
+      : employeeNavItems;
+    const employeeSidebarGroupsForUser = [
+      {
+        label: 'MI ESPACIO',
+        items: employeeNavItemsForUser.map((item) => ({ id: item.id, label: item.label, icon: item.icon }))
+      }
+    ];
+    const employeeBottomNavItemsForUser = employeeNavItemsForUser.filter((item) => item.id !== 'profile');
+
     return (
       <main className="role-workspace role-workspace-employee has-role-sidebar">
         <Navbar
@@ -257,7 +288,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
         />
         <div className="role-workspace-body">
           <AdminSidebar
-            groups={employeeSidebarGroups}
+            groups={employeeSidebarGroupsForUser}
             activeView={employeeActiveView}
             onViewChange={changeEmployeeView}
             open={sidebarOpen}
@@ -277,10 +308,25 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
               </div>
               <WorkspaceProfileIdentity user={user} profile={profile} />
             </section>
-            <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} />
+            <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={empleadosPuedenReservar ? openEmployeeNewBooking : undefined} />
           </div>
         </div>
-        <EmployeeBottomNav activeView={employeeActiveView} onViewChange={changeEmployeeView} />
+        <EmployeeBottomNav activeView={employeeActiveView} onViewChange={changeEmployeeView} items={employeeBottomNavItemsForUser} />
+        {isNewBookingOpen && (
+          <NewBookingPanel
+            user={user}
+            companySlug={companySlug}
+            companyContext={companyContext}
+            initialDate={newBookingInitial?.date || null}
+            initialStartTime={newBookingInitial?.startTime || null}
+            branchId={newBookingInitial?.branchId || null}
+            onClose={() => setIsNewBookingOpen(false)}
+            onBookingCreated={() => {
+              window.dispatchEvent(new Event('turnos-app-configuration-saved'));
+              setEmployeeActiveView('agenda');
+            }}
+          />
+        )}
       </main>
     );
   }

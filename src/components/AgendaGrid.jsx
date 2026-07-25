@@ -998,7 +998,7 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
   );
 }
 
-export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext }) {
+export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext, onRequestNewBooking = null }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -1562,6 +1562,18 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setDragEnd({ d, s });
   };
 
+  // Abre el panel "Nueva reserva" con dia/hora del slot (si el padre lo habilita).
+  const openNewBookingForSlot = (dayIndex, slotIndex) => {
+    if (!onRequestNewBooking) return false;
+    if (isPastDay(days[dayIndex])) return false;
+    const slotDate = buildSlotDate(days[dayIndex], slotIndex, slotMinutes);
+    const pad = (value) => String(value).padStart(2, '0');
+    const isoDate = `${slotDate.getFullYear()}-${pad(slotDate.getMonth() + 1)}-${pad(slotDate.getDate())}`;
+    const isoTime = `${pad(slotDate.getHours())}:${pad(slotDate.getMinutes())}`;
+    onRequestNewBooking({ date: isoDate, startTime: isoTime, branchId: activeBranchId || null });
+    return true;
+  };
+
   const move = (d, s) => {
     if (!dragStart) return;
     if (d !== dragStart.d) return;
@@ -1574,6 +1586,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
     const min = Math.min(dragStart.s, dragEnd.s);
     const max = Math.max(dragStart.s, dragEnd.s);
+
+    if (openNewBookingForSlot(dragStart.d, min)) {
+      setDragStart(null);
+      setDragEnd(null);
+      return;
+    }
 
     setSelection({
       day: dragStart.d,
@@ -1642,6 +1660,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const selectMobileRangePoint = (dayIndex, slotIndex) => {
     if (isPastDay(days[dayIndex])) return;
+
+    if (openNewBookingForSlot(dayIndex, slotIndex)) return;
 
     if (!mobileRangeStart || mobileRangeStart.day !== dayIndex) {
       setSelection(null);
@@ -2262,6 +2282,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
             {pendingAssignmentBookings.map((booking) => {
               const service = services.find((item) => Number(item.id) === Number(booking.service));
               const assignmentLabel = `${getBookingActivityLabel(booking, service)} / Pendiente`;
+              const bundleType = String(booking.bundle_type || '').toLowerCase();
+              const bundleLabel = bundleType === 'pack' ? 'Pack' : bundleType === 'promo' ? 'Promo' : '';
 
               return (
                 <article className="admin-record-card booking-assignment-card" key={booking.id} style={{ '--service-chip-color': service?.color || '#15b8c8' }}>
@@ -2269,6 +2291,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                     <span className="booking-assignment-service">
                       <ActivityIcon service={service} size="small" />
                       <strong>{assignmentLabel}</strong>
+                      {bundleLabel && (
+                        <span className={`booking-assignment-bundle-tag booking-assignment-bundle-tag-${bundleType}`}>{bundleLabel}</span>
+                      )}
                     </span>
                     <span className="admin-record-meta booking-assignment-meta">{booking.customer_name || booking.user_email || 'Cliente'} · {formatBookingRangeLabel(booking)}</span>
                   </div>

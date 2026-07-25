@@ -11565,7 +11565,19 @@ body {
   }
 
   .agenda-week-nav {
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    position: sticky;
+    left: 0;
+    max-width: 100vw;
+  }
+
+  .agenda-week-nav .agenda-branch-filter {
+    min-width: 0;
+  }
+
+  .agenda-week-nav .agenda-branch-filter select {
+    max-width: 150px;
   }
 
   .agenda-week-button {
@@ -12781,12 +12793,14 @@ body {
   display: inline-flex !important;
   align-items: center !important;
   flex: 0 0 auto !important;
+  justify-self: start !important;
+  width: max-content !important;
   gap: 6px !important;
   min-height: 30px !important;
   max-width: 100% !important;
   border: 1px solid color-mix(in srgb, var(--service-chip-color, #15b8c8) 52%, #dbe3ee) !important;
-  border-radius: 999px !important;
-  padding: 4px 10px 4px 5px !important;
+  border-radius: 16px !important;
+  padding: 4px 10px 4px 6px !important;
   color: color-mix(in srgb, var(--service-chip-color, #15b8c8) 78%, #172033) !important;
   background: #fff !important;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
@@ -12799,6 +12813,33 @@ body {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+.booking-assignment-bundle-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+  margin-left: 2px !important;
+  border-radius: 999px !important;
+  padding: 2px 8px !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.4px !important;
+}
+
+.booking-assignment-bundle-tag-pack {
+  color: #0e7490 !important;
+  background: #cffafe !important;
+  border: 1px solid #67e8f9 !important;
+}
+
+.booking-assignment-bundle-tag-promo {
+  color: #9a3412 !important;
+  background: #ffedd5 !important;
+  border: 1px solid #fdba74 !important;
 }
 
 .booking-assignment-meta {

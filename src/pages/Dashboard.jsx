@@ -66,6 +66,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   const [activeView, setActiveView] = useState(getAdminViewFromHash);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isNewBookingOpen, setIsNewBookingOpen] = useState(false);
+  const [newBookingInitial, setNewBookingInitial] = useState(null);
   const [adminDataVersion, setAdminDataVersion] = useState(0);
   const [promotions, setPromotions] = useState([]);
   const configuracionOperativa = companyContext?.configuracion_operativa || {};
@@ -138,6 +139,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
 
   const changeView = (view) => {
     if (view === 'new-booking') {
+      setNewBookingInitial(null);
       setIsNewBookingOpen(true);
       setSidebarOpen(false);
       return;
@@ -225,7 +227,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         <Box className="dashboard-content">
           {activeView === 'agenda' && (
             <div className="agenda-responsive-shell">
-              <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />
+              <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={(options) => { setNewBookingInitial(options); setIsNewBookingOpen(true); }} />
             </div>
           )}
           {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
@@ -246,6 +248,9 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
           user={user}
           companySlug={companySlug}
           companyContext={companyContext}
+          initialDate={newBookingInitial?.date || null}
+          initialStartTime={newBookingInitial?.startTime || null}
+          branchId={newBookingInitial?.branchId || null}
           onClose={() => setIsNewBookingOpen(false)}
           onBookingCreated={() => {
             setAdminDataVersion((current) => current + 1);

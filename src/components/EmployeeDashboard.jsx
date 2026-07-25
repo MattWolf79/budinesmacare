@@ -170,7 +170,7 @@ const buildClosedBookingAmounts = (employeeBookings, closureItems = [], closures
   }, {});
 };
 
-export default function EmployeeDashboard({ user, activeView = 'summary', companySlug, companyContext }) {
+export default function EmployeeDashboard({ user, activeView = 'summary', companySlug, companyContext, onRequestNewBooking }) {
   const [employee, setEmployee] = useState(null);
   const [employeeServices, setEmployeeServices] = useState([]);
   const [profileForm, setProfileForm] = useState(emptyProfileForm);
@@ -202,6 +202,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     };
   }, [appConfig, companyContext]);
   const preciosHabilitados = effectiveCompanyContext?.configuracion_operativa?.precios_habilitados !== false;
+  const empleadosPuedenReservar = effectiveCompanyContext?.configuracion_operativa?.empleados_pueden_reservar !== false;
 
   useEffect(() => {
     if (!employeeId) {
@@ -983,6 +984,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
             promotions={enabledPromotions}
             companySlug={companySlug}
             companyContext={effectiveCompanyContext}
+            onRequestNewBooking={onRequestNewBooking && empleadosPuedenReservar ? onRequestNewBooking : undefined}
           />
         </article>
       )}

@@ -193,6 +193,12 @@ export default function NewBookingPanel({
   const [employeeBranches, setEmployeeBranches] = useState([]);
 
   const [date, setDate] = useState(initialDate || todayIso());
+  const [startTime, setStartTime] = useState(() => {
+    if (initialStartTime) return initialStartTime;
+    const suggested = parseTime(defaultStartTime(gridInterval));
+    const maxStart = Math.max(BUSINESS_OPEN_MIN, BUSINESS_CLOSE_MIN - gridInterval);
+    return minutesToTime(Math.min(Math.max(suggested, BUSINESS_OPEN_MIN), maxStart));
+  });
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [comment, setComment] = useState('');
@@ -203,10 +209,46 @@ export default function NewBookingPanel({
   const [configDraft, setConfigDraft] = useState(null);
   const [depositEnabled, setDepositEnabled] = useState(false);
   const [showHoursModal, setShowHoursModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const wasHoursExceeded = useRef(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+
+    const branchRelationsRequest = showBranchSelector
+      ? supabase.rpc('get_branch_relations', { company_slug_value: companySlug })
+      : Promise.resolve({ data: { branchServices: [], employeeBranches: [] }, error: null });
+
+    if (internalEmployeeAccountId) {
+      // ---- Rol EMPLEADO: workspace interno + bundles del contexto público ----
+      const [workspaceResult, branchRelationsResult] = await Promise.all([
+        supabase.rpc('get_internal_employee_workspace', {
+          account_id_value: internalEmployeeAccountId,
+          session_token_value: internalSessionToken,
+          company_slug_value: companySlug
+        }),
+        branchRelationsRequest
+      ]);
+
+      if (workspaceResult.error) {
+        alert(`No se pudieron cargar los datos de reserva.\n${formatSupabaseError(workspaceResult.error)}`);
+        setIsLoading(false);
+        return;
+      }
+
+      setServices(workspaceResult.data?.services || []);
+      setEmployees(workspaceResult.data?.employees || []);
+      setEmployeeServices(workspaceResult.data?.employeeServices || []);
+      setBundles(Array.isArray(companyContext?.bundles) ? companyContext.bundles : []);
+      setExistingBookings(workspaceResult.data?.bookings || []);
+      setAvailability(workspaceResult.data?.agendaAvailability || workspaceResult.data?.availability || []);
+      setBranchServices(branchRelationsResult.data?.branchServices || []);
+      setEmployeeBranches(branchRelationsResult.data?.employeeBranches || []);
+      setIsLoading(false);
+      return;
+    }
+
+    // ---- Rol ADMIN (auth Supabase o sesión interna admin) ----
     const [adminResult, bundlesResult, branchRelationsResult] = await Promise.all([
       supabase.rpc('get_admin_panel_data', {
         account_id_value: internalAdminAccountId,
@@ -219,9 +261,7 @@ export default function NewBookingPanel({
         session_token_value: internalSessionToken,
         company_slug_value: companySlug
       }),
-      showBranchSelector
-        ? supabase.rpc('get_branch_relations', { company_slug_value: companySlug })
-        : Promise.resolve({ data: { branchServices: [], employeeBranches: [] }, error: null })
+      branchRelationsRequest
     ]);
 
     if (adminResult.error) {
@@ -239,7 +279,8 @@ export default function NewBookingPanel({
     setBranchServices(branchRelationsResult.data?.branchServices || []);
     setEmployeeBranches(branchRelationsResult.data?.employeeBranches || []);
     setIsLoading(false);
-  }, [internalAdminAccountId, internalSessionToken, companySlug, showBranchSelector]);
+  }, [internalAdminAccountId, internalEmployeeAccountId, internalSessionToken, companySlug, showBranchSelector, companyContext]);
+
   useEffect(() => {
     const timeoutId = window.setTimeout(loadData, 0);
     return () => window.clearTimeout(timeoutId);
@@ -248,10 +289,6 @@ export default function NewBookingPanel({
   // Sucursal activa: la elegida, o la primera si aún no se eligió.
   const activeBranchId = showBranchSelector ? (selectedBranchId || branches[0]?.id || '') : '';
   const activeBranchName = branches.find((branch) => String(branch.id) === String(activeBranchId))?.name || '';
-  useEffect(() => {
-    const timeoutId = window.setTimeout(loadData, 0);
-    return () => window.clearTimeout(timeoutId);
-  }, [loadData]);
 
   const servicesById = useMemo(() => {
     const map = new Map();
@@ -313,10 +350,25 @@ export default function NewBookingPanel({
 
   // Hora de inicio sugerida para el proximo item (encadenado sin huecos).
   const nextStartTime = useCallback(() => {
-    if (cart.length === 0) return initialStartTime || defaultStartTime(gridInterval);
+    if (cart.length === 0) return startTime;
     const last = cart[cart.length - 1];
     return addMinutesToTime(last.startTime, last.duration);
-  }, [cart, gridInterval, initialStartTime]);
+  }, [cart, startTime]);
+
+  // Opciones de hora de inicio dentro del horario de atención.
+  const startTimeOptions = useMemo(() => {
+    const options = [];
+    for (let minutes = BUSINESS_OPEN_MIN; minutes <= BUSINESS_CLOSE_MIN - gridInterval; minutes += gridInterval) {
+      options.push(minutesToTime(minutes));
+    }
+    return options;
+  }, [gridInterval]);
+
+  // Cambiar la hora de inicio re-encadena el carrito manteniendo el orden.
+  const handleStartTimeChange = useCallback((value) => {
+    setStartTime(value);
+    setCart((prev) => (prev.length ? chainOrder(prev, value) : prev));
+  }, []);
 
   const cartTotal = useMemo(
     () => cart.reduce((sum, item) => sum + Number(item.price || 0), 0),
@@ -526,8 +578,8 @@ export default function NewBookingPanel({
       return;
     }
 
-    onBookingCreated?.();
-    onClose?.();
+    const [year, month, day] = String(date).split('-');
+    setSuccessMessage(`Reservaste turno para el ${day}/${month}. Muchas gracias.`);
   };
 
   const configOptions = configDraft ? employeesForService(configDraft.service.id) : [];
@@ -576,6 +628,19 @@ export default function NewBookingPanel({
                 <span className="new-booking-label">Día de la reserva</span>
                 <input type="date" value={date} min={todayIso()} onChange={(event) => setDate(event.target.value)} />
                 <span className="new-booking-day-hint">{formatDayLabel(date)}</span>
+              </label>
+
+              <label className="new-booking-field">
+                <span className="new-booking-label">Hora de inicio</span>
+                <select value={startTime} onChange={(event) => handleStartTimeChange(event.target.value)}>
+                  {!startTimeOptions.includes(startTime) && (
+                    <option value={startTime}>{startTime} hs</option>
+                  )}
+                  {startTimeOptions.map((option) => (
+                    <option key={option} value={option}>{option} hs</option>
+                  ))}
+                </select>
+                <span className="new-booking-day-hint">Horario de atención: 9 a 18 hs</span>
               </label>
 
               <div className="new-booking-field">
@@ -848,6 +913,31 @@ export default function NewBookingPanel({
             </div>
             <footer className="new-booking-modal-footer new-booking-alert-footer">
               <button type="button" className="new-booking-config-confirm" onClick={() => setShowHoursModal(false)}>OK</button>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RESERVA CONFIRMADA */}
+      {successMessage && (
+        <div className="new-booking-modal">
+          <div className="new-booking-modal-card new-booking-alert-card">
+            <div className="new-booking-alert-body">
+              <span className="new-booking-alert-icon" aria-hidden="true">✅</span>
+              <p>{successMessage}</p>
+            </div>
+            <footer className="new-booking-modal-footer new-booking-alert-footer">
+              <button
+                type="button"
+                className="new-booking-config-confirm"
+                onClick={() => {
+                  setSuccessMessage('');
+                  onBookingCreated?.();
+                  onClose?.();
+                }}
+              >
+                OK
+              </button>
             </footer>
           </div>
         </div>
