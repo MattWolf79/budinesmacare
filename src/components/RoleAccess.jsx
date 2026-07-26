@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import ClientProfilePanel from './ClientProfilePanel';
+import ClientsPanel from './ClientsPanel';
 import Navbar from './Navbar';
 import AdminSidebar from './AdminSidebar';
 import NewBookingPanel from './NewBookingPanel';
@@ -41,11 +42,12 @@ const profileList = ['client', 'employee', 'admin'];
 const employeeNavItems = [
   { id: 'summary', label: 'Resumen', mobileLabel: 'Resumen', icon: '▦' },
   { id: 'agenda', label: 'Agenda', mobileLabel: 'Agenda', icon: '📅' },
+  { id: 'clients', label: 'Clientes', mobileLabel: 'Clientes', icon: '🙋' },
   { id: 'profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: '👤' },
   { id: 'availability', label: 'Disponibilidad', mobileLabel: 'Horario', icon: '🕒' }
 ];
 
-const employeeBottomNavItems = employeeNavItems.filter((item) => item.id !== 'profile');
+const employeeBottomNavItems = employeeNavItems.filter((item) => item.id !== 'profile' && item.id !== 'clients');
 
 const employeeSidebarGroups = [
   {
@@ -270,7 +272,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
         items: employeeNavItemsForUser.map((item) => ({ id: item.id, label: item.label, icon: item.icon }))
       }
     ];
-    const employeeBottomNavItemsForUser = employeeNavItemsForUser.filter((item) => item.id !== 'profile');
+    const employeeBottomNavItemsForUser = employeeNavItemsForUser.filter((item) => item.id !== 'profile' && item.id !== 'clients');
 
     return (
       <main className="role-workspace role-workspace-employee has-role-sidebar">
@@ -310,7 +312,11 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
               </div>
               <WorkspaceProfileIdentity user={user} profile={profile} />
             </section>
-            <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={empleadosPuedenReservar ? openEmployeeNewBooking : undefined} />
+            {employeeActiveView === 'clients' ? (
+              <ClientsPanel user={user} companySlug={companySlug} companyContext={companyContext} />
+            ) : (
+              <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={empleadosPuedenReservar ? openEmployeeNewBooking : undefined} />
+            )}
           </div>
         </div>
         {isNewBookingOpen && (

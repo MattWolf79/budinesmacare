@@ -212,6 +212,12 @@ export default function NewBookingPanel({
   });
   const [customerName, setCustomerName] = useState(isClient ? (user?.displayName || '') : '');
   const [customerEmail, setCustomerEmail] = useState(isClient ? (user?.email || '') : '');
+  const [clientResults, setClientResults] = useState([]);
+  const [showClientResults, setShowClientResults] = useState(false);
+  const [clientSearchLoading, setClientSearchLoading] = useState(false);
+  const [bookForSelf, setBookForSelf] = useState(false);
+  const [selectedClientAccountId, setSelectedClientAccountId] = useState(null);
+  const suppressClientSearchRef = useRef(false);
   const [comment, setComment] = useState('');
   const [cart, setCart] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState(branchId || '');
@@ -222,7 +228,78 @@ export default function NewBookingPanel({
   const [showHoursModal, setShowHoursModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [waitlistNotice, setWaitlistNotice] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const wasHoursExceeded = useRef(false);
+
+  // Autocompletado de clientes existentes para admin / empleado.
+  const internalManagerAccountId = internalAdminAccountId || internalEmployeeAccountId;
+
+  useEffect(() => {
+    if (isClient || bookForSelf) {
+      setClientResults([]);
+      setShowClientResults(false);
+      return undefined;
+    }
+    if (suppressClientSearchRef.current) {
+      suppressClientSearchRef.current = false;
+      return undefined;
+    }
+    const term = customerName.trim();
+    if (term.length < 2) {
+      setClientResults([]);
+      setShowClientResults(false);
+      return undefined;
+    }
+
+    let active = true;
+    setClientSearchLoading(true);
+    const handle = setTimeout(async () => {
+      const { data, error } = await supabase.rpc('list_company_clients', {
+        account_id_value: internalManagerAccountId,
+        session_token_value: internalSessionToken,
+        company_slug_value: companySlug,
+        search_value: term
+      });
+      if (!active) return;
+      setClientSearchLoading(false);
+      if (!error && Array.isArray(data)) {
+        setClientResults(data.slice(0, 8));
+        setShowClientResults(true);
+      } else {
+        setClientResults([]);
+        setShowClientResults(false);
+      }
+    }, 300);
+
+    return () => {
+      active = false;
+      clearTimeout(handle);
+    };
+  }, [customerName, bookForSelf, isClient, internalManagerAccountId, internalSessionToken, companySlug]);
+
+  const selectClient = (client) => {
+    suppressClientSearchRef.current = true;
+    setCustomerName(client.display_name || '');
+    setCustomerEmail(client.email || '');
+    setSelectedClientAccountId(client.id || null);
+    setShowClientResults(false);
+    setClientResults([]);
+  };
+
+  const toggleBookForSelf = (checked) => {
+    suppressClientSearchRef.current = true;
+    setBookForSelf(checked);
+    setSelectedClientAccountId(null);
+    setShowClientResults(false);
+    setClientResults([]);
+    if (checked) {
+      setCustomerName(user?.username || user?.displayName || '');
+      setCustomerEmail(user?.email || '');
+    } else {
+      setCustomerName('');
+      setCustomerEmail('');
+    }
+  };
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -572,6 +649,24 @@ export default function NewBookingPanel({
      CONFIRMAR
   ========================= */
 
+  // Antes de confirmar, valida y abre el aviso con la lista de servicios.
+  const openConfirmDialog = () => {
+    if (cart.length === 0) return;
+    if (showBranchSelector && !activeBranchId) {
+      alert('Elegí la sucursal para la reserva.');
+      return;
+    }
+    if (hoursIssue) {
+      setShowHoursModal(true);
+      return;
+    }
+    if (conflictingKeys.size > 0) {
+      alert('Hay servicios con un profesional ocupado en su horario. Cambiá el profesional o dejalo en «Indistinto» para continuar.');
+      return;
+    }
+    setShowConfirmDialog(true);
+  };
+
   const confirmReservation = async () => {
     if (cart.length === 0) return;
     if (showBranchSelector && !activeBranchId) {
@@ -591,6 +686,7 @@ export default function NewBookingPanel({
     if (isClient) {
       // Cada servicio del carrito genera una solicitud de turno del cliente.
       const stampBranchId = activeBranchId || branchId || null;
+      let clientHasWaitlist = false;
       for (const item of cart) {
         const startAt = `${date}T${item.startTime}:00`;
         const endAt = `${date}T${addMinutesToTime(item.startTime, item.duration)}:00`;
@@ -617,6 +713,10 @@ export default function NewBookingPanel({
           return;
         }
 
+        if (String(data?.status || '').toLowerCase() === 'waitlist') {
+          clientHasWaitlist = true;
+        }
+
         if (stampBranchId && data?.id) {
           await supabase.rpc('set_booking_branch', {
             booking_id_value: data.id,
@@ -627,6 +727,10 @@ export default function NewBookingPanel({
       }
 
       setIsSaving(false);
+      if (clientHasWaitlist) {
+        setWaitlistNotice(true);
+        return;
+      }
       const [, cMonth, cDay] = String(date).split('-');
       setSuccessMessage(`Reservaste turno para el ${cDay}/${cMonth}. Muchas gracias.`);
       return;
@@ -650,7 +754,8 @@ export default function NewBookingPanel({
       branch_id_value: activeBranchId || branchId || null,
       account_id_value: internalAdminAccountId || internalEmployeeAccountId,
       session_token_value: internalSessionToken,
-      company_slug_value: companySlug
+      company_slug_value: companySlug,
+      client_account_id_value: selectedClientAccountId || null
     });
 
     setIsSaving(false);
@@ -741,21 +846,70 @@ export default function NewBookingPanel({
                 </span>
               </label>
 
-              <div className="new-booking-field">
-                <span className="new-booking-label">Cliente de la reserva</span>
-                <input
-                  type="text"
-                  placeholder="Nombre del cliente (opcional)"
-                  value={customerName}
-                  onChange={(event) => setCustomerName(event.target.value)}
-                />
-                <input
-                  type="email"
-                  placeholder="Email del cliente (opcional)"
-                  value={customerEmail}
-                  onChange={(event) => setCustomerEmail(event.target.value)}
-                />
-              </div>
+              {!isClient && (
+                <div className="new-booking-field new-booking-client">
+                  <span className="new-booking-label">Cliente de la reserva</span>
+                  <label className="new-booking-self-check">
+                    <input
+                      type="checkbox"
+                      checked={bookForSelf}
+                      onChange={(event) => toggleBookForSelf(event.target.checked)}
+                    />
+                    <span>Reservar a mi nombre ({user?.displayName || 'mi usuario'}) y editar después</span>
+                  </label>
+                  <div className="new-booking-client-search">
+                    <input
+                      type="text"
+                      placeholder="Buscá por nombre, apellido o DNI"
+                      value={customerName}
+                      onChange={(event) => {
+                        if (bookForSelf) setBookForSelf(false);
+                        if (selectedClientAccountId) setSelectedClientAccountId(null);
+                        setCustomerName(event.target.value);
+                      }}
+                      onFocus={() => { if (clientResults.length > 0) setShowClientResults(true); }}
+                      onBlur={() => setTimeout(() => setShowClientResults(false), 150)}
+                      disabled={bookForSelf}
+                      autoComplete="off"
+                    />
+                    {clientSearchLoading && (
+                      <span className="new-booking-client-loading">Buscando…</span>
+                    )}
+                    {showClientResults && clientResults.length > 0 && (
+                      <ul className="new-booking-client-results">
+                        {clientResults.map((client) => (
+                          <li key={client.id}>
+                            <button
+                              type="button"
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => selectClient(client)}
+                            >
+                              <span className="new-booking-client-name">{client.display_name}</span>
+                              <span className="new-booking-client-meta">
+                                {[client.client_dni ? `DNI ${client.client_dni}` : null, client.phone]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {showClientResults && !clientSearchLoading && clientResults.length === 0 && customerName.trim().length >= 2 && (
+                      <p className="new-booking-client-empty">
+                        Sin coincidencias en la base. Se guardará como «{customerName.trim()}».
+                      </p>
+                    )}
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="Email del cliente (opcional)"
+                    value={customerEmail}
+                    onChange={(event) => setCustomerEmail(event.target.value)}
+                    disabled={bookForSelf}
+                  />
+                </div>
+              )}
 
               <div className="new-booking-field">
                 <span className="new-booking-label">Servicios</span>
@@ -875,7 +1029,7 @@ export default function NewBookingPanel({
             type="button"
             className="new-booking-confirm"
             disabled={cart.length === 0 || isSaving || conflictingKeys.size > 0 || Boolean(hoursIssue)}
-            onClick={confirmReservation}
+            onClick={openConfirmDialog}
           >
             {isSaving ? 'Confirmando…' : 'Confirmar reserva →'}
           </button>
@@ -888,6 +1042,54 @@ export default function NewBookingPanel({
           )}
         </footer>
       </div>
+
+      {/* AVISO DE CONFIRMACIÓN CON LISTA DE SERVICIOS */}
+      {showConfirmDialog && (
+        <div className="new-booking-modal new-booking-confirm-modal">
+          <div className="new-booking-modal-card new-booking-confirm-card">
+            <div className="new-booking-confirm-body">
+              <p className="new-booking-confirm-title">Estás reservando turno para los servicios:</p>
+              {activeBranchName && (
+                <p className="new-booking-confirm-branch">Sucursal: {activeBranchName.toUpperCase()}</p>
+              )}
+              <ul className="new-booking-confirm-list">
+                {cart.map((item) => {
+                  const tipo = item.bundleType === 'promo'
+                    ? { label: 'PROMO', cls: 'is-promo' }
+                    : item.bundleType === 'pack'
+                      ? { label: 'PACK', cls: 'is-pack' }
+                      : { label: 'Servicio', cls: 'is-service' };
+                  return (
+                    <li key={item.key}>
+                      <span className="new-booking-confirm-item-name">
+                        <ActivityIcon service={item} size="small" /> {item.name}
+                      </span>
+                      <span className={`new-booking-confirm-tag ${tipo.cls}`}>{tipo.label}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="new-booking-confirm-question">¿Confirmás la reserva?</p>
+            </div>
+            <div className="new-booking-confirm-actions">
+              <button
+                type="button"
+                className="new-booking-confirm-no"
+                onClick={() => setShowConfirmDialog(false)}
+              >
+                NO
+              </button>
+              <button
+                type="button"
+                className="new-booking-confirm-yes"
+                onClick={() => { setShowConfirmDialog(false); confirmReservation(); }}
+              >
+                SÍ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL SELECCIONAR SERVICIO */}
       {isServiceModalOpen && (
@@ -1028,10 +1230,22 @@ export default function NewBookingPanel({
       {waitlistNotice && (
         <div className="new-booking-modal">
           <div className="new-booking-modal-card new-booking-alert-card">
+            <div className="new-booking-alert-title">ATENCIÓN</div>
             <div className="new-booking-alert-body">
               <span className="new-booking-alert-icon" aria-hidden="true">⏳</span>
-              <p>Lista de espera porque no hay profesionales con disponibilidad todavía para ese horario.</p>
-              <p>El turno se guardó igual, pero puede cancelarse. Te estaremos avisando.</p>
+              <p>Entras en LISTA DE ESPERA porque no hay profesionales con disponibilidad todavía para ese horario.</p>
+              {user?.role === 'admin' ? (
+                <p>El turno se guardó igual. Recordá verificar las disponibilidades de los empleados.</p>
+              ) : user?.role === 'employee' ? (
+                <p>El turno se guardó igual. Se deberán ver las disponibilidades de las agendas.</p>
+              ) : (
+                <p>El turno se guardó igual, pero puede cancelarse. Te estaremos avisando.</p>
+              )}
+              {date && (
+                <p className="new-booking-alert-date">
+                  Reservaste turno para el {(() => { const [y, m, d] = String(date).split('-'); return `${d}/${m}/${y}`; })()}.
+                </p>
+              )}
             </div>
             <footer className="new-booking-modal-footer new-booking-alert-footer">
               <button

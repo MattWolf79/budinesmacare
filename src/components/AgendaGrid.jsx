@@ -1232,7 +1232,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           ? applyCompanyFilter(supabase
               .from('bookings')
               .select('*')
-              .in('status', ['confirmed', 'reserved', 'pending_assignment', 'completed', 'closed'])
+              .in('status', ['confirmed', 'reserved', 'pending_assignment', 'waitlist', 'completed', 'closed'])
             )
           : applyCompanyFilter(supabase.from('bookings').select('*')),
       isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('services').select('*')),
@@ -2516,6 +2516,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                               ? `${activityLabel} / ${visibleEmployeeLabel}`
                               : activityLabel;
                       const priceDetails = preciosHabilitados ? bookingPriceDetailsById[b.id] : null;
+                      // Nombre (solo el primero) del cliente de la reserva. Si se reservó
+                      // con el check "a mi nombre", customer_name guarda el username.
+                      const alreadyShowsClient = isEmployeeView && visibilidadTurnosEmpleado === 'cliente_servicio';
+                      const clientFirstName = (canViewCustomerDetails && !alreadyShowsClient)
+                        ? (String(b.customer_name || '').trim().split(/\s+/)[0] || '')
+                        : '';
 
                       return (
                         <BookingItem
@@ -2530,6 +2536,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                           customerLabel={isOwn ? 'Tu turno' : 'Turno reservado'}
                           displayLabel={displayLabel}
                           employeeLabel={visibleEmployeeLabel}
+                          clientLabel={clientFirstName}
                           priceDetails={priceDetails}
                           compact={isCompactAgenda}
                           fillCell={bloqueaSuperpuestos}

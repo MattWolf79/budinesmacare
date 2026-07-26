@@ -6,7 +6,11 @@ const emptyProfile = {
   lastName: '',
   phone: '',
   email: '',
-  dni: ''
+  dni: '',
+  birthDate: '',
+  addressStreet: '',
+  addressNumber: '',
+  addressLocality: ''
 };
 
 export default function ClientProfilePanel({ user, companySlug }) {
@@ -45,7 +49,11 @@ export default function ClientProfilePanel({ user, companySlug }) {
         lastName: record?.last_name || '',
         phone: record?.phone || '',
         email: record?.email || '',
-        dni: record?.client_dni || ''
+        dni: record?.client_dni || '',
+        birthDate: record?.birth_date || '',
+        addressStreet: record?.address_street || '',
+        addressNumber: record?.address_number || '',
+        addressLocality: record?.address_locality || ''
       };
 
       setProfile(nextProfile);
@@ -102,6 +110,10 @@ export default function ClientProfilePanel({ user, companySlug }) {
       last_name_value: form.lastName.trim(),
       phone_value: form.phone.trim(),
       email_value: form.email.trim() || null,
+      birth_date_value: form.birthDate || null,
+      address_street_value: form.addressStreet.trim() || null,
+      address_number_value: form.addressNumber.trim() || null,
+      address_locality_value: form.addressLocality.trim() || null,
       company_slug_value: companySlug
     });
 
@@ -118,7 +130,11 @@ export default function ClientProfilePanel({ user, companySlug }) {
       lastName: record?.last_name || form.lastName.trim(),
       phone: record?.phone || form.phone.trim(),
       email: record?.email || form.email.trim(),
-      dni: record?.client_dni || profile.dni
+      dni: record?.client_dni || profile.dni,
+      birthDate: record?.birth_date || form.birthDate,
+      addressStreet: record?.address_street || form.addressStreet.trim(),
+      addressNumber: record?.address_number || form.addressNumber.trim(),
+      addressLocality: record?.address_locality || form.addressLocality.trim()
     };
 
     setProfile(nextProfile);
@@ -162,6 +178,22 @@ export default function ClientProfilePanel({ user, companySlug }) {
             <label className="client-profile-field">
               <span>Email</span>
               <input type="email" value={form.email} onChange={updateField('email')} disabled={!isEditing} placeholder="Email (opcional)" />
+            </label>
+            <label className="client-profile-field">
+              <span>Fecha de nacimiento</span>
+              <input type="date" value={form.birthDate} onChange={updateField('birthDate')} disabled={!isEditing} />
+            </label>
+            <label className="client-profile-field">
+              <span>Calle</span>
+              <input type="text" value={form.addressStreet} onChange={updateField('addressStreet')} disabled={!isEditing} placeholder="Calle" />
+            </label>
+            <label className="client-profile-field">
+              <span>Número</span>
+              <input type="text" value={form.addressNumber} onChange={updateField('addressNumber')} disabled={!isEditing} placeholder="Número" />
+            </label>
+            <label className="client-profile-field">
+              <span>Localidad</span>
+              <input type="text" value={form.addressLocality} onChange={updateField('addressLocality')} disabled={!isEditing} placeholder="Localidad" />
             </label>
 
             {errorMessage && <p className="client-profile-error">{errorMessage}</p>}

@@ -315,6 +315,10 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
         dni_value: dni,
         phone_value: registrationForm.phone.trim() || null,
         email_value: registrationForm.email.trim().toLowerCase() || null,
+        birth_date_value: registrationForm.birthDate || null,
+        address_street_value: registrationForm.addressStreet.trim() || null,
+        address_number_value: registrationForm.addressNumber.trim() || null,
+        address_locality_value: registrationForm.addressLocality.trim() || null,
         password_value: password,
         company_slug_value: companySlug
       });
@@ -797,6 +801,38 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
                           onChange={(event) => updateRegistrationField('email', event.target.value)}
                         />
                       </label>
+
+                      <div className="internal-register-two-columns internal-register-age-row">
+                        <label className="internal-register-field">
+                          Fecha de nacimiento
+                          <input
+                            type="date"
+                            value={registrationForm.birthDate}
+                            max={new Date().toISOString().slice(0, 10)}
+                            onChange={(event) => updateRegistrationField('birthDate', event.target.value)}
+                          />
+                        </label>
+
+                        <label className="internal-register-field">
+                          Edad
+                          <input value={calculateAge(registrationForm.birthDate)} disabled placeholder="Auto" />
+                        </label>
+                      </div>
+
+                      <div className="internal-register-address-grid">
+                        <label className="internal-register-field">
+                          Calle
+                          <input value={registrationForm.addressStreet} maxLength="80" autoComplete="address-line1" onChange={(event) => updateRegistrationField('addressStreet', event.target.value)} />
+                        </label>
+                        <label className="internal-register-field">
+                          Nro.
+                          <input value={registrationForm.addressNumber} maxLength="12" onChange={(event) => updateRegistrationField('addressNumber', event.target.value)} />
+                        </label>
+                        <label className="internal-register-field">
+                          Localidad
+                          <input value={registrationForm.addressLocality} maxLength="60" autoComplete="address-level2" onChange={(event) => updateRegistrationField('addressLocality', event.target.value)} />
+                        </label>
+                      </div>
                     </>
                   ) : (
                     <>

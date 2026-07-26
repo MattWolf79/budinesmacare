@@ -8,6 +8,7 @@ import AdminPanel from "../components/AdminPanel";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
 import BranchesPanel from "../components/BranchesPanel";
 import BundlesPanel from "../components/BundlesPanel";
+import ClientsPanel from "../components/ClientsPanel";
 import NewBookingPanel from "../components/NewBookingPanel";
 import EmployeeAvailabilityPanel from "../components/EmployeeAvailabilityPanel";
 
@@ -159,6 +160,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
       { id: 'new-booking', label: 'Nueva reserva', icon: '➕' },
       { id: 'agenda', label: 'Calendario', icon: '📅' },
       { id: 'pending', label: 'Pendientes de asignar', icon: '📌' },
+      { id: 'clients', label: 'Clientes', icon: '🙋' },
       { id: 'employees', label: 'Empleados', icon: '👥' },
       { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
     ];
@@ -237,6 +239,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
               <AgendaGrid key={`pending-${adminDataVersion}`} pendingView user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />
             </div>
           )}
+          {activeView === 'clients' && <ClientsPanel user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
           {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
           {activeView === 'services' && <AdminPanel view="services" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
           {activeView === 'availability' && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
