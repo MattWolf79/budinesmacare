@@ -58,20 +58,28 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
       let bookingRequest = null;
 
       if (user?.id) {
-        bookingRequest = supabase
-          .from('bookings')
-          .select('*')
-          .order('start_at', { ascending: false })
-          .limit(80);
+        if (user?.isInternal && user?.role === 'client') {
+          // Los clientes son cuentas internas (sin sesión Supabase Auth): RLS bloquea la
+          // lectura directa de bookings, por eso se usa un RPC security definer.
+          bookingRequest = supabase.rpc('get_client_bookings', {
+            account_id_value: user.id,
+            session_token_value: user.sessionToken,
+            company_slug_value: companySlug
+          });
+        } else {
+          bookingRequest = supabase
+            .from('bookings')
+            .select('*')
+            .order('start_at', { ascending: false })
+            .limit(80)
+            .eq('user_id', user.id);
 
-        bookingRequest = user?.isInternal && user?.role === 'client'
-          ? bookingRequest.eq('client_account_id', user.id)
-          : bookingRequest.eq('user_id', user.id);
+          if (companyContext?.id) bookingRequest = bookingRequest.eq('company_id', companyContext.id);
+        }
       }
       let serviceRequest = supabase.from('services').select('*');
 
       if (companyContext?.id) {
-        if (bookingRequest) bookingRequest = bookingRequest.eq('company_id', companyContext.id);
         serviceRequest = serviceRequest.eq('company_id', companyContext.id);
       }
 
