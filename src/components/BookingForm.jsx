@@ -4,6 +4,8 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+// Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
+import { showAppAlert as alert } from '../utils/appAlert';
 import 'dayjs/locale/es';
 import { supabase } from '../api/supabaseClient';
 

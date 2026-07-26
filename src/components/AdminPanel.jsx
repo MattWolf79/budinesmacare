@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+// Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
+import { showAppAlert as alert } from '../utils/appAlert';
 import ActivityIcon from './ActivityIcon';
 import FormCard from './FormCard';
 import { formatDisplayDateTime } from '../utils/dateFormat';

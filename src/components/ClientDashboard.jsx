@@ -54,6 +54,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   const [manageBooking, setManageBooking] = useState(null);
   const [bookingToCancel, setBookingToCancel] = useState(null);
   const [newBookingSlot, setNewBookingSlot] = useState(null);
+  const [reschedulingBooking, setReschedulingBooking] = useState(null);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [bannerIndex, setBannerIndex] = useState(0);
@@ -184,6 +185,14 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   };
 
   useEffect(() => {
+    // Si el cliente deja la vista de reserva sin confirmar la modificación,
+    // se descarta la referencia y el turno original queda vigente.
+    if (activeView !== 'reserve') {
+      setReschedulingBooking(null);
+    }
+  }, [activeView]);
+
+  useEffect(() => {
     setBannerIndex((current) => (bannerImages.length ? current % bannerImages.length : 0));
     if (bannerImages.length <= 1) return undefined;
     const intervalId = window.setInterval(() => {
@@ -210,6 +219,59 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     (companyContext?.branches || []).forEach((branch) => map.set(String(branch.id), branch));
     return map;
   }, [companyContext?.branches]);
+
+  // Nombre de servicio por id: combina la tabla services (si el cliente puede leerla)
+  // con los items de los bundles del contexto público (siempre disponibles para promos/packs).
+  const serviceNameById = useMemo(() => {
+    const map = new Map();
+    (services || []).forEach((service) => {
+      if (service?.id != null && service?.name) map.set(String(service.id), service.name);
+    });
+    (companyContext?.bundles || []).forEach((bundle) => {
+      (bundle?.items || []).forEach((item) => {
+        if (item?.service_id != null && item?.name) map.set(String(item.service_id), item.name);
+      });
+    });
+    return map;
+  }, [services, companyContext?.bundles]);
+
+  // Etiquetas de promos/packs para detectar turnos que forman parte de un combo,
+  // ya que las reservas de cliente no guardan bundle_id/bundle_type.
+  const bundleLabelSet = useMemo(() => {
+    const set = new Set();
+    (companyContext?.bundles || []).forEach((bundle) => {
+      const name = String(bundle?.name || '').trim().toLowerCase();
+      if (name) set.add(name);
+    });
+    (appConfig?.promotions || []).forEach((promotion) => {
+      const title = String(promotion?.title || '').trim().toLowerCase();
+      if (title) set.add(title);
+    });
+    return set;
+  }, [companyContext?.bundles, appConfig?.promotions]);
+
+  const isBundleBooking = (booking) => {
+    if (Boolean(booking?.bundle_id) || ['promo', 'pack'].includes(String(booking?.bundle_type || '').toLowerCase())) {
+      return true;
+    }
+    // Promoción reservada sin servicio asociado.
+    if (!booking?.service && booking?.booking_description) return true;
+    const label = String(booking?.booking_description || '').split('·')[0].trim().toLowerCase();
+    return Boolean(label) && bundleLabelSet.has(label);
+  };
+
+  const resolveServiceName = (booking) => {
+    if (booking?.service == null) return '';
+    return serviceNameById.get(String(booking.service)) || '';
+  };
+
+  const getBookingServiceName = (booking) => {
+    const serviceName = resolveServiceName(booking);
+    if (!serviceName) return '';
+    // Si el título ya es el nombre del servicio (turno suelto), no lo repetimos.
+    if (!isBundleBooking(booking) && getBookingCardTitle(booking, { name: serviceName }) === serviceName) return '';
+    return serviceName;
+  };
 
   const { activeBookings, historyBookings } = useMemo(() => {
     const nowTs = Date.now();
@@ -262,30 +324,52 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
 
   const closeManage = () => setManageBooking(null);
 
-  const startReschedule = async () => {
+  const startReschedule = () => {
     if (!manageBooking) return;
+    // No se elimina el turno actual: se guarda como referencia y se abre la grilla
+    // para elegir el nuevo turno. El turno original sigue vigente hasta que el
+    // cliente confirme la modificación.
+    const entry = bookingDetails.find((item) => String(item.booking.id) === String(manageBooking.id))
+      || { booking: manageBooking, service: null };
+    setReschedulingBooking(entry);
+    setActionMessage('');
+    setManageBooking(null);
+    if (onRescheduleDone) onRescheduleDone();
+    else if (onReserveTurn) onReserveTurn();
+  };
+
+  const cancelReschedule = () => {
+    // El cliente abandona la modificación sin elegir un nuevo turno: el original queda vigente.
+    setReschedulingBooking(null);
+  };
+
+  const finishReschedule = async (originalId) => {
+    // El nuevo turno ya fue creado y confirmado en el panel de reserva:
+    // liberamos el turno original para completar la modificación.
+    if (!originalId) {
+      setReschedulingBooking(null);
+      refreshBookings();
+      return;
+    }
+
     setIsProcessingAction(true);
     setActionMessage('');
 
     const { error } = await supabase.rpc('delete_client_booking', {
-      booking_id_value: manageBooking.id,
+      booking_id_value: originalId,
       account_id_value: user?.isInternal ? user.id : null,
       session_token_value: user?.isInternal ? user.sessionToken : null,
       company_slug_value: companySlug
     });
 
     setIsProcessingAction(false);
+    setReschedulingBooking(null);
 
     if (error) {
-      setActionMessage(error.message || 'No se pudo iniciar la reprogramación.');
-      return;
+      setActionMessage(error.message || 'El nuevo turno quedó reservado, pero no se pudo liberar el turno anterior.');
     }
 
-    setManageBooking(null);
-    setSelectedBookingId(null);
     refreshBookings();
-    if (onRescheduleDone) onRescheduleDone();
-    else if (onReserveTurn) onReserveTurn();
   };
 
   const requestCancel = () => {
@@ -294,25 +378,55 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     setManageBooking(null);
   };
 
+  // Los turnos de un pack/promo se reservan juntos pero se guardan como bookings
+  // independientes. Para cancelarlos como una unidad los agrupamos por
+  // booking_group_id (si existe) o, como fallback, por descripcion + fecha.
+  const getBundleGroupIds = (booking) => {
+    if (!booking) return [];
+    if (!isBundleBooking(booking)) return [booking.id];
+    if (booking.booking_group_id) {
+      const siblings = bookings
+        .filter((entry) => entry.booking_group_id === booking.booking_group_id)
+        .map((entry) => entry.id);
+      return siblings.length ? siblings : [booking.id];
+    }
+    const description = String(booking.booking_description || '').trim().toLowerCase();
+    if (!description) return [booking.id];
+    const dayKey = new Date(booking.start_at).toDateString();
+    const siblings = bookings
+      .filter((entry) => (
+        String(entry.booking_description || '').trim().toLowerCase() === description
+        && new Date(entry.start_at).toDateString() === dayKey
+        && !['cancelled'].includes(entry.status)
+      ))
+      .map((entry) => entry.id);
+    return siblings.length ? siblings : [booking.id];
+  };
+
   const confirmCancel = async () => {
     if (!bookingToCancel) return;
     setIsProcessingAction(true);
     setActionMessage('');
 
-    const { error } = await supabase.rpc('cancel_booking', {
-      booking_id_value: bookingToCancel.id,
-      account_id_value: user?.isInternal ? user.id : null,
-      session_token_value: user?.isInternal ? user.sessionToken : null,
-      company_slug_value: companySlug
-    });
+    const idsToCancel = getBundleGroupIds(bookingToCancel);
 
-    setIsProcessingAction(false);
+    for (const bookingId of idsToCancel) {
+      const { error } = await supabase.rpc('cancel_booking', {
+        booking_id_value: bookingId,
+        account_id_value: user?.isInternal ? user.id : null,
+        session_token_value: user?.isInternal ? user.sessionToken : null,
+        company_slug_value: companySlug
+      });
 
-    if (error) {
-      setActionMessage(error.message || 'No se pudo cancelar el turno.');
-      return;
+      if (error) {
+        setIsProcessingAction(false);
+        setActionMessage(error.message || 'No se pudo cancelar el turno.');
+        refreshBookings();
+        return;
+      }
     }
 
+    setIsProcessingAction(false);
     setBookingToCancel(null);
     setSelectedBookingId(null);
     refreshBookings();
@@ -469,6 +583,9 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                     onClick={() => setSelectedBookingId(booking.id)}
                   >
                     <span className="client-turno-row-title">{getBookingCardTitle(booking, service)}</span>
+                    {getBookingServiceName(booking) && (
+                      <span className="client-turno-row-service">{getBookingServiceName(booking)}</span>
+                    )}
                     <span className="client-turno-row-date">{formatBookingDate(booking.start_at)} · {formatBookingTimeRange(booking.start_at, booking.end_at)}</span>
                     <span className={`client-turno-row-status ${booking.employee_id && booking.status !== 'pending_assignment' ? 'is-active' : 'is-muted'}`}>
                       {getBookingStatusValue(booking)}
@@ -496,6 +613,9 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                     onClick={() => setSelectedBookingId(booking.id)}
                   >
                     <span className="client-turno-row-title">{getBookingCardTitle(booking, service)}</span>
+                    {getBookingServiceName(booking) && (
+                      <span className="client-turno-row-service">{getBookingServiceName(booking)}</span>
+                    )}
                     <span className="client-turno-row-date">{formatBookingDate(booking.start_at)} · {formatBookingTimeRange(booking.start_at, booking.end_at)}</span>
                     <span className="client-turno-row-status is-muted">
                       {booking.status === 'cancelled' ? 'Cancelado' : 'Finalizado'}
@@ -511,6 +631,12 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
               <article className="client-turno-detail-card">
                 <h3>{getBookingCardTitle(selectedEntry.booking, selectedEntry.service)}</h3>
                 <div className="client-turno-detail-fields">
+                  {resolveServiceName(selectedEntry.booking) && (
+                    <div className="client-turno-detail-field">
+                      <span>Servicio</span>
+                      <strong>{resolveServiceName(selectedEntry.booking)}</strong>
+                    </div>
+                  )}
                   <div className="client-turno-detail-field">
                     <span>Fecha</span>
                     <strong>{formatBookingDate(selectedEntry.booking.start_at)}</strong>
@@ -560,6 +686,17 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
 
       {showAgenda && (
         <div className="client-agenda-panel">
+          {reschedulingBooking && (
+            <div className="client-reschedule-banner" role="status">
+              <div className="client-reschedule-banner-text">
+                <strong>Estás modificando tu turno</strong>
+                <span>
+                  {formatBookingDate(reschedulingBooking.booking.start_at)} · {formatBookingTimeRange(reschedulingBooking.booking.start_at, reschedulingBooking.booking.end_at)}.
+                  {' '}Elegí el nuevo turno; el actual sigue vigente hasta que confirmes el cambio.
+                </span>
+              </div>
+            </div>
+          )}
           {selectedPromotion && (
             <div className="client-selected-promotion">
               <strong>Promo seleccionada</strong>
@@ -576,6 +713,9 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
             promotions={enabledPromotions}
             companySlug={companySlug}
             companyContext={companyContext}
+            rescheduleActive={Boolean(reschedulingBooking)}
+            onCancelReschedule={cancelReschedule}
+            preferredBranchId={reschedulingBooking?.booking?.branch_id || null}
             onRequestNewBooking={selectedPromotion ? null : ((slot) => setNewBookingSlot(slot))}
           />
         </div>
@@ -590,10 +730,15 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
           initialDate={newBookingSlot.date}
           initialStartTime={newBookingSlot.startTime}
           clientCanChooseEmployee={Boolean(appConfig?.client_can_choose_employee)}
+          rescheduleMode={Boolean(reschedulingBooking)}
           onClose={() => setNewBookingSlot(null)}
           onBookingCreated={() => {
             setNewBookingSlot(null);
-            refreshBookings();
+            if (reschedulingBooking) {
+              finishReschedule(reschedulingBooking.booking.id);
+            } else {
+              refreshBookings();
+            }
           }}
         />
       )}
@@ -606,13 +751,19 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
               <button type="button" className="client-modal-close" onClick={closeManage} aria-label="Cerrar">✕</button>
             </div>
             {actionMessage && <p className="client-profile-error">{actionMessage}</p>}
-            <button type="button" className="client-manage-option" onClick={startReschedule} disabled={isProcessingAction}>
-              <span className="client-manage-option-icon" aria-hidden="true">🔁</span>
-              <span className="client-manage-option-text">
-                <strong>Modificar Reserva</strong>
-                <small>Se libera este turno y elegís de nuevo día, hora y profesional.</small>
-              </span>
-            </button>
+            {isBundleBooking(manageBooking) ? (
+              <p className="client-manage-note">
+                Este turno forma parte de una promo/pack. Los servicios van juntos, así que no se puede modificar solo uno. Podés cancelarlo.
+              </p>
+            ) : (
+              <button type="button" className="client-manage-option" onClick={startReschedule} disabled={isProcessingAction}>
+                <span className="client-manage-option-icon" aria-hidden="true">🔁</span>
+                <span className="client-manage-option-text">
+                  <strong>Modificar Reserva</strong>
+                  <small>Elegís de nuevo día, hora y profesional. Tu turno actual sigue vigente hasta que confirmes el cambio.</small>
+                </span>
+              </button>
+            )}
             <button type="button" className="client-manage-option client-manage-option-danger" onClick={requestCancel} disabled={isProcessingAction}>
               <span className="client-manage-option-icon" aria-hidden="true">🗑️</span>
               <span className="client-manage-option-text">
@@ -628,7 +779,11 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
         <div className="client-modal-overlay" role="dialog" aria-modal="true">
           <div className="client-confirm-modal">
             <h3>Confirmar cancelación</h3>
-            <p>Esta acción no se puede deshacer. El turno será liberado y se notificará al negocio.</p>
+            <p>
+              {isBundleBooking(bookingToCancel) && getBundleGroupIds(bookingToCancel).length > 1
+                ? 'Esta promo/pack incluye varios turnos y se cancelarán todos juntos. Esta acción no se puede deshacer y se notificará al negocio.'
+                : 'Esta acción no se puede deshacer. El turno será liberado y se notificará al negocio.'}
+            </p>
             {actionMessage && <p className="client-profile-error">{actionMessage}</p>}
             <div className="client-confirm-actions">
               <button type="button" className="client-confirm-no" onClick={() => { setBookingToCancel(null); setActionMessage(''); }} disabled={isProcessingAction}>

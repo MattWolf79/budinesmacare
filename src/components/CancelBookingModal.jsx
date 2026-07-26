@@ -63,12 +63,16 @@ export default function CancelBookingModal({ booking, service, employee, onClose
 
   return (
     <div className="modal">
-      <div className="agenda-modal-card">
-        <div className="agenda-modal-header cancel-booking-header"><span aria-hidden="true">X</span> Cancelar turno</div>
+      <div className="agenda-modal-card cancel-booking-modal">
+        <div className="agenda-modal-header cancel-booking-header">
+          Cancelar turno
+        </div>
 
         <div className="agenda-modal-body">
-          <div className="agenda-modal-summary">
-            <div className="agenda-summary-title cancel-booking-activity"><ActivityIcon service={activityService} size="small" /> <b>{activityLabel}</b></div>
+          <div className="agenda-modal-summary cancel-booking-summary">
+            <div className="agenda-summary-title cancel-booking-activity">
+              <ActivityIcon service={activityService} size="small" /> <b>{activityLabel}</b>
+            </div>
             <div><b>Cliente:</b> {customerDetails.name}</div>
             {customerDetails.email && <div><b>Mail:</b> {customerDetails.email}</div>}
             <div>{bookingDate}</div>
@@ -76,13 +80,13 @@ export default function CancelBookingModal({ booking, service, employee, onClose
             <div><b>Empleado:</b> {employeeLabel}</div>
           </div>
 
-          <div className="agenda-modal-actions">
+          <div className="agenda-modal-actions cancel-booking-actions">
             <button className="agenda-close-button" onClick={onClose}>
               Cerrar
             </button>
 
             <button className="agenda-danger-button" onClick={() => onConfirm(booking)}>
-              🗑 Confirmar
+              Confirmar
             </button>
           </div>
         </div>

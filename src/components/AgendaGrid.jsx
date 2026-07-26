@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+// Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
+import { showAppAlert as alert } from '../utils/appAlert';
 import BookingItem from './BookingItem';
 import CancelBookingModal from './CancelBookingModal';
 import CustomerModal from './CustomerModal';
@@ -996,7 +998,7 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
   );
 }
 
-export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext, onRequestNewBooking = null, pendingView = false }) {
+export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext, onRequestNewBooking = null, pendingView = false, rescheduleActive = false, onCancelReschedule = null, preferredBranchId = null }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -1063,9 +1065,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   );
   const showBranchSelector = sucursalesHabilitadas && branches.length > 0;
   const [selectedBranchId, setSelectedBranchId] = useState('');
-  const activeBranchId = showBranchSelector ? (selectedBranchId || branches[0]?.id || null) : null;
-  const [branchServices, setBranchServices] = useState([]);
-  const showAgendaBranchFilter = showBranchSelector && !isClientView;
+  const activeBranchId = showBranchSelector ? (selectedBranchId || branches[0]?.id || null) : null;  const [branchServices, setBranchServices] = useState([]);
   const serviceOfferedAtBranch = (serviceId, branchId) => {
     if (!showBranchSelector || !branchId) return true;
     if (serviceId === null || serviceId === undefined) return true; // promociones / sin id
@@ -1073,6 +1073,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   };
   const matchesAgendaBranchFilter = (booking) =>
     !showBranchSelector || !activeBranchId || String(booking?.branch_id || '') === String(activeBranchId);
+  useEffect(() => {
+    // Al modificar un turno, la grilla arranca en la sucursal de ese turno.
+    if (!showBranchSelector || !preferredBranchId) return;
+    if (!branches.some((branch) => String(branch.id) === String(preferredBranchId))) return;
+    setSelectedBranchId(preferredBranchId);
+  }, [preferredBranchId, showBranchSelector, branches]);
   const applyCompanyFilter = (query) => companyContext?.id ? query.eq('company_id', companyContext.id) : query;
   const canGoBack = !isClientView || offset > 0;
   const isCompactAgenda = visibleDayCount <= 3;
@@ -2329,11 +2335,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
       {!pendingView && (
       <>
-      {/* SELECTOR DE SUCURSAL (cliente) */}
-      {isClientView && showBranchSelector && (
+      {/* SELECTOR DE SUCURSAL */}
+      {showBranchSelector && (
         <div className="client-branch-bar">
-          <span className="client-branch-bar-title">Elegí la sucursal</span>
-          <p className="client-branch-bar-hint">Seleccioná dónde querés tu turno antes de elegir el horario.</p>
+          <span className="client-branch-bar-title">{isClientView ? 'Elegí la sucursal' : 'Sucursal'}</span>
+          <p className="client-branch-bar-hint">
+            {isClientView
+              ? 'Seleccioná dónde querés tu turno antes de elegir el horario.'
+              : 'Filtrá la agenda por sucursal.'}
+          </p>
           <div className="client-branch-bar-pills" role="group" aria-label="Seleccionar sucursal">
             {branches.map((branch) => (
               <button
@@ -2369,20 +2379,15 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         >
           {isRefreshing ? 'Actualizando…' : 'Actualizar'}
         </button>
+        {rescheduleActive && onCancelReschedule && (
+          <button className="agenda-cancel-reschedule-button" type="button" onClick={onCancelReschedule}>
+            Cancelar modificación
+          </button>
+        )}
         {!isClientView && preciosHabilitados && (
           <button className="agenda-close-attention-button" type="button" onClick={openCloseAttention}>
             Cerrar atención
           </button>
-        )}
-        {showAgendaBranchFilter && (
-          <label className="agenda-branch-filter">
-            <span>Sucursal</span>
-            <select value={selectedBranchId} onChange={(event) => setSelectedBranchId(event.target.value)}>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>{branch.name}</option>
-              ))}
-            </select>
-          </label>
         )}
       </div>
 

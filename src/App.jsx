@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './api/supabaseClient';
+// Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
+import { showAppAlert as alert } from './utils/appAlert';
 import Dashboard from './pages/Dashboard';
 import Login from './components/Login';
 import PlatformAdmin from './components/PlatformAdmin';
