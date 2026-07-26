@@ -311,7 +311,6 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={empleadosPuedenReservar ? openEmployeeNewBooking : undefined} />
           </div>
         </div>
-        <EmployeeBottomNav activeView={employeeActiveView} onViewChange={changeEmployeeView} items={employeeBottomNavItemsForUser} />
         {isNewBookingOpen && (
           <NewBookingPanel
             user={user}

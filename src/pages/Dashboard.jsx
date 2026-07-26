@@ -246,10 +246,6 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         </Box>
       </div>
 
-      {accessProfile === 'admin' && (
-        <AdminBottomNav activeView={activeView} onViewChange={changeView} />
-      )}
-
       {isNewBookingOpen && (
         <NewBookingPanel
           user={user}

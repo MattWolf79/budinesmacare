@@ -3728,6 +3728,10 @@ code {
   .dashboard-content,
   .role-workspace-client,
   .role-workspace-employee {
+    padding-bottom: 24px !important;
+  }
+
+  .role-workspace-client {
     padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
