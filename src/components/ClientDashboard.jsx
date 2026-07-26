@@ -46,6 +46,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   const [newBookingSlot, setNewBookingSlot] = useState(null);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
+  const [bannerIndex, setBannerIndex] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -161,10 +162,22 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   const refreshBookings = () => {
     setRefreshKey((current) => current + 1);
   };
-  const bannerStripImages = useMemo(() => {
-    if (!bannerImages.length) return [];
-    return Array.from({ length: 4 }, (_, index) => bannerImages[index % bannerImages.length]);
-  }, [bannerImages]);
+
+  useEffect(() => {
+    setBannerIndex((current) => (bannerImages.length ? current % bannerImages.length : 0));
+    if (bannerImages.length <= 1) return undefined;
+    const intervalId = window.setInterval(() => {
+      setBannerIndex((current) => (current + 1) % bannerImages.length);
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [bannerImages.length]);
+
+  const showPrevBanner = () => {
+    setBannerIndex((current) => (current - 1 + bannerImages.length) % bannerImages.length);
+  };
+  const showNextBanner = () => {
+    setBannerIndex((current) => (current + 1) % bannerImages.length);
+  };
 
   const packs = useMemo(() => (
     Array.isArray(companyContext?.bundles)
@@ -290,17 +303,56 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
 
   return (
     <section className="client-dashboard">
-      {isHome && bannerStripImages.length > 0 && (
-        <div className="client-home-banner-strip" aria-label="Presentación de la empresa">
-          {bannerStripImages.map((image, index) => (
-            <div
-              className="client-home-banner"
-              role="img"
-              aria-label={`Presentación de la empresa ${index + 1}`}
-              key={`${image.fileName || 'banner'}-${index}`}
-              style={{ backgroundImage: `url(${image.dataUrl})` }}
-            />
-          ))}
+      {isHome && bannerImages.length > 0 && (
+        <div className="client-home-carousel" aria-roledescription="carrusel" aria-label="Flyers de la empresa">
+          <div
+            className="client-home-carousel-track"
+            style={{ transform: `translateX(-${bannerIndex * 100}%)` }}
+          >
+            {bannerImages.map((image, index) => (
+              <div
+                className="client-home-carousel-slide"
+                role="img"
+                aria-label={`Flyer ${index + 1} de ${bannerImages.length}`}
+                aria-hidden={index !== bannerIndex}
+                key={`${image.fileName || 'flyer'}-${index}`}
+                style={{ backgroundImage: `url(${image.dataUrl})` }}
+              />
+            ))}
+          </div>
+
+          {bannerImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="client-home-carousel-arrow client-home-carousel-arrow-prev"
+                onClick={showPrevBanner}
+                aria-label="Flyer anterior"
+              >
+                &#8249;
+              </button>
+              <button
+                type="button"
+                className="client-home-carousel-arrow client-home-carousel-arrow-next"
+                onClick={showNextBanner}
+                aria-label="Flyer siguiente"
+              >
+                &#8250;
+              </button>
+              <div className="client-home-carousel-dots">
+                {bannerImages.map((image, index) => (
+                  <button
+                    type="button"
+                    key={`dot-${image.fileName || 'flyer'}-${index}`}
+                    className={`client-home-carousel-dot ${index === bannerIndex ? 'is-active' : ''}`}
+                    onClick={() => setBannerIndex(index)}
+                    aria-label={`Ir al flyer ${index + 1}`}
+                    aria-current={index === bannerIndex}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 
