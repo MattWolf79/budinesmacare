@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+// Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
+import { showAppAlert as alert } from '../utils/appAlert';
 import TarjetaPromocion from './TarjetaPromocion';
 
 const emptyPromotion = () => ({

@@ -164,7 +164,8 @@ export default function NewBookingPanel({
   initialStartTime = null,
   clientCanChooseEmployee = false,
   onClose,
-  onBookingCreated
+  onBookingCreated,
+  rescheduleMode = false
 }) {
   const configuracionOperativa = companyContext?.configuracion_operativa || {};
   const gridInterval = getGridInterval(configuracionOperativa.intervalo_grilla_minutos);
@@ -687,6 +688,7 @@ export default function NewBookingPanel({
       // Cada servicio del carrito genera una solicitud de turno del cliente.
       const stampBranchId = activeBranchId || branchId || null;
       let clientHasWaitlist = false;
+      const createdClientBookingIds = [];
       for (const item of cart) {
         const startAt = `${date}T${item.startTime}:00`;
         const endAt = `${date}T${addMinutesToTime(item.startTime, item.duration)}:00`;
@@ -717,6 +719,10 @@ export default function NewBookingPanel({
           clientHasWaitlist = true;
         }
 
+        if (data?.id) {
+          createdClientBookingIds.push(data.id);
+        }
+
         if (stampBranchId && data?.id) {
           await supabase.rpc('set_booking_branch', {
             booking_id_value: data.id,
@@ -727,6 +733,21 @@ export default function NewBookingPanel({
       }
 
       setIsSaving(false);
+
+      if (rescheduleMode) {
+        // En reprogramación el turno original NO se toca todavía: se devuelve el
+        // nuevo turno para que el cliente confirme o descarte la modificación.
+        onBookingCreated?.({
+          date,
+          branchName: showBranchSelector ? activeBranchName : '',
+          services: cart.map((cartItem) => cartItem.name),
+          bookingIds: createdClientBookingIds,
+          isWaitlist: clientHasWaitlist
+        });
+        onClose?.();
+        return;
+      }
+
       if (clientHasWaitlist) {
         setWaitlistNotice(true);
         return;
@@ -1048,7 +1069,15 @@ export default function NewBookingPanel({
         <div className="new-booking-modal new-booking-confirm-modal">
           <div className="new-booking-modal-card new-booking-confirm-card">
             <div className="new-booking-confirm-body">
-              <p className="new-booking-confirm-title">Estás reservando turno para los servicios:</p>
+              <p className="new-booking-confirm-title">
+                {rescheduleMode ? 'Vas a modificar tu turno a:' : 'Estás reservando turno para los servicios:'}
+              </p>
+              {(() => {
+                const [cy, cm, cd] = String(date || '').split('-');
+                const dateLabel = cy && cm && cd ? `${cd}/${cm}/${cy}` : '';
+                if (!dateLabel) return null;
+                return <p className="new-booking-confirm-date">Día: {dateLabel}</p>;
+              })()}
               {activeBranchName && (
                 <p className="new-booking-confirm-branch">Sucursal: {activeBranchName.toUpperCase()}</p>
               )}
@@ -1059,17 +1088,23 @@ export default function NewBookingPanel({
                     : item.bundleType === 'pack'
                       ? { label: 'PACK', cls: 'is-pack' }
                       : { label: 'Servicio', cls: 'is-service' };
+                  const timeLabel = item.startTime
+                    ? `${item.startTime} - ${addMinutesToTime(item.startTime, item.duration)}`
+                    : '';
                   return (
                     <li key={item.key}>
                       <span className="new-booking-confirm-item-name">
                         <ActivityIcon service={item} size="small" /> {item.name}
+                        {timeLabel && <span className="new-booking-confirm-item-time">{timeLabel}</span>}
                       </span>
                       <span className={`new-booking-confirm-tag ${tipo.cls}`}>{tipo.label}</span>
                     </li>
                   );
                 })}
               </ul>
-              <p className="new-booking-confirm-question">¿Confirmás la reserva?</p>
+              <p className="new-booking-confirm-question">
+                {rescheduleMode ? '¿Confirmás la modificación?' : '¿Confirmás la reserva?'}
+              </p>
             </div>
             <div className="new-booking-confirm-actions">
               <button
