@@ -158,6 +158,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const [surchargesOpen, setSurchargesOpen] = useState(false);
   const [activityChecksOpen, setActivityChecksOpen] = useState(false);
   const [selectedActivityCheckIndex, setSelectedActivityCheckIndex] = useState(null);
+  const [previewBannerIndex, setPreviewBannerIndex] = useState(0);
   const configuracionOperativa = form.configuracion_operativa || {};
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
@@ -167,10 +168,25 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const enabledPromotions = useMemo(() => (
     form.promotions.filter((promotion) => promotion.enabled && (preciosHabilitados ? (promotion.title || promotion.description || promotion.value || promotion.imageDataUrl) : promotion.imageDataUrl))
   ), [form.promotions, preciosHabilitados]);
-  const previewBannerImages = useMemo(() => {
-    if (!form.banner_images.length) return [];
-    return Array.from({ length: 4 }, (_, index) => form.banner_images[index % form.banner_images.length]);
-  }, [form.banner_images]);
+  const previewBannerImages = useMemo(() => (
+    form.banner_images.filter((image) => image?.dataUrl)
+  ), [form.banner_images]);
+
+  useEffect(() => {
+    setPreviewBannerIndex((current) => (previewBannerImages.length ? current % previewBannerImages.length : 0));
+    if (!previewOpen || previewBannerImages.length <= 1) return undefined;
+    const intervalId = window.setInterval(() => {
+      setPreviewBannerIndex((current) => (current + 1) % previewBannerImages.length);
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [previewOpen, previewBannerImages.length]);
+
+  const showPrevPreviewBanner = () => {
+    setPreviewBannerIndex((current) => (current - 1 + previewBannerImages.length) % previewBannerImages.length);
+  };
+  const showNextPreviewBanner = () => {
+    setPreviewBannerIndex((current) => (current + 1) % previewBannerImages.length);
+  };
   const generalDiscounts = useMemo(() => form.discounts.map((discount, index) => ({ discount, index })).filter(({ discount }) => discount.discountType !== 'activity'), [form.discounts]);
   const activityDiscounts = useMemo(() => form.discounts.map((discount, index) => ({ discount, index })).filter(({ discount }) => discount.discountType === 'activity'), [form.discounts]);
   const activeSurcharges = useMemo(() => form.surcharges.map((surcharge, index) => ({ surcharge, index })), [form.surcharges]);
@@ -1057,16 +1073,55 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
               </section>
 
               {previewBannerImages.length > 0 && (
-                <div className="client-home-banner-strip settings-preview-carousel">
-                  {previewBannerImages.map((image, index) => (
-                    <div
-                      className="client-home-banner"
-                      role="img"
-                      aria-label={`Presentación de la empresa ${index + 1}`}
-                      key={`${image.fileName || 'banner'}-${index}`}
-                      style={{ backgroundImage: `url(${image.dataUrl})` }}
-                    />
-                  ))}
+                <div className="client-home-carousel settings-preview-carousel" aria-roledescription="carrusel" aria-label="Flyers de la empresa">
+                  <div
+                    className="client-home-carousel-track"
+                    style={{ transform: `translateX(-${previewBannerIndex * 100}%)` }}
+                  >
+                    {previewBannerImages.map((image, index) => (
+                      <div
+                        className="client-home-carousel-slide"
+                        role="img"
+                        aria-label={`Flyer ${index + 1} de ${previewBannerImages.length}`}
+                        aria-hidden={index !== previewBannerIndex}
+                        key={`${image.fileName || 'flyer'}-${index}`}
+                        style={{ backgroundImage: `url(${image.dataUrl})` }}
+                      />
+                    ))}
+                  </div>
+
+                  {previewBannerImages.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        className="client-home-carousel-arrow client-home-carousel-arrow-prev"
+                        onClick={showPrevPreviewBanner}
+                        aria-label="Flyer anterior"
+                      >
+                        &#8249;
+                      </button>
+                      <button
+                        type="button"
+                        className="client-home-carousel-arrow client-home-carousel-arrow-next"
+                        onClick={showNextPreviewBanner}
+                        aria-label="Flyer siguiente"
+                      >
+                        &#8250;
+                      </button>
+                      <div className="client-home-carousel-dots">
+                        {previewBannerImages.map((image, index) => (
+                          <button
+                            type="button"
+                            key={`dot-${image.fileName || 'flyer'}-${index}`}
+                            className={`client-home-carousel-dot ${index === previewBannerIndex ? 'is-active' : ''}`}
+                            onClick={() => setPreviewBannerIndex(index)}
+                            aria-label={`Ir al flyer ${index + 1}`}
+                            aria-current={index === previewBannerIndex}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 

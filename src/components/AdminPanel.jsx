@@ -31,6 +31,32 @@ const emptyService = {
   active: true
 };
 
+const GRID_INTERVAL_OPTIONS = new Set([15, 30, 45, 60]);
+
+const getValidGridInterval = (value) => {
+  const minutes = Number(value) || 30;
+  return GRID_INTERVAL_OPTIONS.has(minutes) ? minutes : 30;
+};
+
+const snapDurationToGrid = (value, gridInterval) => {
+  const minutes = Number(value) || gridInterval;
+  if (minutes <= gridInterval) return gridInterval;
+  return Math.ceil(minutes / gridInterval) * gridInterval;
+};
+
+const buildDurationOptions = (gridInterval, maxFractions = 8) => (
+  Array.from({ length: Math.max(1, Math.round(maxFractions)) }, (_, index) => (index + 1) * gridInterval)
+);
+
+const formatDurationLabel = (minutes) => {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  const parts = [];
+  if (hours) parts.push(`${hours} h`);
+  if (mins) parts.push(`${mins} min`);
+  return parts.join(' ') || `${minutes} min`;
+};
+
 const localEmployeeId = '00000000-0000-4000-8000-000000000101';
 const localOtherEmployeeId = '00000000-0000-4000-8000-000000000102';
 
@@ -482,6 +508,11 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && companyContext?.configuracion_operativa?.descuentos_habilitados !== false;
   const promocionesHabilitadas = companyContext?.configuracion_operativa?.promociones_habilitadas !== false;
+  const gridInterval = getValidGridInterval(companyContext?.configuracion_operativa?.intervalo_grilla_minutos);
+  const durationOptions = useMemo(() => {
+    const current = snapDurationToGrid(serviceForm.default_duration, gridInterval);
+    return buildDurationOptions(gridInterval, Math.max(8, current / gridInterval));
+  }, [gridInterval, serviceForm.default_duration]);
 
   const activeServices = useMemo(
     () => services.filter((service) => service.active !== false),
@@ -1126,7 +1157,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       name: serviceForm.name.trim(),
       icon: serviceForm.icon.trim() || null,
       color: serviceForm.color || '#42A5F5',
-      default_duration: Number(serviceForm.default_duration) || 30,
+      default_duration: snapDurationToGrid(serviceForm.default_duration, gridInterval),
       base_price: preciosHabilitados ? parseMoney(serviceForm.base_price) : 0,
       activity_discount_check_id: preciosHabilitados ? serviceForm.activity_discount_check_id || '' : '',
       active: serviceForm.active
@@ -1799,6 +1830,23 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
               <input type="color" value={serviceForm.color} onChange={(event) => updateServiceField('color', event.target.value)} />
             </label>
 
+            <label>
+              Duración
+              <select
+                value={snapDurationToGrid(serviceForm.default_duration, gridInterval)}
+                onChange={(event) => updateServiceField('default_duration', Number(event.target.value))}
+              >
+                {durationOptions.map((minutes) => {
+                  const fractions = minutes / gridInterval;
+                  return (
+                    <option key={minutes} value={minutes}>
+                      {formatDurationLabel(minutes)} ({fractions} {fractions === 1 ? 'casilla' : 'casillas'})
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+
             {preciosHabilitados && (
               <label>
                 Precio base
@@ -1854,6 +1902,10 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                         <strong>{formatMoney(service.base_price)}</strong>
                       </div>
                     )}
+                    <div className="admin-management-card-field">
+                      <span>Duración</span>
+                      <strong>{formatDurationLabel(snapDurationToGrid(service.default_duration, gridInterval))}</strong>
+                    </div>
                     <div className="admin-management-card-field">
                       <span>Asignados</span>
                       <strong>{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length}</strong>

@@ -10,6 +10,7 @@ const getBookingStatusLabel = (booking) => {
 
   if (['completed', 'closed'].includes(status)) return 'Cerrado';
   if (status === 'cancelled') return 'Cancelado';
+  if (status === 'waitlist') return 'En espera';
   if (!booking?.employee_id || status === 'pending_assignment') return 'Pendiente';
   if (['confirmed', 'reserved'].includes(status)) return 'Asignado';
   return 'Pendiente';

@@ -194,6 +194,14 @@ export default function App() {
     };
   }, [companySlug]);
 
+  const refreshCompanyContext = useCallback(async () => {
+    if (!companySlug) return;
+    const { data, error } = await supabase.rpc('get_company_public_context', {
+      slug_value: companySlug
+    });
+    if (!error && data?.active) setCompanyContext(data);
+  }, [companySlug]);
+
   const selectAccessProfile = (profile) => {
     setSessionExpiredMessage('');
     touchLastActivity();
@@ -587,6 +595,7 @@ export default function App() {
           onLogout={logout}
           companySlug={companySlug}
           companyContext={companyContext}
+          onCompanyContextRefresh={refreshCompanyContext}
         />
       );
     }
@@ -651,6 +660,7 @@ export default function App() {
           onLogout={logout}
           companySlug={companySlug}
           companyContext={companyContext}
+          onCompanyContextRefresh={refreshCompanyContext}
         />
       )}
     </RoleAccess>

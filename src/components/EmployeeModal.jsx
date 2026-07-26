@@ -37,7 +37,8 @@ export default function EmployeeModal({
   summaryImageUrl = '',
   fallbackActionLabel = '',
   onFallbackReserve,
-  fallbackDisabled = false
+  fallbackDisabled = false,
+  branchSelector = null
 }) {
   return (
     <div className="modal">
@@ -45,6 +46,7 @@ export default function EmployeeModal({
         <div className="agenda-modal-header">Seleccionar empleado</div>
 
         <div className="agenda-modal-body">
+          {branchSelector}
           {isLoading ? (
             <div className="agenda-empty-state">
               Buscando empleados disponibles...

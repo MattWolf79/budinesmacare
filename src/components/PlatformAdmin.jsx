@@ -43,6 +43,8 @@ const initialEditForm = {
   descuentosHabilitados: true,
   recargosHabilitados: true,
   promocionesHabilitadas: true,
+  sucursalesHabilitadas: false,
+  packsHabilitados: false,
   turnosSuperpuestosHabilitados: true,
   intervaloGrillaMinutos: '30',
   empleadosPuedenReservar: true,
@@ -90,6 +92,8 @@ const getConfigPayload = (form) => ({
   descuentos_habilitados_valor: Boolean(form.descuentosHabilitados),
   recargos_habilitados_valor: Boolean(form.recargosHabilitados),
   promociones_habilitadas_valor: Boolean(form.promocionesHabilitadas),
+  sucursales_habilitadas_valor: Boolean(form.sucursalesHabilitadas),
+  packs_habilitados_valor: Boolean(form.packsHabilitados),
   turnos_superpuestos_habilitados_valor: Boolean(form.turnosSuperpuestosHabilitados),
   intervalo_grilla_minutos_valor: Number(form.intervaloGrillaMinutos) || 30,
   empleados_pueden_reservar_valor: Boolean(form.empleadosPuedenReservar),
@@ -114,6 +118,8 @@ const applyConfigData = (data) => {
     descuentosHabilitados: config.descuentos_habilitados !== false,
     recargosHabilitados: config.recargos_habilitados !== false,
     promocionesHabilitadas: config.promociones_habilitadas !== false,
+    sucursalesHabilitadas: config.sucursales_habilitadas === true,
+    packsHabilitados: config.packs_habilitados === true,
     turnosSuperpuestosHabilitados: config.turnos_superpuestos_habilitados !== false,
     intervaloGrillaMinutos: String(config.intervalo_grilla_minutos || 30),
     empleadosPuedenReservar: config.empleados_pueden_reservar !== false,
@@ -604,6 +610,8 @@ export default function PlatformAdmin() {
                   <CheckField label="Habilita descuentos" checked={editForm.descuentosHabilitados} onChange={(value) => updateEditField('descuentosHabilitados', value)} />
                   <CheckField label="Habilita recargos" checked={editForm.recargosHabilitados} onChange={(value) => updateEditField('recargosHabilitados', value)} />
                   <CheckField label="Habilita promociones" checked={editForm.promocionesHabilitadas} onChange={(value) => updateEditField('promocionesHabilitadas', value)} />
+                  <CheckField label="Habilita multi-sucursal" checked={editForm.sucursalesHabilitadas} onChange={(value) => updateEditField('sucursalesHabilitadas', value)} />
+                  <CheckField label="Habilita packs" checked={editForm.packsHabilitados} onChange={(value) => updateEditField('packsHabilitados', value)} />
                   <CheckField label="Permite turnos superpuestos" checked={editForm.turnosSuperpuestosHabilitados} onChange={(value) => updateEditField('turnosSuperpuestosHabilitados', value)} />
                   <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} />
                 </ConfigSection>

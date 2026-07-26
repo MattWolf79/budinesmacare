@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Container, Box } from "@mui/material";
 import { supabase } from "../api/supabaseClient";
-import Navbar, { defaultNavItems } from "../components/Navbar";
+import Navbar from "../components/Navbar";
+import AdminSidebar from "../components/AdminSidebar";
 import AgendaGrid from "../components/AgendaGrid";
 import AdminPanel from "../components/AdminPanel";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
+import BranchesPanel from "../components/BranchesPanel";
+import BundlesPanel from "../components/BundlesPanel";
+import NewBookingPanel from "../components/NewBookingPanel";
 import EmployeeAvailabilityPanel from "../components/EmployeeAvailabilityPanel";
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
@@ -12,8 +16,11 @@ const turnosAppLogo = '/logo-quieroturnoapp.png';
 const getAdminViewFromHash = () => {
   const hash = window.location.hash.replace(/^#/, '');
 
-  if (hash === 'admin-agenda' || hash === 'assign-booking') return 'agenda';
+  if (hash === 'admin-agenda') return 'agenda';
+  if (hash === 'assign-booking' || hash === 'admin-pending') return 'pending';
   if (hash === 'admin-employees') return 'employees';
+  if (hash === 'admin-branches') return 'sucursales';
+  if (hash === 'admin-bundles') return 'bundles';
 
   return 'agenda';
 };
@@ -31,10 +38,16 @@ const getUserInitials = (user) => {
 
 const getUserLabel = (user) => user?.displayName || user?.email || user?.username || 'Sin usuario';
 
+const adminBottomNavItems = [
+  { id: 'agenda', label: 'Agenda', icon: '📅' },
+  { id: 'availability', label: 'Disponibilidad', icon: '🕒' },
+  { id: 'employees', label: 'Empleados', icon: '👥' }
+];
+
 function AdminBottomNav({ activeView, onViewChange }) {
   return (
     <nav className="admin-bottom-nav" aria-label="Secciones administrador">
-      {defaultNavItems.map((item) => (
+      {adminBottomNavItems.map((item) => (
         <button
           key={item.id}
           type="button"
@@ -49,14 +62,20 @@ function AdminBottomNav({ activeView, onViewChange }) {
   );
 }
 
-export default function Dashboard({ user, accessProfile, onChangeProfile, onLogout, canChangeProfile = false, companySlug, companyContext }) {
+export default function Dashboard({ user, accessProfile, onChangeProfile, onLogout, canChangeProfile = false, companySlug, companyContext, onCompanyContextRefresh }) {
 
   const [activeView, setActiveView] = useState(getAdminViewFromHash);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isNewBookingOpen, setIsNewBookingOpen] = useState(false);
+  const [newBookingInitial, setNewBookingInitial] = useState(null);
   const [adminDataVersion, setAdminDataVersion] = useState(0);
   const [promotions, setPromotions] = useState([]);
   const configuracionOperativa = companyContext?.configuracion_operativa || {};
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
+  const sucursalesHabilitadas = configuracionOperativa.sucursales_habilitadas === true;
+  const packsHabilitados = configuracionOperativa.packs_habilitados === true;
+  const bundlesHabilitados = packsHabilitados || promocionesHabilitadas;
   const companyName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
   const navbarLogoSrc = companyContext?.client_logo_data_url || turnosAppLogo;
   const navbarLogoAlt = companyContext?.client_logo_data_url ? `${companyName} - Administrador` : undefined;
@@ -73,6 +92,13 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     return () => {
       window.removeEventListener('hashchange', applyHashView);
     };
+  }, []);
+
+  useEffect(() => {
+    // Al abrir el panel admin, refrescamos la configuración (fracción de grilla, flags)
+    // para no depender del valor cacheado desde el login.
+    onCompanyContextRefresh?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -107,13 +133,55 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     setAdminDataVersion((current) => current + 1);
   };
 
+  const notifyBranchesChanged = () => {
+    setAdminDataVersion((current) => current + 1);
+    onCompanyContextRefresh?.();
+  };
+
   const changeView = (view) => {
+    if (view === 'new-booking') {
+      setNewBookingInitial(null);
+      setIsNewBookingOpen(true);
+      setSidebarOpen(false);
+      return;
+    }
+
     if (view === 'agenda') {
       setAdminDataVersion((current) => current + 1);
     }
 
     setActiveView(view);
+    setSidebarOpen(false);
   };
+
+  const adminNavGroups = useMemo(() => {
+    const gestion = [
+      { id: 'new-booking', label: 'Nueva reserva', icon: '➕' },
+      { id: 'agenda', label: 'Calendario', icon: '📅' },
+      { id: 'pending', label: 'Pendientes de asignar', icon: '📌' },
+      { id: 'employees', label: 'Empleados', icon: '👥' },
+      { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
+    ];
+
+    if (sucursalesHabilitadas) {
+      gestion.push({ id: 'sucursales', label: 'Sucursales', icon: '🏢' });
+    }
+
+    if (bundlesHabilitados) {
+      gestion.push({ id: 'bundles', label: 'Packs y promos', icon: '🎁' });
+    }
+
+    return [
+      { label: 'GESTIÓN', items: gestion },
+      {
+        label: 'CONFIGURACIÓN',
+        items: [
+          { id: 'services', label: 'Servicios', icon: '✨' },
+          { id: 'settings', label: 'Configuración del negocio', icon: '⚙' }
+        ]
+      }
+    ];
+  }, [sucursalesHabilitadas, bundlesHabilitados]);
 
   const adminProfileSummary = (
     <div className="workspace-profile-panel admin-profile-panel">
@@ -128,7 +196,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   );
 
   return (
-    <Container maxWidth={false} disableGutters className="dashboard-shell">
+    <Container maxWidth={false} disableGutters className="dashboard-shell has-admin-sidebar">
       <Navbar
         user={user}
         activeView={activeView}
@@ -136,26 +204,63 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         onViewChange={changeView}
         onChangeProfile={onChangeProfile}
         onLogout={onLogout}
-        showAdminNavigation={accessProfile === 'admin'}
+        showAdminNavigation={false}
+        showMenuToggle={accessProfile === 'admin'}
+        onMenuToggle={() => setSidebarOpen((current) => !current)}
         showProfileBadge
         canChangeProfile={canChangeProfile}
         logoSrc={navbarLogoSrc}
         logoAlt={navbarLogoAlt}
       />
 
-      {accessProfile === 'admin' && <AdminBottomNav activeView={activeView} onViewChange={changeView} />}
-
-      <Box className="dashboard-content">
-        {activeView === 'agenda' && (
-          <div className="agenda-responsive-shell">
-            <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />
-          </div>
+      <div className="dashboard-body">
+        {accessProfile === 'admin' && (
+          <AdminSidebar
+            groups={adminNavGroups}
+            activeView={activeView}
+            onViewChange={changeView}
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            companyName={companyName}
+            logoSrc={navbarLogoSrc}
+          />
         )}
-        {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-        {activeView === 'services' && <AdminPanel view="services" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-        {activeView === 'availability' && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-        {activeView === 'settings' && <AdminSettingsPanel user={user} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-      </Box>
+
+        <Box className="dashboard-content">
+          {activeView === 'agenda' && (
+            <div className="agenda-responsive-shell">
+              <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={(options) => { setNewBookingInitial(options); setIsNewBookingOpen(true); }} />
+            </div>
+          )}
+          {activeView === 'pending' && (
+            <div className="agenda-responsive-shell">
+              <AgendaGrid key={`pending-${adminDataVersion}`} pendingView user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />
+            </div>
+          )}
+          {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
+          {activeView === 'services' && <AdminPanel view="services" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
+          {activeView === 'availability' && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
+          {activeView === 'sucursales' && sucursalesHabilitadas && <BranchesPanel user={user} onDataChanged={notifyBranchesChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
+          {activeView === 'bundles' && bundlesHabilitados && <BundlesPanel user={user} onDataChanged={notifyBranchesChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} packsHabilitados={packsHabilitados} promosHabilitadas={promocionesHabilitadas} />}
+          {activeView === 'settings' && <AdminSettingsPanel user={user} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
+        </Box>
+      </div>
+
+      {isNewBookingOpen && (
+        <NewBookingPanel
+          user={user}
+          companySlug={companySlug}
+          companyContext={companyContext}
+          initialDate={newBookingInitial?.date || null}
+          initialStartTime={newBookingInitial?.startTime || null}
+          branchId={newBookingInitial?.branchId || null}
+          onClose={() => setIsNewBookingOpen(false)}
+          onBookingCreated={() => {
+            setAdminDataVersion((current) => current + 1);
+            changeView('agenda');
+          }}
+        />
+      )}
     </Container>
   );
 }
