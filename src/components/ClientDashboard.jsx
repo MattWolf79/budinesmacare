@@ -83,28 +83,30 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
         serviceRequest = serviceRequest.eq('company_id', companyContext.id);
       }
 
-      const [bookingResult, serviceResult] = await Promise.all([
+      const [bookingResult, serviceResult, configResult] = await Promise.all([
         bookingRequest || Promise.resolve({ data: [], error: null }),
-        serviceRequest
+        serviceRequest,
+        supabase.rpc('get_app_configuration', { company_slug_value: companySlug })
       ]);
-
-      const configResult = await supabase.rpc('get_app_configuration', {
-        company_slug_value: companySlug
-      });
 
       if (!active) return;
 
+      // El config (carrusel/promos) y los servicios se cargan siempre, aunque falle
+      // la carga de turnos, para no vaciar el inicio del cliente.
+      if (!configResult.error) {
+        setAppConfig(configResult.data || null);
+      }
+      setServices(serviceResult.error ? [] : serviceResult.data || []);
+
       if (bookingResult.error) {
+        setBookings([]);
         setLoadErrorMessage(bookingResult.error.message || 'No se pudieron cargar tus próximos turnos.');
         setIsLoading(false);
         return;
       }
 
+      setLoadErrorMessage('');
       setBookings(bookingResult.data || []);
-      setServices(serviceResult.error ? [] : serviceResult.data || []);
-      if (!configResult.error) {
-        setAppConfig(configResult.data || null);
-      }
       setIsLoading(false);
     }, 0);
 
