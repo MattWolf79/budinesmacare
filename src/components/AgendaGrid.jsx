@@ -1622,6 +1622,14 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const startPointerSelection = (event, dayIndex, slotIndex) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
+    // Reserva rápida (admin): un clic abre "Nueva reserva" sin barrido de casillas.
+    // Los turnos ya definen su duración por servicio, no por la cantidad de casillas.
+    if (onRequestNewBooking && event.pointerType !== 'touch') {
+      event.preventDefault();
+      openNewBookingForSlot(dayIndex, slotIndex);
+      return;
+    }
+
     if (event.pointerType === 'touch') {
       event.currentTarget.setPointerCapture?.(event.pointerId);
       touchTapRef.current = {

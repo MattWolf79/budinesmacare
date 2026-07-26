@@ -177,6 +177,10 @@ export default function NewBookingPanel({
   );
   const showBranchSelector = sucursalesHabilitadas && branches.length > 0;
 
+  // Abierto desde una casilla de la grilla: sucursal, dia y hora quedan fijos.
+  // Desde el menu "Nueva reserva" (sin casilla) siguen siendo editables.
+  const lockedFromSlot = Boolean(initialStartTime);
+
   const internalAdminAccountId = user?.isInternal && user?.role === 'admin' ? user.id : null;
   const internalEmployeeAccountId = user?.isInternal && user?.role === 'employee' ? user.id : null;
   const internalSessionToken = user?.isInternal ? user.sessionToken : null;
@@ -623,7 +627,9 @@ export default function NewBookingPanel({
                         key={branch.id}
                         type="button"
                         className={`new-booking-branch-pill ${String(activeBranchId) === String(branch.id) ? 'is-selected' : ''}`}
+                        disabled={lockedFromSlot}
                         onClick={() => {
+                          if (lockedFromSlot) return;
                           setSelectedBranchId(branch.id);
                           setCart([]);
                         }}
@@ -637,13 +643,13 @@ export default function NewBookingPanel({
 
               <label className="new-booking-field">
                 <span className="new-booking-label">Día de la reserva</span>
-                <input type="date" value={date} min={todayIso()} onChange={(event) => setDate(event.target.value)} />
+                <input type="date" value={date} min={todayIso()} disabled={lockedFromSlot} onChange={(event) => setDate(event.target.value)} />
                 <span className="new-booking-day-hint">{formatDayLabel(date)}</span>
               </label>
 
               <label className="new-booking-field">
                 <span className="new-booking-label">Hora de inicio</span>
-                <select value={startTime} onChange={(event) => handleStartTimeChange(event.target.value)}>
+                <select value={startTime} disabled={lockedFromSlot} onChange={(event) => handleStartTimeChange(event.target.value)}>
                   {!startTimeOptions.includes(startTime) && (
                     <option value={startTime}>{startTime} hs</option>
                   )}
@@ -651,7 +657,11 @@ export default function NewBookingPanel({
                     <option key={option} value={option}>{option} hs</option>
                   ))}
                 </select>
-                <span className="new-booking-day-hint">Horario de atención: 9 a 18 hs</span>
+                <span className="new-booking-day-hint">
+                  {lockedFromSlot
+                    ? 'Sucursal, día y hora vienen de la casilla elegida. Para cambiarlos, cerrá y elegí otra casilla.'
+                    : 'Horario de atención: 9 a 18 hs'}
+                </span>
               </label>
 
               <div className="new-booking-field">
