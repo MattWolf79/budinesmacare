@@ -5,14 +5,24 @@ import NewBookingPanel from './NewBookingPanel';
 import TarjetaPromocion from './TarjetaPromocion';
 import { formatDisplayDate } from '../utils/dateFormat';
 
-const ACTIVE_BOOKING_STATUSES = ['confirmed', 'reserved', 'pending_assignment'];
+const ACTIVE_BOOKING_STATUSES = ['confirmed', 'reserved', 'pending_assignment', 'waitlist'];
+
+const isWaitlistBooking = (booking) => String(booking?.status || '').trim().toLowerCase() === 'waitlist';
 
 const getBookingStatusLabel = (booking) => (
-  !booking.employee_id || booking.status === 'pending_assignment' ? 'Pendiente de asignación' : 'Turno confirmado'
+  isWaitlistBooking(booking)
+    ? 'Lista de espera'
+    : !booking.employee_id || booking.status === 'pending_assignment'
+      ? 'Pendiente de asignación'
+      : 'Turno confirmado'
 );
 
 const getBookingStatusValue = (booking) => (
-  !booking.employee_id || booking.status === 'pending_assignment' ? 'Pendiente' : 'Asignado'
+  isWaitlistBooking(booking)
+    ? 'Lista de espera'
+    : !booking.employee_id || booking.status === 'pending_assignment'
+      ? 'Pendiente'
+      : 'Asignado'
 );
 
 const pad = (value) => String(value).padStart(2, '0');

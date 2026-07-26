@@ -28,6 +28,7 @@ export default function BookingItem({
   customerLabel,
   displayLabel,
   employeeLabel,
+  clientLabel,
   priceDetails,
   compact = false,
   fillCell = false,
@@ -130,6 +131,7 @@ export default function BookingItem({
       >
         <span className="agenda-booking-label-primary">{primaryLabel}</span>
         {secondaryLabel && <span className="agenda-booking-label-secondary">{secondaryLabel}</span>}
+        {clientLabel && <span className="agenda-booking-label-client">{clientLabel}</span>}
       </span>
 
       {canCancel && (
