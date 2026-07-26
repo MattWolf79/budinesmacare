@@ -7,6 +7,12 @@
 -- (employee_id null) el turno entra como pending_assignment y el trigger de mail
 -- existente (send_booking_email_notifications) avisa al admin.
 --
+-- Si el item queda como "Indistinto" (sin profesional) y NO hay ningun
+-- profesional con disponibilidad cargada para ese horario, el turno se guarda
+-- igual pero con estado 'waitlist' (lista de espera): no se pierde el turno por
+-- un olvido de cargar la agenda; el admin lo puede asignar cuando aparezca
+-- disponibilidad, o cancelarlo por falta de disponibilidad.
+--
 -- Roles habilitados: admin (auth Supabase o sesion interna admin) y empleado
 -- (sesion interna employee). Ambos pueden asignar cualquier profesional activo.
 -- Las columnas booking_group_id, bundle_id, bundle_type, item_price ya existen
@@ -14,6 +20,13 @@
 -- Ejecutar despues de 22_packs_flag.sql.
 
 begin;
+
+-- Permitir el estado 'waitlist' (lista de espera) para turnos sin disponibilidad.
+-- Se mantiene el set vigente (incluye 'completed'/'closed' de cierres de atencion).
+alter table public.bookings drop constraint if exists bookings_status_chk;
+alter table public.bookings
+  add constraint bookings_status_chk
+  check (status in ('reserved', 'confirmed', 'pending_assignment', 'waitlist', 'cancelled', 'completed', 'closed'));
 
 create or replace function public.create_admin_booking_group(
   items_value jsonb,
@@ -123,8 +136,41 @@ begin
     end if;
 
     if item_employee_id is null then
-      -- Sin profesional asignado -> queda pendiente para que el admin lo asigne.
-      item_status := 'pending_assignment';
+      -- Sin profesional asignado. Si existe al menos un profesional que atienda el
+      -- servicio, tenga disponibilidad cargada para el horario y no este ocupado,
+      -- queda pendiente de asignacion. Si no hay ninguno (p. ej. el unico
+      -- profesional se enfermo y no cargo agenda), no se pierde el turno: entra en
+      -- lista de espera para asignar mas tarde o cancelar por falta de disponibilidad.
+      if exists (
+        select 1
+        from public.employees candidate
+        join public.employee_services candidate_services
+          on candidate_services.employee_id = candidate.id
+          and candidate_services.company_id = target_company_id
+        join public.employee_availability candidate_availability
+          on candidate_availability.employee_id = candidate.id
+          and candidate_availability.company_id = target_company_id
+        where candidate.company_id = target_company_id
+          and candidate.active = true
+          and candidate.deleted_at is null
+          and candidate_services.service_id = item_service_id
+          and candidate_availability.active = true
+          and candidate_availability.available_date = item_start::date
+          and candidate_availability.start_time <= item_start::time
+          and candidate_availability.end_time >= item_end::time
+          and not exists (
+            select 1 from public.bookings busy
+            where busy.company_id = target_company_id
+              and busy.employee_id = candidate.id
+              and busy.status in ('reserved', 'confirmed', 'pending_assignment')
+              and busy.start_at < item_end
+              and busy.end_at > item_start
+          )
+      ) then
+        item_status := 'pending_assignment';
+      else
+        item_status := 'waitlist';
+      end if;
     else
       item_status := 'confirmed';
 

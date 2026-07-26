@@ -76,13 +76,17 @@ const isClosedBooking = (booking) =>
   ['completed', 'closed'].includes(String(booking?.status || '').trim().toLowerCase());
 
 const isVisibleGridBooking = (booking) =>
-  isActiveBooking(booking) || isClosedBooking(booking);
+  isActiveBooking(booking) || isClosedBooking(booking) || isWaitlistBooking(booking);
 
 const isPendingAssignmentBooking = (booking) =>
   isActiveBooking(booking) && (!booking.employee_id || booking.status === 'pending_assignment');
 
+const isWaitlistBooking = (booking) =>
+  String(booking?.status || '').trim().toLowerCase() === 'waitlist';
+
 const getBookingStatusLabel = (booking) => {
   if (isClosedBooking(booking)) return 'Cerrado';
+  if (isWaitlistBooking(booking)) return 'En espera';
   if (isPendingAssignmentBooking(booking)) return 'Pendiente';
   if (isActiveBooking(booking)) return 'Asignado';
   if (String(booking?.status || '').trim().toLowerCase() === 'cancelled') return 'Cancelado';
@@ -998,7 +1002,7 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
   );
 }
 
-export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext, onRequestNewBooking = null }) {
+export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext, onRequestNewBooking = null, pendingView = false }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -1147,7 +1151,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const reservationOptions = (selectedPromotion ? promotionServices : services)
     .filter((option) => option?.isPromotion || serviceOfferedAtBranch(option?.id, activeBranchId));
   const pendingAssignmentBookings = useMemo(() => bookings
-    .filter(isPendingAssignmentBooking)
+    .filter((booking) => isPendingAssignmentBooking(booking) || isWaitlistBooking(booking))
     .filter((booking) => parseBookingDate(booking.start_at) >= new Date())
     .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [bookings]);
 
@@ -2258,7 +2262,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   return (
     <div
-      className="agenda-grid"
+      className={`agenda-grid${pendingView ? ' agenda-grid-pending' : ''}`}
       onPointerMove={movePointerSelection}
       onPointerUp={finishPointerSelection}
       onPointerCancel={cancelPointerSelection}
@@ -2268,25 +2272,29 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       {isAdminView && adminProfileSummary && (
         <section className="admin-page-heading agenda-page-heading">
           <div>
-            <h1>Agenda</h1>
-            <p>Gestioná turnos, solicitudes pendientes y cierres de atención.</p>
+            <h1>{pendingView ? 'Pendientes de asignar' : 'Agenda'}</h1>
+            <p>{pendingView ? 'Asigná un profesional a los turnos pendientes o en lista de espera.' : 'Gestioná turnos, solicitudes pendientes y cierres de atención.'}</p>
           </div>
           {adminProfileSummary}
         </section>
       )}
 
-      {isAdminView && pendingAssignmentBookings.length > 0 && (
-        <section className="admin-pending-panel booking-assignment-panel">
+      {isAdminView && pendingView && (
+        <section className="admin-pending-panel booking-assignment-panel admin-pending-page">
           <div className="agenda-modal-header">Solicitudes pendientes de asignación</div>
+          {pendingAssignmentBookings.length === 0 ? (
+            <div className="agenda-empty-state">No hay turnos pendientes de asignar.</div>
+          ) : (
           <div className="admin-pending-list">
             {pendingAssignmentBookings.map((booking) => {
               const service = services.find((item) => Number(item.id) === Number(booking.service));
-              const assignmentLabel = `${getBookingActivityLabel(booking, service)} / Pendiente`;
+              const isWaitlist = isWaitlistBooking(booking);
+              const assignmentLabel = `${getBookingActivityLabel(booking, service)} / ${isWaitlist ? 'En espera' : 'Pendiente'}`;
               const bundleType = String(booking.bundle_type || '').toLowerCase();
               const bundleLabel = bundleType === 'pack' ? 'Pack' : bundleType === 'promo' ? 'Promo' : '';
 
               return (
-                <article className="admin-record-card booking-assignment-card" key={booking.id} style={{ '--service-chip-color': service?.color || '#15b8c8' }}>
+                <article className={`admin-record-card booking-assignment-card${isWaitlist ? ' booking-assignment-card-waitlist' : ''}`} key={booking.id} style={{ '--service-chip-color': service?.color || '#15b8c8' }}>
                   <div className="admin-record-main">
                     <span className="booking-assignment-service">
                       <ActivityIcon service={service} size="small" />
@@ -2313,9 +2321,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
               );
             })}
           </div>
+          )}
         </section>
       )}
 
+      {!pendingView && (
+      <>
       {/* NAV */}
       <div className="agenda-week-nav">
         <button
@@ -2459,6 +2470,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       const isOwn = isOwnBooking(b);
                       const isAssigned = isAssignedBooking(b);
                       const isClosed = isClosedBooking(b);
+                      const isWaitlist = isWaitlistBooking(b);
                       const isEmployeeForeignBooking = isEmployeeView && !isOwn && !isAssigned;
                       const hideEmployee = isEmployeeView && ['solo_ocupado', 'cliente_sin_empleado', 'cliente_servicio'].includes(visibilidadTurnosEmpleado);
                       const hideCustomer = isEmployeeView && visibilidadTurnosEmpleado === 'solo_ocupado' && isEmployeeForeignBooking;
@@ -2468,11 +2480,13 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                       const activityLabel = getBookingActivityLabel(b, service);
                       const displayLabel = isEmployeeView && isEmployeeForeignBooking && visibilidadTurnosEmpleado === 'solo_ocupado'
                         ? 'Ocupado'
-                        : isEmployeeView && visibilidadTurnosEmpleado === 'cliente_servicio'
-                          ? `${getClientName(b)} / ${activityLabel}`
-                          : visibleEmployeeLabel
-                            ? `${activityLabel} / ${visibleEmployeeLabel}`
-                            : activityLabel;
+                        : isWaitlist
+                          ? `${activityLabel} / En espera`
+                          : isEmployeeView && visibilidadTurnosEmpleado === 'cliente_servicio'
+                            ? `${getClientName(b)} / ${activityLabel}`
+                            : visibleEmployeeLabel
+                              ? `${activityLabel} / ${visibleEmployeeLabel}`
+                              : activityLabel;
                       const priceDetails = preciosHabilitados ? bookingPriceDetailsById[b.id] : null;
 
                       return (
@@ -2527,6 +2541,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           </div>
         );
       })}
+      </>
+      )}
 
       {/* MODAL SERVICIOS */}
       {selection && !selectedService && !selectedPromotion && (

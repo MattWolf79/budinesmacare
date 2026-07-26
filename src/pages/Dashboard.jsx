@@ -16,7 +16,8 @@ const turnosAppLogo = '/logo-quieroturnoapp.png';
 const getAdminViewFromHash = () => {
   const hash = window.location.hash.replace(/^#/, '');
 
-  if (hash === 'admin-agenda' || hash === 'assign-booking') return 'agenda';
+  if (hash === 'admin-agenda') return 'agenda';
+  if (hash === 'assign-booking' || hash === 'admin-pending') return 'pending';
   if (hash === 'admin-employees') return 'employees';
   if (hash === 'admin-branches') return 'sucursales';
   if (hash === 'admin-bundles') return 'bundles';
@@ -157,6 +158,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     const gestion = [
       { id: 'new-booking', label: 'Nueva reserva', icon: '➕' },
       { id: 'agenda', label: 'Calendario', icon: '📅' },
+      { id: 'pending', label: 'Pendientes de asignar', icon: '📌' },
       { id: 'employees', label: 'Empleados', icon: '👥' },
       { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
     ];
@@ -228,6 +230,11 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
           {activeView === 'agenda' && (
             <div className="agenda-responsive-shell">
               <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={(options) => { setNewBookingInitial(options); setIsNewBookingOpen(true); }} />
+            </div>
+          )}
+          {activeView === 'pending' && (
+            <div className="agenda-responsive-shell">
+              <AgendaGrid key={`pending-${adminDataVersion}`} pendingView user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />
             </div>
           )}
           {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}

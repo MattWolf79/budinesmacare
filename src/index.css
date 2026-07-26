@@ -197,6 +197,11 @@ code {
   touch-action: pan-x;
 }
 
+.agenda-grid-pending {
+  min-width: 0;
+  touch-action: auto;
+}
+
 .agenda-week-button {
   display: inline-flex;
   align-items: center;
@@ -11567,17 +11572,25 @@ body {
   .agenda-week-nav {
     justify-content: flex-start;
     flex-wrap: wrap;
+    gap: 8px;
     position: sticky;
     left: 0;
     max-width: 100vw;
   }
 
+  .agenda-week-nav .agenda-refresh-button,
+  .agenda-week-nav .agenda-close-attention-button {
+    flex: 1 1 auto;
+  }
+
   .agenda-week-nav .agenda-branch-filter {
+    flex: 1 1 100%;
     min-width: 0;
   }
 
   .agenda-week-nav .agenda-branch-filter select {
-    max-width: 150px;
+    width: 100%;
+    max-width: none;
   }
 
   .agenda-week-button {
@@ -12840,6 +12853,17 @@ body {
   color: #9a3412 !important;
   background: #ffedd5 !important;
   border: 1px solid #fdba74 !important;
+}
+
+.booking-assignment-bundle-tag-waitlist {
+  color: #b91c1c !important;
+  background: #fee2e2 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.booking-assignment-card-waitlist {
+  border-left: 3px solid #ef4444 !important;
+  background: #fff7f7 !important;
 }
 
 .booking-assignment-meta {

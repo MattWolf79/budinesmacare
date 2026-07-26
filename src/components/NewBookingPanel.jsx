@@ -210,6 +210,7 @@ export default function NewBookingPanel({
   const [depositEnabled, setDepositEnabled] = useState(false);
   const [showHoursModal, setShowHoursModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [waitlistNotice, setWaitlistNotice] = useState(false);
   const wasHoursExceeded = useRef(false);
 
   const loadData = useCallback(async () => {
@@ -560,7 +561,7 @@ export default function NewBookingPanel({
       bundle_type: item.bundleType || null
     }));
 
-    const { error } = await supabase.rpc('create_admin_booking_group', {
+    const { data, error } = await supabase.rpc('create_admin_booking_group', {
       items_value: items,
       customer_name_value: customerName || null,
       customer_email_value: customerEmail || null,
@@ -575,6 +576,16 @@ export default function NewBookingPanel({
 
     if (error) {
       alert(`No se pudo confirmar la reserva.\n${formatSupabaseError(error)}`);
+      return;
+    }
+
+    const createdBookings = Array.isArray(data?.bookings) ? data.bookings : [];
+    const hasWaitlist = createdBookings.some(
+      (booking) => String(booking?.status || '').toLowerCase() === 'waitlist'
+    );
+
+    if (hasWaitlist) {
+      setWaitlistNotice(true);
       return;
     }
 
@@ -913,6 +924,32 @@ export default function NewBookingPanel({
             </div>
             <footer className="new-booking-modal-footer new-booking-alert-footer">
               <button type="button" className="new-booking-config-confirm" onClick={() => setShowHoursModal(false)}>OK</button>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL LISTA DE ESPERA */}
+      {waitlistNotice && (
+        <div className="new-booking-modal">
+          <div className="new-booking-modal-card new-booking-alert-card">
+            <div className="new-booking-alert-body">
+              <span className="new-booking-alert-icon" aria-hidden="true">⏳</span>
+              <p>Lista de espera porque no hay profesionales con disponibilidad todavía para ese horario.</p>
+              <p>El turno se guardó igual, pero puede cancelarse. Te estaremos avisando.</p>
+            </div>
+            <footer className="new-booking-modal-footer new-booking-alert-footer">
+              <button
+                type="button"
+                className="new-booking-config-confirm"
+                onClick={() => {
+                  setWaitlistNotice(false);
+                  onBookingCreated?.();
+                  onClose?.();
+                }}
+              >
+                Entendido
+              </button>
             </footer>
           </div>
         </div>
