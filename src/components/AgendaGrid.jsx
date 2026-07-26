@@ -571,84 +571,77 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const lineDiscountTotal = selectedItems.reduce((total, item) => total + item.lineDiscountTotal, 0);
   const subtotal = selectedItems.reduce((total, item) => total + item.subtotal, 0);
   const selectedTotalDiscounts = totalDiscountOptions.filter((discount) => totalDiscountIds.includes(getDiscountKey(discount)));
-  const selectedCashPaymentDiscounts = selectedTotalDiscounts.filter(isCashPaymentDiscount);
-  const paymentInputAmounts = {
+  // Modelo contable del cierre (estilo caja):
+  //   valor_servicios (bruto) - descuento_promocion - descuento_efectivo + recargo_tarjeta = total_final
+  // Cada medio de pago recibe el IMPORTE BASE (valor de servicio) que cubre. El
+  // descuento por efectivo se calcula sobre la base de efectivo y el recargo de
+  // tarjeta sobre la base de tarjeta. Preparado para sumar IVA discriminado a
+  // futuro (una linea impuesto_iva sobre el neto segun cliente/medio de pago).
+  const paymentBaseAmounts = {
     cash: parseMoney(payments.cash),
     transfer: parseMoney(payments.transfer),
     card: parseMoney(payments.card)
   };
-  const hasCashPayment = paymentInputAmounts.cash > 0;
-  const surchargeRateByMethod = ['cash', 'transfer', 'card'].reduce((summary, method) => ({
-    ...summary,
-    [method]: activeSurcharges
-      .filter((surcharge) => surcharge.paymentMethod === method)
-      .reduce((total, surcharge) => total + Math.min(100, Math.max(0, getSurchargeValue(surcharge))) / 100, 0)
-  }), { cash: 0, transfer: 0, card: 0 });
-  // Separate cash and non-cash discounts
   const cashPaymentDiscounts = selectedTotalDiscounts.filter(isCashPaymentDiscount);
   const nonCashTotalDiscounts = selectedTotalDiscounts.filter((discount) => !isCashPaymentDiscount(discount));
-  
-  // Calculate non-cash discounts applied to subtotal
+
+  // descuento_promocion: descuentos por linea + descuentos sobre total (sin "pago en efectivo").
   const nonCashDiscountTotal = Math.min(
     subtotal,
     nonCashTotalDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, subtotal), 0)
   );
-  
-  // Calculate cash discounts applied ONLY to the cash payment amount (never to the service subtotal)
-  // This ensures 10% of $25k cash = $2.5k discount, not 10% of the total service price
-  const cashPaymentDiscountTotal = Math.max(0, 
-    cashPaymentDiscounts.reduce(
-      (total, discount) => total + getDiscountAmount(discount, paymentInputAmounts.cash),
-      0
-    )
-  );
+  const promotionDiscountTotal = roundMoneyAmount(lineDiscountTotal + nonCashDiscountTotal);
+  // valor_servicios neto de promociones: es lo que deben cubrir los importes base.
+  const serviceNetTotal = Math.max(0, roundMoneyAmount(grossTotal - promotionDiscountTotal));
 
-  // Build discount details for invoice
-  const selectedTotalDiscountDetails = selectedTotalDiscounts.map((discount) => ({
-    discount,
-    amount: isCashPaymentDiscount(discount) 
-      ? getDiscountAmount(discount, paymentInputAmounts.cash) 
-      : getDiscountAmount(discount, subtotal)
-  }));
-  
-  // Total discount is sum of both, but never exceeds what's available
-  const totalDiscountTotal = Math.min(subtotal, nonCashDiscountTotal + cashPaymentDiscountTotal);
-  const netTotal = Math.max(0, subtotal - totalDiscountTotal);
-  
-  console.log('DEBUG CIERRE - Discount Calculation:', {
-    subtotal,
-    'non-cash discounts': nonCashTotalDiscounts.length,
-    'cash discounts': cashPaymentDiscounts.length,
-    nonCashDiscountTotal,
-    'cash payment input': paymentInputAmounts.cash,
-    cashPaymentDiscountTotal,
-    totalDiscountTotal,
-    netTotal
-  });
+  // descuento_efectivo: se calcula sobre el importe base cargado en el medio efectivo.
+  const cashPaymentDiscountTotal = Math.max(0, Math.min(
+    paymentBaseAmounts.cash,
+    cashPaymentDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, paymentBaseAmounts.cash), 0)
+  ));
+
+  // recargo_tarjeta (y otros medios): sobre el importe base de cada medio.
   const selectedSurchargeDetails = activeSurcharges
     .map((surcharge) => ({
       surcharge,
-      baseAmount: paymentInputAmounts[surcharge.paymentMethod] || 0,
-      amount: getSurchargeAmount(surcharge, paymentInputAmounts[surcharge.paymentMethod] || 0)
+      baseAmount: paymentBaseAmounts[surcharge.paymentMethod] || 0,
+      amount: getSurchargeAmount(surcharge, paymentBaseAmounts[surcharge.paymentMethod] || 0)
     }))
     .filter((item) => item.amount > 0);
   const paymentSurchargeAmounts = ['cash', 'transfer', 'card'].reduce((summary, method) => ({
     ...summary,
     [method]: selectedSurchargeDetails.filter((item) => item.surcharge.paymentMethod === method).reduce((total, item) => total + item.amount, 0)
   }), { cash: 0, transfer: 0, card: 0 });
+  const surchargeTotal = roundMoneyAmount(selectedSurchargeDetails.reduce((total, item) => total + item.amount, 0));
+
+  // Lo que efectivamente se cobra por cada medio = base - descuento efectivo + recargo.
   const chargedPaymentAmounts = {
-    cash: roundMoneyAmount(paymentInputAmounts.cash + paymentSurchargeAmounts.cash),
-    transfer: roundMoneyAmount(paymentInputAmounts.transfer + paymentSurchargeAmounts.transfer),
-    card: roundMoneyAmount(paymentInputAmounts.card + paymentSurchargeAmounts.card)
+    cash: roundMoneyAmount(Math.max(0, paymentBaseAmounts.cash - cashPaymentDiscountTotal) + paymentSurchargeAmounts.cash),
+    transfer: roundMoneyAmount(paymentBaseAmounts.transfer + paymentSurchargeAmounts.transfer),
+    card: roundMoneyAmount(paymentBaseAmounts.card + paymentSurchargeAmounts.card)
   };
-  const surchargeTotal = selectedSurchargeDetails.reduce((total, item) => total + item.amount, 0);
-  const finalTotal = roundMoneyAmount(Math.max(0, netTotal + surchargeTotal));
-  const totalSavings = Math.max(0, grossTotal - netTotal);
-  const chargedTotal = roundMoneyAmount(chargedPaymentAmounts.cash + chargedPaymentAmounts.transfer + chargedPaymentAmounts.card);
-  const paymentTargetTotal = roundMoneyAmount(Math.max(0, netTotal));
-  const totalPaymentInputAmount = roundMoneyAmount(paymentInputAmounts.cash + paymentInputAmounts.transfer + paymentInputAmounts.card);
-  const paymentDifference = roundMoneyAmount(chargedTotal - finalTotal);
+
+  // Detalle de descuentos sobre total para la factura (efectivo sobre base de efectivo).
+  const selectedTotalDiscountDetails = selectedTotalDiscounts.map((discount) => ({
+    discount,
+    amount: isCashPaymentDiscount(discount)
+      ? Math.min(paymentBaseAmounts.cash, getDiscountAmount(discount, paymentBaseAmounts.cash))
+      : getDiscountAmount(discount, subtotal)
+  }));
+
+  const totalDiscountTotal = roundMoneyAmount(nonCashDiscountTotal + cashPaymentDiscountTotal);
+  const netTotal = Math.max(0, roundMoneyAmount(serviceNetTotal - cashPaymentDiscountTotal));
+  // total_final = neto de servicios - descuento efectivo + recargos.
+  const finalTotal = roundMoneyAmount(Math.max(0, serviceNetTotal - cashPaymentDiscountTotal + surchargeTotal));
   const displayFinalTotal = finalTotal;
+  const totalSavings = Math.max(0, roundMoneyAmount(grossTotal - netTotal));
+
+  // Importe base total asignado a medios de pago; debe cubrir el neto de servicios.
+  const totalPaymentInputAmount = roundMoneyAmount(paymentBaseAmounts.cash + paymentBaseAmounts.transfer + paymentBaseAmounts.card);
+  const chargedTotal = roundMoneyAmount(chargedPaymentAmounts.cash + chargedPaymentAmounts.transfer + chargedPaymentAmounts.card);
+  const displayChargedTotal = chargedTotal;
+  // Saldo por asignar: valor de servicios (neto) que aun no fue cubierto por un medio de pago.
+  const paymentDifference = roundMoneyAmount(totalPaymentInputAmount - serviceNetTotal);
   const closureCutoffLabel = formatDateInputForDisplay(closureCutoffDate);
 
   const toggleLineDiscount = (bookingId, discountKey) => {
@@ -702,7 +695,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const confirmClosure = async () => {
     if (isClosureConfirmed) return;
     if (!selectedItems.length) return alert('Seleccioná al menos un turno para cerrar.');
-    if (Math.abs(paymentDifference) > 0.01) return alert('La suma de pagos debe coincidir con el total real a cobrar.');
+    if (Math.abs(paymentDifference) > 0.01) return alert('La suma de los importes base por medio de pago debe cubrir el valor de los servicios.');
     setIsClosing(true);
     const rpcPayload = {
       service_date_value: selectedClient?.serviceDate || serviceDate,
@@ -826,21 +819,22 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
             return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} disabled={isClosureConfirmed} onChange={() => setTotalDiscountIds((current) => { if (isClosureConfirmed) return current; return current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey]; })} /><span>{formatDiscountOption(discount)}</span></label>;
           })}</div></div>}
           <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => setPayments((current) => ({ ...current, cash: event.target.value }))} placeholder="0" disabled={isClosureConfirmed} /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => setPayments((current) => ({ ...current, transfer: event.target.value }))} placeholder="0" disabled={isClosureConfirmed} /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => setPayments((current) => ({ ...current, card: event.target.value }))} placeholder="0" disabled={isClosureConfirmed} /></label></div>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, margin: '4px 4px 0' }}>Cargá el importe base (valor de servicio) que cubre cada medio.</div>
+          {(cashPaymentDiscountTotal > 0 || surchargeTotal > 0) && <div style={{ fontSize: '12px', color: '#7c2d12', fontWeight: 800, margin: '2px 4px 0' }}>Se cobra · Efectivo {formatMoney(chargedPaymentAmounts.cash)} · Transferencia {formatMoney(chargedPaymentAmounts.transfer)} · Tarjeta {formatMoney(chargedPaymentAmounts.card)}</div>}
           {activeSurcharges.length > 0 && <div className="close-attention-section"><strong>Recargos aplicados</strong><div className="close-attention-discounts">{activeSurcharges.map((surcharge) => {
             const baseAmount = paymentBaseAmounts[surcharge.paymentMethod] || 0;
             const amount = getSurchargeAmount(surcharge, baseAmount);
             return <span className="settings-check-row" key={getSurchargeKey(surcharge)}><span>{formatSurchargeOption(surcharge)} sobre {formatPaymentMethod(surcharge.paymentMethod)}: +{formatMoney(amount)}{amount > 0 ? ` · Base: ${formatMoney(baseAmount)}` : ''}</span></span>;
           })}</div></div>}
           <div className="close-attention-total">
-            <span>Bruto: {formatMoney(grossTotal)}</span>
-            <span>Desc. servicios: -{formatMoney(lineDiscountTotal)}</span>
-            <span>Desc. total: -{formatMoney(totalDiscountTotal)}</span>
-            <span>Base cubierta: {formatMoney(netTotal)}</span>
-            <span>Recargos: +{formatMoney(surchargeTotal)}</span>
-            <span>Ahorro: {formatMoney(totalSavings)}</span>
-            <strong>Total final: {formatMoney(displayFinalTotal)}</strong>
-            <span>Pagado: {formatMoney(totalPaymentInputAmount)}</span>
-            {Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">Diferencia: {formatMoney(Math.abs(paymentDifference))} {paymentDifference > 0 ? 'de más' : 'pendiente'}</span>}
+            <span><span>Valor servicios</span><span>{formatMoney(grossTotal)}</span></span>
+            {promotionDiscountTotal > 0 && <span><span>Descuento promoción</span><span>-{formatMoney(promotionDiscountTotal)}</span></span>}
+            {cashPaymentDiscountTotal > 0 && <span><span>Descuento efectivo</span><span>-{formatMoney(cashPaymentDiscountTotal)}</span></span>}
+            {surchargeTotal > 0 && <span><span>Recargo tarjeta</span><span>+{formatMoney(surchargeTotal)}</span></span>}
+            <strong><span>Total final</span><span>{formatMoney(displayFinalTotal)}</span></strong>
+            <span><span>Pagado</span><span>{formatMoney(displayChargedTotal)}</span></span>
+            <span><span>Base asignada</span><span>{formatMoney(totalPaymentInputAmount)} / {formatMoney(serviceNetTotal)}</span></span>
+            {Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">{paymentDifference > 0 ? 'Base asignada de más' : 'Falta asignar'}: {formatMoney(Math.abs(paymentDifference))}</span>}
           </div>
           <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>Cerrar</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !selectedItems.length || Math.abs(paymentDifference) > 0.01}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button>}</div>
         </div>
