@@ -1078,7 +1078,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     return branchServices.some((rel) => String(rel.branch_id) === String(branchId) && String(rel.service_id) === String(serviceId));
   };
   const matchesAgendaBranchFilter = (booking) =>
-    !showAgendaBranchFilter || !activeBranchId || String(booking?.branch_id || '') === String(activeBranchId);
+    !showBranchSelector || !activeBranchId || String(booking?.branch_id || '') === String(activeBranchId);
   const applyCompanyFilter = (query) => companyContext?.id ? query.eq('company_id', companyContext.id) : query;
   const canGoBack = !isClientView || offset > 0;
   const isCompactAgenda = visibleDayCount <= 3;
@@ -2335,6 +2335,26 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
       {!pendingView && (
       <>
+      {/* SELECTOR DE SUCURSAL (cliente) */}
+      {isClientView && showBranchSelector && (
+        <div className="client-branch-bar">
+          <span className="client-branch-bar-title">Elegí la sucursal</span>
+          <p className="client-branch-bar-hint">Seleccioná dónde querés tu turno antes de elegir el horario.</p>
+          <div className="client-branch-bar-pills" role="group" aria-label="Seleccionar sucursal">
+            {branches.map((branch) => (
+              <button
+                key={branch.id}
+                type="button"
+                className={`client-branch-bar-pill ${String(activeBranchId) === String(branch.id) ? 'is-selected' : ''}`}
+                onClick={() => setSelectedBranchId(branch.id)}
+              >
+                {branch.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* NAV */}
       <div className="agenda-week-nav">
         <button
@@ -2559,7 +2579,6 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           rangeLabel={selectedRangeLabel}
           startLabel={selectedRange ? formatTime(selectedRange.startLocal) : ''}
           slotMinutes={slotMinutes}
-          branchSelector={isClientView ? branchSelectorNode : null}
           onClose={close}
           onSelectService={handleSelectService}
         />
@@ -2584,8 +2603,6 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                 )}
                 {bookingPromotionText && <span className="client-request-promotion">{bookingPromotionText}</span>}
               </div>
-
-              {branchSelectorNode}
 
               {isLoadingAvailableEmployees ? (
                 <div className="agenda-empty-state">Validando disponibilidad...</div>
@@ -2622,7 +2639,6 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           fallbackActionLabel="Solicitar sin elegir empleado"
           onFallbackReserve={reserveClientRequest}
           fallbackDisabled={isLoadingAvailableEmployees || (!selectedService?.isPromotion && availableEmployees.length === 0 && !availabilityLoadFailed)}
-          branchSelector={branchSelectorNode}
         />
       )}
 

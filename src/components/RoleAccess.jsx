@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
+import ClientProfilePanel from './ClientProfilePanel';
 import Navbar from './Navbar';
 import AdminSidebar from './AdminSidebar';
 import NewBookingPanel from './NewBookingPanel';
@@ -55,14 +56,32 @@ const employeeSidebarGroups = [
 
 const clientNavItems = [
   { id: 'home', label: 'Inicio', icon: '⌂' },
-  { id: 'reserve', label: 'Reservar', icon: '📅' }
+  { id: 'reserve', label: 'Nueva Reserva', icon: '📅' },
+  { id: 'mis-turnos', label: 'Mis turnos', icon: '📋' },
+  { id: 'perfil', label: 'Perfil', icon: '👤' }
 ];
+
+const clientSidebarGroups = [
+  {
+    label: 'MI CUENTA',
+    items: clientNavItems.map((item) => ({ id: item.id, label: item.label, icon: item.icon }))
+  }
+];
+
+const clientHeroCopy = {
+  home: { eyebrow: 'Bienvenida', description: 'Descubrí promos, packs y servicios, y reservá cuando quieras.' },
+  reserve: { eyebrow: 'Reserva', title: 'Reservar turno', description: 'Seleccioná un horario disponible en la grilla para crear tu turno.' },
+  'mis-turnos': { eyebrow: 'Mis turnos', title: 'Mis turnos', description: 'Revisá tus turnos activos y tu historial.' },
+  perfil: { eyebrow: 'Perfil', title: 'Mi perfil', description: 'Revisá y actualizá tus datos personales.' }
+};
 
 const getRoleViewFromHash = (selectedProfile) => {
   const hash = window.location.hash.replace(/^#/, '');
 
   if (selectedProfile === 'employee' && hash === 'employee-agenda') return 'agenda';
   if (selectedProfile === 'client' && hash === 'client-reserve') return 'reserve';
+  if (selectedProfile === 'client' && hash === 'client-mis-turnos') return 'mis-turnos';
+  if (selectedProfile === 'client' && hash === 'client-perfil') return 'perfil';
 
   return null;
 };
@@ -128,24 +147,6 @@ function EmployeeBottomNav({ activeView, onViewChange, items = employeeBottomNav
         >
           <span className="employee-bottom-nav-icon" aria-hidden="true">{item.icon}</span>
           <span className="employee-bottom-nav-label">{item.mobileLabel || item.label}</span>
-        </button>
-      ))}
-    </nav>
-  );
-}
-
-function ClientBottomNav({ activeView, onViewChange }) {
-  return (
-    <nav className="client-bottom-nav" aria-label="Secciones cliente">
-      {clientNavItems.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          className={`client-bottom-nav-button ${activeView === item.id ? 'is-active' : ''}`}
-          onClick={() => onViewChange(item.id)}
-        >
-          <span className="client-bottom-nav-icon" aria-hidden="true">{item.icon}</span>
-          <span className="client-bottom-nav-label">{item.label}</span>
         </button>
       ))}
     </nav>
@@ -229,6 +230,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   const changeClientView = (view) => {
     setClientActiveView(view);
     setSelectedPromotion(null);
+    setSidebarOpen(false);
   };
 
   const changeEmployeeView = (view) => {
@@ -330,100 +332,111 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
     );
   }
 
+  if (isClientProfile) {
+    const heroCopy = clientHeroCopy[clientActiveView] || clientHeroCopy.home;
+    const heroTitle = clientActiveView === 'home'
+      ? <span className="client-welcome-name">{companyName}</span>
+      : (heroCopy.title || companyName);
+
+    return (
+      <main className="role-workspace role-workspace-client has-role-sidebar">
+        <Navbar
+          user={user}
+          activeView={clientActiveView}
+          accessProfile="client"
+          onViewChange={changeClientView}
+          onChangeProfile={onChangeProfile}
+          onLogout={onLogout}
+          showNavigation={false}
+          showMenuToggle
+          onMenuToggle={() => setSidebarOpen((current) => !current)}
+          canChangeProfile={canChangeProfile}
+          logoSrc={workspaceLogoSrc}
+          logoAlt={workspaceLogoAlt}
+        />
+        <div className="role-workspace-body">
+          <AdminSidebar
+            groups={clientSidebarGroups}
+            activeView={clientActiveView}
+            onViewChange={changeClientView}
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            companyName={companyName}
+            logoSrc={workspaceLogoSrc}
+          />
+          <div className="role-workspace-content">
+            <section
+              className={`role-workspace-hero ${clientActiveView === 'home' ? 'client-welcome-hero' : 'client-reserve-hero'} ${shouldUseWelcomeBackground ? 'has-custom-background' : ''}`.trim()}
+              style={shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
+            >
+              <div>
+                <p className="admin-kicker">{heroCopy.eyebrow}</p>
+                <h1>{heroTitle}</h1>
+                <p>{heroCopy.description}</p>
+                {clientActiveView === 'home' && businessHoursText && <p className="client-business-hours-text">{businessHoursText}</p>}
+              </div>
+              <WorkspaceProfileIdentity user={user} profile={profile} />
+            </section>
+            {clientActiveView === 'perfil' ? (
+              <ClientProfilePanel user={user} companySlug={companySlug} />
+            ) : (
+              <ClientDashboard
+                user={user}
+                activeView={clientActiveView}
+                selectedPromotion={selectedPromotion}
+                onReservePromotion={reservePromotion}
+                onReserveTurn={() => {
+                  setSelectedPromotion(null);
+                  setClientActiveView('reserve');
+                }}
+                onRescheduleDone={() => {
+                  setSelectedPromotion(null);
+                  setClientActiveView('reserve');
+                }}
+                companySlug={companySlug}
+                companyContext={companyContext}
+              />
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={`role-workspace role-workspace-${selectedProfile}`}>
-      {selectedProfile === 'employee' || isClientProfile ? (
-        <>
-          <Navbar
-            user={user}
-            activeView={isClientProfile ? clientActiveView : employeeActiveView}
-            accessProfile={selectedProfile}
-            onViewChange={isClientProfile ? changeClientView : setEmployeeActiveView}
-            onChangeProfile={onChangeProfile}
-            onLogout={onLogout}
-            showNavigation
-            showProfileBadge
-            canChangeProfile={canChangeProfile}
-            navItems={isClientProfile ? clientNavItems : employeeNavItems}
-            logoSrc={workspaceLogoSrc}
-            logoAlt={workspaceLogoAlt}
-          />
-          {isClientProfile && <ClientBottomNav activeView={clientActiveView} onViewChange={changeClientView} />}
-          {isEmployeeProfile && <EmployeeBottomNav activeView={employeeActiveView} onViewChange={setEmployeeActiveView} />}
-        </>
-      ) : (
-        <section className="role-workspace-topbar">
-          <div className="role-workspace-brand">
-            <img className="app-navbar-logo" src={workspaceLogoSrc} alt={workspaceLogoAlt || `QuieroTurnoApp - ${profile.label}`} />
-          </div>
+      <section className="role-workspace-topbar">
+        <div className="role-workspace-brand">
+          <img className="app-navbar-logo" src={workspaceLogoSrc} alt={workspaceLogoAlt || `QuieroTurnoApp - ${profile.label}`} />
+        </div>
 
-          <div className="role-workspace-session">
-            <span>{user?.email || 'Sin usuario'}</span>
-            {canChangeProfile && (
-              <button type="button" className="app-navbar-switch" onClick={onChangeProfile}>Cambiar perfil</button>
-            )}
-            <button type="button" className="app-navbar-logout" onClick={onLogout}>Salir</button>
-          </div>
-        </section>
-      )}
+        <div className="role-workspace-session">
+          <span>{user?.email || 'Sin usuario'}</span>
+          {canChangeProfile && (
+            <button type="button" className="app-navbar-switch" onClick={onChangeProfile}>Cambiar perfil</button>
+          )}
+          <button type="button" className="app-navbar-logout" onClick={onLogout}>Salir</button>
+        </div>
+      </section>
 
-      {isClientProfile ? (
-        <section
-          className={`role-workspace-hero ${clientActiveView === 'home' ? 'client-welcome-hero' : 'client-reserve-hero'} ${shouldUseWelcomeBackground ? 'has-custom-background' : ''}`}
-          style={shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
-        >
-          <div>
-            <p className="admin-kicker">{clientActiveView === 'home' ? 'Bienvenida' : 'Reserva'}</p>
-            <h1>{clientActiveView === 'home' ? <span className="client-welcome-name">{companyName}</span> : 'Reservar turno'}</h1>
-            <p>
-              {clientActiveView === 'home'
-                ? 'Consultá tus próximos turnos y elegí un servicio cuando quieras reservar.'
-                : 'Seleccioná un horario disponible en la grilla para crear tu próximo turno.'}
-            </p>
-            {clientActiveView === 'home' && businessHoursText && <p className="client-business-hours-text">{businessHoursText}</p>}
-          </div>
-          <WorkspaceProfileIdentity user={user} profile={profile} />
-        </section>
-      ) : (
-        <section
-          className={`role-workspace-hero ${isEmployeeProfile && shouldUseWelcomeBackground ? 'employee-welcome-hero has-custom-background' : ''}`.trim()}
-          style={isEmployeeProfile && shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
-        >
-          <div>
-            <p className="admin-kicker">{profile.eyebrow}</p>
-            <h1>{profile.title}</h1>
-            <p>{profile.description}</p>
-          </div>
-          <WorkspaceProfileIdentity user={user} profile={profile} />
-        </section>
-      )}
+      <section className="role-workspace-hero">
+        <div>
+          <p className="admin-kicker">{profile.eyebrow}</p>
+          <h1>{profile.title}</h1>
+          <p>{profile.description}</p>
+        </div>
+        <WorkspaceProfileIdentity user={user} profile={profile} />
+      </section>
 
-      {isClientProfile ? (
-        <ClientDashboard
-          user={user}
-          showAgenda={clientActiveView === 'reserve'}
-          selectedPromotion={selectedPromotion}
-          onReservePromotion={reservePromotion}
-          onReserveTurn={() => {
-            setSelectedPromotion(null);
-            setClientActiveView('reserve');
-          }}
-          companySlug={companySlug}
-          companyContext={companyContext}
-        />
-      ) : selectedProfile === 'employee' ? (
-        <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} />
-      ) : (
-        <section className="role-action-grid" aria-label="Acciones previstas">
-          {profile.actions.map((action) => (
-            <article className="role-action-card" key={action}>
-              <span aria-hidden="true">✓</span>
-              <strong>{action}</strong>
-              <p>Diseño preparado para conectar permisos, datos y acciones en la próxima etapa.</p>
-            </article>
-          ))}
-        </section>
-      )}
+      <section className="role-action-grid" aria-label="Acciones previstas">
+        {profile.actions.map((action) => (
+          <article className="role-action-card" key={action}>
+            <span aria-hidden="true">✓</span>
+            <strong>{action}</strong>
+            <p>Diseño preparado para conectar permisos, datos y acciones en la próxima etapa.</p>
+          </article>
+        ))}
+      </section>
     </main>
   );
 }

@@ -162,6 +162,7 @@ export default function NewBookingPanel({
   branchId = null,
   initialDate = null,
   initialStartTime = null,
+  clientCanChooseEmployee = false,
   onClose,
   onBookingCreated
 }) {
@@ -169,6 +170,12 @@ export default function NewBookingPanel({
   const gridInterval = getGridInterval(configuracionOperativa.intervalo_grilla_minutos);
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const companyName = companyContext?.company_name || companyContext?.name || 'Nueva reserva';
+
+  // Modo cliente: reserva para sí mismo. Carga y guarda con RPCs de cliente.
+  const isClient = user?.role === 'client';
+  const clientAccountId = isClient && user?.isInternal ? user.id : null;
+  // El cliente ve el combo de profesional solo si la plataforma lo habilita.
+  const showEmployeePicker = !isClient || clientCanChooseEmployee;
 
   const sucursalesHabilitadas = configuracionOperativa.sucursales_habilitadas === true;
   const branches = useMemo(
@@ -203,8 +210,8 @@ export default function NewBookingPanel({
     const maxStart = Math.max(BUSINESS_OPEN_MIN, BUSINESS_CLOSE_MIN - gridInterval);
     return minutesToTime(Math.min(Math.max(suggested, BUSINESS_OPEN_MIN), maxStart));
   });
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerName, setCustomerName] = useState(isClient ? (user?.displayName || '') : '');
+  const [customerEmail, setCustomerEmail] = useState(isClient ? (user?.email || '') : '');
   const [comment, setComment] = useState('');
   const [cart, setCart] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState(branchId || '');
@@ -223,6 +230,32 @@ export default function NewBookingPanel({
     const branchRelationsRequest = showBranchSelector
       ? supabase.rpc('get_branch_relations', { company_slug_value: companySlug })
       : Promise.resolve({ data: { branchServices: [], employeeBranches: [] }, error: null });
+
+    if (isClient) {
+      // ---- Rol CLIENTE: opciones de reserva públicas + bundles del contexto ----
+      const [optionsResult, branchRelationsResult] = await Promise.all([
+        supabase.rpc('get_client_booking_options', { company_slug_value: companySlug }),
+        branchRelationsRequest
+      ]);
+
+      if (optionsResult.error) {
+        alert(`No se pudieron cargar los datos de reserva.\n${formatSupabaseError(optionsResult.error)}`);
+        setIsLoading(false);
+        return;
+      }
+
+      const options = optionsResult.data || {};
+      setServices(Array.isArray(options.services) ? options.services : []);
+      setEmployees(Array.isArray(options.employees) ? options.employees : []);
+      setEmployeeServices(Array.isArray(options.employeeServices) ? options.employeeServices : []);
+      setBundles(Array.isArray(companyContext?.bundles) ? companyContext.bundles : []);
+      setExistingBookings(Array.isArray(options.bookings) ? options.bookings : []);
+      setAvailability(Array.isArray(options.employeeAvailability) ? options.employeeAvailability : []);
+      setBranchServices(branchRelationsResult.data?.branchServices || []);
+      setEmployeeBranches(branchRelationsResult.data?.employeeBranches || []);
+      setIsLoading(false);
+      return;
+    }
 
     if (internalEmployeeAccountId) {
       // ---- Rol EMPLEADO: workspace interno + bundles del contexto público ----
@@ -284,7 +317,7 @@ export default function NewBookingPanel({
     setBranchServices(branchRelationsResult.data?.branchServices || []);
     setEmployeeBranches(branchRelationsResult.data?.employeeBranches || []);
     setIsLoading(false);
-  }, [internalAdminAccountId, internalEmployeeAccountId, internalSessionToken, companySlug, showBranchSelector, companyContext]);
+  }, [isClient, internalAdminAccountId, internalEmployeeAccountId, internalSessionToken, companySlug, showBranchSelector, companyContext]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(loadData, 0);
@@ -555,6 +588,50 @@ export default function NewBookingPanel({
     }
     setIsSaving(true);
 
+    if (isClient) {
+      // Cada servicio del carrito genera una solicitud de turno del cliente.
+      const stampBranchId = activeBranchId || branchId || null;
+      for (const item of cart) {
+        const startAt = `${date}T${item.startTime}:00`;
+        const endAt = `${date}T${addMinutesToTime(item.startTime, item.duration)}:00`;
+        const description = item.bundleName
+          ? [item.bundleName, comment].filter(Boolean).join(' · ')
+          : (comment || null);
+
+        const { data, error } = await supabase.rpc('request_client_booking', {
+          service_id_value: item.serviceId || null,
+          employee_id_value: clientCanChooseEmployee ? (item.employeeId || null) : null,
+          booking_description_value: description,
+          start_at_value: startAt,
+          end_at_value: endAt,
+          customer_name_value: customerName || null,
+          customer_email_value: customerEmail || null,
+          company_slug_value: companySlug,
+          account_id_value: clientAccountId,
+          session_token_value: internalSessionToken
+        });
+
+        if (error) {
+          setIsSaving(false);
+          alert(`No se pudo confirmar la reserva.\n${formatSupabaseError(error)}`);
+          return;
+        }
+
+        if (stampBranchId && data?.id) {
+          await supabase.rpc('set_booking_branch', {
+            booking_id_value: data.id,
+            branch_id_value: stampBranchId,
+            company_slug_value: companySlug
+          });
+        }
+      }
+
+      setIsSaving(false);
+      const [, cMonth, cDay] = String(date).split('-');
+      setSuccessMessage(`Reservaste turno para el ${cDay}/${cMonth}. Muchas gracias.`);
+      return;
+    }
+
     const items = cart.map((item) => ({
       service_id: item.serviceId,
       employee_id: item.employeeId || null,
@@ -719,24 +796,26 @@ export default function NewBookingPanel({
                               <span>⏱️ {formatDurationLabel(item.duration)}</span>
                               {preciosHabilitados && <span className="new-booking-cart-price">{formatPrice(item.price)}</span>}
                             </div>
-                            <label className="new-booking-cart-employee">
-                              <span>Profesional</span>
-                              <select value={item.employeeId} onChange={(event) => updateItemEmployee(item.key, event.target.value)}>
-                                <option value="">Indistinto (asigna el admin)</option>
-                                {options.map((employee) => {
-                                  const busy = !employeeFreeForSlot(String(employee.id), item.startTime, item.duration);
-                                  const selected = String(item.employeeId) === String(employee.id);
-                                  return (
-                                    <option key={employee.id} value={String(employee.id)} disabled={busy && !selected}>
-                                      {employee.name}{busy ? ' (ocupado)' : ''}
-                                    </option>
-                                  );
-                                })}
-                              </select>
-                              {hasConflict && (
-                                <span className="new-booking-cart-warning">⚠️ Ese profesional ya está ocupado en este horario. Elegí otro o dejalo en «Indistinto».</span>
-                              )}
-                            </label>
+                            {showEmployeePicker && (
+                              <label className="new-booking-cart-employee">
+                                <span>Profesional</span>
+                                <select value={item.employeeId} onChange={(event) => updateItemEmployee(item.key, event.target.value)}>
+                                  <option value="">Indistinto (asigna el admin)</option>
+                                  {options.map((employee) => {
+                                    const busy = !employeeFreeForSlot(String(employee.id), item.startTime, item.duration);
+                                    const selected = String(item.employeeId) === String(employee.id);
+                                    return (
+                                      <option key={employee.id} value={String(employee.id)} disabled={busy && !selected}>
+                                        {employee.name}{busy ? ' (ocupado)' : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                                {hasConflict && (
+                                  <span className="new-booking-cart-warning">⚠️ Ese profesional ya está ocupado en este horario. Elegí otro o dejalo en «Indistinto».</span>
+                                )}
+                              </label>
+                            )}
                             {isBundle && (
                               <p className="new-booking-cart-bundle-note">Forma parte de {item.bundleType === 'promo' ? 'la promo' : 'el pack'} «{item.bundleName}». Al quitarlo se elimina completo.</p>
                             )}
@@ -751,24 +830,26 @@ export default function NewBookingPanel({
                 )}
               </div>
 
-              <div className="new-booking-field new-booking-deposit">
-                <div className="new-booking-deposit-info">
-                  <span className="new-booking-deposit-icon" aria-hidden="true">💳</span>
-                  <div>
-                    <span className="new-booking-label">Configurar Seña</span>
-                    <p className="new-booking-deposit-hint">¿Este turno requiere seña?</p>
+              {!isClient && (
+                <div className="new-booking-field new-booking-deposit">
+                  <div className="new-booking-deposit-info">
+                    <span className="new-booking-deposit-icon" aria-hidden="true">💳</span>
+                    <div>
+                      <span className="new-booking-label">Configurar Seña</span>
+                      <p className="new-booking-deposit-hint">¿Este turno requiere seña?</p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    className={`new-booking-toggle ${depositEnabled ? 'is-on' : ''}`}
+                    onClick={() => setDepositEnabled((value) => !value)}
+                    aria-pressed={depositEnabled}
+                    title="Próximamente"
+                  >
+                    <span className="new-booking-toggle-knob" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className={`new-booking-toggle ${depositEnabled ? 'is-on' : ''}`}
-                  onClick={() => setDepositEnabled((value) => !value)}
-                  aria-pressed={depositEnabled}
-                  title="Próximamente"
-                >
-                  <span className="new-booking-toggle-knob" />
-                </button>
-              </div>
+              )}
 
               <label className="new-booking-field">
                 <span className="new-booking-label">Comentario <span className="new-booking-optional">(opcional)</span></span>
@@ -893,27 +974,31 @@ export default function NewBookingPanel({
                   <span className="new-booking-label">Duración</span>
                   <input type="text" value={formatDurationLabel(configDraft.duration)} readOnly />
                 </label>
-                <label className="new-booking-field">
-                  <span className="new-booking-label">Profesional</span>
-                  <select
-                    value={configDraft.employeeId}
-                    onChange={(event) => setConfigDraft((draft) => ({ ...draft, employeeId: event.target.value }))}
-                  >
-                    <option value="">Indistinto (asigna el admin)</option>
-                    {configOptions.map((employee) => {
-                      const busy = !employeeFreeForSlot(String(employee.id), configDraft.startTime, configDraft.duration);
-                      return (
-                        <option key={employee.id} value={String(employee.id)} disabled={busy}>
-                          {employee.name}{busy ? ' (ocupado)' : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </label>
-                <label className="new-booking-field">
-                  <span className="new-booking-label">Costo adicional <span className="new-booking-optional">(próximamente)</span></span>
-                  <input type="number" value={0} disabled title="Próximamente" />
-                </label>
+                {showEmployeePicker && (
+                  <label className="new-booking-field">
+                    <span className="new-booking-label">Profesional</span>
+                    <select
+                      value={configDraft.employeeId}
+                      onChange={(event) => setConfigDraft((draft) => ({ ...draft, employeeId: event.target.value }))}
+                    >
+                      <option value="">Indistinto (asigna el admin)</option>
+                      {configOptions.map((employee) => {
+                        const busy = !employeeFreeForSlot(String(employee.id), configDraft.startTime, configDraft.duration);
+                        return (
+                          <option key={employee.id} value={String(employee.id)} disabled={busy}>
+                            {employee.name}{busy ? ' (ocupado)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                )}
+                {!isClient && (
+                  <label className="new-booking-field">
+                    <span className="new-booking-label">Costo adicional <span className="new-booking-optional">(próximamente)</span></span>
+                    <input type="number" value={0} disabled title="Próximamente" />
+                  </label>
+                )}
               </div>
             </div>
             <footer className="new-booking-modal-footer">
