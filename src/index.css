@@ -482,6 +482,228 @@ code {
   background: #fee2e2;
 }
 
+/* ===== Cierre de atención · estilo amarillo moderno ===== */
+.close-attention-modal {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.close-attention-modal .agenda-modal-header {
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%);
+  color: #7c2d12;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 16px 20px;
+}
+
+.close-attention-modal .close-attention-body {
+  gap: 14px;
+  padding: 18px 20px 20px;
+  background: #f7f9fc;
+}
+
+.close-attention-modal .close-attention-controls label,
+.close-attention-modal .close-attention-payments label {
+  color: #64748b;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.close-attention-modal .close-attention-controls input,
+.close-attention-modal .close-attention-controls select,
+.close-attention-modal .close-attention-payments input {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.close-attention-modal .close-attention-controls input:focus,
+.close-attention-modal .close-attention-controls select:focus,
+.close-attention-modal .close-attention-payments input:focus {
+  outline: none;
+  border-color: #f0a91f;
+  box-shadow: 0 0 0 3px rgba(247, 183, 51, 0.25);
+}
+
+.close-attention-modal .close-attention-item,
+.close-attention-modal .close-attention-section,
+.close-attention-modal .close-attention-total {
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+}
+
+.close-attention-modal .close-attention-item:has(input:checked) {
+  border-color: #f3d38a;
+  background: #fffdf6;
+  box-shadow: 0 8px 20px rgba(240, 169, 31, 0.14);
+}
+
+.close-attention-modal .close-attention-total {
+  gap: 6px;
+  background: linear-gradient(135deg, #fff8ec 0%, #fdf1d8 100%);
+  border-color: #f3d38a;
+}
+
+.close-attention-modal .close-attention-total strong {
+  color: #7c2d12;
+  font-size: 18px;
+}
+
+.close-attention-modal .agenda-modal-actions {
+  gap: 10px;
+}
+
+.close-attention-modal .agenda-danger-button {
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%);
+  border-color: #e0a020;
+  color: #7c2d12;
+  font-weight: 900;
+}
+
+.close-attention-modal .agenda-danger-button:hover {
+  background: #f0a91f;
+  border-color: #c98d12;
+}
+
+.close-attention-modal .agenda-danger-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.close-attention-modal .agenda-close-button {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+.close-attention-modal .agenda-close-button:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.close-attention-modal .agenda-option-button {
+  background: #fff8ec;
+  border-color: #f3d38a;
+  color: #7c2d12;
+}
+
+.close-attention-modal .agenda-option-button:hover {
+  background: #fdf1d8;
+  border-color: #e0a020;
+}
+
+/* Cierre de atención · detalles finos */
+.close-attention-modal .close-attention-item {
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.close-attention-modal .close-attention-item-check span {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.close-attention-modal .settings-check-row input {
+  accent-color: #f0a91f;
+}
+
+.close-attention-modal .close-attention-item-meta {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.close-attention-modal .close-attention-price-row {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #eef2f7;
+}
+
+.close-attention-modal .close-attention-price-row span {
+  color: #94a3b8;
+}
+
+.close-attention-modal .close-attention-price-row strong {
+  color: #0f766e;
+  font-size: 14px;
+}
+
+.close-attention-modal .close-attention-section > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Descuentos / recargos como chips seleccionables */
+.close-attention-modal .close-attention-discounts .settings-check-row {
+  gap: 8px;
+  border: 1px solid #eef2f7;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: #f8fafc;
+  font-size: 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.close-attention-modal .close-attention-discounts .settings-check-row:has(input:checked) {
+  border-color: #f3d38a;
+  background: #fffdf6;
+  color: #7c2d12;
+}
+
+/* Pagos con montos alineados a la derecha */
+.close-attention-modal .close-attention-payments input {
+  text-align: right;
+  font-size: 15px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+/* Total tipo recibo */
+.close-attention-modal .close-attention-total > span:not(.close-attention-difference),
+.close-attention-modal .close-attention-total > strong {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.close-attention-modal .close-attention-total > span:not(.close-attention-difference) {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.close-attention-modal .close-attention-total > span > span:last-child {
+  font-weight: 800;
+  color: #334155;
+}
+
+.close-attention-modal .close-attention-total > strong {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed #f3d38a;
+  color: #7c2d12;
+  font-size: 18px;
+}
+
+.close-attention-modal .close-attention-difference {
+  justify-self: end;
+  margin-top: 4px;
+}
+
 .agenda-modal-header,
 .agenda-detail-header {
   background: #2f3842;
