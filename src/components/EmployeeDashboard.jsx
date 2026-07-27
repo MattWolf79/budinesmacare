@@ -3,6 +3,7 @@ import { supabase } from '../api/supabaseClient';
 import ActivityIcon from './ActivityIcon';
 import AgendaGrid from './AgendaGrid';
 import EmployeeAvailabilityPanel from './EmployeeAvailabilityPanel';
+import MetricCard from './MetricCard';
 import { formatDisplayDate } from '../utils/dateFormat';
 
 const parseDate = (value) => value instanceof Date ? value : new Date(value);
@@ -839,30 +840,22 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       {activeView === 'summary' && (
         <>
           <div className="employee-summary-grid">
-            <article className="employee-summary-card">
-              <span>Hoy</span>
-              <strong>{todayBookings.length}</strong>
-              <p>turno(s) asignado(s)</p>
-            </article>
-            <article className="employee-summary-card">
-              <span>Próximos</span>
-              <strong>{activeUpcomingBookings.length}</strong>
-              <p>turno(s) activos</p>
-            </article>
-            <article className="employee-summary-card employee-summary-card-availability">
-              <span>Disponibilidad</span>
-              <strong>{availabilityDayCount}</strong>
-              <p>{todayAvailabilityLabel}</p>
-            </article>
+            <MetricCard label="Hoy" value={todayBookings.length} hint="turno(s) asignado(s)" />
+            <MetricCard label="Próximos" value={activeUpcomingBookings.length} hint="turno(s) activos" />
+            <MetricCard
+              label="Disponibilidad"
+              value={availabilityDayCount}
+              hint={todayAvailabilityLabel}
+              variant="availability"
+            />
             {preciosHabilitados && (
               <>
-                <article className="employee-summary-card">
-                  <span>Pendiente cobro</span>
-                  <strong>{pendingSettlementSummary.count}</strong>
-                  <p>{formatMoney(pendingSettlementSummary.total)}</p>
-                </article>
-                <article className="employee-summary-card employee-summary-card-closed-weeks">
-                  <span>Recaudación</span>
+                <MetricCard
+                  label="Pendiente cobro"
+                  value={pendingSettlementSummary.count}
+                  hint={formatMoney(pendingSettlementSummary.total)}
+                />
+                <MetricCard label="Recaudación" variant="earnings">
                   <div className="employee-closed-week-lines">
                     <div className="employee-closed-week-row is-current">
                       <span>Esta semana</span>
@@ -875,7 +868,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                       <small>{weeklyClosedSummary.previous.count} turnos</small>
                     </div>
                   </div>
-                </article>
+                </MetricCard>
               </>
             )}
           </div>
@@ -967,14 +960,6 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
 
       {activeView === 'agenda' && (
         <article className="employee-card employee-agenda-card">
-          <div className="employee-card-header">
-            <div>
-              <p className="admin-kicker">Reserva</p>
-              <h2>Gestionar agenda</h2>
-            </div>
-            <span>↔</span>
-          </div>
-
           <AgendaGrid
             user={user}
             accessProfile="employee"
@@ -992,11 +977,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       {activeView === 'profile' && (
         <div className="employee-profile-view">
           <article className="employee-card employee-profile-details-card">
-            <div className="employee-card-header">
-              <div>
-                <p className="admin-kicker">Mi perfil</p>
-                <h2>Mis datos</h2>
-              </div>
+            <div className="employee-card-header employee-card-header-actions-only">
               {isProfileEditing ? (
                 <span>Editar</span>
               ) : (
@@ -1094,7 +1075,6 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                 const isClosed = isClosedBooking(booking);
                 return (
                   <div className="employee-profile-row" key={booking.id}>
-                    <ActivityIcon service={service} size="small" />
                     <div>
                       <strong>{getBookingTitle(booking, service)}</strong>
                       <span>{formatDate(booking.start_at)} · {formatTime(booking.start_at)}-{formatTime(booking.end_at)} · {getCustomerFields(booking).name}</span>

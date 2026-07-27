@@ -91,7 +91,7 @@ const buildAddress = (client) => [
   client.address_locality
 ].filter(Boolean).join(', ');
 
-export default function ClientsPanel({ user, companySlug, adminProfileSummary = null, onDataChanged }) {
+export default function ClientsPanel({ user, companySlug, adminProfileSummary = null, onDataChanged, hideHeading = false }) {
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -452,12 +452,14 @@ export default function ClientsPanel({ user, companySlug, adminProfileSummary = 
   return (
     <section className="clients-panel">
       <header className="clients-list-header">
-        <div>
-          <h1>Gestión de Clientes</h1>
-          <p>Administra y organiza tu base de clientes</p>
-        </div>
+        {!hideHeading && (
+          <div>
+            <h1>Gestión de Clientes</h1>
+            <p>Administra y organiza tu base de clientes</p>
+          </div>
+        )}
         <button type="button" className="clients-add-button" onClick={openNewClient}>
-          <span aria-hidden="true">👤➕</span> Agregar Cliente
+          Agregar Cliente
         </button>
       </header>
 
