@@ -514,7 +514,9 @@ code {
 }
 
 .close-attention-modal .agenda-modal-header {
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%);
   color: #7c2d12;
   font-size: 16px;
   font-weight: 900;
@@ -586,7 +588,9 @@ code {
 }
 
 .close-attention-modal .agenda-danger-button {
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%);
   border-color: #e0a020;
   color: #7c2d12;
   font-weight: 900;
@@ -637,7 +641,9 @@ code {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%);
   color: #7c2d12;
   font-size: 16px;
   font-weight: 900;
@@ -710,7 +716,9 @@ code {
 }
 
 .cancel-booking-modal .agenda-modal-actions .agenda-danger-button {
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%);
   border: 1px solid #e0a020;
   color: #7c2d12;
   font-weight: 900;
@@ -2532,7 +2540,9 @@ code {
   color: #7c2d12;
   font-size: 15px;
   font-weight: 900;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%);
   box-shadow: 0 10px 22px rgba(240, 161, 31, 0.35);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
@@ -4124,8 +4134,8 @@ code {
   padding: 7px 8px;
   color: #7c2d12;
   background:
-    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.28), transparent 40%),
-    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%);
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%);
   box-shadow: inset 0 -1px 0 rgba(124, 45, 18, 0.12);
   text-align: center;
 }
@@ -4253,13 +4263,21 @@ code {
   .role-workspace-employee > .app-navbar .app-navbar-logout,
   .role-workspace-client > .app-navbar .app-navbar-logout {
     min-height: 34px !important;
-    border: 1px solid #24aebb !important;
+    border: 1px solid #e0a020 !important;
     border-radius: 6px !important;
     padding: 6px 10px !important;
-    color: #cffafe !important;
-    background: rgba(255, 255, 255, 0.08) !important;
+    color: #7c2d12 !important;
+    background: #fffdf5 !important;
     font-size: 13px !important;
     font-weight: 800 !important;
+  }
+
+  .dashboard-shell > .app-navbar .app-navbar-logout:hover,
+  .role-workspace-employee > .app-navbar .app-navbar-logout:hover,
+  .role-workspace-client > .app-navbar .app-navbar-logout:hover {
+    border-color: #c98a12 !important;
+    color: #7c2d12 !important;
+    background: #f0a91f !important;
   }
 
   .admin-bottom-nav,
@@ -8172,8 +8190,8 @@ body {
   max-height: calc(100svh - 48px);
   overflow-y: auto;
   padding: 18px 14px 28px;
-  background: #ffffff;
-  border-right: 1px solid #e6e8ef;
+  background: #fdf6e6;
+  border-right: 1px solid #f0e0bf;
 }
 
 .admin-sidebar-brand {
@@ -8197,6 +8215,14 @@ body {
   color: #1f2937;
   font-size: 15px;
   font-weight: 800;
+}
+
+.admin-sidebar-brand-title {
+  color: #7c2d12;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .admin-sidebar-close {
@@ -8992,10 +9018,17 @@ body {
   gap: 4px;
   width: 40px;
   height: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid #e0a020;
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.24);
+  background: #fffdf5;
+  box-shadow: none;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.app-navbar-menu-toggle:hover {
+  border-color: #c98a12;
+  background: #f0a91f;
 }
 
 .app-navbar-menu-toggle span {
@@ -9003,7 +9036,7 @@ body {
   width: 18px;
   height: 2px;
   border-radius: 2px;
-  background: #ffffff;
+  background: #7c2d12;
 }
 
 /* ---------------------------------------------------------------------------
@@ -9980,7 +10013,9 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%);
   border-bottom: none;
 }
 
@@ -18156,7 +18191,9 @@ body {
 .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-close-button.service-card-action,
 .dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-close-button.service-card-action {
   color: #7c2d12 !important;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   border: 1px solid #e0a020 !important;
 }
 
@@ -18195,13 +18232,17 @@ body {
 /* Encabezado del formulario "Nuevo servicio": de teal/rojo a dorado */
 .service-admin-manager .agenda-modal-header {
   color: #7c2d12 !important;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   border-bottom: none !important;
 }
 
 .dashboard-shell .service-form-card > .agenda-modal-header,
 .service-admin-manager .service-form-card > .agenda-modal-header {
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   color: #7c2d12 !important;
 }
 
@@ -18213,7 +18254,9 @@ body {
 /* Botones del formulario (Crear/Guardar, Limpiar, Elegir) */
 .service-admin-manager .admin-actions .agenda-close-button {
   color: #7c2d12 !important;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   border: 1px solid #e0a020 !important;
 }
 
@@ -18241,8 +18284,8 @@ body {
 .dashboard-shell .service-button-grid .promotion-record-card .admin-management-card-header {
   color: #7c2d12 !important;
   background:
-    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.28), transparent 40%),
-    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   box-shadow: inset 0 -1px 0 rgba(124, 45, 18, 0.12) !important;
 }
 
@@ -18470,8 +18513,8 @@ body {
 .dashboard-shell .employee-admin-manager .employee-record-card .admin-management-card-header {
   color: #7c2d12 !important;
   background:
-    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.28), transparent 40%),
-    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   box-shadow: inset 0 -1px 0 rgba(124, 45, 18, 0.12) !important;
 }
 
@@ -18507,7 +18550,9 @@ body {
 .dashboard-shell .employee-admin-manager .employee-button-list .admin-record-actions .agenda-close-button {
   color: #7c2d12 !important;
   border-color: #e0a020 !important;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
 }
 
 .dashboard-shell .employee-admin-manager .employee-button-list .admin-record-actions .agenda-option-button {
@@ -18526,8 +18571,8 @@ body {
 .employee-availability-manager .availability-card .availability-card-header {
   color: #7c2d12 !important;
   background:
-    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.28), transparent 40%),
-    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   box-shadow: inset 0 -1px 0 rgba(124, 45, 18, 0.12) !important;
 }
 
@@ -18576,7 +18621,9 @@ body {
 .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-close-button {
   color: #7c2d12 !important;
   border-color: #e0a020 !important;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
 }
 
 .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-danger-button {
@@ -18588,7 +18635,9 @@ body {
 /* ===== Encabezado del formulario "Nuevo empleado": dorado ===== */
 .employee-admin-manager .employee-form-card > .agenda-modal-header,
 .dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header {
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   color: #7c2d12 !important;
   border-bottom: none !important;
 }
@@ -18602,7 +18651,9 @@ body {
 .employee-availability-manager .availability-form-card > .agenda-modal-header,
 .dashboard-shell .employee-availability-manager .availability-form-card > .agenda-modal-header,
 .role-workspace-employee .employee-availability-manager .availability-form-card > .agenda-modal-header {
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   color: #7c2d12 !important;
   border-bottom: none !important;
 }
@@ -18665,7 +18716,9 @@ body {
 .dashboard-shell .employee-availability-manager .availability-day-circle.is-selected {
   color: #7c2d12 !important;
   border-color: #e0a020 !important;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
 }
 
 .employee-availability-manager .agenda-refresh-button {
@@ -18742,7 +18795,7 @@ body {
   color: #7c2d12 !important;
   background:
     radial-gradient(circle at 96% 12%, rgba(255, 255, 255, 0.32), transparent 42%),
-    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   text-align: left !important;
   border: none !important;
 }
@@ -18873,8 +18926,8 @@ body {
 .settings-shell .settings-management-card-header {
   color: #7c2d12 !important;
   background:
-    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.28), transparent 40%),
-    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
 }
 
 .settings-shell .settings-management-card-header strong {
@@ -18903,7 +18956,9 @@ body {
 .settings-shell .agenda-close-button {
   color: #7c2d12 !important;
   border-color: #e0a020 !important;
-  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
 }
 
 /* Cancelar (footer): neutro */
@@ -19025,8 +19080,8 @@ body .app-navbar,
 body .platform-admin-header {
   color: #7c2d12 !important;
   background:
-    radial-gradient(circle at 96% 0%, rgba(255, 255, 255, 0.35), transparent 42%),
-    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+    radial-gradient(circle at 96% 0%, rgba(255, 255, 255, 0.30), transparent 42%),
+    linear-gradient(160deg, #f8e4bf 0%, #f3d59c 100%) !important;
   border-bottom: 1px solid #e0a020 !important;
   box-shadow: 0 8px 20px rgba(240, 161, 31, 0.22) !important;
 }
@@ -19074,20 +19129,47 @@ body .app-navbar .role-workspace-avatar {
   background: rgba(255, 255, 255, 0.82) !important;
 }
 
-/* Boton Salir + Perfil: tono crema (mas claro que el navbar) para diferenciarse */
+/* Boton Salir + Perfil: color fijo crema claro (resalta sobre el navbar oscuro).
+   Selectores con especificidad alta para ganar sobre las reglas por rol. */
+body .dashboard-shell .app-navbar .app-navbar-logout,
+body .dashboard-shell .app-navbar .app-navbar-switch,
+body .role-workspace-employee .app-navbar .app-navbar-logout,
+body .role-workspace-employee .app-navbar .app-navbar-switch,
+body .role-workspace-client .app-navbar .app-navbar-logout,
+body .role-workspace-client .app-navbar .app-navbar-switch,
 body .app-navbar .app-navbar-logout,
 body .app-navbar .app-navbar-switch,
 body .platform-admin-header .app-navbar-logout {
   color: #7c2d12 !important;
-  border: 1px solid #e0a020 !important;
-  background: #fff7e6 !important;
-  box-shadow: none !important;
+  border: 1px solid #b9770d !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(124, 45, 18, 0.22) !important;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
 }
 
+/* Hover claramente visible: relleno dorado */
+body .dashboard-shell .app-navbar .app-navbar-logout:hover,
+body .dashboard-shell .app-navbar .app-navbar-switch:hover,
+body .role-workspace-employee .app-navbar .app-navbar-logout:hover,
+body .role-workspace-employee .app-navbar .app-navbar-switch:hover,
+body .role-workspace-client .app-navbar .app-navbar-logout:hover,
+body .role-workspace-client .app-navbar .app-navbar-switch:hover,
 body .app-navbar .app-navbar-logout:hover,
 body .app-navbar .app-navbar-switch:hover,
 body .platform-admin-header .app-navbar-logout:hover {
   color: #7c2d12 !important;
   border-color: #c98a12 !important;
-  background: #ffffff !important;
+  background: #f0a91f !important;
+}
+
+/* ===== Tarjetas de perfiles: borde cálido igual al dashboard de resumen ===== */
+.service-admin-manager .service-record-card,
+.dashboard-shell .service-admin-manager .service-record-card,
+.employee-admin-manager .employee-record-card,
+.dashboard-shell .employee-admin-manager .employee-record-card,
+.employee-availability-manager .availability-card,
+.dashboard-shell .employee-availability-manager .availability-card,
+.settings-shell .settings-card,
+.settings-shell .settings-management-card {
+  border: 1px solid #f0e0bf !important;
 }
