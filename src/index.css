@@ -17348,6 +17348,17 @@ body {
   box-shadow: 0 12px 24px rgba(245, 166, 35, 0.28);
 }
 
+.role-workspace-employee .clients-list-header {
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.role-workspace-employee .clients-list-header .clients-add-button {
+  margin: 0 auto;
+  padding: 11px 22px;
+}
+
 .clients-list-card {
   display: flex;
   flex-direction: column;
