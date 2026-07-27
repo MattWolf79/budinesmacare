@@ -8633,13 +8633,21 @@ body {
 }
 
 .client-turno-manage-button {
-  border: 0;
+  align-self: flex-start;
+  border: 1px solid #e0a020;
   border-radius: 999px;
-  padding: 11px 18px;
+  padding: 10px 28px;
   font-weight: 850;
-  color: #1f2937;
-  background: #f7b733;
+  color: #7c2d12;
+  background: #fffdf5;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.client-turno-manage-button:hover {
+  background: #f0a91f;
+  border-color: #c98a12;
+  color: #7c2d12;
 }
 
 .client-modal-overlay {
