@@ -6,6 +6,7 @@ import ClientsPanel from './ClientsPanel';
 import Navbar from './Navbar';
 import AdminSidebar from './AdminSidebar';
 import NewBookingPanel from './NewBookingPanel';
+import { WorkspaceHero, WorkspaceProfileIdentity, UserPhoto } from './WorkspaceHero';
 import { supabase } from '../api/supabaseClient';
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
@@ -96,34 +97,6 @@ const getRoleViewFromHash = (selectedProfile) => {
 
   return null;
 };
-
-function UserPhoto({ user, fallback }) {
-  if (user?.photoUrl) {
-    return <img src={user.photoUrl} alt="" />;
-  }
-
-  return fallback;
-}
-
-function WorkspaceProfilePhoto({ user, fallback, className = '' }) {
-  return (
-    <span className={`role-workspace-icon role-workspace-profile-photo ${user?.photoUrl ? 'has-photo' : ''} ${className}`.trim()} aria-hidden="true">
-      <UserPhoto user={user} fallback={fallback} />
-    </span>
-  );
-}
-
-function WorkspaceProfileIdentity({ user, profile }) {
-  return (
-    <div className="workspace-profile-panel">
-      <div className="workspace-profile-summary">
-        <span className="workspace-profile-name">{user?.displayName || user?.email || user?.username || 'Sin usuario'}</span>
-        <span className="workspace-profile-role">{profile.label}</span>
-      </div>
-      <WorkspaceProfilePhoto user={user} fallback={profile.icon} />
-    </div>
-  );
-}
 
 function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
   const profile = profileOptions[profileId];
@@ -310,17 +283,14 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             logoSrc={workspaceLogoSrc}
           />
           <div className="role-workspace-content">
-            <section
-              className={`role-workspace-hero ${shouldUseWelcomeBackground ? 'employee-welcome-hero has-custom-background' : ''}`.trim()}
+            <WorkspaceHero
+              className={shouldUseWelcomeBackground ? 'employee-welcome-hero has-custom-background' : ''}
               style={shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
-            >
-              <div>
-                <p className="admin-kicker">{(employeeHeroCopy[employeeActiveView] || profile).eyebrow}</p>
-                <h1>{(employeeHeroCopy[employeeActiveView] || profile).title}</h1>
-                <p>{(employeeHeroCopy[employeeActiveView] || profile).description}</p>
-              </div>
-              <WorkspaceProfileIdentity user={user} profile={profile} />
-            </section>
+              eyebrow={(employeeHeroCopy[employeeActiveView] || profile).eyebrow}
+              title={(employeeHeroCopy[employeeActiveView] || profile).title}
+              description={(employeeHeroCopy[employeeActiveView] || profile).description}
+              identity={<WorkspaceProfileIdentity user={user} roleLabel={profile.label} photoFallback={profile.icon} />}
+            />
             {employeeActiveView === 'clients' ? (
               <ClientsPanel user={user} companySlug={companySlug} companyContext={companyContext} hideHeading />
             ) : (
@@ -380,18 +350,16 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             logoSrc={workspaceLogoSrc}
           />
           <div className="role-workspace-content">
-            <section
-              className={`role-workspace-hero ${clientActiveView === 'home' ? 'client-welcome-hero' : 'client-reserve-hero'} ${shouldUseWelcomeBackground ? 'has-custom-background' : ''}`.trim()}
+            <WorkspaceHero
+              className={`${clientActiveView === 'home' ? 'client-welcome-hero' : 'client-reserve-hero'} ${shouldUseWelcomeBackground ? 'has-custom-background' : ''}`.trim()}
               style={shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
+              eyebrow={heroCopy.eyebrow}
+              title={heroTitle}
+              description={heroCopy.description}
+              identity={<WorkspaceProfileIdentity user={user} roleLabel={profile.label} photoFallback={profile.icon} />}
             >
-              <div>
-                <p className="admin-kicker">{heroCopy.eyebrow}</p>
-                <h1>{heroTitle}</h1>
-                <p>{heroCopy.description}</p>
-                {clientActiveView === 'home' && businessHoursText && <p className="client-business-hours-text">{businessHoursText}</p>}
-              </div>
-              <WorkspaceProfileIdentity user={user} profile={profile} />
-            </section>
+              {clientActiveView === 'home' && businessHoursText && <p className="client-business-hours-text">{businessHoursText}</p>}
+            </WorkspaceHero>
             {clientActiveView === 'perfil' ? (
               <ClientProfilePanel user={user} companySlug={companySlug} />
             ) : (
@@ -434,14 +402,12 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
         </div>
       </section>
 
-      <section className="role-workspace-hero">
-        <div>
-          <p className="admin-kicker">{profile.eyebrow}</p>
-          <h1>{profile.title}</h1>
-          <p>{profile.description}</p>
-        </div>
-        <WorkspaceProfileIdentity user={user} profile={profile} />
-      </section>
+      <WorkspaceHero
+        eyebrow={profile.eyebrow}
+        title={profile.title}
+        description={profile.description}
+        identity={<WorkspaceProfileIdentity user={user} roleLabel={profile.label} photoFallback={profile.icon} />}
+      />
 
       <section className="role-action-grid" aria-label="Acciones previstas">
         {profile.actions.map((action) => (
