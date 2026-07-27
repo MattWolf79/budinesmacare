@@ -16,9 +16,7 @@ export default function AdminSidebar({
       />
       <aside className={`admin-sidebar ${open ? 'is-open' : ''}`} aria-label="Menú administrador">
         <div className="admin-sidebar-brand">
-          {logoSrc
-            ? <img className="admin-sidebar-logo" src={logoSrc} alt={companyName} />
-            : <span className="admin-sidebar-brand-name">{companyName}</span>}
+          <span className="admin-sidebar-brand-title">MENÚ</span>
           <button className="admin-sidebar-close" type="button" onClick={onClose} aria-label="Cerrar menú">✕</button>
         </div>
 
