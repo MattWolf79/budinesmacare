@@ -4,6 +4,7 @@ import { supabase } from '../api/supabaseClient';
 import { showAppAlert as alert } from '../utils/appAlert';
 import ActivityIcon from './ActivityIcon';
 import FormCard from './FormCard';
+import MetricCard from './MetricCard';
 import { formatDisplayDateTime } from '../utils/dateFormat';
 
 const emptyEmployee = {
@@ -1387,26 +1388,10 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
         </div>
 
         <div className="admin-metric-grid employee-metric-grid" aria-label="Resumen de empleados">
-          <article className="admin-metric-card">
-            <span>Empleados</span>
-            <strong>{employees.length}</strong>
-            <small>Total registrados.</small>
-          </article>
-          <article className="admin-metric-card">
-            <span>Activos</span>
-            <strong>{employees.filter((employee) => employee.active !== false).length}</strong>
-            <small>Disponibles para turnos.</small>
-          </article>
-          <article className="admin-metric-card">
-            <span>Pendientes</span>
-            <strong>{accessRequests.length}</strong>
-            <small>Solicitudes de acceso.</small>
-          </article>
-          <article className="admin-metric-card">
-            <span>Servicios</span>
-            <strong>{activeServices.length}</strong>
-            <small>Servicios asignables.</small>
-          </article>
+          <MetricCard label="Empleados" value={employees.length} hint="Total registrados." />
+          <MetricCard label="Activos" value={employees.filter((employee) => employee.active !== false).length} hint="Disponibles para turnos." />
+          <MetricCard label="Pendientes" value={accessRequests.length} hint="Solicitudes de acceso." />
+          <MetricCard label="Servicios" value={activeServices.length} hint="Servicios asignables." />
         </div>
 
         <div className="admin-hero employee-legacy-heading">
@@ -1725,34 +1710,21 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       </div>
 
       <div className="admin-metric-grid service-metric-grid" aria-label="Resumen de servicios">
-        <article className="admin-metric-card">
-          <span>Servicios</span>
-          <strong>{services.length}</strong>
-          <small>Total configuradas.</small>
-        </article>
-        <article className="admin-metric-card">
-          <span>Activas</span>
-          <strong>{services.filter((service) => service.active !== false).length}</strong>
-          <small>Disponibles para turnos.</small>
-        </article>
-        <article className="admin-metric-card">
-          <span>Pausadas</span>
-          <strong>{services.filter((service) => service.active === false).length}</strong>
-          <small>Ocultas temporalmente.</small>
-        </article>
-        <article className="admin-metric-card">
-          <span>Asignaciones</span>
-          <strong>{employeeServices.length}</strong>
-          <small>Empleado por servicio.</small>
-        </article>
+        <MetricCard label="Servicios" value={services.length} hint="Total configuradas." />
+        <MetricCard label="Activas" value={services.filter((service) => service.active !== false).length} hint="Disponibles para turnos." />
+        <MetricCard label="Pausadas" value={services.filter((service) => service.active === false).length} hint="Ocultas temporalmente." />
+        <MetricCard label="Asignaciones" value={employeeServices.length} hint="Empleado por servicio." />
         {preciosHabilitados && (
-          <article className="admin-metric-card admin-metric-card-monthly-closures admin-booking-cost-summary-card">
-            <span>{getCurrentMonthName()}</span>
-            <strong>{formatMoney(bookingCostSummary.assigned.total + bookingCostSummary.closed.total + bookingCostSummary.pending.total)}</strong>
+          <MetricCard
+            label={getCurrentMonthName()}
+            value={formatMoney(bookingCostSummary.assigned.total + bookingCostSummary.closed.total + bookingCostSummary.pending.total)}
+            variant="monthly-closures"
+            className="admin-booking-cost-summary-card"
+          >
             <small>Asignados: {bookingCostSummary.assigned.bookingCount} / {formatMoney(bookingCostSummary.assigned.total)}</small>
             <small>Cerrados: {bookingCostSummary.closed.bookingCount} / {formatMoney(bookingCostSummary.closed.total)}</small>
             <small>Pendientes: {bookingCostSummary.pending.bookingCount} / {formatMoney(bookingCostSummary.pending.total)}</small>
-          </article>
+          </MetricCard>
         )}
       </div>
 

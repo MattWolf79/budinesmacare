@@ -1478,9 +1478,10 @@ code {
 
 .agenda-modal-actions.booking-detail-actions .agenda-option-button,
 .agenda-modal-actions.booking-detail-actions .agenda-close-button {
-  flex: 0 0 auto;
-  width: min(100%, 220px);
+  flex: 1 1 140px;
+  width: auto;
   min-width: 0;
+  max-width: 220px;
   min-height: 38px;
   margin: 0;
   border-radius: 999px;
@@ -1493,7 +1494,8 @@ code {
 
 .agenda-modal-actions.booking-detail-actions .agenda-option-button:only-child,
 .agenda-modal-actions.booking-detail-actions .agenda-close-button:only-child {
-  width: min(100%, 220px);
+  flex: 0 1 220px;
+  width: 220px;
 }
 
 .agenda-customer-cancel {
@@ -2683,8 +2685,8 @@ code {
   width: fit-content;
   border-radius: 999px;
   padding: 3px 9px;
-  color: #1c6670;
-  background: #d8fbf5;
+  color: #7c2d12;
+  background: #ffe9c2;
   font-size: 9px;
   font-weight: 900;
   line-height: 1;
@@ -3590,9 +3592,9 @@ code {
   height: 80px;
   margin-bottom: 12px;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 10px;
   color: #fff;
-  background: #2f3842;
+  background: #94a3b8;
   font-size: 24px;
   font-weight: 900;
 }
@@ -3635,6 +3637,10 @@ code {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.employee-card-header-actions-only {
+  justify-content: flex-end;
 }
 
 .employee-card-header > span {
@@ -3695,44 +3701,53 @@ code {
 
 .employee-profile-photo-field {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   margin-top: 20px;
-  font-size: 10px;
-  font-weight: 950;
-  text-transform: uppercase;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: none;
 }
 
 .employee-profile-photo-field input {
   width: 100%;
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .employee-profile-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 16px;
   margin: 6px 0 22px;
 }
 
 .employee-profile-form-grid label {
   display: grid;
-  gap: 4px;
-  color: #475569;
-  font-size: 10px;
-  font-weight: 950;
-  text-transform: uppercase;
+  gap: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: none;
 }
 
 .employee-profile-form-grid input {
   width: 100%;
-  min-height: 36px;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  padding: 8px 10px;
-  color: #172033;
-  background: #f8fafc;
-  font-size: 12px;
-  font-weight: 800;
+  min-height: 40px;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #0f172a;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.employee-profile-form-grid input:focus {
+  outline: none;
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
 }
 
 .employee-profile-form-grid input:disabled {
@@ -3752,24 +3767,24 @@ code {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  min-height: 36px;
-  border: 1px solid #cbd5e1;
-  border-radius: 7px;
-  padding: 6px;
-  color: #334155;
-  background: #f8fafc;
+  min-height: 40px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 10px;
+  padding: 8px;
+  color: #64748b;
+  background: #ffffff;
 }
 
 .employee-profile-service-chip {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #bdeef3;
+  border: 1px solid rgba(148, 163, 184, 0.4);
   border-radius: 999px;
   padding: 4px 8px;
-  color: #0f515c;
-  background: #e9fbfd;
+  color: #334155;
+  background: #f1f5f9;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 600;
   text-transform: none;
 }
 
@@ -3777,7 +3792,7 @@ code {
   align-self: center;
   color: #64748b;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 500;
   text-transform: none;
 }
 
@@ -3917,6 +3932,31 @@ code {
 .employee-profile-row small.is-muted {
   color: #475569;
   background: #eef2f7;
+}
+
+.employee-profile-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border-color: rgba(148, 163, 184, 0.26);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.employee-profile-row strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.employee-profile-row span {
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.employee-profile-row small {
+  align-self: center;
+  justify-self: end;
+  margin-top: 0;
 }
 
 .employee-payment-row {
@@ -4322,12 +4362,15 @@ code {
     grid-template-columns: 1fr;
   }
 
-  .employee-profile-row,
   .employee-payment-row {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .employee-profile-row small,
+  .employee-profile-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
   .employee-payment-amounts {
     grid-column: 1 / -1;
     justify-content: flex-start;
@@ -4431,15 +4474,18 @@ body .platform-admin-header .app-navbar-logout:hover {
 
   body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions {
     display: flex !important;
-    flex-direction: column !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
     align-items: center !important;
+    justify-content: center !important;
     gap: 8px !important;
   }
 
   body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions .agenda-option-button,
   body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions .agenda-close-button {
-    flex: 0 0 auto !important;
-    width: min(100%, 220px) !important;
+    flex: 1 1 140px !important;
+    width: auto !important;
+    max-width: 220px !important;
     height: auto !important;
     min-height: 38px !important;
   }
@@ -4566,7 +4612,7 @@ body .platform-admin-header .app-navbar-logout:hover {
 .admin-kicker {
   display: inline-flex;
   margin-bottom: 5px;
-  color: #24aebb;
+  color: #b45309;
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0;
@@ -10012,7 +10058,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 8px;
   padding: 8px 12px;
   background: #eef6f7;
@@ -10026,6 +10071,7 @@ body {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  flex: 1 1 auto;
   gap: 6px 8px;
   min-width: 0;
 }
@@ -15466,44 +15512,42 @@ body {
   }
 
   .role-workspace-employee .employee-profile-activity-card .employee-profile-row {
-    grid-template-columns: auto minmax(0, 1fr) auto !important;
-    gap: 7px !important;
-    min-height: 36px !important;
-    padding: 6px 8px !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    align-items: center !important;
+    padding: 10px 12px !important;
   }
 
   .role-workspace-employee .employee-profile-activity-card .employee-profile-row > div {
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
+    display: block !important;
     min-width: 0 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
   }
 
   .role-workspace-employee .employee-profile-activity-card .employee-profile-row strong,
   .role-workspace-employee .employee-profile-activity-card .employee-profile-row span {
     min-width: 0 !important;
     margin: 0 !important;
-    line-height: 1 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
 
   .role-workspace-employee .employee-profile-activity-card .employee-profile-row strong {
-    flex: 0 1 auto !important;
-    font-size: 11px !important;
+    font-size: 13px !important;
   }
 
   .role-workspace-employee .employee-profile-activity-card .employee-profile-row span {
-    flex: 1 1 auto !important;
-    font-size: 10px !important;
+    margin-top: 2px !important;
+    font-size: 11px !important;
   }
 
   .role-workspace-employee .employee-profile-activity-card .employee-profile-row small {
-    padding: 4px 6px !important;
-    font-size: 9px !important;
+    grid-column: auto !important;
+    align-self: center !important;
+    justify-self: end !important;
+    margin-top: 0 !important;
+    padding: 3px 8px !important;
+    font-size: 10px !important;
     line-height: 1 !important;
     white-space: nowrap !important;
   }
@@ -17499,6 +17543,19 @@ body {
     gap: 12px;
   }
 
+  .role-workspace-employee .clients-list-header {
+    justify-content: center;
+    align-items: center;
+    margin: 6px 0 4px;
+  }
+
+  .role-workspace-employee .clients-add-button {
+    width: auto;
+    margin: 0 auto;
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+
   .clients-row {
     flex-wrap: wrap;
     align-items: flex-start;
@@ -18813,4 +18870,107 @@ body {
 
 .settings-shell .settings-actions .agenda-option-button:hover {
   background: #f8fafc !important;
+}
+
+/* ============================================================================
+   MetricCard · tarjeta de métrica compartida (Admin + Empleado)
+   Estética dorada única. Reemplaza a .admin-metric-card / .employee-summary-card.
+   Solo cambia el contenido según el perfil; el estilo es idéntico en ambos.
+   ============================================================================ */
+.dashboard-metric-card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  border: 1px solid #f0e0bf !important;
+  border-radius: 12px !important;
+  padding: 12px 13px !important;
+  color: #7c2d12 !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
+  box-shadow: 0 10px 22px rgba(240, 161, 31, 0.16) !important;
+}
+
+.dashboard-metric-card > span {
+  color: #b45309 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  line-height: 1.1 !important;
+}
+
+.dashboard-metric-card > strong {
+  display: block !important;
+  margin-top: 8px !important;
+  border: 1px solid #f2dfb4 !important;
+  border-radius: 8px !important;
+  padding: 7px 9px !important;
+  color: #7c2d12 !important;
+  background: rgba(247, 183, 51, 0.16) !important;
+  font-size: 22px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+.dashboard-metric-card > small {
+  display: block !important;
+  margin-top: 6px !important;
+  color: #9a6a2f !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  background: transparent !important;
+}
+
+/* Variante Disponibilidad: recorta el texto largo del día */
+.dashboard-metric-card--availability > small {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Variante cierre mensual (Admin): apila líneas con separador cálido */
+.dashboard-metric-card--monthly-closures > small {
+  margin-top: 4px !important;
+}
+
+.dashboard-metric-card--monthly-closures > small + small {
+  margin-top: 2px !important;
+  padding-top: 4px !important;
+  border-top: 1px solid rgba(124, 45, 18, 0.14) !important;
+}
+
+/* Variante Recaudación (Empleado): dos filas por semana en tono dorado */
+.dashboard-metric-card--earnings .employee-closed-week-lines {
+  display: grid !important;
+  gap: 7px !important;
+  margin-top: 10px !important;
+}
+
+.dashboard-metric-card--earnings .employee-closed-week-row {
+  border: 1px solid #f2dfb4 !important;
+  border-radius: 8px !important;
+  background: rgba(247, 183, 51, 0.10) !important;
+}
+
+.dashboard-metric-card--earnings .employee-closed-week-row.is-current {
+  border-color: #e0a020 !important;
+  background: rgba(247, 183, 51, 0.2) !important;
+}
+
+.dashboard-metric-card--earnings .employee-closed-week-row span {
+  color: #b45309 !important;
+}
+
+.dashboard-metric-card--earnings .employee-closed-week-row strong {
+  margin-top: 0 !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: #7c2d12 !important;
+  background: transparent !important;
+}
+
+.dashboard-metric-card--earnings .employee-closed-week-row small {
+  margin-top: 0 !important;
+  color: #9a6a2f !important;
 }

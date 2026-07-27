@@ -77,6 +77,15 @@ const clientHeroCopy = {
   perfil: { eyebrow: 'Perfil', title: 'Mi perfil', description: 'Revisá y actualizá tus datos personales.' }
 };
 
+const employeeHeroCopy = {
+  summary: { eyebrow: 'Acceso interno', title: 'Mi espacio', description: 'Un vistazo a tu día, próximos turnos y disponibilidad.' },
+  agenda: { eyebrow: 'Acceso interno', title: 'Mi agenda laboral', description: 'Un panel enfocado en los turnos asignados.' },
+  'new-booking': { eyebrow: 'Reserva', title: 'Nueva reserva', description: 'Creá un turno para un cliente.' },
+  clients: { eyebrow: 'Clientes', title: 'Gestión de clientes', description: 'Administrá y organizá tu base de clientes.' },
+  profile: { eyebrow: 'Mi perfil', title: 'Mi perfil', description: 'Revisá y actualizá tus datos personales.' },
+  availability: { eyebrow: 'Agenda disponible', title: 'Disponibilidad', description: 'Configurá los días y horarios en los que atendés.' }
+};
+
 const getRoleViewFromHash = (selectedProfile) => {
   const hash = window.location.hash.replace(/^#/, '');
 
@@ -306,14 +315,14 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
               style={shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
             >
               <div>
-                <p className="admin-kicker">{profile.eyebrow}</p>
-                <h1>{profile.title}</h1>
-                <p>{profile.description}</p>
+                <p className="admin-kicker">{(employeeHeroCopy[employeeActiveView] || profile).eyebrow}</p>
+                <h1>{(employeeHeroCopy[employeeActiveView] || profile).title}</h1>
+                <p>{(employeeHeroCopy[employeeActiveView] || profile).description}</p>
               </div>
               <WorkspaceProfileIdentity user={user} profile={profile} />
             </section>
             {employeeActiveView === 'clients' ? (
-              <ClientsPanel user={user} companySlug={companySlug} companyContext={companyContext} />
+              <ClientsPanel user={user} companySlug={companySlug} companyContext={companyContext} hideHeading />
             ) : (
               <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={empleadosPuedenReservar ? openEmployeeNewBooking : undefined} />
             )}
