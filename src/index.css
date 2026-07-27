@@ -16779,11 +16779,11 @@ body {
   justify-content: center !important;
   gap: 6px !important;
   min-height: 38px !important;
-  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border: 1px solid #e0a020 !important;
   border-radius: 8px !important;
   padding: 8px 14px !important;
-  color: #e2e8f0 !important;
-  background: rgba(255, 255, 255, 0.08) !important;
+  color: #7c2d12 !important;
+  background: #fff7e6 !important;
   font-size: 13px !important;
   font-weight: 800 !important;
   cursor: pointer !important;
@@ -16791,14 +16791,14 @@ body {
 }
 
 .platform-admin-nav-button:hover {
-  color: #ffffff !important;
-  border-color: #24aebb !important;
-  background: #3fc9d5 !important;
+  color: #7c2d12 !important;
+  border-color: #c98a12 !important;
+  background: #ffffff !important;
 }
 
 .platform-admin-nav-button.is-active {
-  color: #164e9a !important;
-  border-color: #dbeafe !important;
+  color: #7c2d12 !important;
+  border-color: #c98a12 !important;
   background: #ffffff !important;
 }
 
@@ -19018,4 +19018,76 @@ body {
 .dashboard-metric-card--earnings .employee-closed-week-row small {
   margin-top: 0 !important;
   color: #9a6a2f !important;
+}
+
+/* ===== Navbar unificado dorado (admin, empleado, cliente, plataforma) ===== */
+body .app-navbar,
+body .platform-admin-header {
+  color: #7c2d12 !important;
+  background:
+    radial-gradient(circle at 96% 0%, rgba(255, 255, 255, 0.35), transparent 42%),
+    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  border-bottom: 1px solid #e0a020 !important;
+  box-shadow: 0 8px 20px rgba(240, 161, 31, 0.22) !important;
+}
+
+body .app-navbar .app-navbar-title,
+body .app-navbar .app-navbar-subtitle,
+body .app-navbar .app-navbar-user,
+body .app-navbar .app-navbar-email,
+body .app-navbar .role-workspace-session,
+body .app-navbar .role-workspace-session > span:not(.app-navbar-avatar),
+body .platform-admin-header p,
+body .platform-admin-header h1,
+body .platform-admin-header span {
+  color: #7c2d12 !important;
+}
+
+body .app-navbar .app-navbar-menu {
+  border-color: rgba(124, 45, 18, 0.18) !important;
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+
+body .app-navbar .app-navbar-button {
+  color: #7c2d12 !important;
+  border-color: transparent !important;
+  background: transparent !important;
+}
+
+body .app-navbar .app-navbar-button:hover,
+body .app-navbar .app-navbar-button.is-active {
+  color: #7c2d12 !important;
+  border-color: #e0a020 !important;
+  background: rgba(255, 255, 255, 0.62) !important;
+}
+
+body .app-navbar .app-navbar-profile {
+  color: #7c2d12 !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+
+body .app-navbar .app-navbar-mark,
+body .app-navbar .app-navbar-avatar,
+body .app-navbar .role-workspace-avatar {
+  color: #7c2d12 !important;
+  border-color: rgba(124, 45, 18, 0.28) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+}
+
+/* Boton Salir + Perfil: tono crema (mas claro que el navbar) para diferenciarse */
+body .app-navbar .app-navbar-logout,
+body .app-navbar .app-navbar-switch,
+body .platform-admin-header .app-navbar-logout {
+  color: #7c2d12 !important;
+  border: 1px solid #e0a020 !important;
+  background: #fff7e6 !important;
+  box-shadow: none !important;
+}
+
+body .app-navbar .app-navbar-logout:hover,
+body .app-navbar .app-navbar-switch:hover,
+body .platform-admin-header .app-navbar-logout:hover {
+  color: #7c2d12 !important;
+  border-color: #c98a12 !important;
+  background: #ffffff !important;
 }
