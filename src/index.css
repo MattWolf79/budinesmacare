@@ -17134,10 +17134,10 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 0 !important;
     min-height: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
-    border-top: 1px solid rgba(36, 174, 187, 0.34) !important;
+    border-top: 1px solid #e0a020 !important;
     padding: 6px 8px calc(7px + env(safe-area-inset-bottom, 0px)) !important;
-    background: #174c55 !important;
-    box-shadow: 0 -12px 28px rgba(15, 23, 42, 0.22) !important;
+    background: linear-gradient(160deg, #f8e4bf 0%, #f3d59c 100%) !important;
+    box-shadow: 0 -8px 20px rgba(240, 161, 31, 0.22) !important;
   }
 
   .platform-admin-bottom-button {
@@ -17148,15 +17148,16 @@ body {
     border: 0 !important;
     border-radius: 10px !important;
     padding: 6px 4px !important;
-    color: #d8eef1 !important;
+    color: #7c2d12 !important;
     background: transparent !important;
     font-size: 11px !important;
     font-weight: 900 !important;
   }
 
   .platform-admin-bottom-button.is-active {
-    color: #ffffff !important;
-    background: rgba(255, 255, 255, 0.14) !important;
+    color: #7c2d12 !important;
+    background: #fffdf5 !important;
+    box-shadow: 0 2px 8px rgba(240, 161, 31, 0.25), inset 0 0 0 1px #e8cfa0 !important;
   }
 
   .platform-admin-bottom-icon {
