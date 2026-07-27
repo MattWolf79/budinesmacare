@@ -12157,9 +12157,9 @@ body {
 }
 
 .employee-availability-manager .admin-form-grid label {
-  color: #3f4b5f;
+  color: #64748b;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .employee-availability-manager .admin-form-grid input,
@@ -13924,26 +13924,28 @@ body {
 
   .dashboard-shell .employee-availability-manager .availability-form-card .admin-form-grid label {
     gap: 5px !important;
-    color: #253246 !important;
-    font-size: 11px !important;
-    font-weight: 850 !important;
-    line-height: 1.15 !important;
+    color: #64748b !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
   }
 
   .dashboard-shell .employee-availability-manager .availability-form-card .admin-form-grid input,
   .dashboard-shell .employee-availability-manager .availability-form-card .admin-form-grid select {
     box-sizing: border-box !important;
     min-width: 0 !important;
-    min-height: 32px !important;
-    height: 32px !important;
-    border: 1px solid #cfd6dd !important;
-    border-radius: 7px !important;
-    padding: 6px 10px !important;
+    min-height: 40px !important;
+    height: auto !important;
+    border: 1px solid rgba(148, 163, 184, 0.4) !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
     color: #0f172a !important;
     background: #fff !important;
-    font-size: 12px !important;
-    font-weight: 800 !important;
-    line-height: 1.1 !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
   }
 
   .dashboard-shell .employee-availability-manager .availability-form-card .admin-fieldset,
@@ -13957,10 +13959,12 @@ body {
 
   .dashboard-shell .employee-availability-manager .availability-form-card .admin-fieldset-title {
     margin-bottom: 8px !important;
-    color: #253246 !important;
-    font-size: 11px !important;
-    font-weight: 900 !important;
-    line-height: 1.15 !important;
+    color: #64748b !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
   }
 
   .dashboard-shell .employee-availability-manager .availability-form-card .availability-date-columns,
@@ -17892,4 +17896,637 @@ body {
 
 .clients-history-status.status-pending_assignment {
   color: #d97706;
+}
+
+/* ============================================================================
+   Servicios · estética amarilla moderna (reemplaza el teal viejo)
+   Acotado a .service-admin-manager para no afectar la pantalla de Empleados.
+   ============================================================================ */
+
+/* Acción "Actualizar" */
+.service-admin-manager .admin-link-button {
+  color: #b45309 !important;
+}
+
+.service-admin-manager .admin-link-button:hover {
+  background: #fff7e6 !important;
+}
+
+/* Tarjetas de métricas: de teal oscuro a tarjeta clara con acento dorado */
+.service-admin-manager .service-metric-grid .admin-metric-card,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card {
+  border: 1px solid #f0e0bf !important;
+  color: #7c2d12 !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
+  box-shadow: 0 10px 22px rgba(240, 161, 31, 0.16) !important;
+}
+
+.service-admin-manager .service-metric-grid .admin-metric-card span,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card span {
+  color: #b45309 !important;
+}
+
+.service-admin-manager .service-metric-grid .admin-metric-card strong,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card strong {
+  color: #7c2d12 !important;
+  background: rgba(247, 183, 51, 0.16) !important;
+}
+
+.service-admin-manager .service-metric-grid .admin-metric-card small,
+.dashboard-shell .service-admin-manager .service-metric-grid .admin-metric-card small {
+  color: #9a6a2f !important;
+  background: transparent !important;
+}
+
+.service-admin-manager .admin-booking-cost-summary-card small {
+  border-top: 1px solid rgba(124, 45, 18, 0.14) !important;
+}
+
+/* Tarjeta de cada servicio: contenedor blanco redondeado y prolijo */
+.service-admin-manager .service-record-card {
+  border: 1px solid #eef2f7 !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08) !important;
+}
+
+.service-admin-manager .service-record-card .admin-management-card-header {
+  border-radius: 12px 12px 8px 8px !important;
+}
+
+/* Estado "Activa" en tono ámbar en vez de teal */
+.service-admin-manager .admin-management-card-field > strong.is-active {
+  border-color: #e0a020 !important;
+  color: #7c2d12 !important;
+  background: #fff7e6 !important;
+}
+
+/* Botones de la tarjeta de servicio */
+.service-admin-manager .service-button-grid .admin-management-card-actions .agenda-close-button.service-card-action,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-close-button.service-card-action {
+  color: #7c2d12 !important;
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  border: 1px solid #e0a020 !important;
+}
+
+.service-admin-manager .service-button-grid .admin-management-card-actions .agenda-close-button.service-card-action:hover,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-close-button.service-card-action:hover {
+  background: #f0a91f !important;
+  border-color: #c98d12 !important;
+}
+
+.service-admin-manager .service-button-grid .admin-management-card-actions .agenda-option-button.service-card-action,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-option-button.service-card-action {
+  color: #7c2d12 !important;
+  background: #fffaf0 !important;
+  border: 1px solid #e0a020 !important;
+}
+
+.service-admin-manager .service-button-grid .admin-management-card-actions .agenda-option-button.service-card-action:hover,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-option-button.service-card-action:hover {
+  background: #fdefd2 !important;
+  border-color: #c98d12 !important;
+}
+
+.service-admin-manager .service-button-grid .admin-management-card-actions .agenda-danger-button.service-card-action,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-danger-button.service-card-action {
+  color: #b91c1c !important;
+  background: #fff1f1 !important;
+  border: 1px solid #f3c0c0 !important;
+}
+
+.service-admin-manager .service-button-grid .admin-management-card-actions .agenda-danger-button.service-card-action:hover,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-danger-button.service-card-action:hover {
+  background: #ffe3e3 !important;
+  border-color: #e29a9a !important;
+}
+
+/* Encabezado del formulario "Nuevo servicio": de teal/rojo a dorado */
+.service-admin-manager .agenda-modal-header {
+  color: #7c2d12 !important;
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  border-bottom: none !important;
+}
+
+.dashboard-shell .service-form-card > .agenda-modal-header,
+.service-admin-manager .service-form-card > .agenda-modal-header {
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  color: #7c2d12 !important;
+}
+
+.dashboard-shell .service-form-card > .agenda-modal-header span,
+.service-admin-manager .service-form-card > .agenda-modal-header span {
+  color: #7c2d12 !important;
+}
+
+/* Botones del formulario (Crear/Guardar, Limpiar, Elegir) */
+.service-admin-manager .admin-actions .agenda-close-button {
+  color: #7c2d12 !important;
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  border: 1px solid #e0a020 !important;
+}
+
+.service-admin-manager .admin-actions .agenda-close-button:hover {
+  background: #f0a91f !important;
+  border-color: #c98d12 !important;
+}
+
+.service-admin-manager .admin-actions .agenda-option-button,
+.service-admin-manager .admin-emoji-open-button {
+  color: #7c2d12 !important;
+  background: #fffaf0 !important;
+  border: 1px solid #e0a020 !important;
+}
+
+.service-admin-manager .admin-actions .agenda-option-button:hover,
+.service-admin-manager .admin-emoji-open-button:hover {
+  background: #fdefd2 !important;
+  border-color: #c98d12 !important;
+}
+
+/* Encabezado de cada servicio: de teal a degradado dorado */
+.service-admin-manager .admin-management-card-header,
+.dashboard-shell .service-button-grid .service-record-card .admin-management-card-header,
+.dashboard-shell .service-button-grid .promotion-record-card .admin-management-card-header {
+  color: #7c2d12 !important;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.28), transparent 40%),
+    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(124, 45, 18, 0.12) !important;
+}
+
+.service-admin-manager .admin-management-card-header strong {
+  color: #7c2d12 !important;
+}
+
+.service-admin-manager .admin-management-card-header .activity-icon,
+.service-admin-manager .admin-management-card-header .admin-record-avatar {
+  border-color: rgba(124, 45, 18, 0.28) !important;
+}
+
+/* Servicio pausado: encabezado en gris tenue para diferenciarlo */
+.service-admin-manager .service-record-card.is-muted .admin-management-card-header {
+  color: #475569 !important;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+}
+
+.service-admin-manager .service-record-card.is-muted .admin-management-card-header strong {
+  color: #475569 !important;
+}
+
+/* Cuadros internos (PRECIO, DURACIÓN, etc.): estilo moderno y suave */
+.service-admin-manager .admin-management-card-field > span {
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.service-admin-manager .admin-management-card-field > strong {
+  border: 1px solid #f0f2f6 !important;
+  border-radius: 9px !important;
+  padding: 6px 10px !important;
+  color: #334155 !important;
+  background: #f7f9fc !important;
+  min-height: 0 !important;
+  align-self: start !important;
+}
+
+/* Evitar que los cuadros de valor se estiren a lo alto de la fila */
+.dashboard-shell .service-admin-manager .service-button-grid .service-record-card .admin-management-card-field:not(.admin-management-card-field-wide) {
+  align-items: start !important;
+}
+
+/* Tarjeta del servicio: más aire y bordes redondeados modernos */
+.service-admin-manager .service-record-card {
+  padding: 12px !important;
+  border-radius: 16px !important;
+}
+
+/* Formulario "Nuevo servicio": estilo moderno tipo ficha de cliente
+   (label arriba del input, inputs redondeados y con más aire) */
+.dashboard-shell .service-admin-manager .service-form-card label:not(.admin-switch-row) {
+  display: flex !important;
+  grid-template-columns: none !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 6px !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.dashboard-shell .service-admin-manager .service-form-card input,
+.dashboard-shell .service-admin-manager .service-form-card select {
+  min-height: 40px !important;
+  border: 1px solid rgba(148, 163, 184, 0.4) !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  color: #0f172a !important;
+  background: #fff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  text-transform: none !important;
+}
+
+.dashboard-shell .service-admin-manager .service-form-card input[type='color'] {
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 4px !important;
+  border-radius: 10px !important;
+}
+
+/* Fila de "Servicio activo" alineada al nuevo estilo */
+.dashboard-shell .service-admin-manager .service-form-card .admin-switch-row {
+  gap: 8px !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+/* Formulario de empleado: mismo estilo moderno (label arriba del input) */
+.dashboard-shell .employee-admin-manager .employee-form-card label:not(.admin-switch-row):not(.admin-photo-field) {
+  display: flex !important;
+  grid-template-columns: none !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 6px !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-form-card input,
+.dashboard-shell .employee-admin-manager .employee-form-card select {
+  min-height: 40px !important;
+  border: 1px solid rgba(148, 163, 184, 0.4) !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  color: #0f172a !important;
+  background: #fff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  text-transform: none !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-form-card .admin-switch-row {
+  gap: 8px !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+/* Sucursales y Packs: refinar inputs para igualar el estilo moderno */
+.dashboard-shell .branch-form-card .branch-field > span {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.dashboard-shell .branch-form-card .branch-field input,
+.dashboard-shell .branch-form-card .branch-field select,
+.dashboard-shell .branch-form-card .branch-field textarea {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+/* ===== Empleados: labels y cajas de tarjeta como en Servicios ===== */
+.dashboard-shell .employee-admin-manager .admin-management-card-field > span {
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.dashboard-shell .employee-admin-manager .admin-management-card-field > strong {
+  border: 1px solid #f0f2f6 !important;
+  border-radius: 9px !important;
+  padding: 6px 10px !important;
+  color: #334155 !important;
+  background: #f7f9fc !important;
+  min-height: 0 !important;
+  align-self: start !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-shell .employee-admin-manager .admin-management-card-field > strong.is-active {
+  border-color: #e0a020 !important;
+  color: #7c2d12 !important;
+  background: #fff7e6 !important;
+}
+
+.dashboard-shell .employee-admin-manager .admin-management-card-field > strong.is-muted {
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+  background: #f1f5f9 !important;
+}
+
+/* ===== Disponibilidad: formulario moderno (label arriba, inputs redondeados) ===== */
+.dashboard-shell .employee-availability-manager .availability-form-card label:not(.admin-switch-row),
+.role-workspace-employee .employee-availability-manager .availability-form-card label:not(.admin-switch-row) {
+  display: flex !important;
+  grid-template-columns: none !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 6px !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.dashboard-shell .employee-availability-manager .availability-form-card .admin-form-grid input,
+.dashboard-shell .employee-availability-manager .availability-form-card .admin-form-grid select,
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-form-grid input,
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-form-grid select {
+  min-height: 40px !important;
+  height: auto !important;
+  border: 1px solid rgba(148, 163, 184, 0.4) !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  color: #0f172a !important;
+  background: #fff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  text-transform: none !important;
+}
+
+/* ===== Empleados: encabezado dorado (como Servicios) ===== */
+.dashboard-shell .employee-admin-manager .employee-record-card .admin-management-card-header {
+  color: #7c2d12 !important;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.28), transparent 40%),
+    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(124, 45, 18, 0.12) !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-record-card .admin-management-card-header strong {
+  color: #7c2d12 !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-record-card.is-muted .admin-management-card-header {
+  color: #475569 !important;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-record-card.is-muted .admin-management-card-header strong {
+  color: #475569 !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-record-card .admin-management-card-header .admin-record-avatar {
+  border-color: rgba(124, 45, 18, 0.28) !important;
+  color: #7c2d12 !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-record-card .employee-header-settlement-button {
+  color: #7c2d12 !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: #e0a020 !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-record-card .employee-header-settlement-button:hover {
+  background: #ffffff !important;
+}
+
+/* Empleados: botones de acción alineados a Servicios */
+.dashboard-shell .employee-admin-manager .employee-button-list .admin-record-actions .agenda-close-button {
+  color: #7c2d12 !important;
+  border-color: #e0a020 !important;
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-button-list .admin-record-actions .agenda-option-button {
+  color: #7c2d12 !important;
+  border-color: #e0a020 !important;
+  background: #fffaf0 !important;
+}
+
+.dashboard-shell .employee-admin-manager .employee-button-list .admin-record-actions .agenda-danger-button {
+  color: #b91c1c !important;
+  border-color: #f3c0c0 !important;
+  background: #fff1f1 !important;
+}
+
+/* ===== Disponibilidad: tarjetas con encabezado dorado y estilo moderno ===== */
+.employee-availability-manager .availability-card .availability-card-header {
+  color: #7c2d12 !important;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.28), transparent 40%),
+    linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(124, 45, 18, 0.12) !important;
+}
+
+.employee-availability-manager .availability-card .availability-card-header strong {
+  color: #7c2d12 !important;
+}
+
+.employee-availability-manager .availability-card.is-muted .availability-card-header {
+  color: #475569 !important;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+}
+
+.employee-availability-manager .availability-card.is-muted .availability-card-header strong {
+  color: #475569 !important;
+}
+
+.employee-availability-manager .availability-card-grid .availability-date-badge {
+  color: #7c2d12 !important;
+  border-color: rgba(124, 45, 18, 0.3) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Disponibilidad: labels y cajas de la tarjeta como en Servicios */
+.employee-availability-manager .availability-card-field > span {
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.employee-availability-manager .availability-card-field > strong {
+  border: 1px solid #f0f2f6 !important;
+  border-radius: 9px !important;
+  padding: 6px 10px !important;
+  color: #334155 !important;
+  background: #f7f9fc !important;
+  min-height: 0 !important;
+  align-self: start !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+/* Disponibilidad: botones de acción alineados a Servicios */
+.employee-availability-manager .availability-card-grid .admin-record-actions .agenda-close-button {
+  color: #7c2d12 !important;
+  border-color: #e0a020 !important;
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+}
+
+.employee-availability-manager .availability-card-grid .admin-record-actions .agenda-danger-button {
+  color: #b91c1c !important;
+  border-color: #f3c0c0 !important;
+  background: #fff1f1 !important;
+}
+
+/* ===== Encabezado del formulario "Nuevo empleado": dorado ===== */
+.employee-admin-manager .employee-form-card > .agenda-modal-header,
+.dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header {
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  color: #7c2d12 !important;
+  border-bottom: none !important;
+}
+
+.employee-admin-manager .employee-form-card > .agenda-modal-header span,
+.employee-admin-manager .employee-form-card > .agenda-modal-header .form-card-toggle {
+  color: #7c2d12 !important;
+}
+
+/* ===== Encabezado del formulario "Nueva disponibilidad": dorado ===== */
+.employee-availability-manager .availability-form-card > .agenda-modal-header,
+.dashboard-shell .employee-availability-manager .availability-form-card > .agenda-modal-header,
+.role-workspace-employee .employee-availability-manager .availability-form-card > .agenda-modal-header {
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+  color: #7c2d12 !important;
+  border-bottom: none !important;
+}
+
+.employee-availability-manager .availability-form-card > .agenda-modal-header span,
+.employee-availability-manager .availability-form-card > .agenda-modal-header .form-card-toggle {
+  color: #7c2d12 !important;
+}
+
+/* ===== Empleados: métricas del dashboard en amarillo ===== */
+.employee-admin-manager .employee-metric-grid .admin-metric-card,
+.dashboard-shell .employee-admin-manager .employee-metric-grid .admin-metric-card {
+  border: 1px solid #f0e0bf !important;
+  color: #7c2d12 !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
+  box-shadow: 0 10px 22px rgba(240, 161, 31, 0.16) !important;
+}
+
+.employee-admin-manager .employee-metric-grid .admin-metric-card span,
+.dashboard-shell .employee-admin-manager .employee-metric-grid .admin-metric-card span {
+  color: #b45309 !important;
+}
+
+.employee-admin-manager .employee-metric-grid .admin-metric-card strong,
+.dashboard-shell .employee-admin-manager .employee-metric-grid .admin-metric-card strong {
+  color: #7c2d12 !important;
+}
+
+.employee-admin-manager .employee-metric-grid .admin-metric-card small,
+.dashboard-shell .employee-admin-manager .employee-metric-grid .admin-metric-card small {
+  color: #9a6a2f !important;
+}
+
+.employee-admin-manager .admin-link-button {
+  color: #b45309 !important;
+}
+
+.employee-admin-manager .admin-link-button:hover {
+  background: #fff7e6 !important;
+}
+
+/* ===== Disponibilidad: resumen y filtros del dashboard en amarillo ===== */
+.employee-availability-manager .availability-summary-strip {
+  border: 1px solid #f0e0bf !important;
+  background:
+    radial-gradient(circle at 96% 10%, rgba(247, 183, 51, 0.20), transparent 40%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
+  box-shadow: 0 10px 22px rgba(240, 161, 31, 0.16) !important;
+}
+
+.employee-availability-manager .availability-summary-strip span {
+  color: #7c2d12 !important;
+}
+
+.employee-availability-manager .availability-day-filter-all.is-selected,
+.employee-availability-manager .availability-day-circle.is-selected,
+.dashboard-shell .employee-availability-manager .availability-day-filter-all.is-selected,
+.dashboard-shell .employee-availability-manager .availability-day-circle.is-selected {
+  color: #7c2d12 !important;
+  border-color: #e0a020 !important;
+  background: linear-gradient(135deg, #f7b733 0%, #f0a11f 100%) !important;
+}
+
+.employee-availability-manager .agenda-refresh-button {
+  color: #b45309 !important;
+  border-color: #f0d9a8 !important;
+  background: #fffaf0 !important;
+}
+
+.employee-availability-manager .agenda-refresh-button:hover {
+  background: #fff7e6 !important;
+}
+
+/* ===== Tarjetas de empleado: valor más ancho (menos separación) ===== */
+.employee-admin-manager .employee-record-card .admin-management-card-field {
+  grid-template-columns: 62px minmax(0, 1fr) !important;
+  gap: 6px !important;
+}
+
+/* ===== Disponibilidad: títulos de fieldset suaves (como el form de empleado) ===== */
+.employee-availability-manager .availability-form-card .admin-fieldset-title,
+.dashboard-shell .employee-availability-manager .availability-form-card .admin-fieldset-title,
+.role-workspace-employee .employee-availability-manager .availability-form-card .admin-fieldset-title {
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+/* ===== Disponibilidad = Empleado: tono de letras universal (sin depender de dashboard-shell ni media) ===== */
+.employee-availability-manager .availability-form-card label:not(.admin-switch-row) {
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.employee-availability-manager .availability-form-card .admin-form-grid input,
+.employee-availability-manager .availability-form-card .admin-form-grid select {
+  min-height: 40px !important;
+  height: auto !important;
+  border: 1px solid rgba(148, 163, 184, 0.4) !important;
+  border-radius: 10px !important;
+  padding: 10px 12px !important;
+  color: #0f172a !important;
+  background: #fff !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  text-transform: none !important;
 }

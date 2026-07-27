@@ -954,7 +954,7 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
         <div className="agenda-modal-header">Detalle del turno</div>
         <div className="agenda-modal-body booking-detail-body">
           <div className="booking-detail-summary">
-            <div className="booking-detail-service"><ActivityIcon service={service} size="small" /> <b>{activityLabel}</b></div>
+            <div className="booking-detail-service"><b>{activityLabel}</b></div>
             <div><b>Cliente:</b> {customerName}</div>
             <div><b>Mail:</b> {customerEmail}</div>
             <div><b>Empleado:</b> {employeeLabel}</div>
@@ -2305,7 +2305,6 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                 <article className={`admin-record-card booking-assignment-card${isWaitlist ? ' booking-assignment-card-waitlist' : ''}`} key={booking.id} style={{ '--service-chip-color': service?.color || '#15b8c8' }}>
                   <div className="admin-record-main">
                     <span className="booking-assignment-service">
-                      <ActivityIcon service={service} size="small" />
                       <strong>{assignmentLabel}</strong>
                       {bundleLabel && (
                         <span className={`booking-assignment-bundle-tag booking-assignment-bundle-tag-${bundleType}`}>{bundleLabel}</span>

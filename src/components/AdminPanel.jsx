@@ -1778,59 +1778,6 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
               Nombre
               <input value={serviceForm.name} onChange={(event) => updateServiceField('name', event.target.value)} placeholder="Peluquería" />
             </label>
-            <div className="admin-fieldset">
-              <div className="admin-fieldset-title">Icono</div>
-              <div className="admin-emoji-picker-anchor" ref={emojiPickerRef}>
-                <div className="admin-emoji-selected-row">
-                  <input
-                    className="admin-emoji-input"
-                    value={serviceForm.icon}
-                    onChange={(event) => updateServiceField('icon', event.target.value)}
-                    placeholder="Pegá un emoji o símbolo"
-                    maxLength="12"
-                  />
-                  <button className="agenda-option-button admin-emoji-open-button" type="button" onClick={() => setIsEmojiPickerOpen((current) => !current)}>
-                    Elegir
-                  </button>
-                </div>
-
-                {isEmojiPickerOpen && (
-                  <div className="admin-emoji-popover">
-                    <input
-                      className="admin-emoji-search"
-                      value={emojiSearch}
-                      onChange={(event) => setEmojiSearch(event.target.value)}
-                      placeholder="Buscar categoría"
-                    />
-                    <div className="admin-emoji-popover-scroll">
-                      {filteredIconGroups.length === 0 ? (
-                        <div className="admin-emoji-empty">Sin resultados</div>
-                      ) : filteredIconGroups.map((group) => (
-                        <div className="admin-emoji-group" key={group.label}>
-                          <div className="admin-emoji-group-title">{group.label}</div>
-                          <div className="admin-emoji-grid">
-                            {group.icons.map((icon) => (
-                              <button
-                                key={`${group.label}-${icon}`}
-                                type="button"
-                                className={`admin-emoji-button ${serviceForm.icon === icon ? 'is-selected' : ''}`}
-                                onClick={() => selectServiceIcon(icon)}
-                              >
-                                {icon === 'whatsapp' || icon === 'telegram' ? <ActivityIcon service={{ icon, color: serviceForm.color }} size="small" /> : icon}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <label>
-              Color
-              <input type="color" value={serviceForm.color} onChange={(event) => updateServiceField('color', event.target.value)} />
-            </label>
 
             <label>
               Duración
@@ -1893,7 +1840,6 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
             return (
               <article className={`admin-record-card service-record-card ${service.active === false ? 'is-muted' : ''}`} key={service.id}>
                 <div className="admin-management-card-header" style={{ '--admin-management-card-color': service.color || '#174c55' }}>
-                  <ActivityIcon service={service} size="small" />
                   <strong>{service.name}</strong>
                 </div>
                 <div className="admin-record-main admin-management-card-main">
@@ -1912,16 +1858,16 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                       <span>Asignados</span>
                       <strong>{employeeServices.filter((relation) => Number(relation.service_id) === Number(service.id)).length}</strong>
                     </div>
+                    <div className="admin-management-card-field admin-management-card-status-row">
+                      <span>Estado</span>
+                      <strong className={service.active === false ? 'is-muted' : 'is-active'}>{service.active === false ? 'Pausada' : 'Activa'}</strong>
+                    </div>
                     {activityCheckId && (
                       <div className="admin-management-card-field admin-management-card-field-wide">
                         <span>Check servicio</span>
                         <strong>{activityCheck?.name || 'Configurado'}</strong>
                       </div>
                     )}
-                    <div className="admin-management-card-field admin-management-card-field-wide admin-management-card-status-row">
-                      <span>Estado</span>
-                      <strong className={service.active === false ? 'is-muted' : 'is-active'}>{service.active === false ? 'Pausada' : 'Activa'}</strong>
-                    </div>
                   </div>
                 </div>
                 <div className="admin-record-actions admin-management-card-actions">
@@ -1941,7 +1887,6 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
           {promotionServices.map((promotionService) => (
             <article className="admin-record-card service-record-card promotion-record-card" key={promotionService.id}>
               <div className="admin-management-card-header" style={{ '--admin-management-card-color': promotionService.color || '#174c55' }}>
-                <ActivityIcon service={promotionService} size="small" />
                 <strong>{promotionService.name}</strong>
               </div>
               <div className="admin-record-main admin-management-card-main">
@@ -1950,6 +1895,10 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                     <span>Tipo</span>
                     <strong>{preciosHabilitados ? 'Promo' : 'Banner reservable'}</strong>
                   </div>
+                  <div className="admin-management-card-field admin-management-card-status-row">
+                    <span>Estado</span>
+                    <strong className="is-active">Activa</strong>
+                  </div>
                   <div className="admin-management-card-field admin-management-card-field-wide">
                     <span>{preciosHabilitados ? 'Precio' : 'Atención'}</span>
                     <strong>{preciosHabilitados ? formatMoney(promotionService.promotion?.price) : 'Asignable a empleados'}</strong>
@@ -1957,10 +1906,6 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                   <div className="admin-management-card-field admin-management-card-field-wide">
                     <span>Administración</span>
                     <strong>Desde Configuración</strong>
-                  </div>
-                  <div className="admin-management-card-field admin-management-card-field-wide admin-management-card-status-row">
-                    <span>Estado</span>
-                    <strong className="is-active">Activa</strong>
                   </div>
                 </div>
               </div>
