@@ -8843,12 +8843,11 @@ body {
 }
 
 .client-profile-panel {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .client-profile-card {
-  width: min(100%, 560px);
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -8909,6 +8908,13 @@ body {
 }
 
 .client-profile-field input:disabled {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.client-profile-form .clients-field input:disabled,
+.client-profile-form .clients-field select:disabled,
+.client-profile-form .clients-field textarea:disabled {
   background: #f1f5f9;
   color: #475569;
 }
