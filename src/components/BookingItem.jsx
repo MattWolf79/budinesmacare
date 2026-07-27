@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import ActivityIcon from './ActivityIcon';
 
 const POPOVER_WIDTH = 240;
 const POPOVER_GAP = 8;
@@ -105,18 +104,6 @@ export default function BookingItem({
       }}
     >
       <span
-        className="agenda-booking-icon"
-        style={{
-          position: 'absolute',
-          left: 4,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'inline-flex'
-        }}
-      >
-        <ActivityIcon service={service} size="tiny" variant="agenda" />
-      </span>
-      <span
         className="agenda-booking-label"
         style={{
           display: 'flex',
@@ -200,7 +187,7 @@ export default function BookingItem({
         <div className="agenda-detail-popover" style={{ top: popoverPosition.top, left: popoverPosition.left }}>
           <div className="agenda-detail-header">Detalle</div>
           <div className="agenda-detail-body">
-            <div className="agenda-detail-title"><ActivityIcon service={service} size="small" /> <b>{service?.name}</b></div>
+            <div className="agenda-detail-title"><b>{service?.name}</b></div>
             {booking.booking_description && <div>🏷 {booking.booking_description}</div>}
             {(employeeLabel || employee?.name) && <div>👤 {employeeLabel || employee.name}</div>}
             <div>Estado: {statusLabel}</div>
