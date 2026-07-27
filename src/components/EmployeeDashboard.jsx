@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
-import ActivityIcon from './ActivityIcon';
 import AgendaGrid from './AgendaGrid';
 import EmployeeAvailabilityPanel from './EmployeeAvailabilityPanel';
 import MetricCard from './MetricCard';
@@ -882,7 +881,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                 </div>
                 <div className="employee-card-header-actions">
                   <button
-                    className="client-summary-refresh"
+                    className="admin-link-button"
                     type="button"
                     onClick={refreshEmployeeWorkspace}
                     title="Actualizar turnos"
@@ -908,10 +907,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                     <div
                       className={`employee-booking-row${isClosed ? ' is-closed' : ''}`}
                       key={booking.id}
-                      style={{ '--employee-booking-color': isClosed ? '#94a3b8' : '#174c55' }}
                     >
                       <div className="employee-booking-form-header">
-                        <ActivityIcon service={service} size="small" />
                         <strong>{bookingTitle}</strong>
                       </div>
 
