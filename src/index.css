@@ -8137,7 +8137,7 @@ body {
 }
 
 .dashboard-content {
-  padding: 26px 44px 44px;
+  padding: 24px 28px 32px;
 }
 
 /* ---------------------------------------------------------------------------
@@ -10406,7 +10406,7 @@ body {
   }
 
   .dashboard-shell .dashboard-content {
-    padding: 18px 16px calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 14px 12px calc(92px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .role-workspace-employee.has-role-sidebar {
@@ -16460,7 +16460,8 @@ body {
   }
 
   .role-workspace-client .role-workspace-hero,
-  .role-workspace-employee .role-workspace-hero {
+  .role-workspace-employee .role-workspace-hero,
+  .dashboard-shell .role-workspace-hero {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto !important;
     align-items: center !important;
@@ -16469,24 +16470,28 @@ body {
   }
 
   .role-workspace-client .role-workspace-hero > div:first-child,
-  .role-workspace-employee .role-workspace-hero > div:first-child {
+  .role-workspace-employee .role-workspace-hero > div:first-child,
+  .dashboard-shell .role-workspace-hero > div:first-child {
     min-width: 0 !important;
   }
 
   .role-workspace-client .role-workspace-hero h1,
-  .role-workspace-employee .role-workspace-hero h1 {
+  .role-workspace-employee .role-workspace-hero h1,
+  .dashboard-shell .role-workspace-hero h1 {
     margin: 0 !important;
     font-size: 20px !important;
     line-height: 1.1 !important;
   }
 
   .role-workspace-client .role-workspace-hero p:not(.admin-kicker),
-  .role-workspace-employee .role-workspace-hero p:not(.admin-kicker) {
+  .role-workspace-employee .role-workspace-hero p:not(.admin-kicker),
+  .dashboard-shell .role-workspace-hero p:not(.admin-kicker) {
     display: none !important;
   }
 
   .role-workspace-client .role-workspace-hero .admin-kicker,
-  .role-workspace-employee .role-workspace-hero .admin-kicker {
+  .role-workspace-employee .role-workspace-hero .admin-kicker,
+  .dashboard-shell .role-workspace-hero .admin-kicker {
     margin-bottom: 4px !important;
   }
 
@@ -17321,14 +17326,22 @@ body {
   flex-wrap: wrap;
 }
 
+.clients-list-header {
+  border: 1px solid #d8e0eb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  padding: 24px;
+}
+
 .clients-list-header h1 {
   margin: 0;
   font-size: 26px;
-  font-weight: 850;
-  color: #0f172a;
+  font-weight: 700;
+  color: #1f2937;
 }
 
-.clients-list-header p {
+.clients-list-header p:not(.admin-kicker) {
   margin: 4px 0 0;
   color: #64748b;
   font-size: 14px;
@@ -17354,8 +17367,13 @@ body {
   margin-top: 10px;
 }
 
-.role-workspace-employee .clients-list-header .clients-add-button {
-  margin: 0 auto;
+.clients-add-row {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 2px;
+}
+
+.clients-add-row .clients-add-button {
   padding: 11px 22px;
 }
 
@@ -17560,7 +17578,11 @@ body {
     margin: 6px 0 4px;
   }
 
-  .role-workspace-employee .clients-add-button {
+  .clients-add-row {
+    margin: 6px 0 4px;
+  }
+
+  .clients-add-row .clients-add-button {
     width: auto;
     margin: 0 auto;
     padding: 10px 20px;
@@ -17614,8 +17636,9 @@ body {
 /* --- Formulario editar / agregar cliente --- */
 .clients-form-heading {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .clients-form-avatar {
@@ -17639,13 +17662,13 @@ body {
 
 .clients-form-heading h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 850;
   color: #0f172a;
 }
 
 .clients-form-heading p {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 14px;
   color: #64748b;
 }

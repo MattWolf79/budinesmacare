@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import { formatDisplayDateTime } from '../utils/dateFormat';
+import { WorkspaceHero } from './WorkspaceHero';
 
 const emptyClientForm = {
   firstName: '',
@@ -330,15 +331,19 @@ export default function ClientsPanel({ user, companySlug, adminProfileSummary = 
 
     return (
       <section className="clients-panel">
+      {adminProfileSummary && (
+          <WorkspaceHero
+            eyebrow="Clientes"
+            title="Gestión de Clientes"
+            description="Administra y organiza tu base de clientes"
+            identity={adminProfileSummary}
+          />
+        )}
+
         <header className="clients-form-header">
           <div className="clients-form-heading">
-            <span className="clients-form-avatar" aria-hidden="true">
-              {form.photoUrl ? <img src={form.photoUrl} alt="" /> : '🙋'}
-            </span>
-            <div>
-              <h1>{isNew ? 'Agregar Cliente' : 'Editar Cliente'}</h1>
-              <p>{isNew ? 'Registrá un nuevo cliente para tu negocio' : 'Modifica los datos y configuración de tu cliente existente'}</p>
-            </div>
+            <h1>{isNew ? 'Agregar Cliente' : 'Editar Cliente'}</h1>
+            <p>{isNew ? 'Registrá un nuevo cliente para tu negocio' : 'Modifica los datos y configuración de tu cliente existente'}</p>
           </div>
           {!isNew && (
             <button type="button" className="clients-delete-button" onClick={handleDelete} disabled={isDeleting}>
@@ -451,19 +456,20 @@ export default function ClientsPanel({ user, companySlug, adminProfileSummary = 
 
   return (
     <section className="clients-panel">
-      <header className="clients-list-header">
-        {!hideHeading && (
-          <div>
-            <h1>Gestión de Clientes</h1>
-            <p>Administra y organiza tu base de clientes</p>
-          </div>
-        )}
+      {!hideHeading && adminProfileSummary && (
+        <WorkspaceHero
+          eyebrow="Clientes"
+          title="Gestión de Clientes"
+          description="Administra y organiza tu base de clientes"
+          identity={adminProfileSummary}
+        />
+      )}
+
+      <div className="clients-add-row">
         <button type="button" className="clients-add-button" onClick={openNewClient}>
           Agregar Cliente
         </button>
-      </header>
-
-      {adminProfileSummary}
+      </div>
 
       <div className="clients-list-card">
         <div className="clients-search">

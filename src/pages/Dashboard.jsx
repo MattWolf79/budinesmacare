@@ -11,6 +11,7 @@ import BundlesPanel from "../components/BundlesPanel";
 import ClientsPanel from "../components/ClientsPanel";
 import NewBookingPanel from "../components/NewBookingPanel";
 import EmployeeAvailabilityPanel from "../components/EmployeeAvailabilityPanel";
+import { WorkspaceProfileIdentity } from "../components/WorkspaceHero";
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
@@ -25,19 +26,6 @@ const getAdminViewFromHash = () => {
 
   return 'agenda';
 };
-
-const getUserInitials = (user) => {
-  const label = user?.displayName || user?.email || user?.username || 'U';
-  const parts = String(label).trim().split(/\s+/).filter(Boolean);
-
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-
-  return String(parts[0]?.[0] || 'U').toUpperCase();
-};
-
-const getUserLabel = (user) => user?.displayName || user?.email || user?.username || 'Sin usuario';
 
 const adminBottomNavItems = [
   { id: 'agenda', label: 'Agenda', icon: '📅' },
@@ -186,15 +174,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   }, [sucursalesHabilitadas, bundlesHabilitados]);
 
   const adminProfileSummary = (
-    <div className="workspace-profile-panel admin-profile-panel">
-      <div className="workspace-profile-summary">
-        <span className="workspace-profile-name">{getUserLabel(user)}</span>
-        <span className="workspace-profile-role">Administrador</span>
-      </div>
-      <span className={`role-workspace-icon role-workspace-profile-photo ${user?.photoUrl ? 'has-photo' : ''}`} aria-hidden="true">
-        {user?.photoUrl ? <img src={user.photoUrl} alt="" /> : getUserInitials(user)}
-      </span>
-    </div>
+    <WorkspaceProfileIdentity user={user} roleLabel="Administrador" />
   );
 
   return (
