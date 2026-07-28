@@ -596,8 +596,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const weekDays = useMemo(() => {
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() + weekOffset * 7);
-    return Array.from({ length: 7 }, (_, index) => {
+    start.setDate(start.getDate() + weekOffset * 5);
+    return Array.from({ length: 5 }, (_, index) => {
       const date = new Date(start);
       date.setDate(start.getDate() + index);
       const key = getDateKey(date);
@@ -974,8 +974,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                       className="employee-date-nav"
                       onClick={() => setWeekOffset((offset) => Math.max(0, offset - 1))}
                       disabled={weekOffset === 0}
-                      aria-label="Semana anterior"
-                      title="Semana anterior"
+                      aria-label="Días anteriores"
+                      title="Días anteriores"
                     >
                       ‹
                     </button>
@@ -998,8 +998,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                       type="button"
                       className="employee-date-nav"
                       onClick={() => setWeekOffset((offset) => offset + 1)}
-                      aria-label="Semana siguiente"
-                      title="Semana siguiente"
+                      aria-label="Días siguientes"
+                      title="Días siguientes"
                     >
                       ›
                     </button>

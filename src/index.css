@@ -7178,7 +7178,7 @@ body .platform-admin-header .app-navbar-logout:hover {
   .role-action-grid,
   .employee-summary-grid,
   .employee-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .employee-profile-card {
