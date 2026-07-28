@@ -111,12 +111,33 @@ const getBookingTitle = (booking, service) => {
   return service?.name || 'Servicio';
 };
 
+const getBookingKind = (booking) => {
+  const bundleType = String(booking?.bundle_type || '').toLowerCase();
+  if (bundleType === 'pack') return 'Pack';
+  if (bundleType === 'promo') return 'Promo';
+  if (booking?.bundle_id) return 'Pack';
+  if (!booking?.service && booking?.booking_description) return 'Promo';
+  return 'Servicio';
+};
+
+const getDateKey = (value) => {
+  const date = parseDate(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const formatAvailabilityTime = (value) => String(value || '').slice(0, 5);
 
 const getTodayWeekday = () => new Date().getDay();
 
 const isClosedBooking = (booking) =>
   ['completed', 'closed'].includes(String(booking?.status || '').trim().toLowerCase());
+
+const isCancelledBooking = (booking) =>
+  ['cancelled', 'canceled', 'cancelado', 'cancelada'].includes(String(booking?.status || '').trim().toLowerCase());
 
 const startOfWeek = (date) => {
   const weekStart = new Date(date);
@@ -190,6 +211,9 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const [activityHistoryMode, setActivityHistoryMode] = useState('week');
   const [selectedActivityWeekKey, setSelectedActivityWeekKey] = useState(() => getWeekKey(startOfWeek(new Date())));
   const [selectedPaymentWeekKey, setSelectedPaymentWeekKey] = useState(() => getWeekKey(startOfWeek(new Date())));
+  const [detailBookingId, setDetailBookingId] = useState(null);
+  const [selectedUpcomingDate, setSelectedUpcomingDate] = useState(null);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const employeeId = user?.employeeId;
   const effectiveCompanyContext = useMemo(() => {
@@ -546,7 +570,10 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const now = useMemo(() => new Date(), []);
 
   const visibleUpcomingBookings = useMemo(
-    () => bookings.filter((booking) => parseDate(booking.end_at) >= now && !isClosedBooking(booking)),
+    () => bookings.filter((booking) =>
+      parseDate(booking.end_at) >= now
+      && !isClosedBooking(booking)
+      && !isCancelledBooking(booking)),
     [bookings, now]
   );
 
@@ -555,9 +582,51 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     [visibleUpcomingBookings]
   );
 
+  const upcomingDateKeys = useMemo(() => {
+    const set = new Set();
+    visibleUpcomingBookings.forEach((booking) => {
+      const key = getDateKey(booking.start_at);
+      if (key) set.add(key);
+    });
+    return set;
+  }, [visibleUpcomingBookings]);
+
+  const upcomingDates = useMemo(() => Array.from(upcomingDateKeys), [upcomingDateKeys]);
+
+  const weekDays = useMemo(() => {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() + weekOffset * 7);
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      const key = getDateKey(date);
+      return {
+        key,
+        day: String(date.getDate()).padStart(2, '0'),
+        month: String(date.getMonth() + 1).padStart(2, '0'),
+        hasBookings: upcomingDateKeys.has(key)
+      };
+    });
+  }, [now, weekOffset, upcomingDateKeys]);
+
+  const filteredUpcomingBookings = useMemo(
+    () => (selectedUpcomingDate == null
+      ? visibleUpcomingBookings
+      : visibleUpcomingBookings.filter((booking) => getDateKey(booking.start_at) === selectedUpcomingDate)),
+    [visibleUpcomingBookings, selectedUpcomingDate]
+  );
+
   const todayBookings = useMemo(
     () => activeUpcomingBookings.filter((booking) => isToday(booking.start_at)),
     [activeUpcomingBookings]
+  );
+
+  const detailBooking = useMemo(
+    () => (detailBookingId == null
+      ? null
+      : visibleUpcomingBookings.find((booking) => String(booking.id) === String(detailBookingId)) || null),
+    [detailBookingId, visibleUpcomingBookings]
   );
 
   const activeAvailability = useMemo(
@@ -874,78 +943,112 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
 
           <div className="employee-layout employee-layout-summary">
             <article className="employee-card">
-              <div className="employee-card-header">
-                <div>
-                  <p className="admin-kicker">Agenda</p>
-                  <h2>Próximos turnos</h2>
-                </div>
-                <div className="employee-card-header-actions">
+              <div className="employee-card-header employee-upcoming-header">
+                <div className="employee-upcoming-header-top">
+                  <div>
+                    <p className="admin-kicker">Agenda</p>
+                    <h2>Próximos turnos</h2>
+                  </div>
                   <button
-                    className="admin-link-button"
+                    className="admin-link-button employee-upcoming-refresh"
                     type="button"
                     onClick={refreshEmployeeWorkspace}
                     title="Actualizar turnos"
                   >
                     Actualizar
                   </button>
-                  <span>{activeUpcomingBookings.length}</span>
                 </div>
+                {upcomingDates.length > 0 && (
+                  <div className="employee-upcoming-date-filter" role="tablist" aria-label="Filtrar por fecha">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={selectedUpcomingDate == null}
+                      className={`employee-date-chip employee-date-chip-all${selectedUpcomingDate == null ? ' is-selected' : ''}`}
+                      onClick={() => setSelectedUpcomingDate(null)}
+                    >
+                      <span className="employee-date-chip-day">Todos</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="employee-date-nav"
+                      onClick={() => setWeekOffset((offset) => Math.max(0, offset - 1))}
+                      disabled={weekOffset === 0}
+                      aria-label="Semana anterior"
+                      title="Semana anterior"
+                    >
+                      ‹
+                    </button>
+                    <div className="employee-date-week">
+                      {weekDays.map((item) => (
+                        <button
+                          type="button"
+                          role="tab"
+                          key={item.key}
+                          aria-selected={selectedUpcomingDate === item.key}
+                          className={`employee-date-chip${selectedUpcomingDate === item.key ? ' is-selected' : ''}${item.hasBookings ? ' has-bookings' : ''}`}
+                          onClick={() => setSelectedUpcomingDate((current) => (current === item.key ? null : item.key))}
+                        >
+                          <span className="employee-date-chip-day">{item.day}</span>
+                          <span className="employee-date-chip-month">{item.month}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="employee-date-nav"
+                      onClick={() => setWeekOffset((offset) => offset + 1)}
+                      aria-label="Semana siguiente"
+                      title="Semana siguiente"
+                    >
+                      ›
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="employee-list">
-                {visibleUpcomingBookings.length === 0 ? (
+              <div className="employee-upcoming-list">
+                {filteredUpcomingBookings.length === 0 ? (
                   <div className="employee-empty-line">No tenés turnos próximos asignados.</div>
-                ) : visibleUpcomingBookings.map((booking) => {
+                ) : filteredUpcomingBookings.map((booking) => {
                   const service = getServiceForBooking(booking, services);
                   const bookingTitle = getBookingTitle(booking, service);
                   const isClosed = isClosedBooking(booking);
-                  const closedAmount = closedBookingAmounts[booking.id];
                   const customerFields = getCustomerFields(booking);
-                  const statusLabel = isClosed ? 'Cerrado' : 'Asignado';
+                  const kindLabel = getBookingKind(booking);
 
                   return (
                     <div
-                      className={`employee-booking-row${isClosed ? ' is-closed' : ''}`}
+                      className={`employee-upcoming-row${isClosed ? ' is-closed' : ''}`}
                       key={booking.id}
                     >
-                      <div className="employee-booking-form-header">
-                        <strong>{bookingTitle}</strong>
-                      </div>
-
-                      <div className="employee-booking-form-grid">
-                        <div className="employee-booking-field employee-booking-field-wide">
-                          <span>Cliente</span>
-                          <strong>{customerFields.name}</strong>
-                        </div>
-                        <div className="employee-booking-field employee-booking-field-wide">
-                          <span>Correo</span>
-                          <strong>{customerFields.email}</strong>
-                        </div>
-                        <div className="employee-booking-field">
-                          <span>Fecha</span>
-                          <strong>{formatDate(booking.start_at)}</strong>
-                        </div>
-                        <div className="employee-booking-field">
-                          <span>Horario</span>
-                          <strong>{formatTime(booking.start_at)}-{formatTime(booking.end_at)}</strong>
-                        </div>
-                        <div className="employee-booking-field">
-                          <span>Estado</span>
-                          <strong className={isClosed ? 'is-muted' : 'is-active'}>{statusLabel}</strong>
-                        </div>
-                        {preciosHabilitados && isClosed && closedAmount !== undefined && (
-                          <div className="employee-booking-field">
-                            <span>Cobrado</span>
-                            <strong>{formatMoney(closedAmount)}</strong>
-                          </div>
-                        )}
-                        {preciosHabilitados && isClosed && (
-                          <div className="employee-booking-field">
-                            <span>Rendición</span>
-                            <strong className={booking.is_settled === true ? 'is-active' : 'is-muted'}>{booking.is_settled === true ? 'Rendido' : 'Pendiente'}</strong>
-                          </div>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        className="employee-upcoming-row-main"
+                        onClick={() => setDetailBookingId(booking.id)}
+                      >
+                        <span className="employee-upcoming-row-info">
+                          <span className="employee-upcoming-row-title">{bookingTitle}</span>
+                          <span className="employee-upcoming-row-client">{customerFields.name}</span>
+                          <span className="employee-upcoming-row-date">
+                            {formatDate(booking.start_at)} · {formatTime(booking.start_at)}-{formatTime(booking.end_at)}
+                          </span>
+                        </span>
+                        <span className="employee-upcoming-row-badges">
+                          <span className={`employee-upcoming-row-kind employee-upcoming-row-kind-${kindLabel.toLowerCase()}`}>
+                            {kindLabel}
+                          </span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="employee-upcoming-row-arrow"
+                        onClick={() => setDetailBookingId(booking.id)}
+                        aria-label={`Ver detalle del turno de ${customerFields.name}`}
+                        title="Ver detalle"
+                      >
+                        ›
+                      </button>
                     </div>
                   );
                 })}
@@ -1145,10 +1248,75 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
           employeeId={employeeId}
           employeeName={employee?.name || user?.email || 'Empleado'}
           onAvailabilityChanged={refreshEmployeeWorkspace}
+          hideHeading
           companySlug={companySlug}
           companyContext={effectiveCompanyContext}
         />
       )}
+
+      {detailBooking && (() => {
+        const service = getServiceForBooking(detailBooking, services);
+        const bookingTitle = getBookingTitle(detailBooking, service);
+        const isClosed = isClosedBooking(detailBooking);
+        const closedAmount = closedBookingAmounts[detailBooking.id];
+        const customerFields = getCustomerFields(detailBooking);
+        const statusLabel = isClosed ? 'Cerrado' : 'Asignado';
+
+        return (
+          <div className="employee-booking-detail-overlay" role="dialog" aria-modal="true" onClick={() => setDetailBookingId(null)}>
+            <div className="employee-booking-detail-modal" onClick={(event) => event.stopPropagation()}>
+              <header className="employee-booking-detail-header">
+                <div>
+                  <p className="admin-kicker">Detalle del turno</p>
+                  <h2>{bookingTitle}</h2>
+                </div>
+                <button
+                  type="button"
+                  className="employee-booking-detail-close"
+                  onClick={() => setDetailBookingId(null)}
+                  aria-label="Cerrar detalle"
+                >
+                  ✕
+                </button>
+              </header>
+              <div className="employee-booking-detail-body">
+                <div className="employee-booking-detail-field">
+                  <span>Cliente</span>
+                  <strong>{customerFields.name}</strong>
+                </div>
+                <div className="employee-booking-detail-field">
+                  <span>Correo</span>
+                  <strong>{customerFields.email}</strong>
+                </div>
+                <div className="employee-booking-detail-field">
+                  <span>Fecha</span>
+                  <strong>{formatDate(detailBooking.start_at)}</strong>
+                </div>
+                <div className="employee-booking-detail-field">
+                  <span>Horario</span>
+                  <strong>{formatTime(detailBooking.start_at)}-{formatTime(detailBooking.end_at)}</strong>
+                </div>
+                <div className="employee-booking-detail-field">
+                  <span>Estado</span>
+                  <strong className={isClosed ? 'is-muted' : 'is-active'}>{statusLabel}</strong>
+                </div>
+                {preciosHabilitados && isClosed && closedAmount !== undefined && (
+                  <div className="employee-booking-detail-field">
+                    <span>Cobrado</span>
+                    <strong>{formatMoney(closedAmount)}</strong>
+                  </div>
+                )}
+                {preciosHabilitados && isClosed && (
+                  <div className="employee-booking-detail-field">
+                    <span>Rendición</span>
+                    <strong className={detailBooking.is_settled === true ? 'is-active' : 'is-muted'}>{detailBooking.is_settled === true ? 'Rendido' : 'Pendiente'}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </section>
   );
 }

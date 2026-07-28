@@ -121,6 +121,7 @@ export default function EmployeeAvailabilityPanel({
   employees: adminEmployees = [],
   onAvailabilityChanged,
   adminProfileSummary = null,
+  hideHeading = false,
   companySlug,
   companyContext = null
 }) {
@@ -663,13 +664,15 @@ export default function EmployeeAvailabilityPanel({
 
   return (
     <section className="admin-shell employee-availability-manager">
-      <div className="admin-page-heading availability-page-heading">
-        <div>
-          <p>Agenda disponible</p>
-          <h1>Disponibilidad</h1>
+      {!hideHeading && (
+        <div className="admin-page-heading availability-page-heading">
+          <div>
+            <p>Agenda disponible</p>
+            <h1>Disponibilidad</h1>
+          </div>
+          {adminProfileSummary}
         </div>
-        {adminProfileSummary}
-      </div>
+      )}
 
       <div className="admin-external-actions">
         <button className="agenda-refresh-button" type="button" onClick={loadAvailability} disabled={isLoading}>
@@ -904,6 +907,16 @@ export default function EmployeeAvailabilityPanel({
                       <span className="admin-action-label-compact" aria-hidden="true">🗑️</span>
                     </button>
                   </div>
+                  <button
+                    className="availability-card-edit-arrow"
+                    type="button"
+                    onClick={() => editAvailability(item)}
+                    disabled={isSaving}
+                    aria-label="Editar esta disponibilidad"
+                    title="Editar"
+                  >
+                    ›
+                  </button>
                 </article>
               ))}
             </div>
