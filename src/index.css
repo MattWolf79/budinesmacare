@@ -1568,12 +1568,12 @@ code {
   height: 28px;
   min-width: 28px;
   min-height: 28px;
-  border: 1px solid #24aebb;
+  border: 1px solid #c98a12;
   border-radius: 50%;
   padding: 0;
   color: #fff;
-  background: #174c55;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  background: #e0a020;
+  box-shadow: 0 2px 8px rgba(224, 160, 32, 0.28);
   font-size: 16px;
   font-weight: 900;
   line-height: 1;
@@ -1581,8 +1581,8 @@ code {
 }
 
 .agenda-slot-add-overlap:hover {
-  background: #3fc9d5;
-  border-color: #24aebb;
+  background: #c98a12;
+  border-color: #c98a12;
 }
 
 .agenda-slot-add-overlap:active {

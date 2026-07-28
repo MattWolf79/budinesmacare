@@ -2553,9 +2553,21 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                     })}
                   </div>
 
-                  {isCompactAgenda && slotBookings.length > 0 && !isDisabled && turnosSuperpuestosHabilitados && (
+                  {isCompactAgenda && slotBookings.length > 0 && !isDisabled && turnosSuperpuestosHabilitados && canEmployeeInteractWithEmptySlots && (
                     <div className="agenda-slot-add-actions">
-                      {/* Espacio vacío - botón removido */}
+                      <button
+                        type="button"
+                        className="agenda-slot-add-overlap"
+                        aria-label="Agregar turno en este horario"
+                        title="Agregar turno"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          selectMobileRangePoint(dayIndex, slotIndex);
+                        }}
+                      >
+                        +
+                      </button>
                     </div>
                   )}
 
