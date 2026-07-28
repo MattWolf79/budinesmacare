@@ -150,13 +150,13 @@ export default function Navbar({
       )}
 
       <div className="app-navbar-session">
-        {user?.email && canChangeProfile && (
+        {user?.id && canChangeProfile && (
           <button className="app-navbar-switch" type="button" onClick={onChangeProfile} title="Cambiar perfil">
             Perfil
           </button>
         )}
 
-        {user?.email && (
+        {user?.id && (
           <button className="app-navbar-logout" type="button" onClick={onLogout}>
             Salir
           </button>
