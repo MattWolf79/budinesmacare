@@ -694,7 +694,11 @@ export default function NewBookingPanel({
     setIsSaving(true);
 
     if (isClient) {
-      // Cada servicio del carrito genera una solicitud de turno del cliente.
+      // Todos los servicios de esta reserva comparten un booking_group_id para
+      // que salga un solo mail (con todos los servicios) y un unico REF.
+      const clientGroupId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : null;
       const stampBranchId = activeBranchId || branchId || null;
       let clientHasWaitlist = false;
       const createdClientBookingIds = [];
@@ -715,7 +719,8 @@ export default function NewBookingPanel({
           customer_email_value: customerEmail || null,
           company_slug_value: companySlug,
           account_id_value: clientAccountId,
-          session_token_value: internalSessionToken
+          session_token_value: internalSessionToken,
+          booking_group_id_value: clientGroupId
         });
 
         if (error) {
@@ -738,6 +743,21 @@ export default function NewBookingPanel({
             branch_id_value: stampBranchId,
             company_slug_value: companySlug
           });
+        }
+      }
+
+      // Un solo mail consolidado por reserva (best-effort: no bloquea al cliente).
+      if (clientGroupId && createdClientBookingIds.length > 0) {
+        try {
+          await supabase.rpc('notify_booking_group', {
+            group_id_value: clientGroupId,
+            company_slug_value: companySlug,
+            account_id_value: clientAccountId,
+            session_token_value: internalSessionToken,
+            event_kind: rescheduleMode ? 'reschedule' : 'new'
+          });
+        } catch (notifyError) {
+          console.warn('No se pudo enviar el mail de la reserva.', notifyError);
         }
       }
 
