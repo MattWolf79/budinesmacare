@@ -12,8 +12,11 @@ import { generateDetalleFacturaPdf } from './DetalleFactura';
 import { formatDisplayDate } from '../utils/dateFormat';
 
 const SLOT_MINUTES = 30;
+// Rango visible de la grilla: 1 hora antes de la apertura y 1 hora después
+// del cierre del negocio (apertura 09:00 / cierre 18:00) => de 08:00 a 19:00.
 const START_HOUR = 8;
-const SLOTS = 30;
+const END_HOUR = 19;
+const SLOTS = ((END_HOUR - START_HOUR) * 60) / SLOT_MINUTES;
 const AGENDA_TOTAL_MINUTES = SLOT_MINUTES * SLOTS;
 const ALLOWED_SLOT_MINUTES = new Set([15, 30, 45, 60]);
 const EMPTY_SLOT_HEIGHT = 60;
