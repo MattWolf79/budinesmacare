@@ -53,6 +53,7 @@ export default function Navbar({
   navItems = defaultNavItems,
   logoSrc = turnosAppLogo,
   logoAlt,
+  companyName = '',
   showMenuToggle = false,
   onMenuToggle
 }) {
@@ -77,6 +78,10 @@ export default function Navbar({
           <img className="app-navbar-logo-image" style={navbarLogoImageStyle} src={logoSrc || turnosAppLogo} alt={logoAlt || `QuieroTurnoApp - ${getNavbarSubtitle(accessProfile)}`} />
         </span>
       </div>
+
+      {companyName && (
+        <span className="app-navbar-company" title={companyName}>{companyName}</span>
+      )}
 
       {showNavigation && (
         <div className="app-navbar-menu" aria-label="Secciones">

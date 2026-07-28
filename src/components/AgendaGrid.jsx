@@ -863,7 +863,7 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
   const employeeLabel = formatPersonShortName(employee);
   const statusLabel = getBookingStatusLabel(booking);
   const customerName = booking.customer_name || 'Cliente sin datos';
-  const customerEmail = booking.user_email || 'Sin mail cargado';
+  const customerEmail = String(booking.user_email || '').includes('@') ? booking.user_email : 'Sin mail cargado';
   const sucursalesHabilitadas = companyContext?.configuracion_operativa?.sucursales_habilitadas === true;
   const branchLabel = sucursalesHabilitadas && booking.branch_id
     ? (Array.isArray(companyContext?.branches) ? companyContext.branches : []).find((branch) => String(branch.id) === String(booking.branch_id))?.name || null
