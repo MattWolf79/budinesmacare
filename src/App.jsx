@@ -3,6 +3,7 @@ import { supabase } from './api/supabaseClient';
 // Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
 import { showAppAlert as alert } from './utils/appAlert';
 import Dashboard from './pages/Dashboard';
+import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import PlatformAdmin from './components/PlatformAdmin';
 import RoleAccess from './components/RoleAccess';
@@ -148,11 +149,19 @@ export default function App() {
   const canChangeProfile = availableProfiles.length > 1;
   const companyContextId = companyContext?.id;
 
+  const landingEnabled = companyContext?.landing?.habilitada === true;
+
   useEffect(() => {
-    if (companyPortal === 'root' && companySlug) {
+    if (
+      companyPortal === 'root'
+      && companySlug
+      && !companyContextLoading
+      && companyContext?.active
+      && !landingEnabled
+    ) {
       window.location.replace(getClientPortalPath(companySlug));
     }
-  }, [companyPortal, companySlug]);
+  }, [companyPortal, companySlug, companyContextLoading, companyContext, landingEnabled]);
 
   useEffect(() => {
     let active = true;
@@ -507,7 +516,27 @@ export default function App() {
   }
 
   if (companyPortal === 'root' && companySlug) {
-    return <main className="login-page"><section className="login-card"><p className="login-copy">Redirigiendo...</p></section></main>;
+    if (companyContextLoading) {
+      return <main className="login-page"><section className="login-card"><p className="login-copy">Cargando empresa...</p></section></main>;
+    }
+
+    if (!companyContext?.active) {
+      return (
+        <main className="login-page">
+          <section className="login-card">
+            <p className="login-kicker">Empresa no disponible</p>
+            <h1 className="login-brand-heading">QuieroTurnoApp</h1>
+            <p className="login-copy">Ingresá con la URL de tu empresa para acceder a clientes, empleados o administración.</p>
+          </section>
+        </main>
+      );
+    }
+
+    if (!landingEnabled) {
+      return <main className="login-page"><section className="login-card"><p className="login-copy">Redirigiendo...</p></section></main>;
+    }
+
+    return <LandingPage companySlug={companySlug} companyContext={companyContext} />;
   }
 
   if (companyContextLoading || authLoading) {

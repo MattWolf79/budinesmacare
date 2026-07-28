@@ -52,7 +52,22 @@ const initialEditForm = {
   visibilidadTurnosEmpleado: 'completa',
   empleadosCancelanTurnos: 'propios',
   empleadosVenDetalleTurnos: 'propios',
-  pdfDetalleTurnoHabilitado: false
+  pdfDetalleTurnoHabilitado: false,
+  landingHabilitada: false,
+  landingEtiqueta: '',
+  landingTitulo: '',
+  landingSubtitulo: '',
+  landingDescripcion: '',
+  landingCtaTexto: '',
+  landingBeneficios: '',
+  landingDireccion: '',
+  landingTelefono: '',
+  landingWhatsapp: '',
+  landingInstagram: '',
+  landingMostrarAccesoInterno: true,
+  landingHeroImageDataUrl: '',
+  landingHeroImageFileName: '',
+  landingHeroImageMimeType: ''
 };
 
 const initialResetForm = {
@@ -104,6 +119,55 @@ const getConfigPayload = (form) => ({
   pdf_detalle_turno_habilitado_valor: Boolean(form.pdfDetalleTurnoHabilitado)
 });
 
+const buildLandingConfig = (form) => {
+  const beneficios = String(form.landingBeneficios || '')
+    .split('\n')
+    .map((item) => item.trim())
+    .filter((item) => item !== '')
+    .slice(0, 4);
+
+  return {
+    habilitada: Boolean(form.landingHabilitada),
+    etiqueta: String(form.landingEtiqueta || '').trim(),
+    titulo: String(form.landingTitulo || '').trim(),
+    subtitulo: String(form.landingSubtitulo || '').trim(),
+    descripcion: String(form.landingDescripcion || '').trim(),
+    cta_texto: String(form.landingCtaTexto || '').trim(),
+    beneficios,
+    direccion: String(form.landingDireccion || '').trim(),
+    telefono: String(form.landingTelefono || '').trim(),
+    whatsapp: String(form.landingWhatsapp || '').trim(),
+    instagram: String(form.landingInstagram || '').trim().replace(/^@+/, ''),
+    mostrar_acceso_interno: form.landingMostrarAccesoInterno !== false,
+    hero_image_data_url: form.landingHeroImageDataUrl || '',
+    hero_image_file_name: form.landingHeroImageFileName || '',
+    hero_image_mime_type: form.landingHeroImageMimeType || ''
+  };
+};
+
+const applyLandingConfig = (landing) => {
+  const config = landing || {};
+  const beneficios = Array.isArray(config.beneficios) ? config.beneficios.join('\n') : '';
+
+  return {
+    landingHabilitada: config.habilitada === true,
+    landingEtiqueta: config.etiqueta || '',
+    landingTitulo: config.titulo || '',
+    landingSubtitulo: config.subtitulo || '',
+    landingDescripcion: config.descripcion || '',
+    landingCtaTexto: config.cta_texto || '',
+    landingBeneficios: beneficios,
+    landingDireccion: config.direccion || '',
+    landingTelefono: config.telefono || '',
+    landingWhatsapp: config.whatsapp || '',
+    landingInstagram: config.instagram || '',
+    landingMostrarAccesoInterno: config.mostrar_acceso_interno !== false,
+    landingHeroImageDataUrl: config.hero_image_data_url || '',
+    landingHeroImageFileName: config.hero_image_file_name || '',
+    landingHeroImageMimeType: config.hero_image_mime_type || ''
+  };
+};
+
 const applyConfigData = (data) => {
   const config = data?.configuracion_operativa || {};
 
@@ -127,7 +191,8 @@ const applyConfigData = (data) => {
     visibilidadTurnosEmpleado: config.visibilidad_turnos_empleado || 'completa',
     empleadosCancelanTurnos: config.empleados_cancelan_turnos || 'propios',
     empleadosVenDetalleTurnos: config.empleados_ven_detalle_turnos || 'propios',
-    pdfDetalleTurnoHabilitado: config.pdf_detalle_turno_habilitado === true
+    pdfDetalleTurnoHabilitado: config.pdf_detalle_turno_habilitado === true,
+    ...applyLandingConfig(data?.landing_config)
   };
 };
 
@@ -214,6 +279,39 @@ export default function PlatformAdmin() {
   const removeCompanyLogo = () => removeLogo(setCompanyForm);
 
   const removeClientLogo = () => removeLogo(setEditForm);
+
+  const changeLandingHero = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setErrorMessage('La imagen de la landing debe ser JPG, PNG o WEBP.');
+      return;
+    }
+
+    if (file.size > 1100 * 1024) {
+      setErrorMessage('La imagen de la landing no puede superar los 1,1 MB.');
+      return;
+    }
+
+    const dataUrl = await fileToDataUrl(file);
+    setEditForm((current) => ({
+      ...current,
+      landingHeroImageDataUrl: String(dataUrl || ''),
+      landingHeroImageFileName: file.name,
+      landingHeroImageMimeType: file.type
+    }));
+  };
+
+  const removeLandingHero = () => {
+    setEditForm((current) => ({
+      ...current,
+      landingHeroImageDataUrl: '',
+      landingHeroImageFileName: '',
+      landingHeroImageMimeType: ''
+    }));
+  };
 
   const updateResetField = (field, value) => {
     setResetForm((current) => ({
@@ -352,6 +450,7 @@ export default function PlatformAdmin() {
       client_logo_data_url_valor: editForm.clientLogoDataUrl || null,
       client_logo_file_name_valor: editForm.clientLogoFileName || null,
       client_logo_mime_type_valor: editForm.clientLogoMimeType || null,
+      landing_config_valor: buildLandingConfig(editForm),
       ...getConfigPayload(editForm)
     });
 
@@ -601,6 +700,57 @@ export default function PlatformAdmin() {
                         </div>
                       </div>
                     ) : <p className="platform-company-loaded">Si no se carga un logo, se usa QuieroTurnoApp.</p>}
+                  </div>
+                </ConfigSection>
+              </div>
+              <div className="platform-config-block platform-config-block-compact">
+                <ConfigSection title="Landing pública (/{slug})">
+                  <CheckField label="Mostrar landing en la URL de la empresa" checked={editForm.landingHabilitada} onChange={(value) => updateEditField('landingHabilitada', value)} />
+                  <CheckField label="Mostrar accesos Empleado y Admin en la landing" checked={editForm.landingMostrarAccesoInterno} onChange={(value) => updateEditField('landingMostrarAccesoInterno', value)} />
+                  <Field label="Etiqueta superior (opcional)">
+                    <input value={editForm.landingEtiqueta} onChange={(event) => updateEditField('landingEtiqueta', event.target.value)} placeholder="Ej: Reservá online · Vacío = oculta" />
+                  </Field>
+                  <Field label="Título del hero">
+                    <input value={editForm.landingTitulo} onChange={(event) => updateEditField('landingTitulo', event.target.value)} placeholder="Reservá tu turno en..." />
+                  </Field>
+                  <Field label="Subtítulo destacado">
+                    <input value={editForm.landingSubtitulo} onChange={(event) => updateEditField('landingSubtitulo', event.target.value)} placeholder="Tu agenda, siempre a un clic" />
+                  </Field>
+                  <Field label="Descripción">
+                    <textarea rows={2} value={editForm.landingDescripcion} onChange={(event) => updateEditField('landingDescripcion', event.target.value)} placeholder="Elegí el servicio, el día y el horario..." />
+                  </Field>
+                  <Field label="Texto del botón principal">
+                    <input value={editForm.landingCtaTexto} onChange={(event) => updateEditField('landingCtaTexto', event.target.value)} placeholder="Reservá tu turno" />
+                  </Field>
+                  <Field label="Beneficios (uno por línea, máx 4)">
+                    <textarea rows={4} value={editForm.landingBeneficios} onChange={(event) => updateEditField('landingBeneficios', event.target.value)} placeholder={'Reservá online 24/7\nRecordatorios automáticos\nSin llamados ni esperas'} />
+                  </Field>
+                  <Field label="Dirección">
+                    <input value={editForm.landingDireccion} onChange={(event) => updateEditField('landingDireccion', event.target.value)} placeholder="Av. Siempre Viva 123" />
+                  </Field>
+                  <Field label="Teléfono">
+                    <input value={editForm.landingTelefono} onChange={(event) => updateEditField('landingTelefono', event.target.value)} placeholder="+54 11 5555-5555" />
+                  </Field>
+                  <Field label="WhatsApp (número)">
+                    <input value={editForm.landingWhatsapp} onChange={(event) => updateEditField('landingWhatsapp', event.target.value)} placeholder="5491155555555" />
+                  </Field>
+                  <Field label="Instagram (usuario)">
+                    <input value={editForm.landingInstagram} onChange={(event) => updateEditField('landingInstagram', event.target.value)} placeholder="miempresa" />
+                  </Field>
+                  <div className="platform-logo-upload">
+                    <label className="platform-field">
+                      <span>Imagen de fondo del hero</span>
+                      <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={changeLandingHero} />
+                    </label>
+                    {editForm.landingHeroImageDataUrl ? (
+                      <div className="platform-logo-preview">
+                        <img src={editForm.landingHeroImageDataUrl} alt="Imagen de fondo de la landing" />
+                        <div>
+                          <strong>{editForm.landingHeroImageFileName || 'Imagen cargada'}</strong>
+                          <button className="platform-button-secondary" type="button" onClick={removeLandingHero}>Quitar imagen</button>
+                        </div>
+                      </div>
+                    ) : <p className="platform-company-loaded">Sin imagen se usa un fondo oscuro con dorado.</p>}
                   </div>
                 </ConfigSection>
               </div>
