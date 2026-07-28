@@ -2000,7 +2000,7 @@ code {
 .login-card .login-form-title {
   margin: 16px 0 6px;
   color: #1f2937;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 900;
   line-height: 1.15;
   letter-spacing: -0.01em;
@@ -2009,7 +2009,7 @@ code {
 .login-form-subtitle {
   margin: 0 0 18px;
   color: #6b7280;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 650;
   line-height: 1.4;
 }
@@ -2245,13 +2245,18 @@ code {
 
 .login-inline-form {
   text-align: left;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
 }
 
 .login-profile-tabs {
   display: grid;
   grid-auto-flow: column;
   gap: 8px;
-  margin: 4px 0 18px;
+  margin: 4px auto 18px;
+  width: 100%;
+  max-width: 360px;
 }
 
 .login-profile-tabs button {
