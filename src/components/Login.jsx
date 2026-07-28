@@ -3,6 +3,10 @@ import { supabase } from '../api/supabaseClient';
 import { getClientPortalPath } from '../utils/tenant';
 
 const requestedProfileStorageKey = 'turnos_requested_profile';
+// Se usa localStorage (no sessionStorage) para que el perfil solicitado y la
+// marca de actividad se compartan entre pestañas, en línea con la sesión interna.
+// eslint-disable-next-line no-redeclare
+const sessionStorage = window.localStorage;
 const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 const inAppBrowserPattern = /Instagram|FBAN|FBAV|FB_IAB|FB4A|FBIOS/i;
 
