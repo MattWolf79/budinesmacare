@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import { getClientPortalPath } from '../utils/tenant';
 
 const requestedProfileStorageKey = 'turnos_requested_profile';
 const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
-const turnosAppLogo = '/logo-quieroturnoapp.png';
 const inAppBrowserPattern = /Instagram|FBAN|FBAV|FB_IAB|FB4A|FBIOS/i;
 
 const getAppLink = (companySlug) => `${appUrl.replace(/\/$/, '')}${getClientPortalPath(companySlug)}`;
@@ -126,6 +125,14 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
   const [passwordChangeAccount, setPasswordChangeAccount] = useState(null);
   const [passwordChangeForm, setPasswordChangeForm] = useState(emptyPasswordChangeForm);
   const [isSubmittingInternalAccess, setIsSubmittingInternalAccess] = useState(false);
+
+  useEffect(() => {
+    if (registrationProfile) return;
+    const options = accessOptions.filter((option) => allowedProfiles.includes(option.id));
+    if (options[0]?.id) {
+      setRegistrationProfile(options[0].id);
+    }
+  }, [registrationProfile, allowedProfiles]);
 
   const handleLogin = async (profileId) => {
     onDismissSessionNotice?.();
@@ -496,15 +503,6 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
     closeRegistration();
   };
 
-  const handleAccessOption = (profileId) => {
-    if (profileId === 'client') {
-      openRegistration(profileId);
-      return;
-    }
-
-    openRegistration(profileId);
-  };
-
   const handleLocalClientAccess = () => {
     onDismissSessionNotice?.();
     onLocalClientAccess?.();
@@ -515,33 +513,84 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
     onLocalInternalAccess?.(role);
   };
 
+  const handleGoBack = () => {
+    onDismissSessionNotice?.();
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    window.location.assign(companySlug ? `/${companySlug}` : '/');
+  };
+
   const companyDisplayName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
   const visibleAccessOptions = accessOptions.filter((option) => allowedProfiles.includes(option.id));
-  const isClientOnlyAccess = visibleAccessOptions.length === 1 && visibleAccessOptions[0]?.id === 'client';
   const isSingleCompanyAccess = visibleAccessOptions.length === 1 && ['client', 'employee', 'admin'].includes(visibleAccessOptions[0]?.id);
   const showPoweredBy = isSingleCompanyAccess && Boolean(companyContext?.client_logo_data_url);
-  const companyLogoSrc = showPoweredBy ? companyContext.client_logo_data_url : turnosAppLogo;
-  const isClientRegistration = registrationProfile === 'client';
+  const hasMultipleProfiles = visibleAccessOptions.length > 1;
+  const defaultProfileId = visibleAccessOptions[0]?.id ?? null;
+  const activeProfile = registrationProfile || defaultProfileId;
+  const isClientRegistration = activeProfile === 'client';
   const generatedRegistrationUsername = generateInternalUsername(registrationForm.firstName, registrationForm.lastName);
-  const loginCopy = isClientOnlyAccess
-    ? `Acceso exclusivo para ${companyDisplayName}. Ingresá con Google o creá un usuario para reservar y consultar tus turnos.`
-    : `Acceso interno para ${companyDisplayName}. Empleados y administrador usan nombre y contraseña internos.`;
+
+  const localAccessSlot = (
+    <>
+      {activeProfile === 'client' && localClientAccessEnabled && (
+        <button className="login-local-client-button" type="button" onClick={handleLocalClientAccess}>
+          Probar cliente local
+        </button>
+      )}
+      {activeProfile === 'employee' && localInternalAccessEnabled && (
+        <button className="login-local-client-button" type="button" onClick={() => handleLocalInternalAccess('employee')}>
+          Probar empleado local
+        </button>
+      )}
+      {activeProfile === 'admin' && localInternalAccessEnabled && (
+        <button className="login-local-client-button" type="button" onClick={() => handleLocalInternalAccess('admin')}>
+          Probar admin local
+        </button>
+      )}
+    </>
+  );
+
+  const heroBenefits = [
+    'Seguimiento de tus turnos.',
+    'Recordatorios',
+    'Seriedad',
+    'Excelente atención'
+  ];
 
   return (
     <main className="login-page">
+      <aside className="login-hero-panel" aria-hidden="true">
+        <div className="login-hero-panel-inner">
+          <span className="login-hero-brand">{companyDisplayName}</span>
+          <h2 className="login-hero-title">
+            Todo listo para gestionar tus turnos,
+            <span className="login-hero-title-accent">Entrá y continuá donde lo dejaste.</span>
+          </h2>
+          <ul className="login-hero-benefits">
+            {heroBenefits.map((benefit) => (
+              <li key={benefit} className="login-hero-benefit">
+                <span className="login-hero-check" aria-hidden="true">✓</span>
+                {benefit}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+
       <section className="login-card">
-        <img className="login-brand-mark" src={companyLogoSrc} alt={showPoweredBy ? `${companyDisplayName} - Sacar turno` : 'QuieroTurnoApp'} />
+        <button type="button" className="login-back" onClick={handleGoBack}>
+          <span aria-hidden="true">←</span> Volver
+        </button>
+        <h1 className="login-form-title">Acceso a {companyDisplayName}</h1>
+        <p className="login-form-subtitle">Gestioná tus turnos con un solo click.</p>
         {showPoweredBy && (
           <div className="login-powered-by" aria-label="Powered by QuieroTurnoApp">
             <span>Realizado por</span>
             <a href="https://quieroturnoapp.com.ar/" target="_blank" rel="noreferrer">https://quieroturnoapp.com.ar/</a>
           </div>
         )}
-        <p className="login-kicker">Reserva de turnos</p>
-        <h1 className="login-brand-heading">{companyDisplayName}</h1>
-        <p className="login-copy">
-          {loginCopy}
-        </p>
 
         {sessionNotice && (
           <div className="login-session-notice" role="alert">
@@ -549,52 +598,24 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
           </div>
         )}
 
-        <div className="login-access-grid" aria-label="Tipos de acceso">
-          {visibleAccessOptions.map((option) => (
-            <div className="login-access-option" key={option.id}>
+        {hasMultipleProfiles && (
+          <div className="login-profile-tabs" aria-label="Tipo de acceso">
+            {visibleAccessOptions.map((option) => (
               <button
-                className={`login-access-card login-access-card-${option.id}`}
+                key={option.id}
                 type="button"
-                onClick={() => handleAccessOption(option.id)}
+                className={activeProfile === option.id ? 'is-active' : ''}
+                onClick={() => openRegistration(option.id)}
               >
-                <span className="login-access-icon" aria-hidden="true">{option.icon}</span>
-                <span className="login-access-content">
-                  <span className="login-access-title-row">
-                    <strong>{option.title}</strong>
-                    <span>{option.badge}</span>
-                  </span>
-                  <small>{option.description}</small>
-                </span>
+                <span aria-hidden="true">{option.icon}</span>
+                {option.title}
               </button>
-              {option.id === 'client' && localClientAccessEnabled && (
-                <button className="login-local-client-button" type="button" onClick={handleLocalClientAccess}>
-                  Probar cliente local
-                </button>
-              )}
-              {option.id === 'employee' && localInternalAccessEnabled && (
-                <button className="login-local-client-button" type="button" onClick={() => handleLocalInternalAccess(option.id)}>
-                  Probar empleado local
-                </button>
-              )}
-              {option.id === 'admin' && localInternalAccessEnabled && (
-                <button className="login-local-client-button" type="button" onClick={() => handleLocalInternalAccess(option.id)}>
-                  Probar admin local
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-      </section>
-
-      {registrationProfile && (
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Acceso">
-          <form className="internal-register-modal" onSubmit={passwordChangeAccount ? submitPasswordChange : submitRegistration}>
-            <div className="agenda-modal-header">
-              {passwordChangeAccount ? 'Cambiar contraseña' : `Acceso ${accessProfileLabels[registrationProfile]}`}
-            </div>
-
-            <div className="agenda-modal-body">
+        <form className="login-inline-form" onSubmit={passwordChangeAccount ? submitPasswordChange : submitRegistration}>
+          <div className="login-inline-body">
               {passwordChangeAccount ? (
                 <>
                   <p className="internal-register-copy">
@@ -654,23 +675,6 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
                 </>
               ) : (
                 <>
-              <div className="internal-register-tabs" aria-label="Modo de acceso">
-                <button
-                  type="button"
-                  className={internalAccessMode === 'login' ? 'is-active' : ''}
-                  onClick={() => changeInternalAccessMode('login')}
-                >
-                  Ingresar
-                </button>
-                <button
-                  type="button"
-                  className={internalAccessMode === 'register' ? 'is-active' : ''}
-                  onClick={() => changeInternalAccessMode('register')}
-                >
-                  Registrarse
-                </button>
-              </div>
-
               <p className="internal-register-copy">
                 {isClientRegistration
                   ? internalAccessMode === 'register'
@@ -685,7 +689,12 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
               {isClientRegistration && internalAccessMode === 'login' && (
                 <>
                   <button className="login-google-button" type="button" onClick={handleClientGoogleAccess}>
-                    <span className="login-google-icon" aria-hidden="true">G</span>
+                    <svg className="login-google-icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                    </svg>
                     Continuar con Google
                   </button>
                   <p className="client-access-separator">o ingresar con dni</p>
@@ -973,19 +982,29 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
               )}
 
               <div className="internal-register-actions">
-                <button className="internal-register-secondary" type="button" onClick={closeRegistration} disabled={isSubmittingInternalAccess}>
-                  Cancelar
-                </button>
-                <button className="internal-register-primary" type="submit" disabled={isSubmittingInternalAccess}>
+                <button className="internal-register-primary login-inline-submit" type="submit" disabled={isSubmittingInternalAccess}>
                   {isSubmittingInternalAccess
                     ? 'Procesando...'
                     : passwordChangeAccount ? 'Cambiar contraseña' : internalAccessMode === 'register' ? 'Registrar' : 'Ingresar'}
                 </button>
               </div>
+
+              {!passwordChangeAccount && (
+                <p className="login-mode-switch">
+                  {internalAccessMode === 'register' ? '¿Ya tenés una cuenta? ' : '¿No tenés una cuenta? '}
+                  <button
+                    type="button"
+                    onClick={() => changeInternalAccessMode(internalAccessMode === 'register' ? 'login' : 'register')}
+                  >
+                    {internalAccessMode === 'register' ? 'Ingresá' : 'Registrate'}
+                  </button>
+                </p>
+              )}
+
+              {localAccessSlot}
             </div>
           </form>
-        </div>
-      )}
+      </section>
 
       {inAppBrowserNoticeOpen && (
         <div className="modal" role="dialog" aria-modal="true" aria-label="Abrir en navegador">
