@@ -17,6 +17,13 @@ const localClientSessionStorageKey = 'turnos_local_client_session';
 const lastActivityStorageKey = 'turnos_last_activity_at';
 const inactivityLimitMs = 5 * 60 * 1000;
 const inactivityMessage = 'Pasaron mas de 5 min sin operar, volver a intentar.';
+// Las sesiones internas (admin/empleado/cliente por DNI) se guardan en
+// localStorage para compartirlas entre pestañas. Así, cuando el link "Ir al
+// Turno" del mail abre una pestaña nueva, reutiliza la sesión ya iniciada en
+// otra pestaña en vez de mandar al login. El corte por inactividad (5 min)
+// sigue vigente porque también se apoya en esta misma persistencia.
+// eslint-disable-next-line no-redeclare
+const sessionStorage = window.localStorage;
 const isDevLocalHost = (hostname) => ['localhost', '127.0.0.1'].includes(hostname) ||
   /^10\./.test(hostname) ||
   /^192\.168\./.test(hostname) ||
