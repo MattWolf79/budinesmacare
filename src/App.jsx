@@ -604,7 +604,7 @@ export default function App() {
     const internalUser = {
       id: internalSession.id,
       sessionToken: internalSession.sessionToken,
-      email: internalSession.displayName,
+      email: internalSession.email || '',
       role: internalSession.role,
       employeeId: internalSession.employeeId,
       username: internalSession.username,
