@@ -835,10 +835,12 @@ code {
 
 .agenda-modal-header,
 .agenda-detail-header {
-  background: #2f3842;
-  color: #fff;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #f8e4bf 0%, #f3d59c 100%);
+  color: #7c2d12;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   padding: 12px 18px;
   text-align: center;
 }
@@ -1270,6 +1272,9 @@ code {
 
 .booking-detail-modal {
   width: min(92vw, 440px);
+  display: flex;
+  flex-direction: column;
+  max-height: min(88vh, 760px);
 }
 
 .booking-detail-modal .agenda-modal-header {
@@ -1295,6 +1300,9 @@ code {
 .booking-detail-body {
   display: grid;
   gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .settlement-modal {
@@ -1638,6 +1646,19 @@ code {
   align-items: center;
   gap: 9px;
   text-align: left;
+}
+
+.app-navbar-company {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  color: #7c2d12;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-navbar-mark {
@@ -5364,24 +5385,24 @@ body .platform-admin-header .app-navbar-logout:hover {
   align-items: center;
   min-height: 36px;
   padding: 6px 14px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e0cfa6;
   border-radius: 999px;
-  color: #334155;
-  background: #fff;
+  color: #7c2d12;
+  background: #fffdf5;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .availability-branch-pill:hover {
-  border-color: #24aebb;
-  background: #eef6f7;
+  border-color: #e0a020;
+  background: #f8ecd0;
 }
 
 .availability-branch-pill.is-selected {
-  border-color: #0f5560;
-  color: #fff;
-  background: #24aebb;
+  border-color: #e0a020;
+  color: #7c2d12;
+  background: linear-gradient(160deg, #f8e4bf 0%, #f3d59c 100%);
 }
 
 .availability-ranges-fieldset {
@@ -5409,18 +5430,18 @@ body .platform-admin-header .app-navbar-logout:hover {
 
 .availability-range-add {
   align-self: flex-start;
-  border: 1px dashed #24aebb;
+  border: 1px dashed #e0a020;
   border-radius: 8px;
   padding: 8px 16px;
-  color: #0f5560;
-  background: #eef6f7;
+  color: #7c2d12;
+  background: #fdf4dd;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
 }
 
 .availability-range-add:hover {
-  background: #d9f1f4;
+  background: #f8ecd0;
 }
 
 .booking-branch-selector {
@@ -5449,24 +5470,24 @@ body .platform-admin-header .app-navbar-logout:hover {
   align-items: center;
   min-height: 34px;
   padding: 5px 14px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e0cfa6;
   border-radius: 999px;
-  color: #334155;
-  background: #fff;
+  color: #7c2d12;
+  background: #fffdf5;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .booking-branch-pill:hover {
-  border-color: #24aebb;
-  background: #eef6f7;
+  border-color: #e0a020;
+  background: #f8ecd0;
 }
 
 .booking-branch-pill.is-selected {
-  border-color: #0f5560;
-  color: #fff;
-  background: #24aebb;
+  border-color: #e0a020;
+  color: #7c2d12;
+  background: linear-gradient(160deg, #f8e4bf 0%, #f3d59c 100%);
 }
 
 /* Barra prominente de sucursal para el cliente (arriba de la grilla) */
@@ -5476,23 +5497,25 @@ body .platform-admin-header .app-navbar-logout:hover {
   gap: 6px;
   margin: 0 0 16px;
   padding: 14px 16px;
-  border: 1px solid #bfe6ea;
-  border-left: 4px solid #24aebb;
+  border: 1px solid #f0e0bf;
+  border-left: 4px solid #e0a020;
   border-radius: 14px;
-  background: linear-gradient(180deg, #f2fbfc 0%, #ffffff 100%);
-  box-shadow: 0 6px 18px rgba(15, 85, 96, 0.08);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%);
+  box-shadow: 0 6px 18px rgba(240, 161, 31, 0.12);
 }
 
 .client-branch-bar-title {
   font-size: 15px;
   font-weight: 800;
-  color: #0f5560;
+  color: #7c2d12;
 }
 
 .client-branch-bar-hint {
   margin: 0;
   font-size: 12.5px;
-  color: #5b7075;
+  color: #8a7350;
 }
 
 .client-branch-bar-pills {
@@ -5508,10 +5531,10 @@ body .platform-admin-header .app-navbar-logout:hover {
   justify-content: center;
   min-height: 34px;
   padding: 6px 12px;
-  border: 1.5px solid #cbd5e1;
+  border: 1.5px solid #e0cfa6;
   border-radius: 999px;
-  color: #334155;
-  background: #fff;
+  color: #7c2d12;
+  background: #fffdf5;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
@@ -5525,15 +5548,15 @@ body .platform-admin-header .app-navbar-logout:hover {
 }
 
 .client-branch-bar-pill:hover {
-  border-color: #24aebb;
-  background: #eef6f7;
+  border-color: #e0a020;
+  background: #f8ecd0;
 }
 
 .client-branch-bar-pill.is-selected {
-  border-color: #0f5560;
-  color: #fff;
-  background: #24aebb;
-  box-shadow: 0 4px 12px rgba(36, 174, 187, 0.35);
+  border-color: #e0a020;
+  color: #7c2d12;
+  background: linear-gradient(160deg, #f8e4bf 0%, #f3d59c 100%);
+  box-shadow: 0 4px 12px rgba(240, 161, 31, 0.28);
 }
 
 .agenda-branch-filter {
@@ -9725,6 +9748,18 @@ body {
   color: #64748b;
 }
 
+.new-booking-email-invalid {
+  border-color: #dc2626 !important;
+  background: #fef2f2 !important;
+}
+
+.new-booking-email-error {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #dc2626;
+}
+
 .new-booking-day-hint {
   font-size: 12.5px;
   color: #64748b;
@@ -9737,9 +9772,9 @@ body {
 }
 
 .new-booking-branch-pill {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
+  border: 1px solid #e0cfa6;
+  background: #fffdf5;
+  color: #7c2d12;
   border-radius: 999px;
   padding: 8px 16px;
   font-size: 13px;
@@ -9749,13 +9784,14 @@ body {
 }
 
 .new-booking-branch-pill:hover {
-  border-color: #24aebb;
+  border-color: #e0a020;
+  background: #f8ecd0;
 }
 
 .new-booking-branch-pill.is-selected {
-  background: #24aebb;
-  border-color: #24aebb;
-  color: #ffffff;
+  border-color: #e0a020;
+  color: #7c2d12;
+  background: linear-gradient(160deg, #f8e4bf 0%, #f3d59c 100%);
 }
 
 .new-booking-select-service {
@@ -14414,8 +14450,10 @@ body {
 
 .booking-assignment-panel .agenda-modal-header {
   padding: 9px 12px !important;
-  color: #fff !important;
-  background: #2d3a47 !important;
+  color: #7c2d12 !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #f8e4bf 0%, #f3d59c 100%) !important;
   border-bottom: 0 !important;
   font-size: 13px !important;
   font-weight: 900 !important;
@@ -14437,9 +14475,11 @@ body {
   gap: 8px !important;
   min-height: 0 !important;
   padding: 10px !important;
-  border: 1px solid #dbe3ee !important;
+  border: 1px solid #f0e0bf !important;
   border-radius: 8px !important;
-  background: #fff !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.18), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   box-shadow: none !important;
 }
 
@@ -14511,16 +14551,18 @@ body {
 }
 
 .booking-assignment-card-waitlist {
-  border-left: 3px solid #ef4444 !important;
-  background: #fff7f7 !important;
+  border-left: 4px solid #e0a020 !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.18), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
 }
 
 .booking-assignment-meta {
   min-width: 0 !important;
-  color: #5f6f88 !important;
-  font-size: 11px !important;
-  font-weight: 800 !important;
-  line-height: 1.25 !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
   white-space: normal !important;
 }
 
@@ -14538,8 +14580,8 @@ body {
   border-radius: 999px !important;
   padding: 6px 10px !important;
   color: #fff !important;
-  border-color: var(--service-chip-color, #15b8c8) !important;
-  background: var(--service-chip-color, #15b8c8) !important;
+  border-color: #c98a12 !important;
+  background: #e0a020 !important;
   font-size: 11px !important;
   font-weight: 900 !important;
   line-height: 1 !important;
@@ -14547,7 +14589,28 @@ body {
 }
 
 .booking-assignment-card .agenda-close-button:hover {
-  filter: brightness(0.96) !important;
+  background: #c98a12 !important;
+  filter: none !important;
+}
+
+.booking-assignment-card .agenda-option-button {
+  width: auto !important;
+  min-width: 92px !important;
+  min-height: 28px !important;
+  border-radius: 999px !important;
+  padding: 6px 10px !important;
+  color: #7c2d12 !important;
+  border: 1px solid #e0a020 !important;
+  background: #fffdf5 !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.booking-assignment-card .agenda-option-button:hover {
+  border-color: #c98a12 !important;
+  background: #f8ecd0 !important;
 }
 
 .assignment-employee-modal {

@@ -271,6 +271,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
           canChangeProfile={canChangeProfile}
           logoSrc={workspaceLogoSrc}
           logoAlt={workspaceLogoAlt}
+          companyName={companyName}
         />
         <div className="role-workspace-body">
           <AdminSidebar
@@ -338,6 +339,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
           canChangeProfile={canChangeProfile}
           logoSrc={workspaceLogoSrc}
           logoAlt={workspaceLogoAlt}
+          companyName={companyName}
         />
         <div className="role-workspace-body">
           <AdminSidebar

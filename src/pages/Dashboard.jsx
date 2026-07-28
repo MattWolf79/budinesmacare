@@ -193,6 +193,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         canChangeProfile={canChangeProfile}
         logoSrc={navbarLogoSrc}
         logoAlt={navbarLogoAlt}
+        companyName={companyName}
       />
 
       <div className="dashboard-body">

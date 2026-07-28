@@ -213,6 +213,7 @@ export default function NewBookingPanel({
   });
   const [customerName, setCustomerName] = useState(isClient ? (user?.displayName || '') : '');
   const [customerEmail, setCustomerEmail] = useState(isClient ? (user?.email || '') : '');
+  const emailFormatValid = !customerEmail.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim());
   const [clientResults, setClientResults] = useState([]);
   const [showClientResults, setShowClientResults] = useState(false);
   const [clientSearchLoading, setClientSearchLoading] = useState(false);
@@ -665,6 +666,10 @@ export default function NewBookingPanel({
       alert('Hay servicios con un profesional ocupado en su horario. Cambiá el profesional o dejalo en «Indistinto» para continuar.');
       return;
     }
+    if (!emailFormatValid) {
+      alert('El email del cliente no tiene un formato válido. Ingresá un email correcto (ej: nombre@dominio.com) o dejá el campo vacío.');
+      return;
+    }
     setShowConfirmDialog(true);
   };
 
@@ -680,6 +685,10 @@ export default function NewBookingPanel({
     }
     if (conflictingKeys.size > 0) {
       alert('Hay servicios con un profesional ocupado en su horario. Cambiá el profesional o dejalo en «Indistinto» para continuar.');
+      return;
+    }
+    if (!emailFormatValid) {
+      alert('El email del cliente no tiene un formato válido. Ingresá un email correcto (ej: nombre@dominio.com) o dejá el campo vacío.');
       return;
     }
     setIsSaving(true);
@@ -924,11 +933,19 @@ export default function NewBookingPanel({
                   </div>
                   <input
                     type="email"
+                    className={`new-booking-email-input${!emailFormatValid ? ' new-booking-email-invalid' : ''}`}
                     placeholder="Email del cliente (opcional)"
                     value={customerEmail}
                     onChange={(event) => setCustomerEmail(event.target.value)}
+                    onBlur={() => setCustomerEmail((prev) => prev.trim())}
                     disabled={bookForSelf}
+                    aria-invalid={!emailFormatValid}
+                    autoComplete="off"
+                    inputMode="email"
                   />
+                  {!emailFormatValid && (
+                    <span className="new-booking-email-error">Ingresá un email válido (ej: nombre@dominio.com) o dejá el campo vacío.</span>
+                  )}
                 </div>
               )}
 
@@ -1049,7 +1066,7 @@ export default function NewBookingPanel({
           <button
             type="button"
             className="new-booking-confirm"
-            disabled={cart.length === 0 || isSaving || conflictingKeys.size > 0 || Boolean(hoursIssue)}
+            disabled={cart.length === 0 || isSaving || conflictingKeys.size > 0 || Boolean(hoursIssue) || !emailFormatValid}
             onClick={openConfirmDialog}
           >
             {isSaving ? 'Confirmando…' : 'Confirmar reserva →'}
