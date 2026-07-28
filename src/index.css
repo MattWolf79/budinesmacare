@@ -1867,30 +1867,36 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 28px;
+  padding: 28px 20px;
   box-sizing: border-box;
-  background: #fff;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(224, 160, 32, 0.12), transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(224, 160, 32, 0.06), transparent 45%),
+    #f6f7f9;
 }
 
 .login-card {
-  --login-card-x: 30px;
+  --login-card-x: 34px;
+  position: relative;
   display: flex;
   flex-direction: column;
-  width: min(100%, 620px);
+  width: min(100%, 460px);
   overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  border-radius: 8px;
-  padding: 0 var(--login-card-x) var(--login-card-x);
+  border: 1px solid #ececec;
+  border-radius: 22px;
+  padding: 8px var(--login-card-x) 30px;
   text-align: center;
-  background: #174c55;
-  box-shadow: 0 22px 52px rgba(15, 23, 42, 0.18);
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(17, 24, 39, 0.04),
+    0 24px 60px rgba(17, 24, 39, 0.10);
 }
 
 .login-brand-mark {
   display: block;
-  width: min(72vw, 300px);
+  width: min(60vw, 220px);
   height: auto;
-  margin: 22px auto 8px;
+  margin: 26px auto 6px;
   object-fit: contain;
 }
 
@@ -1903,11 +1909,11 @@ code {
   width: fit-content;
   max-width: 100%;
   margin: 0 auto 12px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid #ecdcb8;
   border-radius: 999px;
-  padding: 6px 10px;
-  color: #d8eef1;
-  background: rgba(255, 255, 255, 0.08);
+  padding: 6px 12px;
+  color: #8a7350;
+  background: #fdf7ea;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0;
@@ -1915,7 +1921,7 @@ code {
 }
 
 .login-powered-by a {
-  color: #ffffff;
+  color: #7c2d12;
   text-decoration: none;
   text-transform: none;
   overflow-wrap: anywhere;
@@ -1935,38 +1941,44 @@ code {
 }
 
 .login-kicker {
-  order: -1;
-  margin: 0 calc(var(--login-card-x) * -1) 0;
-  padding: 12px 16px;
-  color: #fff;
-  background: #2f333a;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 6px;
+  margin: 8px auto 6px;
+  border: 1px solid #ecdcb8;
+  border-radius: 999px;
+  padding: 5px 14px;
+  color: #b07d1a;
+  background: #fdf4dd;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: 0;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .login-card h1 {
   margin: 12px 0 10px;
   color: #1f2937;
-  font-size: 34px;
+  font-size: 30px;
   line-height: 1.1;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
 }
 
 .login-copy {
-  max-width: 330px;
-  margin: 0 auto 24px;
-  color: #f8fafc;
+  max-width: 340px;
+  margin: 10px auto 24px;
+  color: #6b7280;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .login-session-notice {
   max-width: 360px;
   margin: 0 auto 18px;
   border: 1px solid #f8caca;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 12px;
   color: #9f1d2b;
   background: #fff1f2;
@@ -1988,42 +2000,45 @@ code {
 .login-access-card {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  min-height: 84px;
-  border: 1px solid #c5eef1;
-  border-radius: 8px;
-  padding: 12px;
+  min-height: 78px;
+  border: 1px solid #ececec;
+  border-radius: 14px;
+  padding: 14px 16px;
   color: #334155;
-  background: #f4feff;
+  background: #ffffff;
   text-align: left;
   cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
 .login-access-card:hover {
-  border-color: #24aebb;
-  background: #e9fbfd;
-  box-shadow: 0 8px 18px rgba(36, 174, 187, 0.16);
+  border-color: #e6c98a;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(224, 160, 32, 0.14);
+  transform: translateY(-2px);
 }
 
 .login-access-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
-  color: #fff;
-  background: #174c55;
-  font-size: 20px;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  color: #7c2d12;
+  background: linear-gradient(160deg, #f8e4bf 0%, #f3d59c 100%);
+  font-size: 22px;
 }
 
 .login-access-card-employee .login-access-icon {
-  background: #24aebb;
+  background: linear-gradient(160deg, #fbe8c2 0%, #f0c979 100%);
 }
 
 .login-access-card-admin .login-access-icon {
-  background: #3fc9d5;
+  background: linear-gradient(160deg, #f7dca6 0%, #eabf6b 100%);
 }
 
 .login-access-content {
@@ -2048,20 +2063,21 @@ code {
 
 .login-access-title-row span {
   flex: 0 0 auto;
-  border: 1px solid #b7eef4;
-  border-radius: 6px;
-  padding: 3px 8px;
-  color: #155e75;
-  background: #cffafe;
+  border: 1px solid #ecdcb8;
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: #b07d1a;
+  background: #fdf4dd;
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .login-access-content small {
-  color: #64748b;
+  color: #6b7280;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .login-google-button {
@@ -2070,36 +2086,39 @@ code {
   justify-content: center;
   gap: 10px;
   width: 100%;
-  min-height: 44px;
-  border: 1px solid #24aebb;
-  border-radius: 6px;
-  color: #fff;
-  background: #3fc9d5;
+  min-height: 46px;
+  border: 1px solid #e0a020;
+  border-radius: 12px;
+  color: #7c2d12;
+  background: #ffffff;
   font-weight: 900;
   cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
 }
 
 .login-google-button:hover {
-  background: #24aebb;
+  border-color: #c98a12;
+  background: #fdf4dd;
 }
 
 .client-access-separator {
-  margin: 10px 0 12px;
-  color: #475569;
+  margin: 12px 0 12px;
+  color: #9ca3af;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .login-local-client-button {
   width: 100%;
-  min-height: 38px;
+  min-height: 40px;
   margin-top: 14px;
-  border: 1px dashed #b9cdfd;
-  border-radius: 8px;
+  border: 1px dashed #e6c98a;
+  border-radius: 12px;
   padding: 9px 12px;
-  color: #0f3ea8;
-  background: #f8fbff;
+  color: #b07d1a;
+  background: #fffdf5;
   font-size: 13px;
   font-weight: 900;
   cursor: pointer;
@@ -2107,7 +2126,7 @@ code {
 
 .login-local-client-button:hover {
   border-style: solid;
-  background: #eef5ff;
+  background: #fdf4dd;
 }
 
 @media (max-width: 640px) {
@@ -2156,8 +2175,9 @@ code {
   justify-content: center;
   width: 24px;
   height: 24px;
+  border: 1px solid #e5e7eb;
   border-radius: 50%;
-  color: #3fc9d5;
+  color: #4285f4;
   background: #fff;
   font-weight: 900;
 }
@@ -19277,4 +19297,462 @@ body .platform-admin-header .app-navbar-logout:hover {
 .settings-shell .settings-card,
 .settings-shell .settings-management-card {
   border: 1px solid #f0e0bf !important;
+}
+
+/* ============================================================================
+   LandingPage · página pública por empresa (hero con imagen + acentos dorados)
+   ============================================================================ */
+.landing-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #12100a;
+  color: #f8f4ec;
+  font-family: inherit;
+}
+
+.landing-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 88vh;
+  padding: 22px clamp(20px, 6vw, 96px) 34px;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(224, 160, 32, 0.16), transparent 46%),
+    linear-gradient(155deg, #1c1710 0%, #12100a 60%, #0d0b07 100%);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.landing-hero.has-image {
+  background-size: cover;
+  background-position: center;
+}
+
+.landing-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 85% 20%, rgba(247, 183, 51, 0.18), transparent 42%);
+  pointer-events: none;
+}
+
+.landing-nav,
+.landing-hero-content,
+.landing-hero-benefits {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.landing-brand-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  object-fit: contain;
+  border: none;
+  background: transparent;
+}
+
+.landing-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 900;
+  color: #12100a;
+  background: linear-gradient(150deg, #f7b733 0%, #e0a020 100%);
+}
+
+.landing-brand-name {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.landing-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.landing-nav-link {
+  color: #efe7d6;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+
+.landing-nav-link:hover {
+  color: #ffd98a;
+  background: rgba(247, 183, 51, 0.12);
+}
+
+.landing-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  color: #12100a;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: linear-gradient(150deg, #f7b733 0%, #e0a020 100%);
+  box-shadow: 0 8px 20px rgba(224, 160, 32, 0.34);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.landing-nav-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(224, 160, 32, 0.42);
+}
+
+.landing-hero-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 720px;
+  padding: 40px 0;
+}
+
+.landing-hero-kicker {
+  margin: 0 0 14px;
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd98a;
+  background: rgba(247, 183, 51, 0.14);
+  border: 1px solid rgba(247, 183, 51, 0.32);
+}
+
+.landing-hero-title {
+  margin: 0;
+  color: #fdf7ea;
+  font-size: clamp(34px, 6vw, 60px);
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+}
+
+.landing-hero-title-accent {
+  display: block;
+  margin-top: 10px;
+  font-size: clamp(24px, 4vw, 40px);
+  line-height: 1.1;
+  background: linear-gradient(120deg, #f7b733 0%, #ffd98a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #f7b733;
+  text-shadow: none;
+}
+
+.landing-hero-description {
+  margin: 22px 0 0;
+  max-width: 560px;
+  font-size: clamp(15px, 2.2vw, 18px);
+  line-height: 1.6;
+  color: #e6ded0;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.4);
+}
+
+.landing-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 30px;
+}
+
+.landing-hero-primary {
+  display: inline-flex;
+  align-items: center;
+  color: #12100a;
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+  padding: 14px 30px;
+  border-radius: 999px;
+  background: linear-gradient(150deg, #f7b733 0%, #e0a020 100%);
+  box-shadow: 0 14px 30px rgba(224, 160, 32, 0.4);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.landing-hero-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(224, 160, 32, 0.5);
+}
+
+.landing-hero-secondary {
+  display: inline-flex;
+  align-items: center;
+  color: #f8f4ec;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 14px 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(247, 183, 51, 0.5);
+  background: rgba(247, 183, 51, 0.06);
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.landing-hero-secondary:hover {
+  background: rgba(247, 183, 51, 0.16);
+  border-color: rgba(247, 183, 51, 0.75);
+}
+
+.landing-hero-benefits {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+}
+
+.landing-hero-benefit {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e7e0d2;
+}
+
+.landing-hero-benefit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #12100a;
+  background: linear-gradient(150deg, #f7b733 0%, #e0a020 100%);
+}
+
+/* ===== Sección Accesos ===== */
+.landing-access {
+  padding: clamp(48px, 8vw, 88px) clamp(20px, 6vw, 96px);
+  background: #faf7f1;
+  color: #3f342a;
+}
+
+.landing-access-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.landing-access-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b07d1a;
+}
+
+.landing-access-title {
+  margin: 0 0 32px;
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 900;
+  color: #5b3d17;
+}
+
+.landing-access-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.landing-access-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  border-radius: 16px;
+  text-decoration: none;
+  color: #3f342a;
+  background: #fff;
+  border: 1px solid #ecdcb8;
+  box-shadow: 0 12px 26px rgba(180, 138, 40, 0.1);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.landing-access-card:hover {
+  transform: translateY(-3px);
+  border-color: #e0a020;
+  box-shadow: 0 18px 34px rgba(224, 160, 32, 0.22);
+}
+
+.landing-access-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  font-size: 24px;
+  background: linear-gradient(150deg, #fef0cf 0%, #f8e0a8 100%);
+  border: 1px solid #f0d79a;
+}
+
+.landing-access-icon.variant-employee {
+  background: linear-gradient(150deg, #e9f2ff 0%, #cfe2ff 100%);
+  border-color: #bcd6fb;
+}
+
+.landing-access-icon.variant-admin {
+  background: linear-gradient(150deg, #f2ecff 0%, #e0d3ff 100%);
+  border-color: #d0bdfb;
+}
+
+.landing-access-card-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #5b3d17;
+}
+
+.landing-access-card-copy {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b5f50;
+}
+
+.landing-access-card-cta {
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #c98a12;
+}
+
+/* ===== Sección Contacto ===== */
+.landing-contact {
+  padding: clamp(40px, 7vw, 72px) clamp(20px, 6vw, 96px);
+  background: #17130c;
+  color: #efe7d6;
+}
+
+.landing-contact-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.landing-contact-title {
+  margin: 0 0 20px;
+  font-size: clamp(22px, 3.6vw, 30px);
+  font-weight: 900;
+  color: #ffd98a;
+}
+
+.landing-contact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 40px;
+}
+
+.landing-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2dac9;
+}
+
+.landing-contact-item a {
+  color: #ffd98a;
+  text-decoration: none;
+}
+
+.landing-contact-item a:hover {
+  text-decoration: underline;
+}
+
+/* ===== Footer ===== */
+.landing-footer {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 20px clamp(20px, 6vw, 96px);
+  background: #0d0b07;
+  color: #a89b85;
+  font-size: 13px;
+}
+
+.landing-footer-brand {
+  font-weight: 800;
+  color: #efe7d6;
+}
+
+.landing-footer-powered strong {
+  color: #ffd98a;
+}
+
+@media (max-width: 640px) {
+  .landing-hero {
+    min-height: 92vh;
+    padding: 18px 20px 28px;
+  }
+
+  .landing-nav-link {
+    display: none;
+  }
+
+  .landing-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing-hero-primary,
+  .landing-hero-secondary {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-nav-cta,
+  .landing-hero-primary,
+  .landing-access-card {
+    transition: none;
+  }
 }
