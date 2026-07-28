@@ -596,8 +596,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const weekDays = useMemo(() => {
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() + weekOffset * 5);
-    return Array.from({ length: 5 }, (_, index) => {
+    start.setDate(start.getDate() + weekOffset * 3);
+    return Array.from({ length: 3 }, (_, index) => {
       const date = new Date(start);
       date.setDate(start.getDate() + index);
       const key = getDateKey(date);
