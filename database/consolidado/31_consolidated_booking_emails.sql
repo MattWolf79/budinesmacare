@@ -30,9 +30,11 @@ create table if not exists public.booking_group_email_log (
 );
 
 -- ----------------------------------------------------------------------------
--- 1. REF corto y legible a partir de un uuid.
+-- 1. REF corto y legible a partir de un uuid + fecha del turno (DDMMYYYY).
 -- ----------------------------------------------------------------------------
-create or replace function public.format_booking_ref(id_value uuid)
+drop function if exists public.format_booking_ref(uuid);
+
+create or replace function public.format_booking_ref(id_value uuid, date_value date default null)
 returns text
 language sql
 immutable
@@ -40,7 +42,32 @@ as $$
   select case
     when id_value is null then ''
     else '#' || upper(substr(replace(id_value::text, '-', ''), 1, 8))
+      || case when date_value is null then '' else '-' || to_char(date_value, 'DDMMYYYY') end
   end;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- 1b. Link del cliente para el boton "Ir al Turno": debe abrir en "Mis turnos"
+--     (hash #client-mis-turnos) y no en el menu Inicio del portal de reservas.
+-- ----------------------------------------------------------------------------
+create or replace function public.build_client_booking_link(company_id_value uuid default null)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with selected_company as (
+    select companies.slug
+    from public.companies companies
+    where companies.id = company_id_value
+    limit 1
+  ), base_url as (
+    select regexp_replace(public.get_mail_app_url(company_id_value), '/+$', '') as value
+  )
+  select (select value from base_url) ||
+    coalesce('/' || (select slug from selected_company), '') ||
+    '/sacarturno#client-mis-turnos'
 $$;
 
 -- ----------------------------------------------------------------------------
@@ -72,7 +99,7 @@ declare
   badge_label text;
   clean_cta_label text := nullif(trim(coalesce(cta_label, '')), '');
   clean_cta_url text := nullif(trim(coalesce(cta_url, '')), '');
-  booking_ref text := public.format_booking_ref(coalesce(booking_value.booking_group_id, booking_value.id));
+  booking_ref text := public.format_booking_ref(coalesce(booking_value.booking_group_id, booking_value.id), booking_value.start_at::date);
 begin
   select services.name into service_name
   from public.services services
@@ -184,7 +211,8 @@ declare
   badge_label text;
   client_name text;
   client_email text;
-  booking_ref text := public.format_booking_ref(group_id_value);
+  booking_ref text;
+  group_date date;
   clean_cta_label text := nullif(trim(coalesce(cta_label, '')), '');
   clean_cta_url text := nullif(trim(coalesce(cta_url, '')), '');
   services_html text := '';
@@ -202,6 +230,12 @@ begin
   if company_id_value is null then
     return '';
   end if;
+
+  select min(bx.start_at)::date into group_date
+  from public.bookings bx
+  where bx.booking_group_id = group_id_value;
+
+  booking_ref := public.format_booking_ref(group_id_value, group_date);
 
   company_name := public.get_company_mail_display_name(company_id_value);
   client_name := coalesce(nullif(trim(coalesce(client_name, '')), ''), nullif(client_email, ''), 'Cliente sin datos');
