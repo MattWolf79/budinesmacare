@@ -1643,9 +1643,22 @@ code {
 }
 
 .app-navbar-company {
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
   text-align: center;
+}
+
+.app-navbar-company-track {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.app-navbar-company-text {
   color: #7c2d12;
   font-size: 16px;
   font-weight: 900;
@@ -1653,6 +1666,32 @@ code {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.app-navbar-company-track.is-marquee {
+  max-width: none;
+  animation: navbar-company-marquee 14s linear infinite;
+}
+
+.app-navbar-company-track.is-marquee .app-navbar-company-text {
+  padding-right: 48px;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.app-navbar-company:hover .app-navbar-company-track.is-marquee {
+  animation-play-state: paused;
+}
+
+@keyframes navbar-company-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-navbar-company-track.is-marquee {
+    animation: none;
+  }
 }
 
 .app-navbar-mark {

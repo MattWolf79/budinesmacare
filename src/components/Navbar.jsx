@@ -1,3 +1,5 @@
+import { useLayoutEffect, useRef, useState } from 'react';
+
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
 export const defaultNavItems = [
@@ -58,6 +60,44 @@ export default function Navbar({
   onMenuToggle
 }) {
 
+  const companyRef = useRef(null);
+  const companyTextRef = useRef(null);
+  const [companyMarquee, setCompanyMarquee] = useState({ active: false, distance: 0 });
+
+  useLayoutEffect(() => {
+    if (!companyName) {
+      setCompanyMarquee({ active: false, distance: 0 });
+      return undefined;
+    }
+
+    const measure = () => {
+      const container = companyRef.current;
+      const text = companyTextRef.current;
+      if (!container || !text) return;
+
+      const overflow = text.scrollWidth - container.clientWidth;
+      setCompanyMarquee(
+        overflow > 1
+          ? { active: true, distance: text.scrollWidth }
+          : { active: false, distance: 0 }
+      );
+    };
+
+    measure();
+
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (observer && companyRef.current) observer.observe(companyRef.current);
+    window.addEventListener('resize', measure);
+
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [companyName]);
+
+  // Velocidad constante (~60px/s) independientemente del largo del nombre.
+  const companyMarqueeDuration = Math.max(8, Math.round((companyMarquee.distance + 48) / 60));
+
   return (
     <div className="app-navbar">
       {showMenuToggle && (
@@ -80,7 +120,17 @@ export default function Navbar({
       </div>
 
       {companyName && (
-        <span className="app-navbar-company" title={companyName}>{companyName}</span>
+        <div className="app-navbar-company" title={companyName} ref={companyRef}>
+          <div
+            className={`app-navbar-company-track${companyMarquee.active ? ' is-marquee' : ''}`}
+            style={companyMarquee.active ? { animationDuration: `${companyMarqueeDuration}s` } : undefined}
+          >
+            <span className="app-navbar-company-text" ref={companyTextRef}>{companyName}</span>
+            {companyMarquee.active && (
+              <span className="app-navbar-company-text" aria-hidden="true">{companyName}</span>
+            )}
+          </div>
+        </div>
       )}
 
       {showNavigation && (
