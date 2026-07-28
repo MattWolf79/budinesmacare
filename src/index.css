@@ -4534,11 +4534,10 @@ code {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
+  justify-content: center;
   gap: 6px;
-  overflow-x: auto;
+  overflow: hidden;
   padding-bottom: 2px;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
 }
 
 .employee-date-nav {
@@ -4659,6 +4658,38 @@ code {
 .employee-upcoming-row-arrow:hover {
   color: #0f5560;
   background: rgba(36, 174, 187, 0.1);
+}
+
+@media (max-width: 640px) {
+  .role-workspace-employee .employee-date-chip-all {
+    min-width: 44px;
+    padding: 6px 8px;
+  }
+
+  .role-workspace-employee .employee-upcoming-row-main {
+    align-items: flex-start;
+    padding: 10px 12px;
+    position: relative;
+  }
+
+  .role-workspace-employee .employee-upcoming-row-info {
+    width: 100%;
+  }
+
+  .role-workspace-employee .employee-upcoming-row-title,
+  .role-workspace-employee .employee-upcoming-row-client {
+    padding-right: 80px;
+  }
+
+  .role-workspace-employee .employee-upcoming-row-badges {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+  }
+
+  .role-workspace-employee .employee-upcoming-row-date {
+    white-space: nowrap;
+  }
 }
 
 /* Modal de detalle del turno del empleado */
