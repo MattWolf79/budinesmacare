@@ -4703,6 +4703,236 @@ code {
   }
 }
 
+@media (max-width: 640px) {
+  .dashboard-shell .employee-availability-manager {
+    gap: 6px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-summary-strip {
+    justify-content: center !important;
+    gap: 5px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-summary-strip span {
+    min-height: 22px !important;
+    padding: 3px 7px !important;
+    font-size: 9px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-employee-filter {
+    display: grid !important;
+    grid-template-columns: 64px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 7px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 8px !important;
+    padding: 7px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-employee-filter span {
+    font-size: 10px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-employee-combo,
+  .dashboard-shell .employee-availability-manager .availability-employee-combo-button {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-employee-combo-button {
+    min-height: 30px !important;
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-employee-combo-list {
+    width: 100% !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-form-card {
+    overflow: hidden !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-form-header {
+    min-height: 28px !important;
+    padding: 5px 8px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-form-body.is-collapsed {
+    display: none !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-form-body.is-open {
+    display: grid !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-form-card .agenda-modal-body {
+    padding: 7px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-form-card .admin-form-grid {
+    gap: 6px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-form-card .admin-form-grid label {
+    gap: 3px !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-form-card .admin-form-grid input,
+  .dashboard-shell .employee-availability-manager .availability-form-card .admin-form-grid select {
+    min-height: 30px !important;
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-form-card .admin-fieldset,
+  .dashboard-shell .employee-availability-manager .availability-form-card .availability-range-card {
+    padding: 7px !important;
+    gap: 6px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-day-filter {
+    padding: 6px !important;
+    gap: 5px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-day-filter-all {
+    min-height: 28px !important;
+    padding: 5px 16px !important;
+    font-size: 11px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-day-filter-circles {
+    justify-content: center !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-day-circle {
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-day-circle span {
+    font-size: 11px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-day-circle small {
+    right: -2px !important;
+    bottom: -2px !important;
+    min-width: 14px !important;
+    height: 14px !important;
+    font-size: 8px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-day-filter-caption {
+    font-size: 9px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto auto !important;
+    align-items: stretch !important;
+    gap: 7px !important;
+    min-height: 0 !important;
+    border-radius: 10px !important;
+    padding: 0 46px 9px 10px !important;
+    position: relative !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-header {
+    margin: 0 -46px 0 -10px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-date-badge {
+    height: 22px !important;
+    min-width: 36px !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-main {
+    gap: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-fields {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) !important;
+    gap: 6px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-field {
+    grid-template-columns: 1fr !important;
+    gap: 3px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-field-wide {
+    grid-column: auto !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-field > span {
+    font-size: 8px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-field > strong {
+    min-height: 26px !important;
+    padding: 5px 7px !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-actions {
+    position: absolute !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-action,
+  .dashboard-shell .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-close-button,
+  .dashboard-shell .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-danger-button {
+    flex: 0 0 auto !important;
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .admin-action-label-full {
+    display: none !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .admin-action-label-compact {
+    display: inline !important;
+  }
+}
+
 /* Modal de detalle del turno del empleado */
 .employee-booking-detail-overlay {
   position: fixed;
@@ -13150,6 +13380,121 @@ body {
   white-space: nowrap;
 }
 
+.employee-availability-manager .availability-employee-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: min(100%, 520px);
+  margin: 0 auto 12px;
+  padding: 10px 14px;
+  border: 1px solid #f0e0bf;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #fffdf8, #fff4de);
+  box-shadow: 0 1px 3px rgba(124, 45, 18, 0.08);
+}
+
+.employee-availability-manager .availability-employee-filter span {
+  flex: 0 0 auto;
+  color: #7c2d12;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.employee-availability-manager .availability-employee-combo {
+  position: relative;
+  flex: 0 1 280px;
+  width: 280px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.employee-availability-manager .availability-employee-combo-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid #e8d2a2;
+  border-radius: 999px;
+  padding: 7px 14px;
+  color: #26313a;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.employee-availability-manager .availability-employee-combo-button > span {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-availability-manager .availability-employee-combo-button > small {
+  flex: 0 0 auto;
+  color: #7c2d12;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.employee-availability-manager .availability-employee-combo-list {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(280px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #e8d2a2;
+  border-radius: 12px;
+  padding: 6px;
+  background: #fff;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+}
+
+.employee-availability-manager .availability-employee-combo-option {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #26313a;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.employee-availability-manager .availability-employee-combo-option:hover,
+.employee-availability-manager .availability-employee-combo-option.is-selected {
+  color: #7c2d12;
+  background: #fff4de;
+}
+
+.employee-availability-manager .availability-employee-combo-button:focus {
+  outline: 2px solid rgba(224, 160, 32, 0.22);
+  border-color: #e0a020;
+}
+
 @media (max-width: 640px) {
   .employee-availability-manager .availability-day-filter {
     justify-content: center;
@@ -13804,6 +14149,139 @@ body {
   }
 
   .role-workspace-employee .availability-card-grid .availability-card-edit-arrow:disabled {
+    opacity: 0.5 !important;
+    cursor: default !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    grid-template-rows: none !important;
+    gap: 16px !important;
+    min-height: 0 !important;
+    padding: 12px 10px 12px 16px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card:hover {
+    border-color: #f0d9a6 !important;
+    box-shadow: 0 6px 16px rgba(124, 45, 18, 0.12) !important;
+    transform: none !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-header {
+    display: none !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-main {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-fields {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 4px 26px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-field,
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-field-wide {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    grid-column: auto !important;
+    gap: 2px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-field > span {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    color: #9aa3b2 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-field > strong {
+    display: block !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #26313a !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    line-height: 1.2 !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-actions {
+    position: static !important;
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-actions .agenda-close-button {
+    display: none !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-action .admin-action-label-full {
+    display: none !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-action .admin-action-label-compact {
+    display: inline !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-actions .agenda-danger-button {
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    font-size: 15px !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-edit-arrow {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 0 3px !important;
+    border: 1px solid #e0e5ec !important;
+    border-radius: 999px !important;
+    color: #7c2d12 !important;
+    background: #fff8ec !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-edit-arrow:hover:not(:disabled) {
+    border-color: #e0a020 !important;
+    background: #ffefcf !important;
+    transform: translateX(1px) !important;
+  }
+
+  .dashboard-shell .employee-availability-manager .availability-card-grid .availability-card-edit-arrow:disabled {
     opacity: 0.5 !important;
     cursor: default !important;
   }
