@@ -1261,6 +1261,10 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         const closedAmount = closedBookingAmounts[detailBooking.id];
         const customerFields = getCustomerFields(detailBooking);
         const statusLabel = isClosed ? 'Cerrado' : 'Asignado';
+        const sucursalesHabilitadas = effectiveCompanyContext?.configuracion_operativa?.sucursales_habilitadas === true;
+        const branchName = sucursalesHabilitadas && detailBooking.branch_id
+          ? (Array.isArray(effectiveCompanyContext?.branches) ? effectiveCompanyContext.branches : []).find((branch) => String(branch.id) === String(detailBooking.branch_id))?.name || null
+          : null;
 
         return (
           <div className="employee-booking-detail-overlay" role="dialog" aria-modal="true" onClick={() => setDetailBookingId(null)}>
@@ -1296,6 +1300,12 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                   <span>Horario</span>
                   <strong>{formatTime(detailBooking.start_at)}-{formatTime(detailBooking.end_at)}</strong>
                 </div>
+                {branchName && (
+                  <div className="employee-booking-detail-field">
+                    <span>Sucursal</span>
+                    <strong>{branchName}</strong>
+                  </div>
+                )}
                 <div className="employee-booking-detail-field">
                   <span>Estado</span>
                   <strong className={isClosed ? 'is-muted' : 'is-active'}>{statusLabel}</strong>
