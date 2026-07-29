@@ -5427,13 +5427,16 @@ body .platform-admin-header .app-navbar-logout:hover {
 
   body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions .agenda-option-button,
   body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions .agenda-close-button {
-    flex: 0 1 150px !important;
+    flex: 1 1 calc(50% - 4px) !important;
     width: auto !important;
-    max-width: 180px !important;
+    max-width: none !important;
     height: auto !important;
-    min-height: 38px !important;
+    min-height: 34px !important;
     border-radius: 999px !important;
-    padding: 8px 14px !important;
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
   }
 
   body .dashboard-shell .agenda-modal-card.settlement-modal.settlement-modal-empty {
@@ -7783,7 +7786,9 @@ body .platform-admin-header .app-navbar-logout:hover {
   }
 
   .agenda-modal-actions.booking-detail-actions {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .close-attention-modal .agenda-modal-actions {
@@ -7798,9 +7803,11 @@ body .platform-admin-header .app-navbar-logout:hover {
   .close-attention-modal .agenda-modal-actions .agenda-danger-button,
   .agenda-modal-actions.booking-detail-actions .agenda-option-button,
   .agenda-modal-actions.booking-detail-actions .agenda-close-button {
-    min-height: 38px;
-    padding: 8px 12px;
-    font-size: 12px;
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 11px;
+    line-height: 1.1;
+    white-space: normal;
   }
 
   .agenda-option-button,
