@@ -24,6 +24,7 @@ const BOOKED_SLOT_PADDING_HEIGHT = 10;
 const BOOKING_STACK_HEIGHT = 48;
 const ACTIVE_BOOKING_STATUSES = new Set(['confirmed', 'reserved', 'pending_assignment']);
 const TOUCH_TAP_MOVE_TOLERANCE = 8;
+const PAYMENT_BALANCE_TOLERANCE = 1;
 
 /* =========================
    TIME (FIX DEFINITIVO)
@@ -111,6 +112,18 @@ const normalizeComparableText = (value) =>
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, ' ')
     .toLowerCase();
+
+const idsEqual = (left, right) => {
+  const leftValue = String(left ?? '').trim();
+  const rightValue = String(right ?? '').trim();
+
+  if (!leftValue || !rightValue) return false;
+  if (leftValue === rightValue) return true;
+
+  const leftNumber = Number(leftValue);
+  const rightNumber = Number(rightValue);
+  return Number.isFinite(leftNumber) && Number.isFinite(rightNumber) && leftNumber === rightNumber;
+};
 
 const getPromotionBookingLabel = (promotion, index) =>
   promotion?.bookingLabel || [promotion?.title || `Banner ${index + 1}`, promotion?.description, promotion?.value].filter(Boolean).join(' · ');
@@ -257,6 +270,8 @@ const getSurchargeAmount = (surcharge, baseAmount) => {
 };
 
 const roundMoneyAmount = (amount) => Math.round((Number(amount) || 0) * 100) / 100;
+
+const roundClosureMoneyAmount = (amount) => Math.round(Number(amount) || 0);
 
 const formatClosureInvoiceNumber = (closure) => `FAC-${String(closure?.id || '').replace(/-/g, '').slice(0, 8).toUpperCase() || String(Date.now()).slice(-8)}`;
 
@@ -495,6 +510,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const [lineDiscounts, setLineDiscounts] = useState({});
   const [totalDiscountIds, setTotalDiscountIds] = useState([]);
   const [payments, setPayments] = useState({ cash: '', transfer: '', card: '' });
+  const [noCostClosure, setNoCostClosure] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [confirmedInvoiceDetails, setConfirmedInvoiceDetails] = useState(null);
   const isEmployeeView = accessProfile === 'employee';
@@ -536,14 +552,14 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const bookingPriceById = useMemo(() => {
     const prices = new Map();
     clientBookings.forEach((booking) => {
-      const service = services.find((item) => Number(item.id) === Number(booking.service));
+      const service = services.find((item) => idsEqual(item.id, booking.service));
       if (service?.base_price != null) {
-        prices.set(booking.id, Number(service.base_price) || 0);
+        prices.set(booking.id, roundClosureMoneyAmount(service.base_price));
         return;
       }
       const promotionTitle = getBookingActivityLabel(booking, service);
       const promotion = (promotions || []).find((item) => normalizeComparableText(item?.title) === normalizeComparableText(promotionTitle));
-      prices.set(booking.id, Number(promotion?.price) || parseMoney(promotion?.value || booking.booking_description));
+      prices.set(booking.id, roundClosureMoneyAmount(Number(promotion?.price) || parseMoney(promotion?.value || booking.booking_description)));
     });
     return prices;
   }, [clientBookings, promotions, services]);
@@ -551,7 +567,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const selectedItems = useMemo(() => clientBookings
     .filter((booking) => effectiveSelectedBookingIds.includes(booking.id))
     .map((booking) => {
-      const service = services.find((item) => Number(item.id) === Number(booking.service));
+      const service = services.find((item) => idsEqual(item.id, booking.service));
       const employee = employees.find((item) => String(item.id) === String(booking.employee_id));
       const basePrice = bookingPriceById.get(booking.id) || 0;
       const activityDiscount = activityDiscountOptions.find((discount) =>
@@ -572,20 +588,18 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         appliedDiscounts
       };
     }), [activityDiscountOptions, bookingPriceById, clientBookings, effectiveSelectedBookingIds, employees, lineDiscountOptions, lineDiscounts, services]);
-  const grossTotal = selectedItems.reduce((total, item) => total + item.basePrice, 0);
-  const lineDiscountTotal = selectedItems.reduce((total, item) => total + item.lineDiscountTotal, 0);
-  const subtotal = selectedItems.reduce((total, item) => total + item.subtotal, 0);
-  const selectedTotalDiscounts = totalDiscountOptions.filter((discount) => totalDiscountIds.includes(getDiscountKey(discount)));
+  const grossTotal = roundClosureMoneyAmount(selectedItems.reduce((total, item) => total + item.basePrice, 0));
+  const lineDiscountTotal = noCostClosure ? 0 : roundClosureMoneyAmount(selectedItems.reduce((total, item) => total + item.lineDiscountTotal, 0));
+  const subtotal = noCostClosure ? grossTotal : roundClosureMoneyAmount(selectedItems.reduce((total, item) => total + item.subtotal, 0));
+  const selectedTotalDiscounts = noCostClosure ? [] : totalDiscountOptions.filter((discount) => totalDiscountIds.includes(getDiscountKey(discount)));
   // Modelo contable del cierre (estilo caja):
   //   valor_servicios (bruto) - descuento_promocion - descuento_efectivo + recargo_tarjeta = total_final
-  // Cada medio de pago recibe el IMPORTE BASE (valor de servicio) que cubre. El
-  // descuento por efectivo se calcula sobre la base de efectivo y el recargo de
-  // tarjeta sobre la base de tarjeta. Preparado para sumar IVA discriminado a
-  // futuro (una linea impuesto_iva sobre el neto segun cliente/medio de pago).
-  const paymentBaseAmounts = {
-    cash: parseMoney(payments.cash),
-    transfer: parseMoney(payments.transfer),
-    card: parseMoney(payments.card)
+  // Cada medio de pago recibe el IMPORTE COBRADO. Desde ese cobro se infiere la
+  // base de servicio cubierta por el medio para poder aplicar descuentos/recargos.
+  const rawPaymentInputAmounts = {
+    cash: roundClosureMoneyAmount(parseMoney(payments.cash)),
+    transfer: roundClosureMoneyAmount(parseMoney(payments.transfer)),
+    card: roundClosureMoneyAmount(parseMoney(payments.card))
   };
   const cashPaymentDiscounts = selectedTotalDiscounts.filter(isCashPaymentDiscount);
   const nonCashTotalDiscounts = selectedTotalDiscounts.filter((discount) => !isCashPaymentDiscount(discount));
@@ -593,64 +607,108 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   // descuento_promocion: descuentos por linea + descuentos sobre total (sin "pago en efectivo").
   const nonCashDiscountTotal = Math.min(
     subtotal,
-    nonCashTotalDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, subtotal), 0)
+    roundClosureMoneyAmount(nonCashTotalDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, subtotal), 0))
   );
-  const promotionDiscountTotal = roundMoneyAmount(lineDiscountTotal + nonCashDiscountTotal);
+  const promotionDiscountTotal = roundClosureMoneyAmount(lineDiscountTotal + nonCashDiscountTotal);
   // valor_servicios neto de promociones: es lo que deben cubrir los importes base.
-  const serviceNetTotal = Math.max(0, roundMoneyAmount(grossTotal - promotionDiscountTotal));
+  const serviceNetTotal = Math.max(0, roundClosureMoneyAmount(grossTotal - promotionDiscountTotal));
 
-  // descuento_efectivo: se calcula sobre el importe base cargado en el medio efectivo.
-  const cashPaymentDiscountTotal = Math.max(0, Math.min(
-    paymentBaseAmounts.cash,
-    cashPaymentDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, paymentBaseAmounts.cash), 0)
-  ));
+  const paymentInputAmounts = noCostClosure
+    ? { cash: serviceNetTotal, transfer: 0, card: 0 }
+    : rawPaymentInputAmounts;
 
-  // recargo_tarjeta (y otros medios): sobre el importe base de cada medio.
-  const selectedSurchargeDetails = activeSurcharges
-    .map((surcharge) => ({
-      surcharge,
-      baseAmount: paymentBaseAmounts[surcharge.paymentMethod] || 0,
-      amount: getSurchargeAmount(surcharge, paymentBaseAmounts[surcharge.paymentMethod] || 0)
-    }))
-    .filter((item) => item.amount > 0);
+  const getPaymentAdjustments = (method, baseAmount) => {
+    const cleanBaseAmount = Math.max(0, roundClosureMoneyAmount(baseAmount));
+    const methodDiscounts = method === 'cash' ? cashPaymentDiscounts : [];
+    const discountTotal = Math.max(0, Math.min(
+      cleanBaseAmount,
+      roundClosureMoneyAmount(methodDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, cleanBaseAmount), 0))
+    ));
+    const surchargeDetails = activeSurcharges
+      .filter((surcharge) => surcharge.paymentMethod === method)
+      .map((surcharge) => ({
+        surcharge,
+        baseAmount: cleanBaseAmount,
+        amount: roundClosureMoneyAmount(getSurchargeAmount(surcharge, cleanBaseAmount))
+      }))
+      .filter((item) => item.amount > 0);
+    const surchargeTotalForMethod = roundClosureMoneyAmount(surchargeDetails.reduce((total, item) => total + item.amount, 0));
+    const chargedAmount = roundClosureMoneyAmount(Math.max(0, cleanBaseAmount - discountTotal) + surchargeTotalForMethod);
+
+    return { discountTotal, surchargeDetails, surchargeTotalForMethod, chargedAmount };
+  };
+
+  const defaultPaymentBaseAmounts = {
+    cash: paymentInputAmounts.cash,
+    transfer: paymentInputAmounts.transfer,
+    card: paymentInputAmounts.card
+  };
+
+  const paymentInputTotal = roundClosureMoneyAmount(paymentInputAmounts.cash + paymentInputAmounts.transfer + paymentInputAmounts.card);
+  const canInferCashDiscountBase = cashPaymentDiscounts.length > 0 && paymentInputAmounts.cash > 0 && paymentInputTotal < serviceNetTotal;
+  const inferredCashBase = canInferCashDiscountBase
+    ? Math.max(0, serviceNetTotal - defaultPaymentBaseAmounts.transfer - defaultPaymentBaseAmounts.card)
+    : defaultPaymentBaseAmounts.cash;
+  const useInferredCashBase = canInferCashDiscountBase && Math.abs(getPaymentAdjustments('cash', inferredCashBase).chargedAmount - paymentInputAmounts.cash) < PAYMENT_BALANCE_TOLERANCE;
+  const baseAfterCash = {
+    ...defaultPaymentBaseAmounts,
+    cash: useInferredCashBase ? inferredCashBase : defaultPaymentBaseAmounts.cash
+  };
+  const canInferCardSurchargeBase = !noCostClosure && activeSurcharges.some((surcharge) => surcharge.paymentMethod === 'card') && paymentInputAmounts.card > 0 && paymentInputTotal > serviceNetTotal;
+  const inferredCardBase = canInferCardSurchargeBase
+    ? Math.max(0, serviceNetTotal - baseAfterCash.cash - baseAfterCash.transfer)
+    : baseAfterCash.card;
+  const useInferredCardBase = canInferCardSurchargeBase && Math.abs(getPaymentAdjustments('card', inferredCardBase).chargedAmount - paymentInputAmounts.card) < PAYMENT_BALANCE_TOLERANCE;
+
+  const paymentBaseAmounts = {
+    ...baseAfterCash,
+    card: useInferredCardBase ? inferredCardBase : baseAfterCash.card
+  };
+
+  // descuento_efectivo: se calcula sobre la base inferida del efectivo cobrado.
+  const cashPaymentDiscountTotal = getPaymentAdjustments('cash', paymentBaseAmounts.cash).discountTotal;
+
+  // recargos: sobre la base inferida de cada medio.
+  const selectedSurchargeDetails = noCostClosure ? [] : ['cash', 'transfer', 'card'].flatMap((method) => getPaymentAdjustments(method, paymentBaseAmounts[method]).surchargeDetails);
   const paymentSurchargeAmounts = ['cash', 'transfer', 'card'].reduce((summary, method) => ({
     ...summary,
     [method]: selectedSurchargeDetails.filter((item) => item.surcharge.paymentMethod === method).reduce((total, item) => total + item.amount, 0)
   }), { cash: 0, transfer: 0, card: 0 });
-  const surchargeTotal = roundMoneyAmount(selectedSurchargeDetails.reduce((total, item) => total + item.amount, 0));
-
-  // Lo que efectivamente se cobra por cada medio = base - descuento efectivo + recargo.
-  const chargedPaymentAmounts = {
-    cash: roundMoneyAmount(Math.max(0, paymentBaseAmounts.cash - cashPaymentDiscountTotal) + paymentSurchargeAmounts.cash),
-    transfer: roundMoneyAmount(paymentBaseAmounts.transfer + paymentSurchargeAmounts.transfer),
-    card: roundMoneyAmount(paymentBaseAmounts.card + paymentSurchargeAmounts.card)
-  };
+  const surchargeTotal = roundClosureMoneyAmount(selectedSurchargeDetails.reduce((total, item) => total + item.amount, 0));
 
   // Detalle de descuentos sobre total para la factura (efectivo sobre base de efectivo).
   const selectedTotalDiscountDetails = selectedTotalDiscounts.map((discount) => ({
     discount,
-    amount: isCashPaymentDiscount(discount)
+    amount: roundClosureMoneyAmount(isCashPaymentDiscount(discount)
       ? Math.min(paymentBaseAmounts.cash, getDiscountAmount(discount, paymentBaseAmounts.cash))
-      : getDiscountAmount(discount, subtotal)
+      : getDiscountAmount(discount, subtotal))
   }));
 
-  const totalDiscountTotal = roundMoneyAmount(nonCashDiscountTotal + cashPaymentDiscountTotal);
-  const netTotal = Math.max(0, roundMoneyAmount(serviceNetTotal - cashPaymentDiscountTotal));
+  const totalDiscountTotal = roundClosureMoneyAmount(nonCashDiscountTotal + cashPaymentDiscountTotal);
+  const netTotal = Math.max(0, roundClosureMoneyAmount(serviceNetTotal - cashPaymentDiscountTotal));
   // total_final = neto de servicios - descuento efectivo + recargos.
-  const finalTotal = roundMoneyAmount(Math.max(0, serviceNetTotal - cashPaymentDiscountTotal + surchargeTotal));
+  const finalTotal = roundClosureMoneyAmount(Math.max(0, serviceNetTotal - cashPaymentDiscountTotal + surchargeTotal));
   const displayFinalTotal = finalTotal;
-  const totalSavings = Math.max(0, roundMoneyAmount(grossTotal - netTotal));
+  const totalSavings = Math.max(0, roundClosureMoneyAmount(grossTotal - netTotal));
 
   // Importe base total asignado a medios de pago; debe cubrir el neto de servicios.
-  const totalPaymentInputAmount = roundMoneyAmount(paymentBaseAmounts.cash + paymentBaseAmounts.transfer + paymentBaseAmounts.card);
-  const chargedTotal = roundMoneyAmount(chargedPaymentAmounts.cash + chargedPaymentAmounts.transfer + chargedPaymentAmounts.card);
+  const totalPaymentInputAmount = roundClosureMoneyAmount(paymentBaseAmounts.cash + paymentBaseAmounts.transfer + paymentBaseAmounts.card);
+  const chargedTotal = paymentInputTotal;
   const displayChargedTotal = chargedTotal;
   // Saldo por asignar: valor de servicios (neto) que aun no fue cubierto por un medio de pago.
-  const paymentDifference = roundMoneyAmount(totalPaymentInputAmount - serviceNetTotal);
+  const paymentDifference = roundClosureMoneyAmount(totalPaymentInputAmount - serviceNetTotal);
+  const displayPaymentDifference = Math.abs(paymentDifference) < PAYMENT_BALANCE_TOLERANCE ? 0 : paymentDifference;
+  const chargedDifference = roundClosureMoneyAmount(chargedTotal - finalTotal);
+  const displayChargedDifference = Math.abs(chargedDifference) < PAYMENT_BALANCE_TOLERANCE ? 0 : chargedDifference;
+  const canConfirmClosure = selectedItems.length > 0 && (noCostClosure || (serviceNetTotal > 0 && Math.abs(displayPaymentDifference) === 0 && Math.abs(displayChargedDifference) === 0));
   const closureCutoffLabel = formatDateInputForDisplay(closureCutoffDate);
 
+  const updatePayment = (method, value) => {
+    setPayments((current) => ({ ...current, [method]: value }));
+  };
+
   const toggleLineDiscount = (bookingId, discountKey) => {
-    if (isClosureConfirmed) return;
+    if (isClosureConfirmed || noCostClosure) return;
     setLineDiscounts((current) => {
       const currentDiscounts = current[bookingId] || [];
       return { ...current, [bookingId]: currentDiscounts.includes(discountKey) ? currentDiscounts.filter((key) => key !== discountKey) : [...currentDiscounts, discountKey] };
@@ -675,10 +733,10 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       endAt: item.booking.end_at
     })),
     discountDetails: [
-      ...selectedItems.flatMap((item) => item.appliedDiscounts.map((discount) => ({
+      ...(noCostClosure ? [] : selectedItems.flatMap((item) => item.appliedDiscounts.map((discount) => ({
         label: `Desc. ${formatDiscountOption(discount)}`,
         amount: getDiscountAmount(discount, item.basePrice)
-      }))),
+      })))),
       ...selectedTotalDiscountDetails.map(({ discount, amount }) => ({
         label: `Desc. ${formatDiscountOption(discount)}`,
         amount
@@ -694,20 +752,22 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       surchargeTotal,
       finalTotal
     },
-    payments: chargedPaymentAmounts
+    payments: paymentInputAmounts
   });
 
   const confirmClosure = async () => {
     if (isClosureConfirmed) return;
     if (!selectedItems.length) return alert('Seleccioná al menos un turno para cerrar.');
-    if (Math.abs(paymentDifference) > 0.01) return alert('La suma de los importes base por medio de pago debe cubrir el valor de los servicios.');
+    if (!noCostClosure && serviceNetTotal <= 0) return alert('Para cerrar una atención sin valor de servicio, activá Sin costo.');
+    if (!noCostClosure && Math.abs(displayPaymentDifference) > 0) return alert('La suma cobrada por medio de pago debe cubrir el valor de los servicios luego de descuentos y recargos.');
+    if (!noCostClosure && Math.abs(displayChargedDifference) > 0) return alert('La suma cobrada debe coincidir con el total final, incluyendo descuentos y recargos.');
     setIsClosing(true);
     const rpcPayload = {
       service_date_value: selectedClient?.serviceDate || serviceDate,
       client_name_value: selectedClient?.name || null,
       client_email_value: selectedClient?.email || null,
       booking_ids_value: selectedItems.map((item) => item.booking.id),
-      closure_items_value: selectedItems.map((item) => ({ bookingId: item.booking.id, serviceName: item.serviceName, employeeId: item.employee?.id || item.booking.employee_id || null, employeeName: item.employeeName, basePrice: item.basePrice, lineDiscountTotal: item.lineDiscountTotal, subtotal: item.subtotal, appliedDiscounts: item.appliedDiscounts })),
+      closure_items_value: selectedItems.map((item) => ({ bookingId: item.booking.id, serviceName: item.serviceName, employeeId: item.employee?.id || item.booking.employee_id || null, employeeName: item.employeeName, basePrice: item.basePrice, lineDiscountTotal: noCostClosure ? 0 : item.lineDiscountTotal, subtotal: noCostClosure ? item.basePrice : item.subtotal, appliedDiscounts: noCostClosure ? [] : item.appliedDiscounts })),
       total_discounts_value: selectedTotalDiscounts,
       surcharges_value: selectedSurchargeDetails.map(({ surcharge, baseAmount, amount }) => ({ ...surcharge, baseAmount, amount })),
       gross_total_value: grossTotal,
@@ -715,9 +775,9 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       total_discount_total_value: totalDiscountTotal,
       total_surcharge_total_value: surchargeTotal,
       final_total_value: finalTotal,
-      cash_amount_value: chargedPaymentAmounts.cash,
-      transfer_amount_value: chargedPaymentAmounts.transfer,
-      card_amount_value: chargedPaymentAmounts.card,
+      cash_amount_value: paymentInputAmounts.cash,
+      transfer_amount_value: paymentInputAmounts.transfer,
+      card_amount_value: paymentInputAmounts.card,
       account_id_value: user?.isInternal ? user.id : null,
       session_token_value: user?.isInternal ? user.sessionToken : null
     };
@@ -795,11 +855,11 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         <div className="agenda-modal-body close-attention-body">
           <div className="close-attention-controls">
             <label>Hasta hoy<input type="text" value={closureCutoffLabel} readOnly /></label>
-            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { if (isClosureConfirmed) return; setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); }} disabled={isClosureConfirmed}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
+            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { if (isClosureConfirmed) return; setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setNoCostClosure(false); setPayments({ cash: '', transfer: '', card: '' }); }} disabled={isClosureConfirmed}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
           </div>
           <div className="close-attention-items">
             {clientBookings.length ? clientBookings.map((booking) => {
-              const service = services.find((item) => Number(item.id) === Number(booking.service));
+              const service = services.find((item) => idsEqual(item.id, booking.service));
               const employee = employees.find((item) => String(item.id) === String(booking.employee_id));
               const item = selectedItems.find((selectedItem) => selectedItem.booking.id === booking.id);
               const isSelected = effectiveSelectedBookingIds.includes(booking.id);
@@ -814,21 +874,22 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
                 <div className="close-attention-price-row"><span>Base: {formatMoney(item?.basePrice ?? bookingPriceById.get(booking.id) ?? 0)}</span><strong>Subtotal: {formatMoney(item?.subtotal || 0)}</strong></div>
                 {isSelected && availableLineDiscounts.length > 0 && <div className="close-attention-discounts">{availableLineDiscounts.map((discount) => {
                   const discountKey = getDiscountKey(discount);
-                  return <label className="settings-check-row" key={`${booking.id}-${discountKey}`}><input type="checkbox" checked={(lineDiscounts[booking.id] || []).includes(discountKey)} disabled={isClosureConfirmed} onChange={() => toggleLineDiscount(booking.id, discountKey)} /><span>{formatDiscountOption(discount)}</span></label>;
+                  return <label className="settings-check-row" key={`${booking.id}-${discountKey}`}><input type="checkbox" checked={(lineDiscounts[booking.id] || []).includes(discountKey)} disabled={isClosureConfirmed || noCostClosure} onChange={() => toggleLineDiscount(booking.id, discountKey)} /><span>{formatDiscountOption(discount)}</span></label>;
                 })}</div>}
               </article>;
             }) : <div className="agenda-empty-state">No hay turnos pendientes de cierre.</div>}
           </div>
           {totalDiscountOptions.length > 0 && <div className="close-attention-section"><strong>Descuentos sobre total</strong><div className="close-attention-discounts">{totalDiscountOptions.map((discount) => {
             const discountKey = getDiscountKey(discount);
-            return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} disabled={isClosureConfirmed} onChange={() => setTotalDiscountIds((current) => { if (isClosureConfirmed) return current; return current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey]; })} /><span>{formatDiscountOption(discount)}</span></label>;
+            return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} disabled={isClosureConfirmed || noCostClosure} onChange={() => setTotalDiscountIds((current) => { if (isClosureConfirmed || noCostClosure) return current; return current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey]; })} /><span>{formatDiscountOption(discount)}</span></label>;
           })}</div></div>}
-          <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => setPayments((current) => ({ ...current, cash: event.target.value }))} placeholder="0" disabled={isClosureConfirmed} /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => setPayments((current) => ({ ...current, transfer: event.target.value }))} placeholder="0" disabled={isClosureConfirmed} /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => setPayments((current) => ({ ...current, card: event.target.value }))} placeholder="0" disabled={isClosureConfirmed} /></label></div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, margin: '4px 4px 0' }}>Cargá el importe base (valor de servicio) que cubre cada medio.</div>
-          {(cashPaymentDiscountTotal > 0 || surchargeTotal > 0) && <div style={{ fontSize: '12px', color: '#7c2d12', fontWeight: 800, margin: '2px 4px 0' }}>Se cobra · Efectivo {formatMoney(chargedPaymentAmounts.cash)} · Transferencia {formatMoney(chargedPaymentAmounts.transfer)} · Tarjeta {formatMoney(chargedPaymentAmounts.card)}</div>}
+          <div className="close-attention-section"><strong>Cierre sin cobro</strong><label className="settings-check-row"><input type="checkbox" checked={noCostClosure} disabled={isClosureConfirmed || selectedItems.length === 0} onChange={(event) => { const checked = event.target.checked; setNoCostClosure(checked); if (checked) { setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); } }} /><span>Sin costo</span></label></div>
+          <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => updatePayment('cash', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure} /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => updatePayment('transfer', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure} /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => updatePayment('card', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure} /></label></div>
+          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, margin: '4px 4px 0' }}>Cargá el importe cobrado por cada medio. La base de servicio se calcula automaticamente.</div>
+          {(cashPaymentDiscountTotal > 0 || surchargeTotal > 0) && <div style={{ fontSize: '12px', color: '#7c2d12', fontWeight: 800, margin: '2px 4px 0' }}>Cobrado · Efectivo {formatMoney(paymentInputAmounts.cash)} · Transferencia {formatMoney(paymentInputAmounts.transfer)} · Tarjeta {formatMoney(paymentInputAmounts.card)}</div>}
           {activeSurcharges.length > 0 && <div className="close-attention-section"><strong>Recargos aplicados</strong><div className="close-attention-discounts">{activeSurcharges.map((surcharge) => {
-            const baseAmount = paymentBaseAmounts[surcharge.paymentMethod] || 0;
-            const amount = getSurchargeAmount(surcharge, baseAmount);
+            const baseAmount = noCostClosure ? 0 : paymentBaseAmounts[surcharge.paymentMethod] || 0;
+            const amount = noCostClosure ? 0 : getSurchargeAmount(surcharge, baseAmount);
             return <span className="settings-check-row" key={getSurchargeKey(surcharge)}><span>{formatSurchargeOption(surcharge)} sobre {formatPaymentMethod(surcharge.paymentMethod)}: +{formatMoney(amount)}{amount > 0 ? ` · Base: ${formatMoney(baseAmount)}` : ''}</span></span>;
           })}</div></div>}
           <div className="close-attention-total">
@@ -839,9 +900,10 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
             <strong><span>Total final</span><span>{formatMoney(displayFinalTotal)}</span></strong>
             <span><span>Pagado</span><span>{formatMoney(displayChargedTotal)}</span></span>
             <span><span>Base asignada</span><span>{formatMoney(totalPaymentInputAmount)} / {formatMoney(serviceNetTotal)}</span></span>
-            {Math.abs(paymentDifference) > 0.01 && <span className="close-attention-difference">{paymentDifference > 0 ? 'Base asignada de más' : 'Falta asignar'}: {formatMoney(Math.abs(paymentDifference))}</span>}
+            {Math.abs(displayChargedDifference) > 0 && <span className="close-attention-difference">{displayChargedDifference > 0 ? 'Cobrado de más' : 'Falta cobrar'}: {formatMoney(Math.abs(displayChargedDifference))}</span>}
+            {Math.abs(displayPaymentDifference) > 0 && <span className="close-attention-difference">{displayPaymentDifference > 0 ? 'Base asignada de más' : 'Falta asignar'}: {formatMoney(Math.abs(displayPaymentDifference))}</span>}
           </div>
-          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>Cerrar</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !selectedItems.length || Math.abs(paymentDifference) > 0.01}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button>}</div>
+          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>Cerrar</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !canConfirmClosure}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button>}</div>
         </div>
       </div>
     </div>
@@ -1305,7 +1367,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     }, new Map());
 
     return bookings.reduce((map, booking) => {
-      const service = services.find((item) => Number(item.id) === Number(booking.service));
+      const service = services.find((item) => idsEqual(item.id, booking.service));
       const closureItem = (bookingClosureItems || []).find((item) => String(item.booking_id) === String(booking.id));
       const closure = closuresById.get(String(closureItem?.closure_id || booking.closure_id || ''));
       const promotionTitle = getBookingActivityLabel(booking, service);
@@ -1331,7 +1393,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         const invoiceSnapshot = invoicesByClosureId.get(String(closureItem.closure_id || ''));
         const invoiceItems = closureItems.map((item) => {
           const itemBooking = bookingsById.get(String(item.booking_id)) || booking;
-          const itemService = services.find((serviceItem) => Number(serviceItem.id) === Number(itemBooking?.service));
+          const itemService = services.find((serviceItem) => idsEqual(serviceItem.id, itemBooking?.service));
           const itemEmployee = employees.find((employeeItem) => String(employeeItem.id) === String(item.employee_id || itemBooking?.employee_id));
           return {
             serviceName: item.service_name || getBookingActivityLabel(itemBooking, itemService),
@@ -1483,7 +1545,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
             .filter((employee) => assignedPromotionEmployeeIds.some((id) => String(id) === String(employee.id)))
             .map((employee) => ({ employee_id: employee.id }))
         : usesLoadedEmployeeData
-        ? employeeServices.filter((relation) => Number(relation.service_id) === Number(selectedService.id))
+        ? employeeServices.filter((relation) => idsEqual(relation.service_id, selectedService.id))
           : (await applyCompanyFilter(supabase
               .from('employee_services')
               .select('employee_id'))
@@ -2126,7 +2188,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           active: true,
           promotion
         }
-      : services.find((item) => Number(item.id) === Number(booking.service));
+      : services.find((item) => idsEqual(item.id, booking.service));
     const range = buildRangeFromBooking(booking);
     const hasClientConflict = clientHasBookingConflict(bookings, { userId: booking.user_id, email: booking.user_email }, range, booking.id);
 
@@ -2138,9 +2200,9 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const relResult = isPromotionBooking
       ? { data: Array.isArray(promotion?.employeeIds) ? promotion.employeeIds.map((id) => ({ employee_id: id })) : [], error: null }
       : isAdminView
-      ? { data: employeeServices.filter((relation) => Number(relation.service_id) === Number(booking.service)), error: null }
+      ? { data: employeeServices.filter((relation) => idsEqual(relation.service_id, booking.service)), error: null }
       : user?.isInternal && isEmployeeView
-        ? { data: employeeServices.filter((relation) => Number(relation.service_id) === Number(booking.service)), error: null }
+        ? { data: employeeServices.filter((relation) => idsEqual(relation.service_id, booking.service)), error: null }
         : await applyCompanyFilter(supabase
           .from('employee_services')
           .select('employee_id'))
@@ -2298,7 +2360,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           ) : (
           <div className="admin-pending-list">
             {pendingAssignmentBookings.map((booking) => {
-              const service = services.find((item) => Number(item.id) === Number(booking.service));
+              const service = services.find((item) => idsEqual(item.id, booking.service));
               const isWaitlist = isWaitlistBooking(booking);
               const assignmentLabel = `${getBookingActivityLabel(booking, service)} / ${isWaitlist ? 'En espera' : 'Pendiente'}`;
               const bundleType = String(booking.bundle_type || '').toLowerCase();
@@ -2493,7 +2555,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
                 >
                   <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
                     {slotBookings.map(b => {
-                      const service = services.find(s => Number(s.id) === Number(b.service));
+                      const service = services.find(s => idsEqual(s.id, b.service));
                       const emp = employees.find(e => e.id === b.employee_id);
                       const employeeLabel = formatPersonShortName(emp);
                       const isOwn = isOwnBooking(b);
