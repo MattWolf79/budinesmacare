@@ -4662,8 +4662,19 @@ code {
 
 @media (max-width: 640px) {
   .role-workspace-employee .employee-date-chip-all {
-    min-width: 44px;
-    padding: 6px 8px;
+    align-self: center;
+    min-width: auto;
+    min-height: auto;
+    padding: 5px 12px;
+    border-radius: 999px;
+  }
+
+  .role-workspace-employee .employee-date-chip-all .employee-date-chip-day {
+    font-size: 11px;
+  }
+
+  .role-workspace-employee .employee-date-week {
+    overflow: visible;
   }
 
   .role-workspace-employee .employee-upcoming-row-main {
