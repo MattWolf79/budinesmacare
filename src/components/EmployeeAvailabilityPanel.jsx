@@ -136,6 +136,7 @@ export default function EmployeeAvailabilityPanel({
     branches.find((branch) => String(branch.id) === String(branchIdValue))?.name || 'Sucursal';
   const availabilityFilterStorageKey = `turnos.availability.weekday.${isAdminMode ? 'admin' : employeeId || user?.id || 'employee'}`;
   const employeeFilterStorageKey = `turnos.availability.employee.${companySlug || user?.id || 'admin'}`;
+  const branchFilterStorageKey = `turnos.availability.branch.${companySlug || user?.id || 'company'}`;
   const [employees, setEmployees] = useState(adminEmployees);
   const [availability, setAvailability] = useState([]);
   const [form, setForm] = useState(() => ({
@@ -159,8 +160,13 @@ export default function EmployeeAvailabilityPanel({
     if (!isAdminMode || typeof window === 'undefined') return 'all';
     return window.sessionStorage.getItem(employeeFilterStorageKey) || 'all';
   });
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState(() => {
+    if (typeof window === 'undefined') return 'all';
+    return window.sessionStorage.getItem(branchFilterStorageKey) || 'all';
+  });
   const [isAvailabilityFormOpen, setIsAvailabilityFormOpen] = useState(false);
   const [isEmployeeFilterOpen, setIsEmployeeFilterOpen] = useState(false);
+  const [isBranchFilterOpen, setIsBranchFilterOpen] = useState(false);
 
   const selectedEmployeeId = isAdminMode
     ? (selectedEmployeeFilter === 'all' ? '' : selectedEmployeeFilter)
@@ -168,12 +174,15 @@ export default function EmployeeAvailabilityPanel({
   const selectedEmployeeLabel = isAdminMode
     ? (selectedEmployeeId ? getEmployeeName(employees, selectedEmployeeId, 'Empleado') : 'Todos los empleados')
     : getEmployeeName(employees, selectedEmployeeId, employeeName || 'Empleado');
+  const selectedBranchId = showBranchSelector && selectedBranchFilter !== 'all' ? selectedBranchFilter : '';
+  const selectedBranchLabel = selectedBranchId ? getBranchName(selectedBranchId) : 'Todas las sucursales';
   const visibleAvailability = useMemo(
     () => availability.filter((item) =>
       isCurrentOrFutureAvailability(item) &&
-      (!selectedEmployeeId || String(item.employee_id) === String(selectedEmployeeId))
+      (!selectedEmployeeId || String(item.employee_id) === String(selectedEmployeeId)) &&
+      (!selectedBranchId || String(item.branch_id) === String(selectedBranchId))
     ),
-    [availability, selectedEmployeeId]
+    [availability, selectedBranchId, selectedEmployeeId]
   );
 
   const activeDayCount = useMemo(() => {
@@ -281,6 +290,14 @@ export default function EmployeeAvailabilityPanel({
   }, [employeeFilterStorageKey, employees, isAdminMode, selectedEmployeeFilter]);
 
   useEffect(() => {
+    if (!showBranchSelector || selectedBranchFilter === 'all') return;
+    if (branches.some((branch) => String(branch.id) === String(selectedBranchFilter))) return;
+
+    setSelectedBranchFilter('all');
+    window.sessionStorage.setItem(branchFilterStorageKey, 'all');
+  }, [branchFilterStorageKey, branches, selectedBranchFilter, showBranchSelector]);
+
+  useEffect(() => {
     if (!isAdminMode || selectedEmployeeFilter === 'all' || editingAvailabilityId) return;
     setForm((current) => (
       String(current.employeeId) === String(selectedEmployeeFilter)
@@ -290,15 +307,19 @@ export default function EmployeeAvailabilityPanel({
   }, [editingAvailabilityId, isAdminMode, selectedEmployeeFilter]);
 
   useEffect(() => {
-    if (!isEmployeeFilterOpen) return undefined;
+    if (!isEmployeeFilterOpen && !isBranchFilterOpen) return undefined;
 
     const closeCombo = (event) => {
-      if (event.key === 'Escape') setIsEmployeeFilterOpen(false);
+      if (event.key === 'Escape') {
+        setIsEmployeeFilterOpen(false);
+        setIsBranchFilterOpen(false);
+      }
     };
 
     const closeOnOutsideClick = (event) => {
       if (!event.target.closest?.('.availability-employee-combo')) {
         setIsEmployeeFilterOpen(false);
+        setIsBranchFilterOpen(false);
       }
     };
 
@@ -308,7 +329,7 @@ export default function EmployeeAvailabilityPanel({
       window.removeEventListener('keydown', closeCombo);
       window.removeEventListener('pointerdown', closeOnOutsideClick);
     };
-  }, [isEmployeeFilterOpen]);
+  }, [isBranchFilterOpen, isEmployeeFilterOpen]);
 
   const updateWeekdayFilter = (value) => {
     const nextValue = String(value);
@@ -324,6 +345,13 @@ export default function EmployeeAvailabilityPanel({
     if (nextValue !== 'all' && !editingAvailabilityId) {
       setForm((current) => ({ ...current, employeeId: nextValue }));
     }
+  };
+
+  const updateBranchFilter = (value) => {
+    const nextValue = String(value || 'all');
+    setSelectedBranchFilter(nextValue);
+    setIsBranchFilterOpen(false);
+    window.sessionStorage.setItem(branchFilterStorageKey, nextValue);
   };
 
   const resetForm = () => {
@@ -752,47 +780,101 @@ export default function EmployeeAvailabilityPanel({
         <span>{selectedEmployeeLabel}</span>
       </div>
 
-      {isAdminMode && (
-        <div className="availability-employee-filter">
-          <span>Empleado</span>
-          <div className="availability-employee-combo">
-            <button
-              className="availability-employee-combo-button"
-              type="button"
-              aria-haspopup="listbox"
-              aria-expanded={isEmployeeFilterOpen}
-              onClick={() => setIsEmployeeFilterOpen((current) => !current)}
-            >
-              <span>{selectedEmployeeLabel}</span>
-              <small aria-hidden="true">⌄</small>
-            </button>
-            {isEmployeeFilterOpen && (
-              <div className="availability-employee-combo-list" role="listbox" aria-label="Filtrar disponibilidad por empleado">
+      {(isAdminMode || showBranchSelector) && (
+        <div className="availability-filter-row">
+          {isAdminMode && (
+            <div className="availability-employee-filter">
+              <span>Empleado</span>
+              <div className="availability-employee-combo">
                 <button
-                  className={`availability-employee-combo-option ${selectedEmployeeFilter === 'all' ? 'is-selected' : ''}`}
+                  className="availability-employee-combo-button"
                   type="button"
-                  role="option"
-                  aria-selected={selectedEmployeeFilter === 'all'}
-                  onClick={() => updateEmployeeFilter('all')}
+                  aria-haspopup="listbox"
+                  aria-expanded={isEmployeeFilterOpen}
+                  onClick={() => {
+                    setIsBranchFilterOpen(false);
+                    setIsEmployeeFilterOpen((current) => !current);
+                  }}
                 >
-                  Todos los empleados
+                  <span>{selectedEmployeeLabel}</span>
+                  <small aria-hidden="true">⌄</small>
                 </button>
-                {employees.map((employee) => (
-                  <button
-                    className={`availability-employee-combo-option ${String(selectedEmployeeFilter) === String(employee.id) ? 'is-selected' : ''}`}
-                    type="button"
-                    role="option"
-                    aria-selected={String(selectedEmployeeFilter) === String(employee.id)}
-                    key={employee.id}
-                    onClick={() => updateEmployeeFilter(employee.id)}
-                    title={employee.name}
-                  >
-                    {employee.name}
-                  </button>
-                ))}
+                {isEmployeeFilterOpen && (
+                  <div className="availability-employee-combo-list" role="listbox" aria-label="Filtrar disponibilidad por empleado">
+                    <button
+                      className={`availability-employee-combo-option ${selectedEmployeeFilter === 'all' ? 'is-selected' : ''}`}
+                      type="button"
+                      role="option"
+                      aria-selected={selectedEmployeeFilter === 'all'}
+                      onClick={() => updateEmployeeFilter('all')}
+                    >
+                      Todos los empleados
+                    </button>
+                    {employees.map((employee) => (
+                      <button
+                        className={`availability-employee-combo-option ${String(selectedEmployeeFilter) === String(employee.id) ? 'is-selected' : ''}`}
+                        type="button"
+                        role="option"
+                        aria-selected={String(selectedEmployeeFilter) === String(employee.id)}
+                        key={employee.id}
+                        onClick={() => updateEmployeeFilter(employee.id)}
+                        title={employee.name}
+                      >
+                        {employee.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {showBranchSelector && (
+            <div className="availability-employee-filter">
+              <span>Sucursal</span>
+              <div className="availability-employee-combo">
+                <button
+                  className="availability-employee-combo-button"
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={isBranchFilterOpen}
+                  onClick={() => {
+                    setIsEmployeeFilterOpen(false);
+                    setIsBranchFilterOpen((current) => !current);
+                  }}
+                >
+                  <span>{selectedBranchLabel}</span>
+                  <small aria-hidden="true">⌄</small>
+                </button>
+                {isBranchFilterOpen && (
+                  <div className="availability-employee-combo-list" role="listbox" aria-label="Filtrar disponibilidad por sucursal">
+                    <button
+                      className={`availability-employee-combo-option ${selectedBranchFilter === 'all' ? 'is-selected' : ''}`}
+                      type="button"
+                      role="option"
+                      aria-selected={selectedBranchFilter === 'all'}
+                      onClick={() => updateBranchFilter('all')}
+                    >
+                      Todas las sucursales
+                    </button>
+                    {branches.map((branch) => (
+                      <button
+                        className={`availability-employee-combo-option ${String(selectedBranchFilter) === String(branch.id) ? 'is-selected' : ''}`}
+                        type="button"
+                        role="option"
+                        aria-selected={String(selectedBranchFilter) === String(branch.id)}
+                        key={branch.id}
+                        onClick={() => updateBranchFilter(branch.id)}
+                        title={branch.name}
+                      >
+                        {branch.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
