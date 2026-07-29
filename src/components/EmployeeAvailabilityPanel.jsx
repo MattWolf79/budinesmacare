@@ -135,6 +135,7 @@ export default function EmployeeAvailabilityPanel({
   const getBranchName = (branchIdValue) =>
     branches.find((branch) => String(branch.id) === String(branchIdValue))?.name || 'Sucursal';
   const availabilityFilterStorageKey = `turnos.availability.weekday.${isAdminMode ? 'admin' : employeeId || user?.id || 'employee'}`;
+  const employeeFilterStorageKey = `turnos.availability.employee.${companySlug || user?.id || 'admin'}`;
   const [employees, setEmployees] = useState(adminEmployees);
   const [availability, setAvailability] = useState([]);
   const [form, setForm] = useState(() => ({
@@ -154,9 +155,19 @@ export default function EmployeeAvailabilityPanel({
     const savedFilter = window.sessionStorage.getItem(availabilityFilterStorageKey);
     return isValidWeekdayFilter(savedFilter) ? savedFilter : 'all';
   });
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState(() => {
+    if (!isAdminMode || typeof window === 'undefined') return 'all';
+    return window.sessionStorage.getItem(employeeFilterStorageKey) || 'all';
+  });
   const [isAvailabilityFormOpen, setIsAvailabilityFormOpen] = useState(false);
+  const [isEmployeeFilterOpen, setIsEmployeeFilterOpen] = useState(false);
 
-  const selectedEmployeeId = isAdminMode ? '' : employeeId;
+  const selectedEmployeeId = isAdminMode
+    ? (selectedEmployeeFilter === 'all' ? '' : selectedEmployeeFilter)
+    : employeeId;
+  const selectedEmployeeLabel = isAdminMode
+    ? (selectedEmployeeId ? getEmployeeName(employees, selectedEmployeeId, 'Empleado') : 'Todos los empleados')
+    : getEmployeeName(employees, selectedEmployeeId, employeeName || 'Empleado');
   const visibleAvailability = useMemo(
     () => availability.filter((item) =>
       isCurrentOrFutureAvailability(item) &&
@@ -261,10 +272,58 @@ export default function EmployeeAvailabilityPanel({
     });
   }, [showBranchSelector, branches]);
 
+  useEffect(() => {
+    if (!isAdminMode || selectedEmployeeFilter === 'all') return;
+    if (employees.some((employee) => String(employee.id) === String(selectedEmployeeFilter))) return;
+
+    setSelectedEmployeeFilter('all');
+    window.sessionStorage.setItem(employeeFilterStorageKey, 'all');
+  }, [employeeFilterStorageKey, employees, isAdminMode, selectedEmployeeFilter]);
+
+  useEffect(() => {
+    if (!isAdminMode || selectedEmployeeFilter === 'all' || editingAvailabilityId) return;
+    setForm((current) => (
+      String(current.employeeId) === String(selectedEmployeeFilter)
+        ? current
+        : { ...current, employeeId: selectedEmployeeFilter }
+    ));
+  }, [editingAvailabilityId, isAdminMode, selectedEmployeeFilter]);
+
+  useEffect(() => {
+    if (!isEmployeeFilterOpen) return undefined;
+
+    const closeCombo = (event) => {
+      if (event.key === 'Escape') setIsEmployeeFilterOpen(false);
+    };
+
+    const closeOnOutsideClick = (event) => {
+      if (!event.target.closest?.('.availability-employee-combo')) {
+        setIsEmployeeFilterOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', closeCombo);
+    window.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => {
+      window.removeEventListener('keydown', closeCombo);
+      window.removeEventListener('pointerdown', closeOnOutsideClick);
+    };
+  }, [isEmployeeFilterOpen]);
+
   const updateWeekdayFilter = (value) => {
     const nextValue = String(value);
     setSelectedWeekdayFilter(nextValue);
     window.sessionStorage.setItem(availabilityFilterStorageKey, nextValue);
+  };
+
+  const updateEmployeeFilter = (value) => {
+    const nextValue = String(value || 'all');
+    setSelectedEmployeeFilter(nextValue);
+    setIsEmployeeFilterOpen(false);
+    window.sessionStorage.setItem(employeeFilterStorageKey, nextValue);
+    if (nextValue !== 'all' && !editingAvailabilityId) {
+      setForm((current) => ({ ...current, employeeId: nextValue }));
+    }
   };
 
   const resetForm = () => {
@@ -690,8 +749,52 @@ export default function EmployeeAvailabilityPanel({
       <div className="availability-summary-strip" aria-label="Resumen de disponibilidad">
         <span>{activeDayCount} día(s) activo(s)</span>
         <span>{sortedAvailability.filter((item) => item.active !== false).length} rango(s) horario(s)</span>
-        <span>{isAdminMode ? 'Todos los empleados' : getEmployeeName(employees, selectedEmployeeId, employeeName || 'Empleado')}</span>
+        <span>{selectedEmployeeLabel}</span>
       </div>
+
+      {isAdminMode && (
+        <div className="availability-employee-filter">
+          <span>Empleado</span>
+          <div className="availability-employee-combo">
+            <button
+              className="availability-employee-combo-button"
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded={isEmployeeFilterOpen}
+              onClick={() => setIsEmployeeFilterOpen((current) => !current)}
+            >
+              <span>{selectedEmployeeLabel}</span>
+              <small aria-hidden="true">⌄</small>
+            </button>
+            {isEmployeeFilterOpen && (
+              <div className="availability-employee-combo-list" role="listbox" aria-label="Filtrar disponibilidad por empleado">
+                <button
+                  className={`availability-employee-combo-option ${selectedEmployeeFilter === 'all' ? 'is-selected' : ''}`}
+                  type="button"
+                  role="option"
+                  aria-selected={selectedEmployeeFilter === 'all'}
+                  onClick={() => updateEmployeeFilter('all')}
+                >
+                  Todos los empleados
+                </button>
+                {employees.map((employee) => (
+                  <button
+                    className={`availability-employee-combo-option ${String(selectedEmployeeFilter) === String(employee.id) ? 'is-selected' : ''}`}
+                    type="button"
+                    role="option"
+                    aria-selected={String(selectedEmployeeFilter) === String(employee.id)}
+                    key={employee.id}
+                    onClick={() => updateEmployeeFilter(employee.id)}
+                    title={employee.name}
+                  >
+                    {employee.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="availability-day-filter" aria-label="Filtrar disponibilidad por día">
         <button
