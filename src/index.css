@@ -5427,11 +5427,13 @@ body .platform-admin-header .app-navbar-logout:hover {
 
   body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions .agenda-option-button,
   body .dashboard-shell .agenda-modal-card.booking-detail-modal .agenda-modal-actions.booking-detail-actions .agenda-close-button {
-    flex: 1 1 140px !important;
+    flex: 0 1 150px !important;
     width: auto !important;
-    max-width: 220px !important;
+    max-width: 180px !important;
     height: auto !important;
     min-height: 38px !important;
+    border-radius: 999px !important;
+    padding: 8px 14px !important;
   }
 
   body .dashboard-shell .agenda-modal-card.settlement-modal.settlement-modal-empty {
@@ -13380,13 +13382,23 @@ body {
   white-space: nowrap;
 }
 
+.employee-availability-manager .availability-filter-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: min(100%, 760px);
+  margin: 0 auto 12px;
+}
+
 .employee-availability-manager .availability-employee-filter {
   display: flex;
   align-items: center;
   gap: 10px;
   width: fit-content;
   max-width: min(100%, 520px);
-  margin: 0 auto 12px;
+  margin: 0;
   padding: 10px 14px;
   border: 1px solid #f0e0bf;
   border-radius: 8px;
