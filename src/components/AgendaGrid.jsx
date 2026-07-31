@@ -24,7 +24,8 @@ const BOOKED_SLOT_PADDING_HEIGHT = 10;
 const BOOKING_STACK_HEIGHT = 48;
 const ACTIVE_BOOKING_STATUSES = new Set(['confirmed', 'reserved', 'pending_assignment']);
 const TOUCH_TAP_MOVE_TOLERANCE = 8;
-const PAYMENT_BALANCE_TOLERANCE = 1;
+const PAYMENT_METHODS = ['cash', 'transfer', 'card'];
+const PAYMENT_BALANCE_TOLERANCE = 0.01;
 
 /* =========================
    TIME (FIX DEFINITIVO)
@@ -227,7 +228,8 @@ const parseDisplayDateInput = (value) => {
 const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',
-  maximumFractionDigits: 0
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
 }).format(Number(value) || 0);
 
 const parseMoney = (value) => {
@@ -271,7 +273,7 @@ const getSurchargeAmount = (surcharge, baseAmount) => {
 
 const roundMoneyAmount = (amount) => Math.round((Number(amount) || 0) * 100) / 100;
 
-const roundClosureMoneyAmount = (amount) => Math.round(Number(amount) || 0);
+const roundClosureMoneyAmount = (amount) => Math.round((Number(amount) || 0) * 100) / 100;
 
 const formatClosureInvoiceNumber = (closure) => `FAC-${String(closure?.id || '').replace(/-/g, '').slice(0, 8).toUpperCase() || String(Date.now()).slice(-8)}`;
 
@@ -510,6 +512,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const [lineDiscounts, setLineDiscounts] = useState({});
   const [totalDiscountIds, setTotalDiscountIds] = useState([]);
   const [payments, setPayments] = useState({ cash: '', transfer: '', card: '' });
+  const [remainingPaymentMethod, setRemainingPaymentMethod] = useState('');
   const [noCostClosure, setNoCostClosure] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [confirmedInvoiceDetails, setConfirmedInvoiceDetails] = useState(null);
@@ -613,7 +616,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   // valor_servicios neto de promociones: es lo que deben cubrir los importes base.
   const serviceNetTotal = Math.max(0, roundClosureMoneyAmount(grossTotal - promotionDiscountTotal));
 
-  const paymentInputAmounts = noCostClosure
+  const manualPaymentInputAmounts = noCostClosure
     ? { cash: serviceNetTotal, transfer: 0, card: 0 }
     : rawPaymentInputAmounts;
 
@@ -638,42 +641,64 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     return { discountTotal, surchargeDetails, surchargeTotalForMethod, chargedAmount };
   };
 
-  const defaultPaymentBaseAmounts = {
-    cash: paymentInputAmounts.cash,
-    transfer: paymentInputAmounts.transfer,
-    card: paymentInputAmounts.card
+  const inferPaymentBaseAmount = (method, chargedAmount) => {
+    const cleanChargedAmount = Math.max(0, roundClosureMoneyAmount(chargedAmount));
+    if (cleanChargedAmount <= 0) return 0;
+
+    let low = 0;
+    let high = Math.max(cleanChargedAmount, serviceNetTotal, grossTotal, 1);
+    let guard = 0;
+    while (getPaymentAdjustments(method, high).chargedAmount < cleanChargedAmount && guard < 20) {
+      high *= 2;
+      guard += 1;
+    }
+
+    for (let iteration = 0; iteration < 40; iteration += 1) {
+      const mid = (low + high) / 2;
+      if (getPaymentAdjustments(method, mid).chargedAmount < cleanChargedAmount) low = mid;
+      else high = mid;
+    }
+
+    return roundClosureMoneyAmount(high);
+  };
+
+  const completionBaseCoveredByOtherMethods = !noCostClosure && remainingPaymentMethod
+    ? PAYMENT_METHODS
+      .filter((method) => method !== remainingPaymentMethod)
+      .reduce((total, method) => total + inferPaymentBaseAmount(method, manualPaymentInputAmounts[method]), 0)
+    : 0;
+  const completionBaseAmount = !noCostClosure && remainingPaymentMethod
+    ? Math.max(0, roundClosureMoneyAmount(serviceNetTotal - completionBaseCoveredByOtherMethods))
+    : 0;
+  const completionPaymentAmount = !noCostClosure && remainingPaymentMethod
+    ? getPaymentAdjustments(remainingPaymentMethod, completionBaseAmount).chargedAmount
+    : 0;
+  const paymentInputAmounts = noCostClosure
+    ? manualPaymentInputAmounts
+    : {
+      ...manualPaymentInputAmounts,
+      ...(remainingPaymentMethod ? { [remainingPaymentMethod]: completionPaymentAmount } : {})
+    };
+  const paymentInputDisplayValues = {
+    cash: payments.cash,
+    transfer: payments.transfer,
+    card: payments.card,
+    ...(remainingPaymentMethod ? { [remainingPaymentMethod]: completionPaymentAmount > 0 ? completionPaymentAmount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '' } : {})
   };
 
   const paymentInputTotal = roundClosureMoneyAmount(paymentInputAmounts.cash + paymentInputAmounts.transfer + paymentInputAmounts.card);
-  const canInferCashDiscountBase = cashPaymentDiscounts.length > 0 && paymentInputAmounts.cash > 0 && paymentInputTotal < serviceNetTotal;
-  const inferredCashBase = canInferCashDiscountBase
-    ? Math.max(0, serviceNetTotal - defaultPaymentBaseAmounts.transfer - defaultPaymentBaseAmounts.card)
-    : defaultPaymentBaseAmounts.cash;
-  const useInferredCashBase = canInferCashDiscountBase && Math.abs(getPaymentAdjustments('cash', inferredCashBase).chargedAmount - paymentInputAmounts.cash) < PAYMENT_BALANCE_TOLERANCE;
-  const baseAfterCash = {
-    ...defaultPaymentBaseAmounts,
-    cash: useInferredCashBase ? inferredCashBase : defaultPaymentBaseAmounts.cash
-  };
-  const canInferCardSurchargeBase = !noCostClosure && activeSurcharges.some((surcharge) => surcharge.paymentMethod === 'card') && paymentInputAmounts.card > 0 && paymentInputTotal > serviceNetTotal;
-  const inferredCardBase = canInferCardSurchargeBase
-    ? Math.max(0, serviceNetTotal - baseAfterCash.cash - baseAfterCash.transfer)
-    : baseAfterCash.card;
-  const useInferredCardBase = canInferCardSurchargeBase && Math.abs(getPaymentAdjustments('card', inferredCardBase).chargedAmount - paymentInputAmounts.card) < PAYMENT_BALANCE_TOLERANCE;
-
-  const paymentBaseAmounts = {
-    ...baseAfterCash,
-    card: useInferredCardBase ? inferredCardBase : baseAfterCash.card
-  };
+  const paymentBaseAmounts = noCostClosure
+    ? { cash: serviceNetTotal, transfer: 0, card: 0 }
+    : PAYMENT_METHODS.reduce((summary, method) => ({
+      ...summary,
+      [method]: inferPaymentBaseAmount(method, paymentInputAmounts[method])
+    }), { cash: 0, transfer: 0, card: 0 });
 
   // descuento_efectivo: se calcula sobre la base inferida del efectivo cobrado.
   const cashPaymentDiscountTotal = getPaymentAdjustments('cash', paymentBaseAmounts.cash).discountTotal;
 
   // recargos: sobre la base inferida de cada medio.
-  const selectedSurchargeDetails = noCostClosure ? [] : ['cash', 'transfer', 'card'].flatMap((method) => getPaymentAdjustments(method, paymentBaseAmounts[method]).surchargeDetails);
-  const paymentSurchargeAmounts = ['cash', 'transfer', 'card'].reduce((summary, method) => ({
-    ...summary,
-    [method]: selectedSurchargeDetails.filter((item) => item.surcharge.paymentMethod === method).reduce((total, item) => total + item.amount, 0)
-  }), { cash: 0, transfer: 0, card: 0 });
+  const selectedSurchargeDetails = noCostClosure ? [] : PAYMENT_METHODS.flatMap((method) => getPaymentAdjustments(method, paymentBaseAmounts[method]).surchargeDetails);
   const surchargeTotal = roundClosureMoneyAmount(selectedSurchargeDetails.reduce((total, item) => total + item.amount, 0));
 
   // Detalle de descuentos sobre total para la factura (efectivo sobre base de efectivo).
@@ -700,7 +725,33 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const displayPaymentDifference = Math.abs(paymentDifference) < PAYMENT_BALANCE_TOLERANCE ? 0 : paymentDifference;
   const chargedDifference = roundClosureMoneyAmount(chargedTotal - finalTotal);
   const displayChargedDifference = Math.abs(chargedDifference) < PAYMENT_BALANCE_TOLERANCE ? 0 : chargedDifference;
-  const canConfirmClosure = selectedItems.length > 0 && (noCostClosure || (serviceNetTotal > 0 && Math.abs(displayPaymentDifference) === 0 && Math.abs(displayChargedDifference) === 0));
+  const closureValidationErrors = noCostClosure ? [] : [
+    displayPaymentDifference < 0 ? '❌ Falta asignar base' : '',
+    displayPaymentDifference > 0 ? '❌ Base excedida' : '',
+    displayChargedDifference < 0 ? '❌ Falta cobrar' : '',
+    displayChargedDifference > 0 ? '❌ Cobro excedente' : ''
+  ].filter(Boolean);
+  const canConfirmClosure = selectedItems.length > 0 && (noCostClosure || (serviceNetTotal > 0 && closureValidationErrors.length === 0));
+  const paymentMethodLabels = PAYMENT_METHODS.reduce((summary, method) => {
+    const methodSurcharge = activeSurcharges.find((surcharge) => surcharge.paymentMethod === method);
+    const surchargeName = String(methodSurcharge?.name || '').trim();
+    return {
+      ...summary,
+      [method]: surchargeName ? `${formatPaymentMethod(method)} ${surchargeName}` : formatPaymentMethod(method)
+    };
+  }, {});
+  const paymentCoverageRows = PAYMENT_METHODS.map((method) => {
+    const adjustments = getPaymentAdjustments(method, paymentBaseAmounts[method]);
+    return {
+      method,
+      label: paymentMethodLabels[method],
+      chargedAmount: paymentInputAmounts[method],
+      baseAmount: paymentBaseAmounts[method],
+      discountTotal: adjustments.discountTotal,
+      surchargeTotal: adjustments.surchargeTotalForMethod
+    };
+  });
+  const basePendingAmount = Math.max(0, roundClosureMoneyAmount(serviceNetTotal - totalPaymentInputAmount));
   const closureCutoffLabel = formatDateInputForDisplay(closureCutoffDate);
 
   const updatePayment = (method, value) => {
@@ -752,7 +803,14 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       surchargeTotal,
       finalTotal
     },
-    payments: paymentInputAmounts
+    payments: paymentInputAmounts,
+    paymentCoverage: paymentCoverageRows,
+    baseSummary: {
+      requiredBase: serviceNetTotal,
+      coveredBase: totalPaymentInputAmount,
+      pendingBase: Math.abs(displayPaymentDifference),
+      balanced: canConfirmClosure
+    }
   });
 
   const confirmClosure = async () => {
@@ -843,6 +901,8 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       surchargeDetails: invoiceDetails.surchargeDetails,
       totals: invoiceDetails.totals,
       payments: invoiceDetails.payments,
+      paymentCoverage: invoiceDetails.paymentCoverage,
+      baseSummary: invoiceDetails.baseSummary,
       invoiceDate: invoiceDetails.invoiceDate,
       invoiceNumber: invoiceDetails.invoiceNumber
     });
@@ -855,7 +915,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
         <div className="agenda-modal-body close-attention-body">
           <div className="close-attention-controls">
             <label>Hasta hoy<input type="text" value={closureCutoffLabel} readOnly /></label>
-            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { if (isClosureConfirmed) return; setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setNoCostClosure(false); setPayments({ cash: '', transfer: '', card: '' }); }} disabled={isClosureConfirmed}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
+            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { if (isClosureConfirmed) return; setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setNoCostClosure(false); setRemainingPaymentMethod(''); setPayments({ cash: '', transfer: '', card: '' }); }} disabled={isClosureConfirmed}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
           </div>
           <div className="close-attention-items">
             {clientBookings.length ? clientBookings.map((booking) => {
@@ -883,10 +943,11 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
             const discountKey = getDiscountKey(discount);
             return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} disabled={isClosureConfirmed || noCostClosure} onChange={() => setTotalDiscountIds((current) => { if (isClosureConfirmed || noCostClosure) return current; return current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey]; })} /><span>{formatDiscountOption(discount)}</span></label>;
           })}</div></div>}
-          <div className="close-attention-section"><strong>Cierre sin cobro</strong><label className="settings-check-row"><input type="checkbox" checked={noCostClosure} disabled={isClosureConfirmed || selectedItems.length === 0} onChange={(event) => { const checked = event.target.checked; setNoCostClosure(checked); if (checked) { setLineDiscounts({}); setTotalDiscountIds([]); setPayments({ cash: '', transfer: '', card: '' }); } }} /><span>Sin costo</span></label></div>
-          <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={payments.cash} onChange={(event) => updatePayment('cash', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure} /></label><label>Transferencia<input type="text" inputMode="decimal" value={payments.transfer} onChange={(event) => updatePayment('transfer', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure} /></label><label>Tarjeta<input type="text" inputMode="decimal" value={payments.card} onChange={(event) => updatePayment('card', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure} /></label></div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, margin: '4px 4px 0' }}>Cargá el importe cobrado por cada medio. La base de servicio se calcula automaticamente.</div>
-          {(cashPaymentDiscountTotal > 0 || surchargeTotal > 0) && <div style={{ fontSize: '12px', color: '#7c2d12', fontWeight: 800, margin: '2px 4px 0' }}>Cobrado · Efectivo {formatMoney(paymentInputAmounts.cash)} · Transferencia {formatMoney(paymentInputAmounts.transfer)} · Tarjeta {formatMoney(paymentInputAmounts.card)}</div>}
+          <div className="close-attention-section close-attention-complete"><strong>Completar saldo restante</strong><div className="close-attention-discounts">{PAYMENT_METHODS.map((method) => <label className="settings-check-row" key={method}><input type="radio" name="remaining-payment-method" checked={remainingPaymentMethod === method} disabled={isClosureConfirmed || noCostClosure || selectedItems.length === 0} onChange={() => setRemainingPaymentMethod(method)} /><span>Completar saldo restante en {paymentMethodLabels[method].toLowerCase()}</span></label>)}</div></div>
+          <div className="close-attention-section"><strong>Cierre sin cobro</strong><label className="settings-check-row"><input type="checkbox" checked={noCostClosure} disabled={isClosureConfirmed || selectedItems.length === 0} onChange={(event) => { const checked = event.target.checked; setNoCostClosure(checked); if (checked) { setLineDiscounts({}); setTotalDiscountIds([]); setRemainingPaymentMethod(''); setPayments({ cash: '', transfer: '', card: '' }); } }} /><span>Sin costo</span></label></div>
+          <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={paymentInputDisplayValues.cash} onChange={(event) => updatePayment('cash', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure || remainingPaymentMethod === 'cash'} /></label><label>Transferencia<input type="text" inputMode="decimal" value={paymentInputDisplayValues.transfer} onChange={(event) => updatePayment('transfer', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure || remainingPaymentMethod === 'transfer'} /></label><label>Tarjeta<input type="text" inputMode="decimal" value={paymentInputDisplayValues.card} onChange={(event) => updatePayment('card', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure || remainingPaymentMethod === 'card'} /></label></div>
+          <div className="close-attention-help">Cargá el importe cobrado por cada medio. La base de servicio se calcula automaticamente.</div>
+          <div className="close-attention-section close-attention-coverage"><strong>Cobertura de servicio</strong><div className="close-attention-coverage-grid">{paymentCoverageRows.map((row) => <article className="close-attention-coverage-item" key={row.method}><h4>{row.label}</h4><span><span>Cobrado</span><b>{formatMoney(row.chargedAmount)}</b></span><span><span>Base cubierta</span><b>{formatMoney(row.baseAmount)}</b></span>{row.discountTotal > 0 && <span className="close-attention-negative"><span>Descuento aplicado</span><b>-{formatMoney(row.discountTotal)}</b></span>}{row.surchargeTotal > 0 && <span className="close-attention-positive"><span>Recargo aplicado</span><b>+{formatMoney(row.surchargeTotal)}</b></span>}</article>)}</div><div className="close-attention-base-status"><span><span>Base total servicios</span><b>{formatMoney(serviceNetTotal)}</b></span><span><span>Base cubierta</span><b>{formatMoney(totalPaymentInputAmount)}</b></span><span><span>Pendiente asignar</span><b>{formatMoney(basePendingAmount)}</b></span></div></div>
           {activeSurcharges.length > 0 && <div className="close-attention-section"><strong>Recargos aplicados</strong><div className="close-attention-discounts">{activeSurcharges.map((surcharge) => {
             const baseAmount = noCostClosure ? 0 : paymentBaseAmounts[surcharge.paymentMethod] || 0;
             const amount = noCostClosure ? 0 : getSurchargeAmount(surcharge, baseAmount);
@@ -894,14 +955,18 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
           })}</div></div>}
           <div className="close-attention-total">
             <span><span>Valor servicios</span><span>{formatMoney(grossTotal)}</span></span>
-            {promotionDiscountTotal > 0 && <span><span>Descuento promoción</span><span>-{formatMoney(promotionDiscountTotal)}</span></span>}
-            {cashPaymentDiscountTotal > 0 && <span><span>Descuento efectivo</span><span>-{formatMoney(cashPaymentDiscountTotal)}</span></span>}
-            {surchargeTotal > 0 && <span><span>Recargo tarjeta</span><span>+{formatMoney(surchargeTotal)}</span></span>}
-            <strong><span>Total final</span><span>{formatMoney(displayFinalTotal)}</span></strong>
-            <span><span>Pagado</span><span>{formatMoney(displayChargedTotal)}</span></span>
-            <span><span>Base asignada</span><span>{formatMoney(totalPaymentInputAmount)} / {formatMoney(serviceNetTotal)}</span></span>
-            {Math.abs(displayChargedDifference) > 0 && <span className="close-attention-difference">{displayChargedDifference > 0 ? 'Cobrado de más' : 'Falta cobrar'}: {formatMoney(Math.abs(displayChargedDifference))}</span>}
-            {Math.abs(displayPaymentDifference) > 0 && <span className="close-attention-difference">{displayPaymentDifference > 0 ? 'Base asignada de más' : 'Falta asignar'}: {formatMoney(Math.abs(displayPaymentDifference))}</span>}
+            <span><span>Descuentos</span><span>-{formatMoney(lineDiscountTotal + totalDiscountTotal)}</span></span>
+            <span><span>Recargos</span><span>+{formatMoney(surchargeTotal)}</span></span>
+            <strong><span>Total a cobrar</span><span>{formatMoney(displayFinalTotal)}</span></strong>
+            <span><span>Pagado efectivo</span><span>{formatMoney(paymentInputAmounts.cash)}</span></span>
+            <span><span>Pagado transferencia</span><span>{formatMoney(paymentInputAmounts.transfer)}</span></span>
+            <span><span>Pagado tarjeta</span><span>{formatMoney(paymentInputAmounts.card)}</span></span>
+            <strong><span>Cobrado total</span><span>{formatMoney(displayChargedTotal)}</span></strong>
+            <span><span>Base cubierta</span><span>{formatMoney(totalPaymentInputAmount)}</span></span>
+            <span><span>Base requerida</span><span>{formatMoney(serviceNetTotal)}</span></span>
+            <span><span>Saldo pendiente</span><span>{formatMoney(Math.abs(displayPaymentDifference))}</span></span>
+            <strong className={canConfirmClosure ? 'close-attention-balanced' : 'close-attention-unbalanced'}><span>Estado</span><span>{canConfirmClosure ? '✅ Balanceado' : '❌ Con diferencias'}</span></strong>
+            {closureValidationErrors.map((message) => <span className="close-attention-difference" key={message}>{message}</span>)}
           </div>
           <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>Cerrar</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !canConfirmClosure}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button>}</div>
         </div>
@@ -994,6 +1059,8 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
         finalTotal: invoiceDetails.finalTotal
       },
       payments: invoiceDetails.payments,
+      paymentCoverage: invoiceDetails.paymentCoverage,
+      baseSummary: invoiceDetails.baseSummary,
       invoiceDate: invoiceDetails.invoiceDate,
       invoiceNumber: invoiceDetails.invoiceNumber
     });
