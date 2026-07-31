@@ -3,7 +3,8 @@ import { formatDisplayDate } from '../utils/dateFormat';
 const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',
-  maximumFractionDigits: 0
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
 }).format(Number(value) || 0);
 
 const normalizeComparableText = (value) =>
@@ -22,7 +23,7 @@ const parseBookingDate = (value) => {
 const formatTime = (date) =>
   `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 
-export const generateDetalleFacturaPdf = async ({ companyContext, clientName, clientEmail, items, discountDetails = [], surchargeDetails = [], totals, payments, invoiceDate: providedInvoiceDate, invoiceNumber: providedInvoiceNumber }) => {
+export const generateDetalleFacturaPdf = async ({ companyContext, clientName, clientEmail, items, discountDetails = [], surchargeDetails = [], totals, payments, paymentCoverage = [], invoiceDate: providedInvoiceDate, invoiceNumber: providedInvoiceNumber }) => {
   if (!items?.length) return alert('Seleccioná al menos un turno para facturar.');
 
   const { jsPDF } = await import('jspdf');
@@ -93,7 +94,7 @@ export const generateDetalleFacturaPdf = async ({ companyContext, clientName, cl
   const totalsBandX = 86;
   const totalsBandWidth = 110;
   doc.setFont('helvetica', 'normal');
-  doc.text('Subtotal', labelX, currentY);
+  doc.text('Valor servicios', labelX, currentY);
   doc.text(formatMoney(totals.grossTotal), totalsX, currentY, { align: 'right' });
   currentY += 6;
   discountDetails.filter((item) => item.amount > 0).forEach((discountDetail) => {
@@ -118,13 +119,24 @@ export const generateDetalleFacturaPdf = async ({ companyContext, clientName, cl
   doc.setFillColor(239, 246, 255);
   doc.rect(totalsBandX, currentY - 5, totalsBandWidth, 9, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.text('TOTAL', labelX, currentY + 1);
+  doc.text('TOTAL A COBRAR', labelX, currentY + 1);
   doc.text(formatMoney(totals.finalTotal), totalsX, currentY + 1, { align: 'right' });
 
   if (payments) {
-    currentY += 20;
+    currentY += 16;
     doc.setFont('helvetica', 'normal');
-    doc.text(`Pagos: Efectivo ${formatMoney(payments.cash)} · Transferencia ${formatMoney(payments.transfer)} · Tarjeta ${formatMoney(payments.card)}`, margin, currentY);
+    doc.text('Pagado efectivo', labelX, currentY);
+    doc.text(formatMoney(payments.cash), totalsX, currentY, { align: 'right' });
+    currentY += 6;
+    doc.text('Pagado transferencia', labelX, currentY);
+    doc.text(formatMoney(payments.transfer), totalsX, currentY, { align: 'right' });
+    currentY += 6;
+    doc.text('Pagado tarjeta', labelX, currentY);
+    doc.text(formatMoney(payments.card), totalsX, currentY, { align: 'right' });
+    currentY += 7;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Cobrado total', labelX, currentY);
+    doc.text(formatMoney(Number(payments.cash || 0) + Number(payments.transfer || 0) + Number(payments.card || 0)), totalsX, currentY, { align: 'right' });
   }
 
   doc.save(`factura-${normalizeComparableText(safeClientName).replace(/[^a-z0-9]+/g, '-') || 'cliente'}-${invoiceNumber}.pdf`);

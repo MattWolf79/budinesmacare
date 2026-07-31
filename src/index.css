@@ -801,6 +801,81 @@ code {
   color: #0f172a;
 }
 
+.close-attention-modal .close-attention-payments input:disabled {
+  background: #fff7ed;
+  color: #7c2d12;
+}
+
+.close-attention-modal .close-attention-help {
+  margin: 4px 4px 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.close-attention-modal .close-attention-complete .close-attention-discounts,
+.close-attention-modal .close-attention-coverage .close-attention-discounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.close-attention-modal .close-attention-coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.close-attention-modal .close-attention-coverage-item {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.close-attention-modal .close-attention-coverage-item h4 {
+  margin: 0 0 2px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.close-attention-modal .close-attention-coverage-item > span,
+.close-attention-modal .close-attention-base-status > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.close-attention-modal .close-attention-coverage-item b,
+.close-attention-modal .close-attention-base-status b {
+  color: #334155;
+  font-size: 13px;
+}
+
+.close-attention-modal .close-attention-negative b {
+  color: #b91c1c;
+}
+
+.close-attention-modal .close-attention-positive b {
+  color: #0f766e;
+}
+
+.close-attention-modal .close-attention-base-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 12px;
+}
+
 /* Total tipo recibo */
 .close-attention-modal .close-attention-total > span:not(.close-attention-difference),
 .close-attention-modal .close-attention-total > strong {
@@ -831,6 +906,17 @@ code {
 .close-attention-modal .close-attention-difference {
   justify-self: end;
   margin-top: 4px;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.close-attention-modal .close-attention-balanced span:last-child {
+  color: #0f766e;
+}
+
+.close-attention-modal .close-attention-unbalanced span:last-child {
+  color: #b91c1c;
 }
 
 .agenda-modal-header,
