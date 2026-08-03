@@ -21391,3 +21391,545 @@ body .app-navbar {
   background: linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
   border-bottom-color: #f0d9a6 !important;
 }
+
+:root {
+  --app-primary: #f7b733;
+  --app-accent: #e0a020;
+  --app-surface: #fff4de;
+  --app-surface-strong: #ffefcf;
+  --app-text: #7c2d12;
+  --app-primary-rgb: 247, 183, 51;
+  --app-accent-rgb: 224, 160, 32;
+  --app-text-rgb: 124, 45, 18;
+}
+
+body .dashboard-shell > .app-navbar,
+body .role-workspace-employee > .app-navbar,
+body .role-workspace-client > .app-navbar {
+  color: var(--app-text) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, var(--app-surface) 100%) !important;
+  border-bottom-color: var(--app-surface-strong) !important;
+  box-shadow: 0 10px 24px rgba(var(--app-text-rgb), 0.08) !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-title,
+body .role-workspace-employee > .app-navbar .app-navbar-title,
+body .role-workspace-client > .app-navbar .app-navbar-title,
+body .dashboard-shell > .app-navbar .app-navbar-company-text,
+body .role-workspace-employee > .app-navbar .app-navbar-company-text,
+body .role-workspace-client > .app-navbar .app-navbar-company-text,
+body .dashboard-shell > .app-navbar .app-navbar-email,
+body .role-workspace-employee > .app-navbar .app-navbar-email,
+body .role-workspace-client > .app-navbar .app-navbar-email {
+  color: var(--app-text) !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-subtitle,
+body .role-workspace-employee > .app-navbar .app-navbar-subtitle,
+body .role-workspace-client > .app-navbar .app-navbar-subtitle,
+body .dashboard-shell > .app-navbar .app-navbar-profile,
+body .role-workspace-employee > .app-navbar .app-navbar-profile,
+body .role-workspace-client > .app-navbar .app-navbar-profile {
+  color: var(--app-accent) !important;
+  background: rgba(var(--app-primary-rgb), 0.14) !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-button,
+body .role-workspace-employee > .app-navbar .app-navbar-button,
+body .role-workspace-client > .app-navbar .app-navbar-button,
+body .dashboard-shell > .app-navbar .app-navbar-switch,
+body .role-workspace-employee > .app-navbar .app-navbar-switch,
+body .role-workspace-client > .app-navbar .app-navbar-switch,
+body .dashboard-shell > .app-navbar .app-navbar-logout,
+body .role-workspace-employee > .app-navbar .app-navbar-logout,
+body .role-workspace-client > .app-navbar .app-navbar-logout {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: #fffdf5 !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-button:hover,
+body .dashboard-shell > .app-navbar .app-navbar-button.is-active,
+body .role-workspace-employee > .app-navbar .app-navbar-button:hover,
+body .role-workspace-employee > .app-navbar .app-navbar-button.is-active,
+body .role-workspace-client > .app-navbar .app-navbar-button:hover,
+body .role-workspace-client > .app-navbar .app-navbar-button.is-active,
+body .dashboard-shell > .app-navbar .app-navbar-switch:hover,
+body .role-workspace-employee > .app-navbar .app-navbar-switch:hover,
+body .role-workspace-client > .app-navbar .app-navbar-switch:hover,
+body .dashboard-shell > .app-navbar .app-navbar-logout:hover,
+body .role-workspace-employee > .app-navbar .app-navbar-logout:hover,
+body .role-workspace-client > .app-navbar .app-navbar-logout:hover {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: var(--app-primary) !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-avatar,
+body .role-workspace-employee > .app-navbar .app-navbar-avatar,
+body .role-workspace-client > .app-navbar .app-navbar-avatar,
+body .dashboard-shell > .app-navbar .app-navbar-mark,
+body .role-workspace-employee > .app-navbar .app-navbar-mark,
+body .role-workspace-client > .app-navbar .app-navbar-mark {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: var(--app-primary) !important;
+}
+
+body .dashboard-shell .admin-bottom-nav,
+body .role-workspace-employee .employee-bottom-nav,
+body .role-workspace-client .client-bottom-nav {
+  color: var(--app-text) !important;
+  border-top-color: var(--app-surface-strong) !important;
+  background: var(--app-surface) !important;
+  box-shadow: 0 -12px 28px rgba(var(--app-text-rgb), 0.12) !important;
+}
+
+body .dashboard-shell .admin-bottom-nav-button,
+body .role-workspace-employee .employee-bottom-nav-button,
+body .role-workspace-client .client-bottom-nav-button {
+  color: var(--app-accent) !important;
+}
+
+body .dashboard-shell .admin-bottom-nav-button.is-active,
+body .role-workspace-employee .employee-bottom-nav-button.is-active,
+body .role-workspace-client .client-bottom-nav-button.is-active {
+  color: var(--app-text) !important;
+}
+
+body .dashboard-shell .admin-bottom-nav-button.is-active .admin-bottom-nav-icon,
+body .role-workspace-employee .employee-bottom-nav-button.is-active .employee-bottom-nav-icon,
+body .role-workspace-client .client-bottom-nav-button.is-active .client-bottom-nav-icon {
+  background: rgba(var(--app-primary-rgb), 0.22) !important;
+}
+
+body .app-navbar {
+  color: var(--app-text) !important;
+  background: linear-gradient(160deg, #fffdf8 0%, var(--app-surface) 100%) !important;
+  border-bottom-color: var(--app-surface-strong) !important;
+}
+
+.settings-appearance-card {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(var(--app-primary-rgb), 0.18), transparent 32%),
+    linear-gradient(145deg, #fff 0%, var(--app-surface) 100%);
+}
+
+.settings-appearance-body {
+  padding-top: 0.75rem;
+}
+
+.settings-appearance-preview {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--app-text);
+  text-align: left;
+  border: 1px solid rgba(var(--app-accent-rgb), 0.34);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.9rem;
+  cursor: pointer;
+}
+
+.settings-appearance-preview strong,
+.settings-appearance-preview small {
+  display: block;
+}
+
+.settings-appearance-preview small {
+  color: rgba(var(--app-text-rgb), 0.72);
+  line-height: 1.35;
+  margin-top: 0.15rem;
+}
+
+.settings-appearance-swatch {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 18px rgba(var(--app-text-rgb), 0.18);
+}
+
+.settings-appearance-modal {
+  max-width: 520px;
+}
+
+.settings-appearance-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: 0.85rem;
+}
+
+.settings-palette-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 0.75rem 0.55rem;
+  cursor: pointer;
+}
+
+.settings-palette-button.is-selected {
+  color: var(--app-text);
+  border-color: var(--app-accent);
+  background: linear-gradient(160deg, #fff 0%, var(--app-surface) 100%);
+  box-shadow: 0 10px 20px rgba(var(--app-primary-rgb), 0.16);
+}
+
+.settings-palette-circle {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 900;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+}
+
+.settings-appearance-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0 1.1rem 1.1rem;
+}
+
+body .dashboard-shell,
+body .role-workspace,
+body .login-page,
+body .landing-page {
+  --brand-page-gradient: radial-gradient(circle at 94% 8%, rgba(var(--app-primary-rgb), 0.14), transparent 30%), linear-gradient(180deg, #fff 0%, var(--app-surface) 100%);
+}
+
+body .dashboard-shell,
+body .role-workspace {
+  background: var(--brand-page-gradient) !important;
+}
+
+body .admin-sidebar,
+body .dashboard-sidebar,
+body .employee-sidebar,
+body .client-sidebar {
+  color: var(--app-text) !important;
+  border-color: var(--app-surface-strong) !important;
+  background:
+    radial-gradient(circle at 16% 8%, rgba(var(--app-primary-rgb), 0.2), transparent 30%),
+    linear-gradient(180deg, #fff 0%, var(--app-surface) 100%) !important;
+}
+
+body .admin-sidebar-title,
+body .admin-sidebar-section-title,
+body .admin-sidebar-item,
+body .dashboard-sidebar button,
+body .employee-sidebar button,
+body .client-sidebar button {
+  color: var(--app-text) !important;
+}
+
+body .admin-sidebar-item:hover,
+body .admin-sidebar-item.is-active,
+body .admin-sidebar-item.active,
+body .dashboard-sidebar button:hover,
+body .dashboard-sidebar button.is-active,
+body .employee-sidebar button:hover,
+body .employee-sidebar button.is-active,
+body .client-sidebar button:hover,
+body .client-sidebar button.is-active {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: rgba(var(--app-primary-rgb), 0.18) !important;
+}
+
+body .admin-page-heading,
+body .settings-hero,
+body .role-workspace-hero,
+body .client-welcome-hero,
+body .dashboard-metric-card,
+body .client-summary-panel,
+body .employee-summary-panel,
+body .admin-form-card,
+body .settings-card,
+body .service-record-card,
+body .employee-record-card,
+body .client-booking-card,
+body .agenda-modal-card,
+body .close-attention-page-card,
+body .close-attention-summary-card,
+body .availability-card,
+body .admin-record-card,
+body .settings-management-card,
+body .settings-promotion-card {
+  border-color: rgba(var(--app-accent-rgb), 0.28) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.12), transparent 28%),
+    linear-gradient(145deg, #fff 0%, var(--app-surface) 100%) !important;
+  box-shadow: 0 12px 28px rgba(var(--app-text-rgb), 0.08) !important;
+}
+
+body .agenda-modal-header,
+body .settings-section-header,
+body .admin-collapsible-form-header,
+body .client-summary-header,
+body .settings-management-card-header,
+body .booking-detail-header,
+body .close-attention-section-title {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.22) !important;
+}
+
+body .settings-shell .settings-management-card-header,
+body .settings-management-card-header,
+body .settings-shell .settings-management-card-header strong,
+body .settings-management-card-header strong,
+body .dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header,
+body .dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header.form-card-header,
+body .dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header.admin-collapsible-form-header {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.46) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.2), transparent 34%),
+    linear-gradient(160deg, #fff 0%, var(--app-surface) 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(var(--app-text-rgb), 0.12) !important;
+}
+
+body .dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header *,
+body .settings-shell .settings-management-card-header *,
+body .settings-management-card-header * {
+  color: var(--app-text) !important;
+}
+
+body .admin-kicker,
+body .login-kicker,
+body .client-card-field span,
+body .settings-empty-text,
+body .app-navbar-subtitle,
+body .app-navbar-profile {
+  color: rgba(var(--app-text-rgb), 0.72) !important;
+}
+
+body h1,
+body h2,
+body h3,
+body .admin-page-heading h1,
+body .role-workspace-hero h1,
+body .client-summary-header h2,
+body .settings-card strong,
+body .client-booking-card strong,
+body .dashboard-metric-card strong {
+  color: var(--app-text) !important;
+}
+
+body .agenda-close-button,
+body .agenda-close-button-single,
+body .admin-primary-button,
+body .admin-link-button,
+body .client-summary-refresh,
+body .client-action-button,
+body .employee-action-button,
+body .availability-save-button,
+body .settings-actions .agenda-close-button,
+body .admin-actions .agenda-close-button,
+body .admin-record-actions .agenda-close-button {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: linear-gradient(150deg, var(--app-primary), var(--app-accent)) !important;
+  box-shadow: 0 10px 22px rgba(var(--app-primary-rgb), 0.24) !important;
+}
+
+body .agenda-option-button,
+body .availability-form-toggle,
+body .admin-collapsible-form-toggle,
+body .settings-check-summary-chip,
+body .client-home-carousel-dot,
+body .client-card-status-field strong,
+body .booking-status-badge,
+body .admin-bottom-nav-icon,
+body .employee-bottom-nav-icon,
+body .client-bottom-nav-icon,
+body .settings-palette-button,
+body .agenda-modal-actions .agenda-option-button,
+body .admin-actions .agenda-option-button,
+body .admin-record-actions .agenda-option-button {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.5) !important;
+  background: rgba(var(--app-primary-rgb), 0.12) !important;
+}
+
+body .agenda-option-button:hover,
+body .availability-form-toggle:hover,
+body .admin-collapsible-form-toggle:hover,
+body .settings-check-summary-chip:hover,
+body .settings-check-summary-chip.is-selected,
+body .client-home-carousel-dot.is-active,
+body .settings-palette-button.is-selected,
+body .agenda-modal-actions .agenda-option-button:hover,
+body .admin-actions .agenda-option-button:hover,
+body .admin-record-actions .agenda-option-button:hover {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: rgba(var(--app-primary-rgb), 0.22) !important;
+}
+
+body input:focus,
+body textarea:focus,
+body select:focus,
+body .settings-upload-field:focus-within,
+body .client-card-status-field strong.is-active {
+  border-color: var(--app-accent) !important;
+  box-shadow: 0 0 0 3px rgba(var(--app-primary-rgb), 0.18) !important;
+}
+
+body .activity-icon,
+body .app-navbar-avatar,
+body .app-navbar-mark,
+body .client-home-carousel-arrow,
+body .admin-profile-avatar,
+body .employee-avatar,
+body .client-avatar,
+body .settings-appearance-swatch,
+body .settings-palette-circle {
+  border-color: var(--app-accent) !important;
+  background: var(--app-primary) !important;
+}
+
+body a,
+body .client-summary-refresh,
+body .admin-link-button,
+body .login-link-button,
+body .client-card-status-field strong.is-active {
+  color: var(--app-text) !important;
+}
+
+.dashboard-shell .service-admin-manager .service-form-card > .agenda-modal-header,
+.dashboard-shell .service-admin-manager .agenda-modal-header.form-card-header,
+.dashboard-shell .service-admin-manager .agenda-modal-header.admin-collapsible-form-header,
+.dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header,
+.dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header.form-card-header,
+.dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header.admin-collapsible-form-header,
+.dashboard-shell .service-admin-manager .service-record-card .admin-management-card-header,
+.dashboard-shell .service-admin-manager .promotion-record-card .admin-management-card-header,
+.dashboard-shell .employee-admin-manager .employee-record-card .admin-management-card-header {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.46) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.2), transparent 34%),
+    linear-gradient(160deg, #fff 0%, var(--app-surface) 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(var(--app-text-rgb), 0.12) !important;
+}
+
+.dashboard-shell .service-admin-manager .service-form-card > .agenda-modal-header *,
+.dashboard-shell .service-admin-manager .agenda-modal-header.form-card-header *,
+.dashboard-shell .service-admin-manager .agenda-modal-header.admin-collapsible-form-header *,
+.dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header *,
+.dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header.form-card-header *,
+.dashboard-shell .employee-admin-manager .employee-form-card > .agenda-modal-header.admin-collapsible-form-header *,
+.dashboard-shell .service-admin-manager .service-record-card .admin-management-card-header *,
+.dashboard-shell .service-admin-manager .promotion-record-card .admin-management-card-header *,
+.dashboard-shell .employee-admin-manager .employee-record-card .admin-management-card-header * {
+  color: var(--app-text) !important;
+}
+
+.dashboard-shell .service-admin-manager .admin-management-card-field > strong.is-active,
+.dashboard-shell .employee-admin-manager .admin-management-card-field > strong.is-active,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .service-card-action,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-close-button.service-card-action,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-option-button.service-card-action,
+.dashboard-shell .service-admin-manager .admin-actions .agenda-close-button,
+.dashboard-shell .service-admin-manager .admin-actions .agenda-option-button,
+.dashboard-shell .service-admin-manager .admin-emoji-open-button,
+.dashboard-shell .employee-admin-manager .employee-record-card .employee-header-settlement-button,
+.dashboard-shell .employee-admin-manager .employee-button-list .admin-record-actions .agenda-close-button,
+.dashboard-shell .employee-admin-manager .employee-button-list .admin-record-actions .agenda-option-button {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.56) !important;
+  background: rgba(var(--app-primary-rgb), 0.14) !important;
+  background-image: none !important;
+  box-shadow: 0 0 0 1px rgba(var(--app-primary-rgb), 0.1) !important;
+}
+
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .service-card-action:hover,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-close-button.service-card-action:hover,
+.dashboard-shell .service-admin-manager .service-button-grid .admin-management-card-actions .agenda-option-button.service-card-action:hover,
+.dashboard-shell .service-admin-manager .admin-actions .agenda-close-button:hover,
+.dashboard-shell .service-admin-manager .admin-actions .agenda-option-button:hover,
+.dashboard-shell .service-admin-manager .admin-emoji-open-button:hover,
+.dashboard-shell .employee-admin-manager .employee-button-list .admin-record-actions .agenda-close-button:hover,
+.dashboard-shell .employee-admin-manager .employee-button-list .admin-record-actions .agenda-option-button:hover {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: rgba(var(--app-primary-rgb), 0.22) !important;
+}
+
+.dashboard-shell .availability-summary-strip,
+.dashboard-shell .availability-employee-filter,
+.dashboard-shell .availability-form-card > .agenda-modal-header,
+.dashboard-shell .availability-form-header,
+.dashboard-shell .agenda-grid-pending .admin-pending-page > .agenda-modal-header,
+.dashboard-shell .agenda-responsive-shell .agenda-grid-pending .admin-pending-panel.booking-assignment-panel.admin-pending-page > .agenda-modal-header,
+.dashboard-shell .admin-pending-page > .agenda-modal-header,
+.dashboard-shell .pending-bookings-panel .agenda-modal-header,
+.dashboard-shell .agenda-modal-header.settings-section-header.admin-collapsible-form-header,
+.dashboard-shell .settings-card .agenda-modal-header.admin-collapsible-form-header,
+.dashboard-shell .settings-card > .agenda-modal-header,
+.dashboard-shell .admin-collapsible-form-header {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.46) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.2), transparent 34%),
+    linear-gradient(160deg, #fff 0%, var(--app-surface) 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(var(--app-text-rgb), 0.12) !important;
+}
+
+.dashboard-shell .availability-summary-strip *,
+.dashboard-shell .availability-employee-filter *,
+.dashboard-shell .availability-form-card > .agenda-modal-header *,
+.dashboard-shell .availability-form-header *,
+.dashboard-shell .agenda-grid-pending .admin-pending-page > .agenda-modal-header *,
+.dashboard-shell .agenda-responsive-shell .agenda-grid-pending .admin-pending-panel.booking-assignment-panel.admin-pending-page > .agenda-modal-header *,
+.dashboard-shell .admin-pending-page > .agenda-modal-header *,
+.dashboard-shell .pending-bookings-panel .agenda-modal-header *,
+.dashboard-shell .agenda-modal-header.settings-section-header.admin-collapsible-form-header *,
+.dashboard-shell .settings-card .agenda-modal-header.admin-collapsible-form-header *,
+.dashboard-shell .settings-card > .agenda-modal-header *,
+.dashboard-shell .admin-collapsible-form-header * {
+  color: var(--app-text) !important;
+}
+
+.dashboard-shell .agenda-refresh-button,
+.dashboard-shell .availability-day-filter-all,
+.dashboard-shell .availability-day-filter-all.is-selected,
+.dashboard-shell .availability-branch-pill,
+.dashboard-shell .availability-branch-pill.is-selected,
+.dashboard-shell .settings-check-summary-row,
+.dashboard-shell .settings-check-summary-chip,
+.dashboard-shell .settings-check-summary-chip.is-selected {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.56) !important;
+  background: rgba(var(--app-primary-rgb), 0.14) !important;
+  background-image: none !important;
+  box-shadow: 0 0 0 1px rgba(var(--app-primary-rgb), 0.1) !important;
+}
+
+.dashboard-shell .agenda-refresh-button:hover,
+.dashboard-shell .availability-day-filter-all:hover,
+.dashboard-shell .availability-branch-pill:hover,
+.dashboard-shell .settings-check-summary-chip:hover {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: rgba(var(--app-primary-rgb), 0.22) !important;
+}
+
+body ::selection {
+  color: var(--app-text);
+  background: rgba(var(--app-primary-rgb), 0.28);
+}
