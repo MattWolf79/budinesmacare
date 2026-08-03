@@ -16,6 +16,27 @@ Ejecutar en este orden:
 10. `10_surcharges_platform_rpc_fix.sql`
 11. `11_closure_invoice_snapshots.sql`
 12. `12_client_login_usuario_dni.sql`
+13. `13_sucursales.sql`
+14. `14_sucursales_flag.sql`
+15. `15_sucursales_rpcs.sql`
+16. `16_sucursales_availability.sql`
+17. `17_sucursales_bookings.sql`
+18. `18_sucursales_relations.sql`
+19. `19_employee_branches_all.sql`
+20. `20_bundles_base.sql`
+21. `21_bundles_rpcs.sql`
+22. `22_packs_flag.sql`
+23. `23_booking_groups.sql`
+24. `24_client_self_and_reschedule.sql`
+25. `25_client_bookings_rpc.sql`
+26. `26_clients_management.sql`
+27. `27_admin_booking_client_link.sql`
+28. `28_client_booking_waitlist.sql`
+29. `29_client_booking_options_waitlist.sql`
+30. `30_client_self_profile_gender_photo_notes.sql`
+31. `31_company_landing.sql`
+32. `32_repair_close_booking_attention.sql`
+33. `33_appearance_palette.sql`
 
 Notas:
 

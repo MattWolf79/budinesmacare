@@ -7,6 +7,7 @@ import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import PlatformAdmin from './components/PlatformAdmin';
 import RoleAccess from './components/RoleAccess';
+import { applyAppearanceStyle } from './utils/appearance';
 import { getClientPortalPath, getCompanyPortalFromLocation, getCompanySlugFromLocation, isPlatformAdminLocation } from './utils/tenant';
 
 const validProfiles = ['client', 'employee', 'admin'];
@@ -157,6 +158,13 @@ export default function App() {
   const companyContextId = companyContext?.id;
 
   const landingEnabled = companyContext?.landing?.habilitada === true;
+
+  useEffect(() => {
+    applyAppearanceStyle(document.documentElement.style, companyContext?.appearance, {
+      remember: false,
+      preferStoredDefault: true
+    });
+  }, [companyContext?.appearance]);
 
   useEffect(() => {
     if (

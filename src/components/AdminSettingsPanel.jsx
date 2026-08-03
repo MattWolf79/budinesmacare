@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 // Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
 import { showAppAlert as alert } from '../utils/appAlert';
+import { applyAppearanceStyle, getStoredAppearance, normalizeAppearance } from '../utils/appearance';
+import AppearancePaletteSelector from './AppearancePaletteSelector';
 import TarjetaPromocion from './TarjetaPromocion';
 
 const emptyPromotion = () => ({
@@ -138,6 +140,7 @@ const defaultConfig = {
   discounts: [],
   surcharges: [],
   client_can_choose_employee: false,
+  appearance: getStoredAppearance() || normalizeAppearance(),
   configuracion_operativa: null
 };
 
@@ -163,12 +166,13 @@ const normalizeBannerImages = (config) => {
   return normalizedImages;
 };
 
-export default function AdminSettingsPanel({ user, adminProfileSummary = null, companySlug }) {
+export default function AdminSettingsPanel({ user, adminProfileSummary = null, companySlug, companyContext = null, onCompanyContextRefresh = null }) {
   const [savedConfig, setSavedConfig] = useState(defaultConfig);
   const [form, setForm] = useState(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [appearanceModalOpen, setAppearanceModalOpen] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);
   const [bannerOpen, setBannerOpen] = useState(false);
   const [bookingPreferencesOpen, setBookingPreferencesOpen] = useState(false);
@@ -184,6 +188,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
   const recargosHabilitados = preciosHabilitados && configuracionOperativa.recargos_habilitados !== false;
   const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
+  const selectedAppearance = normalizeAppearance(form.appearance);
 
   const enabledPromotions = useMemo(() => (
     form.promotions.filter((promotion) => promotion.enabled && (preciosHabilitados ? (promotion.title || promotion.description || promotion.value || promotion.imageDataUrl) : promotion.imageDataUrl))
@@ -191,6 +196,10 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const previewBannerImages = useMemo(() => (
     form.banner_images.filter((image) => image?.dataUrl)
   ), [form.banner_images]);
+
+  useEffect(() => {
+    applyAppearanceStyle(document.documentElement.style, form.appearance);
+  }, [form.appearance]);
 
   useEffect(() => {
     setPreviewBannerIndex((current) => (previewBannerImages.length ? current % previewBannerImages.length : 0));
@@ -233,6 +242,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       discounts: normalizeDiscounts(config?.discounts),
       surcharges: normalizeSurcharges(config?.surcharges),
       client_can_choose_employee: Boolean(config?.client_can_choose_employee),
+      appearance: normalizeAppearance(config?.appearance || companyContext?.appearance),
       configuracion_operativa: config?.configuracion_operativa || null
     };
 
@@ -610,6 +620,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       promotions_value: promotionsPayload,
       discounts_value: discountsPayload,
       surcharges_value: surchargesPayload,
+      appearance_value: selectedAppearance,
       client_can_choose_employee_value: form.client_can_choose_employee,
       account_id_value: user?.isInternal ? user.id : null,
       session_token_value: user?.isInternal ? user.sessionToken : null,
@@ -626,6 +637,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
     applyConfig(data || form);
     localStorage.setItem('turnos_app_configuration_updated_at', String(Date.now()));
     window.dispatchEvent(new CustomEvent('turnos-app-configuration-saved'));
+    if (onCompanyContextRefresh) await onCompanyContextRefresh();
     alert('Configuración guardada.');
   };
 
@@ -832,6 +844,14 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
             </label>
           </div>
           </article>
+
+          <AppearancePaletteSelector
+            value={form.appearance}
+            open={appearanceModalOpen}
+            onOpen={() => setAppearanceModalOpen(true)}
+            onClose={() => setAppearanceModalOpen(false)}
+            onChange={(appearance) => setForm((current) => ({ ...current, appearance }))}
+          />
         </div>
 
         <div className="settings-column settings-side-column">
@@ -1199,6 +1219,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
           </div>
         </div>
       )}
+
     </section>
   );
 }

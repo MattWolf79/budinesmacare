@@ -233,7 +233,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
           {activeView === 'availability' && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
           {activeView === 'sucursales' && sucursalesHabilitadas && <BranchesPanel user={user} onDataChanged={notifyBranchesChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
           {activeView === 'bundles' && bundlesHabilitados && <BundlesPanel user={user} onDataChanged={notifyBranchesChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} packsHabilitados={packsHabilitados} promosHabilitadas={promocionesHabilitadas} />}
-          {activeView === 'settings' && <AdminSettingsPanel user={user} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
+          {activeView === 'settings' && <AdminSettingsPanel user={user} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onCompanyContextRefresh={onCompanyContextRefresh} />}
         </Box>
       </div>
 
