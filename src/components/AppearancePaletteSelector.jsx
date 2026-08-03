@@ -21,7 +21,7 @@ export default function AppearancePaletteSelector({ value, open, onChange, onOpe
         </div>
         <div className="agenda-modal-body settings-card-body settings-appearance-body">
           <button className="settings-appearance-preview" type="button" onClick={onOpen}>
-            <span className="settings-appearance-swatch" style={{ background: selectedPalette.primary }} />
+            <span className="settings-appearance-swatch" style={{ '--palette-primary': selectedPalette.primary }} />
             <span>
               <strong>{selectedPalette.label}</strong>
               <small>El dorado de la app se reemplaza por este color y los fondos quedan en degradé suave.</small>
@@ -50,7 +50,7 @@ export default function AppearancePaletteSelector({ value, open, onChange, onOpe
                     aria-label={`Elegir ${palette.label}`}
                     aria-pressed={selected}
                   >
-                    <span className="settings-palette-circle" style={{ background: palette.primary }}>
+                    <span className="settings-palette-circle" style={{ '--palette-primary': palette.primary }}>
                       {selected ? '✓' : ''}
                     </span>
                     <span>{palette.label}</span>

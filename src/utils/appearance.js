@@ -410,7 +410,6 @@ body .close-attention-modal select {
 body .admin-collapsible-form-header,
 body .settings-card > header,
 body .settings-card .settings-card-header,
-body .clients-form-header,
 body .client-profile-header,
 body .admin-management-card-header,
 body .service-button-grid .admin-management-card-header,
@@ -418,6 +417,15 @@ body .employee-button-list .admin-management-card-header {
   color: var(--app-text) !important;
   border-color: rgba(var(--app-accent-rgb), 0.42) !important;
   background: linear-gradient(150deg, var(--app-primary), var(--app-accent)) !important;
+}
+
+body .clients-form-header {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.28) !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(var(--app-primary-rgb), 0.08) 0%, #fff 52%, var(--app-surface) 100%) !important;
+  box-shadow: 0 10px 24px rgba(var(--app-text-rgb), 0.08) !important;
 }
 
 body .settings-card > header *,
@@ -591,12 +599,17 @@ body .app-navbar-mark,
 body .client-home-carousel-arrow,
 body .admin-profile-avatar,
 body .employee-avatar,
-body .client-avatar,
+body .client-avatar {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: var(--app-primary) !important;
+}
+
 body .settings-appearance-swatch,
 body .settings-palette-circle {
   color: var(--app-text) !important;
   border-color: var(--app-accent) !important;
-  background: var(--app-primary) !important;
+  background: var(--palette-primary, var(--app-primary)) !important;
 }
 
 body a,
