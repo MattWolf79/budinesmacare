@@ -7,7 +7,7 @@ import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import PlatformAdmin from './components/PlatformAdmin';
 import RoleAccess from './components/RoleAccess';
-import { applyAppearanceStyle } from './utils/appearance';
+import { applyAppearanceStyle, getStoredAppearanceForSlug, rememberAppearanceForSlug } from './utils/appearance';
 import { getClientPortalPath, getCompanyPortalFromLocation, getCompanySlugFromLocation, isPlatformAdminLocation } from './utils/tenant';
 
 const validProfiles = ['client', 'employee', 'admin'];
@@ -160,11 +160,19 @@ export default function App() {
   const landingEnabled = companyContext?.landing?.habilitada === true;
 
   useEffect(() => {
-    applyAppearanceStyle(document.documentElement.style, companyContext?.appearance, {
-      remember: false,
-      preferStoredDefault: true
-    });
-  }, [companyContext?.appearance]);
+    const cachedForSlug = getStoredAppearanceForSlug(companySlug);
+    applyAppearanceStyle(
+      document.documentElement.style,
+      companyContext?.appearance || cachedForSlug,
+      {
+        remember: false,
+        preferStoredDefault: true
+      }
+    );
+    if (companyContext?.appearance && companySlug) {
+      rememberAppearanceForSlug(companySlug, companyContext.appearance);
+    }
+  }, [companyContext?.appearance, companySlug]);
 
   useEffect(() => {
     if (

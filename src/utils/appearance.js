@@ -60,6 +60,30 @@ export const rememberAppearance = (appearance) => {
   window.localStorage.setItem(appearanceStorageKey, JSON.stringify(normalizeAppearance(appearance)));
 };
 
+const appearanceSlugStorageKey = (slug) => `${appearanceStorageKey}_${slug}`;
+
+export const getStoredAppearanceForSlug = (slug) => {
+  if (typeof window === 'undefined' || !slug) return null;
+
+  try {
+    const storedAppearance = window.localStorage.getItem(appearanceSlugStorageKey(slug));
+
+    return storedAppearance ? normalizeAppearance(JSON.parse(storedAppearance)) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const rememberAppearanceForSlug = (slug, appearance) => {
+  if (typeof window === 'undefined' || !slug || !appearance) return;
+
+  try {
+    window.localStorage.setItem(appearanceSlugStorageKey(slug), JSON.stringify(normalizeAppearance(appearance)));
+  } catch {
+    /* ignore storage errors */
+  }
+};
+
 export const applyAppearanceStyle = (styleTarget, appearance, options = {}) => {
   if (!styleTarget?.setProperty) return;
 
