@@ -24,7 +24,29 @@ const BOOKED_SLOT_PADDING_HEIGHT = 10;
 const BOOKING_STACK_HEIGHT = 48;
 const ACTIVE_BOOKING_STATUSES = new Set(['confirmed', 'reserved', 'pending_assignment']);
 const TOUCH_TAP_MOVE_TOLERANCE = 8;
-const PAYMENT_METHODS = ['cash', 'transfer', 'card'];
+const DEFAULT_PAYMENT_METHODS = ['cash', 'transfer', 'card'];
+const PAYMENT_METHOD_LABELS = {
+  cash: 'Efectivo',
+  transfer: 'Transferencia',
+  qr: 'QR',
+  mercado_pago: 'Mercado Pago',
+  wallet: 'Billetera virtual',
+  debit_card: 'Tarjeta de debito',
+  credit_card: 'Tarjeta de credito',
+  card: 'Tarjeta',
+  other: 'Otro medio'
+};
+const PAYMENT_METHOD_RPC_BUCKETS = {
+  cash: 'cash',
+  transfer: 'transfer',
+  qr: 'transfer',
+  mercado_pago: 'transfer',
+  wallet: 'transfer',
+  debit_card: 'card',
+  credit_card: 'card',
+  card: 'card',
+  other: 'transfer'
+};
 const PAYMENT_BALANCE_TOLERANCE = 0.01;
 
 /* =========================
@@ -258,13 +280,107 @@ const getDiscountAmount = (discount, baseAmount) => {
 
 const getSurchargeValue = (surcharge) => Number(surcharge?.value ?? surcharge?.percent) || 0;
 
-const getSurchargeKey = (surcharge) => `${surcharge?.paymentMethod || 'card'}-${surcharge?.name}-${getSurchargeValue(surcharge)}`;
+const getSurchargeKey = (surcharge) => surcharge?.id || `${surcharge?.paymentMethod || 'card'}-${surcharge?.name}-${getSurchargeValue(surcharge)}`;
 
-const formatPaymentMethod = (method) => ({ cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta' }[method] || 'Tarjeta');
+const formatPaymentMethod = (method) => PAYMENT_METHOD_LABELS[method] || 'Tarjeta';
 
 const formatSurchargeOption = (surcharge) => `${surcharge.name || formatPaymentMethod(surcharge.paymentMethod)} +${getSurchargeValue(surcharge)}%`;
 
 const formatSurchargeInvoiceLabel = (surcharge) => `Recargo ${surcharge.name || formatPaymentMethod(surcharge.paymentMethod)} (+${getSurchargeValue(surcharge)}%)`;
+
+const RECEIPT_TYPE_OPTIONS = [
+  { value: 'B', label: 'Factura B', requiresFiscalData: false, discriminatesVat: false },
+  { value: 'A', label: 'Factura A', requiresFiscalData: true, discriminatesVat: true },
+  { value: 'C', label: 'Factura C', requiresFiscalData: false, discriminatesVat: false }
+];
+
+const TAX_CONDITION_OPTIONS = [
+  { value: 'consumidor_final', label: 'Consumidor final' },
+  { value: 'responsable_inscripto', label: 'Responsable inscripto' },
+  { value: 'monotributo', label: 'Monotributo' },
+  { value: 'exento', label: 'Exento' },
+  { value: 'no_responsable', label: 'No responsable' }
+];
+
+const BUSINESS_TAX_CONDITION_OPTIONS = [
+  { value: 'responsable_inscripto', label: 'Responsable inscripto' },
+  { value: 'monotributo', label: 'Monotributo' },
+  { value: 'exento', label: 'Exento' }
+];
+
+const cleanFiscalId = (value) => String(value || '').replace(/\D/g, '');
+
+const getReceiptTypeOption = (receiptType) => RECEIPT_TYPE_OPTIONS.find((option) => option.value === receiptType) || RECEIPT_TYPE_OPTIONS[0];
+
+const calculateFiscalTotals = ({ receiptType, businessTaxCondition, vatRate, finalTotal }) => {
+  const cleanFinalTotal = roundClosureMoneyAmount(finalTotal);
+  const cleanVatRate = Math.max(0, Number(vatRate) || 0);
+  const shouldDiscriminateVat = receiptType === 'A' && businessTaxCondition === 'responsable_inscripto' && cleanVatRate > 0;
+  const taxableNet = shouldDiscriminateVat ? roundClosureMoneyAmount(cleanFinalTotal / (1 + (cleanVatRate / 100))) : cleanFinalTotal;
+  const vatAmount = shouldDiscriminateVat ? roundClosureMoneyAmount(cleanFinalTotal - taxableNet) : 0;
+
+  return {
+    receiptType,
+    businessTaxCondition,
+    vatRate: cleanVatRate,
+    discriminatesVat: shouldDiscriminateVat,
+    taxableNet,
+    vatAmount,
+    exemptAmount: 0,
+    finalTotal: cleanFinalTotal
+  };
+};
+
+const buildFutureFiscalQrPayload = ({ invoiceNumber, invoiceDate, fiscalInfo, totals }) => ({
+  prepared: true,
+  provider: 'pending',
+  format: 'afip_qr_payload_candidate',
+  receiptType: fiscalInfo.receiptType,
+  invoiceNumber,
+  invoiceDate,
+  issuer: {
+    businessName: fiscalInfo.businessName,
+    cuit: cleanFiscalId(fiscalInfo.businessCuit),
+    taxCondition: fiscalInfo.businessTaxCondition
+  },
+  receiver: {
+    name: fiscalInfo.customerBusinessName || fiscalInfo.clientName,
+    cuit: cleanFiscalId(fiscalInfo.customerFiscalId),
+    taxCondition: fiscalInfo.customerTaxCondition
+  },
+  totals: {
+    total: roundClosureMoneyAmount(totals.finalTotal),
+    net: roundClosureMoneyAmount(totals.taxableNet),
+    vat: roundClosureMoneyAmount(totals.vatAmount),
+    vatRate: Number(totals.vatRate) || 0
+  }
+});
+
+const buildEmptyPayments = (methods = DEFAULT_PAYMENT_METHODS) => methods.reduce((summary, method) => ({
+  ...summary,
+  [method]: ''
+}), {});
+
+const getConfiguredPaymentMethods = (surcharges = []) => {
+  const methods = [...DEFAULT_PAYMENT_METHODS];
+  (Array.isArray(surcharges) ? surcharges : [])
+    .filter((surcharge) => surcharge?.enabled !== false && surcharge?.paymentMethod)
+    .forEach((surcharge) => {
+      const method = String(surcharge.paymentMethod || '').trim();
+      if (PAYMENT_METHOD_LABELS[method] && !methods.includes(method)) methods.push(method);
+    });
+  return methods;
+};
+
+const isSurchargeValidForDate = (surcharge, dateValue) => {
+  const date = String(dateValue || '').slice(0, 10);
+  const validFrom = String(surcharge?.validFrom || surcharge?.valid_from || '').slice(0, 10);
+  const validUntil = String(surcharge?.validUntil || surcharge?.valid_until || '').slice(0, 10);
+
+  if (validFrom && date && date < validFrom) return false;
+  if (validUntil && date && date > validUntil) return false;
+  return true;
+};
 
 const getSurchargeAmount = (surcharge, baseAmount) => {
   const cleanBaseAmount = Math.max(0, Number(baseAmount) || 0);
@@ -502,7 +618,7 @@ const isPastBookingStart = (booking) =>
    COMPONENT
 ========================= */
 
-function CloseAttentionModal({ bookings, services, employees, promotions, discounts, surcharges, accessProfile, employeeId, user, initialServiceDate, companyContext, onClose, onClosed }) {
+function CloseAttentionModal({ bookings, services, employees, promotions, discounts, surcharges, accessProfile, employeeId, user, initialServiceDate, companyContext, onClose, onClosed, displayMode = 'modal' }) {
   const todayInput = formatDateOnlyForDb(new Date());
   const initialDate = initialServiceDate && initialServiceDate <= todayInput ? initialServiceDate : todayInput;
   const [serviceDate] = useState(initialDate);
@@ -511,15 +627,32 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const [selectedBookingIds, setSelectedBookingIds] = useState(null);
   const [lineDiscounts, setLineDiscounts] = useState({});
   const [totalDiscountIds, setTotalDiscountIds] = useState([]);
-  const [payments, setPayments] = useState({ cash: '', transfer: '', card: '' });
+  const [selectedSurchargeIdsByMethod, setSelectedSurchargeIdsByMethod] = useState({});
+  const [payments, setPayments] = useState(() => buildEmptyPayments());
   const [remainingPaymentMethod, setRemainingPaymentMethod] = useState('');
   const [noCostClosure, setNoCostClosure] = useState(false);
+  const [receiptType, setReceiptType] = useState('B');
+  const [customerTaxCondition, setCustomerTaxCondition] = useState('consumidor_final');
+  const [customerFiscalId, setCustomerFiscalId] = useState('');
+  const [customerBusinessName, setCustomerBusinessName] = useState('');
+  const [customerFiscalAddress, setCustomerFiscalAddress] = useState('');
+  const [businessTaxCondition, setBusinessTaxCondition] = useState('responsable_inscripto');
+  const [businessCuit, setBusinessCuit] = useState('');
+  const [businessFiscalAddress, setBusinessFiscalAddress] = useState('');
+  const [vatRate, setVatRate] = useState('21');
   const [isClosing, setIsClosing] = useState(false);
   const [confirmedInvoiceDetails, setConfirmedInvoiceDetails] = useState(null);
   const isEmployeeView = accessProfile === 'employee';
   const isClosureConfirmed = Boolean(confirmedInvoiceDetails);
+  const receiptTypeOption = getReceiptTypeOption(receiptType);
+  const configuredPaymentMethods = useMemo(() => getConfiguredPaymentMethods(surcharges), [surcharges]);
   const activeDiscounts = useMemo(() => (discounts || []).filter((discount) => discount?.enabled !== false && discount?.name && getDiscountValue(discount) > 0), [discounts]);
-  const activeSurcharges = useMemo(() => (surcharges || []).filter((surcharge) => surcharge?.enabled !== false && surcharge?.name && getSurchargeValue(surcharge) > 0), [surcharges]);
+  const activeSurcharges = useMemo(() => (surcharges || []).filter((surcharge) =>
+    surcharge?.enabled !== false &&
+    surcharge?.name &&
+    getSurchargeValue(surcharge) > 0 &&
+    isSurchargeValidForDate(surcharge, serviceDate)
+  ), [serviceDate, surcharges]);
   const lineDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && !isCashPaymentDiscount(discount) && (discount.scope === 'line' || discount.scope === 'both'));
   const activityDiscountOptions = activeDiscounts.filter((discount) => discount.discountType === 'activity');
   const totalDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'total' || discount.scope === 'both'));
@@ -599,11 +732,10 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   //   valor_servicios (bruto) - descuento_promocion - descuento_efectivo + recargo_tarjeta = total_final
   // Cada medio de pago recibe el IMPORTE COBRADO. Desde ese cobro se infiere la
   // base de servicio cubierta por el medio para poder aplicar descuentos/recargos.
-  const rawPaymentInputAmounts = {
-    cash: roundClosureMoneyAmount(parseMoney(payments.cash)),
-    transfer: roundClosureMoneyAmount(parseMoney(payments.transfer)),
-    card: roundClosureMoneyAmount(parseMoney(payments.card))
-  };
+  const rawPaymentInputAmounts = configuredPaymentMethods.reduce((summary, method) => ({
+    ...summary,
+    [method]: roundClosureMoneyAmount(parseMoney(payments[method]))
+  }), {});
   const cashPaymentDiscounts = selectedTotalDiscounts.filter(isCashPaymentDiscount);
   const nonCashTotalDiscounts = selectedTotalDiscounts.filter((discount) => !isCashPaymentDiscount(discount));
 
@@ -617,7 +749,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const serviceNetTotal = Math.max(0, roundClosureMoneyAmount(grossTotal - promotionDiscountTotal));
 
   const manualPaymentInputAmounts = noCostClosure
-    ? { cash: serviceNetTotal, transfer: 0, card: 0 }
+    ? { ...buildEmptyPayments(configuredPaymentMethods), cash: serviceNetTotal }
     : rawPaymentInputAmounts;
 
   const getPaymentAdjustments = (method, baseAmount) => {
@@ -627,8 +759,9 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       cleanBaseAmount,
       roundClosureMoneyAmount(methodDiscounts.reduce((total, discount) => total + getDiscountAmount(discount, cleanBaseAmount), 0))
     ));
+    const selectedSurchargeId = selectedSurchargeIdsByMethod[method] || '';
     const surchargeDetails = activeSurcharges
-      .filter((surcharge) => surcharge.paymentMethod === method)
+      .filter((surcharge) => surcharge.paymentMethod === method && getSurchargeKey(surcharge) === selectedSurchargeId)
       .map((surcharge) => ({
         surcharge,
         baseAmount: cleanBaseAmount,
@@ -663,7 +796,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   };
 
   const completionBaseCoveredByOtherMethods = !noCostClosure && remainingPaymentMethod
-    ? PAYMENT_METHODS
+    ? configuredPaymentMethods
       .filter((method) => method !== remainingPaymentMethod)
       .reduce((total, method) => total + inferPaymentBaseAmount(method, manualPaymentInputAmounts[method]), 0)
     : 0;
@@ -680,16 +813,14 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       ...(remainingPaymentMethod ? { [remainingPaymentMethod]: completionPaymentAmount } : {})
     };
   const paymentInputDisplayValues = {
-    cash: payments.cash,
-    transfer: payments.transfer,
-    card: payments.card,
+    ...payments,
     ...(remainingPaymentMethod ? { [remainingPaymentMethod]: completionPaymentAmount > 0 ? completionPaymentAmount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '' } : {})
   };
 
-  const paymentInputTotal = roundClosureMoneyAmount(paymentInputAmounts.cash + paymentInputAmounts.transfer + paymentInputAmounts.card);
+  const paymentInputTotal = roundClosureMoneyAmount(configuredPaymentMethods.reduce((total, method) => total + (Number(paymentInputAmounts[method]) || 0), 0));
   const paymentBaseAmounts = noCostClosure
-    ? { cash: serviceNetTotal, transfer: 0, card: 0 }
-    : PAYMENT_METHODS.reduce((summary, method) => ({
+    ? { ...buildEmptyPayments(configuredPaymentMethods), cash: serviceNetTotal }
+    : configuredPaymentMethods.reduce((summary, method) => ({
       ...summary,
       [method]: inferPaymentBaseAmount(method, paymentInputAmounts[method])
     }), { cash: 0, transfer: 0, card: 0 });
@@ -698,7 +829,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const cashPaymentDiscountTotal = getPaymentAdjustments('cash', paymentBaseAmounts.cash).discountTotal;
 
   // recargos: sobre la base inferida de cada medio.
-  const selectedSurchargeDetails = noCostClosure ? [] : PAYMENT_METHODS.flatMap((method) => getPaymentAdjustments(method, paymentBaseAmounts[method]).surchargeDetails);
+  const selectedSurchargeDetails = noCostClosure ? [] : configuredPaymentMethods.flatMap((method) => getPaymentAdjustments(method, paymentBaseAmounts[method]).surchargeDetails);
   const surchargeTotal = roundClosureMoneyAmount(selectedSurchargeDetails.reduce((total, item) => total + item.amount, 0));
 
   // Detalle de descuentos sobre total para la factura (efectivo sobre base de efectivo).
@@ -710,14 +841,34 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   }));
 
   const totalDiscountTotal = roundClosureMoneyAmount(nonCashDiscountTotal + cashPaymentDiscountTotal);
-  const netTotal = Math.max(0, roundClosureMoneyAmount(serviceNetTotal - cashPaymentDiscountTotal));
   // total_final = neto de servicios - descuento efectivo + recargos.
   const finalTotal = roundClosureMoneyAmount(Math.max(0, serviceNetTotal - cashPaymentDiscountTotal + surchargeTotal));
   const displayFinalTotal = finalTotal;
-  const totalSavings = Math.max(0, roundClosureMoneyAmount(grossTotal - netTotal));
+
+  const fiscalTotals = calculateFiscalTotals({
+    receiptType,
+    businessTaxCondition,
+    vatRate,
+    finalTotal
+  });
+  const fiscalInfo = {
+    receiptType,
+    receiptLabel: receiptTypeOption.label,
+    customerTaxCondition,
+    customerFiscalId: cleanFiscalId(customerFiscalId),
+    customerBusinessName: String(customerBusinessName || '').trim(),
+    customerFiscalAddress: String(customerFiscalAddress || '').trim(),
+    businessTaxCondition,
+    businessCuit: cleanFiscalId(businessCuit),
+    businessName: companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp',
+    businessFiscalAddress: String(businessFiscalAddress || '').trim(),
+    vatRate: fiscalTotals.vatRate,
+    discriminatesVat: fiscalTotals.discriminatesVat,
+    clientName: selectedClient?.name || ''
+  };
 
   // Importe base total asignado a medios de pago; debe cubrir el neto de servicios.
-  const totalPaymentInputAmount = roundClosureMoneyAmount(paymentBaseAmounts.cash + paymentBaseAmounts.transfer + paymentBaseAmounts.card);
+  const totalPaymentInputAmount = roundClosureMoneyAmount(configuredPaymentMethods.reduce((total, method) => total + (Number(paymentBaseAmounts[method]) || 0), 0));
   const chargedTotal = paymentInputTotal;
   const displayChargedTotal = chargedTotal;
   // Saldo por asignar: valor de servicios (neto) que aun no fue cubierto por un medio de pago.
@@ -731,16 +882,24 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     displayChargedDifference < 0 ? '❌ Falta cobrar' : '',
     displayChargedDifference > 0 ? '❌ Cobro excedente' : ''
   ].filter(Boolean);
-  const canConfirmClosure = selectedItems.length > 0 && (noCostClosure || (serviceNetTotal > 0 && closureValidationErrors.length === 0));
-  const paymentMethodLabels = PAYMENT_METHODS.reduce((summary, method) => {
-    const methodSurcharge = activeSurcharges.find((surcharge) => surcharge.paymentMethod === method);
+  const fiscalValidationErrors = [
+    receiptType === 'A' && customerTaxCondition !== 'responsable_inscripto' ? '❌ Factura A requiere cliente Responsable inscripto' : '',
+    receiptType === 'A' && cleanFiscalId(customerFiscalId).length !== 11 ? '❌ Factura A requiere CUIT de 11 digitos' : '',
+    receiptType === 'A' && !String(customerBusinessName || '').trim() ? '❌ Factura A requiere razon social' : '',
+    receiptType === 'A' && businessTaxCondition !== 'responsable_inscripto' ? '❌ Factura A requiere negocio Responsable inscripto' : '',
+    receiptType === 'A' && cleanFiscalId(businessCuit).length !== 11 ? '❌ Factura A requiere CUIT del negocio' : ''
+  ].filter(Boolean);
+  const canConfirmClosure = selectedItems.length > 0 && fiscalValidationErrors.length === 0 && (noCostClosure || (serviceNetTotal > 0 && closureValidationErrors.length === 0));
+  const paymentMethodLabels = configuredPaymentMethods.reduce((summary, method) => {
+    const selectedSurchargeId = selectedSurchargeIdsByMethod[method] || '';
+    const methodSurcharge = activeSurcharges.find((surcharge) => surcharge.paymentMethod === method && getSurchargeKey(surcharge) === selectedSurchargeId);
     const surchargeName = String(methodSurcharge?.name || '').trim();
     return {
       ...summary,
       [method]: surchargeName ? `${formatPaymentMethod(method)} ${surchargeName}` : formatPaymentMethod(method)
     };
   }, {});
-  const paymentCoverageRows = PAYMENT_METHODS.map((method) => {
+  const paymentCoverageRows = configuredPaymentMethods.map((method) => {
     const adjustments = getPaymentAdjustments(method, paymentBaseAmounts[method]);
     return {
       method,
@@ -758,6 +917,17 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     setPayments((current) => ({ ...current, [method]: value }));
   };
 
+  const updateSelectedSurcharge = (method, value) => {
+    if (isClosureConfirmed || noCostClosure) return;
+    setSelectedSurchargeIdsByMethod((current) => ({ ...current, [method]: value }));
+  };
+
+  const getSurchargeOptionsForMethod = (method) => activeSurcharges.filter((surcharge) => surcharge.paymentMethod === method);
+
+  const getRpcPaymentTotal = (bucket) => roundClosureMoneyAmount(configuredPaymentMethods.reduce((total, method) => (
+    PAYMENT_METHOD_RPC_BUCKETS[method] === bucket ? total + (Number(paymentInputAmounts[method]) || 0) : total
+  ), 0));
+
   const toggleLineDiscount = (bookingId, discountKey) => {
     if (isClosureConfirmed || noCostClosure) return;
     setLineDiscounts((current) => {
@@ -771,47 +941,65 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     if (isClosureConfirmed) onClosed?.();
   };
 
-  const buildCurrentInvoiceDetails = (closure = null) => ({
-    invoiceNumber: closure ? formatClosureInvoiceNumber(closure) : undefined,
-    invoiceDate: closure?.created_at || closure?.closed_at || new Date(),
-    clientName: selectedClient?.name,
-    clientEmail: selectedClient?.email,
-    items: selectedItems.map((item) => ({
-      serviceName: item.serviceName,
-      employeeName: item.employeeName,
-      basePrice: item.basePrice,
-      startAt: item.booking.start_at,
-      endAt: item.booking.end_at
-    })),
-    discountDetails: [
-      ...(noCostClosure ? [] : selectedItems.flatMap((item) => item.appliedDiscounts.map((discount) => ({
-        label: `Desc. ${formatDiscountOption(discount)}`,
-        amount: getDiscountAmount(discount, item.basePrice)
-      })))),
-      ...selectedTotalDiscountDetails.map(({ discount, amount }) => ({
-        label: `Desc. ${formatDiscountOption(discount)}`,
+  const buildCurrentInvoiceDetails = (closure = null) => {
+    const invoiceNumber = closure ? formatClosureInvoiceNumber(closure) : undefined;
+    const invoiceDate = closure?.created_at || closure?.closed_at || new Date();
+    const fiscalQrPayload = buildFutureFiscalQrPayload({
+      invoiceNumber,
+      invoiceDate,
+      fiscalInfo,
+      totals: fiscalTotals
+    });
+
+    return {
+      invoiceNumber,
+      invoiceDate,
+      clientName: selectedClient?.name,
+      clientEmail: selectedClient?.email,
+      items: selectedItems.map((item) => ({
+        serviceName: item.serviceName,
+        employeeName: item.employeeName,
+        basePrice: item.basePrice,
+        startAt: item.booking.start_at,
+        endAt: item.booking.end_at
+      })),
+      discountDetails: [
+        ...(noCostClosure ? [] : selectedItems.flatMap((item) => item.appliedDiscounts.map((discount) => ({
+          label: `Desc. ${formatDiscountOption(discount)}`,
+          amount: getDiscountAmount(discount, item.basePrice)
+        })))),
+        ...selectedTotalDiscountDetails.map(({ discount, amount }) => ({
+          label: `Desc. ${formatDiscountOption(discount)}`,
+          amount
+        }))
+      ].filter((item) => item.amount > 0),
+      surchargeDetails: selectedSurchargeDetails.map(({ surcharge, amount }) => ({
+        label: formatSurchargeInvoiceLabel(surcharge),
         amount
-      }))
-    ].filter((item) => item.amount > 0),
-    surchargeDetails: selectedSurchargeDetails.map(({ surcharge, amount }) => ({
-      label: formatSurchargeInvoiceLabel(surcharge),
-      amount
-    })),
-    totals: {
-      grossTotal,
-      discountTotal: lineDiscountTotal + totalDiscountTotal,
-      surchargeTotal,
-      finalTotal
-    },
-    payments: paymentInputAmounts,
-    paymentCoverage: paymentCoverageRows,
-    baseSummary: {
-      requiredBase: serviceNetTotal,
-      coveredBase: totalPaymentInputAmount,
-      pendingBase: Math.abs(displayPaymentDifference),
-      balanced: canConfirmClosure
-    }
-  });
+      })),
+      totals: {
+        grossTotal,
+        discountTotal: lineDiscountTotal + totalDiscountTotal,
+        surchargeTotal,
+        finalTotal,
+        taxableNet: fiscalTotals.taxableNet,
+        vatAmount: fiscalTotals.vatAmount,
+        vatRate: fiscalTotals.vatRate,
+        exemptAmount: fiscalTotals.exemptAmount,
+        discriminatesVat: fiscalTotals.discriminatesVat
+      },
+      fiscalInfo,
+      fiscalQrPayload,
+      payments: paymentInputAmounts,
+      paymentCoverage: paymentCoverageRows,
+      baseSummary: {
+        requiredBase: serviceNetTotal,
+        coveredBase: totalPaymentInputAmount,
+        pendingBase: Math.abs(displayPaymentDifference),
+        balanced: canConfirmClosure
+      }
+    };
+  };
 
   const confirmClosure = async () => {
     if (isClosureConfirmed) return;
@@ -833,9 +1021,9 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       total_discount_total_value: totalDiscountTotal,
       total_surcharge_total_value: surchargeTotal,
       final_total_value: finalTotal,
-      cash_amount_value: paymentInputAmounts.cash,
-      transfer_amount_value: paymentInputAmounts.transfer,
-      card_amount_value: paymentInputAmounts.card,
+      cash_amount_value: getRpcPaymentTotal('cash'),
+      transfer_amount_value: getRpcPaymentTotal('transfer'),
+      card_amount_value: getRpcPaymentTotal('card'),
       account_id_value: user?.isInternal ? user.id : null,
       session_token_value: user?.isInternal ? user.sessionToken : null
     };
@@ -900,6 +1088,8 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       discountDetails: invoiceDetails.discountDetails,
       surchargeDetails: invoiceDetails.surchargeDetails,
       totals: invoiceDetails.totals,
+      fiscalInfo: invoiceDetails.fiscalInfo,
+      fiscalQrPayload: invoiceDetails.fiscalQrPayload,
       payments: invoiceDetails.payments,
       paymentCoverage: invoiceDetails.paymentCoverage,
       baseSummary: invoiceDetails.baseSummary,
@@ -908,15 +1098,16 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     });
   };
 
-  return (
-    <div className="modal">
-      <div className="agenda-modal-card close-attention-modal">
+  const closeAttentionContent = (
+      <div className={`agenda-modal-card close-attention-modal ${displayMode === 'page' ? 'close-attention-page-card' : ''}`}>
         <div className="agenda-modal-header">Cerrar atención</div>
         <div className="agenda-modal-body close-attention-body">
           <div className="close-attention-controls">
             <label>Hasta hoy<input type="text" value={closureCutoffLabel} readOnly /></label>
-            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { if (isClosureConfirmed) return; setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setNoCostClosure(false); setRemainingPaymentMethod(''); setPayments({ cash: '', transfer: '', card: '' }); }} disabled={isClosureConfirmed}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
+            <label>Cliente<select value={effectiveSelectedClientKey} onChange={(event) => { if (isClosureConfirmed) return; setSelectedClientKey(event.target.value); setSelectedBookingIds(null); setLineDiscounts({}); setTotalDiscountIds([]); setSelectedSurchargeIdsByMethod({}); setNoCostClosure(false); setRemainingPaymentMethod(''); setPayments(buildEmptyPayments(configuredPaymentMethods)); }} disabled={isClosureConfirmed}>{clients.length ? clients.map((client) => <option key={client.key} value={client.key}>{formatDisplayDate(`${client.serviceDate}T00:00:00`)} · {client.name}{client.email ? ` · ${client.email}` : ''}</option>) : <option value="">Sin clientes para cerrar</option>}</select></label>
           </div>
+          <div className="close-attention-page-columns">
+            <div className="close-attention-page-column close-attention-page-column-primary">
           <div className="close-attention-items">
             {clientBookings.length ? clientBookings.map((booking) => {
               const service = services.find((item) => idsEqual(item.id, booking.service));
@@ -939,38 +1130,73 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
               </article>;
             }) : <div className="agenda-empty-state">No hay turnos pendientes de cierre.</div>}
           </div>
-          {totalDiscountOptions.length > 0 && <div className="close-attention-section"><strong>Descuentos sobre total</strong><div className="close-attention-discounts">{totalDiscountOptions.map((discount) => {
+          <div className="close-attention-section close-attention-fiscal">
+            <strong>Comprobante fiscal</strong>
+            <div className="close-attention-controls">
+              <label>Tipo de comprobante<select value={receiptType} disabled={isClosureConfirmed} onChange={(event) => setReceiptType(event.target.value)}>{RECEIPT_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+              <label>Condición del cliente<select value={customerTaxCondition} disabled={isClosureConfirmed} onChange={(event) => setCustomerTaxCondition(event.target.value)}>{TAX_CONDITION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+              <label>CUIT cliente<input type="text" inputMode="numeric" value={customerFiscalId} disabled={isClosureConfirmed} onChange={(event) => setCustomerFiscalId(cleanFiscalId(event.target.value).slice(0, 11))} placeholder="20123456789" /></label>
+              <label>Razón social<input type="text" value={customerBusinessName} disabled={isClosureConfirmed} onChange={(event) => setCustomerBusinessName(event.target.value)} placeholder={selectedClient?.name || 'Cliente'} /></label>
+              <label>Domicilio fiscal<input type="text" value={customerFiscalAddress} disabled={isClosureConfirmed} onChange={(event) => setCustomerFiscalAddress(event.target.value)} placeholder="Opcional" /></label>
+              <label>Condición negocio<select value={businessTaxCondition} disabled={isClosureConfirmed} onChange={(event) => setBusinessTaxCondition(event.target.value)}>{BUSINESS_TAX_CONDITION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+              <label>CUIT negocio<input type="text" inputMode="numeric" value={businessCuit} disabled={isClosureConfirmed} onChange={(event) => setBusinessCuit(cleanFiscalId(event.target.value).slice(0, 11))} placeholder="272234543459" /></label>
+              <label>Domicilio negocio<input type="text" value={businessFiscalAddress} disabled={isClosureConfirmed} onChange={(event) => setBusinessFiscalAddress(event.target.value)} placeholder="Domicilio fiscal" /></label>
+              <label>IVA %<input type="text" inputMode="decimal" value={vatRate} disabled={isClosureConfirmed || receiptType !== 'A'} onChange={(event) => setVatRate(event.target.value)} placeholder="21" /></label>
+            </div>
+            <div className="close-attention-fiscal-summary">
+              <span><span>{receiptTypeOption.label}</span><b>{fiscalTotals.discriminatesVat ? 'IVA discriminado' : 'Sin IVA discriminado'}</b></span>
+              <span><span>Neto gravado</span><b>{formatMoney(fiscalTotals.taxableNet)}</b></span>
+              <span><span>IVA {fiscalTotals.vatRate}%</span><b>{formatMoney(fiscalTotals.vatAmount)}</b></span>
+              <span><span>QR fiscal</span><b>Payload preparado</b></span>
+            </div>
+          </div>
+          {totalDiscountOptions.length > 0 && <div className="close-attention-section close-attention-total-discounts"><strong>Descuentos sobre total</strong><div className="close-attention-discounts">{totalDiscountOptions.map((discount) => {
             const discountKey = getDiscountKey(discount);
             return <label className="settings-check-row" key={discountKey}><input type="checkbox" checked={totalDiscountIds.includes(discountKey)} disabled={isClosureConfirmed || noCostClosure} onChange={() => setTotalDiscountIds((current) => { if (isClosureConfirmed || noCostClosure) return current; return current.includes(discountKey) ? current.filter((key) => key !== discountKey) : [...current, discountKey]; })} /><span>{formatDiscountOption(discount)}</span></label>;
           })}</div></div>}
-          <div className="close-attention-section close-attention-complete"><strong>Completar saldo restante</strong><div className="close-attention-discounts">{PAYMENT_METHODS.map((method) => <label className="settings-check-row" key={method}><input type="radio" name="remaining-payment-method" checked={remainingPaymentMethod === method} disabled={isClosureConfirmed || noCostClosure || selectedItems.length === 0} onChange={() => setRemainingPaymentMethod(method)} /><span>Completar saldo restante en {paymentMethodLabels[method].toLowerCase()}</span></label>)}</div></div>
-          <div className="close-attention-section"><strong>Cierre sin cobro</strong><label className="settings-check-row"><input type="checkbox" checked={noCostClosure} disabled={isClosureConfirmed || selectedItems.length === 0} onChange={(event) => { const checked = event.target.checked; setNoCostClosure(checked); if (checked) { setLineDiscounts({}); setTotalDiscountIds([]); setRemainingPaymentMethod(''); setPayments({ cash: '', transfer: '', card: '' }); } }} /><span>Sin costo</span></label></div>
-          <div className="close-attention-section close-attention-payments"><label>Efectivo<input type="text" inputMode="decimal" value={paymentInputDisplayValues.cash} onChange={(event) => updatePayment('cash', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure || remainingPaymentMethod === 'cash'} /></label><label>Transferencia<input type="text" inputMode="decimal" value={paymentInputDisplayValues.transfer} onChange={(event) => updatePayment('transfer', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure || remainingPaymentMethod === 'transfer'} /></label><label>Tarjeta<input type="text" inputMode="decimal" value={paymentInputDisplayValues.card} onChange={(event) => updatePayment('card', event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure || remainingPaymentMethod === 'card'} /></label></div>
-          <div className="close-attention-help">Cargá el importe cobrado por cada medio. La base de servicio se calcula automaticamente.</div>
+          <div className="close-attention-section close-attention-no-cost"><strong>Cierre sin cobro</strong><label className="settings-check-row"><input type="checkbox" checked={noCostClosure} disabled={isClosureConfirmed || selectedItems.length === 0} onChange={(event) => { const checked = event.target.checked; setNoCostClosure(checked); if (checked) { setLineDiscounts({}); setTotalDiscountIds([]); setSelectedSurchargeIdsByMethod({}); setRemainingPaymentMethod(''); setPayments(buildEmptyPayments(configuredPaymentMethods)); } }} /><span>Sin costo</span></label></div>
+          {activeSurcharges.length > 0 && <div className="close-attention-section close-attention-payments close-attention-surcharge-selector"><strong>Recargo por medio</strong>{configuredPaymentMethods.map((method) => {
+            const surchargeOptions = getSurchargeOptionsForMethod(method);
+            if (!surchargeOptions.length) return null;
+            return <label key={`surcharge-${method}`}>{formatPaymentMethod(method)}<select value={selectedSurchargeIdsByMethod[method] || ''} disabled={isClosureConfirmed || noCostClosure} onChange={(event) => updateSelectedSurcharge(method, event.target.value)}><option value="">Sin recargo</option>{surchargeOptions.map((surcharge) => <option value={getSurchargeKey(surcharge)} key={getSurchargeKey(surcharge)}>{formatSurchargeOption(surcharge)}</option>)}</select></label>;
+          })}</div>}
+          {selectedSurchargeDetails.length > 0 && <div className="close-attention-section close-attention-applied-surcharges"><strong>Recargos aplicados</strong><div className="close-attention-discounts">{selectedSurchargeDetails.map(({ surcharge, baseAmount, amount }) => (
+            <span className="settings-check-row" key={getSurchargeKey(surcharge)}><span>{formatSurchargeOption(surcharge)} sobre {formatPaymentMethod(surcharge.paymentMethod)}: +{formatMoney(amount)}{amount > 0 ? ` · Base: ${formatMoney(baseAmount)}` : ''}</span></span>
+          ))}</div></div>}
+            </div>
+            <div className="close-attention-page-column close-attention-page-column-secondary">
+          <div className="close-attention-section close-attention-complete"><strong>Completar saldo restante</strong><div className="close-attention-discounts">{configuredPaymentMethods.map((method) => <label className="settings-check-row" key={method}><input type="radio" name="remaining-payment-method" checked={remainingPaymentMethod === method} disabled={isClosureConfirmed || noCostClosure || selectedItems.length === 0} onChange={() => setRemainingPaymentMethod(method)} /><span>Completar saldo restante en {paymentMethodLabels[method].toLowerCase()}</span></label>)}</div></div>
+          <div className="close-attention-section close-attention-payments close-attention-payment-inputs">{configuredPaymentMethods.map((method) => <label key={method}>{paymentMethodLabels[method]}<input type="text" inputMode="decimal" value={paymentInputDisplayValues[method] || ''} onChange={(event) => updatePayment(method, event.target.value)} placeholder="0" disabled={isClosureConfirmed || noCostClosure || remainingPaymentMethod === method} /></label>)}</div>
           <div className="close-attention-section close-attention-coverage"><strong>Cobertura de servicio</strong><div className="close-attention-coverage-grid">{paymentCoverageRows.map((row) => <article className="close-attention-coverage-item" key={row.method}><h4>{row.label}</h4><span><span>Cobrado</span><b>{formatMoney(row.chargedAmount)}</b></span><span><span>Base cubierta</span><b>{formatMoney(row.baseAmount)}</b></span>{row.discountTotal > 0 && <span className="close-attention-negative"><span>Descuento aplicado</span><b>-{formatMoney(row.discountTotal)}</b></span>}{row.surchargeTotal > 0 && <span className="close-attention-positive"><span>Recargo aplicado</span><b>+{formatMoney(row.surchargeTotal)}</b></span>}</article>)}</div><div className="close-attention-base-status"><span><span>Base total servicios</span><b>{formatMoney(serviceNetTotal)}</b></span><span><span>Base cubierta</span><b>{formatMoney(totalPaymentInputAmount)}</b></span><span><span>Pendiente asignar</span><b>{formatMoney(basePendingAmount)}</b></span></div></div>
-          {activeSurcharges.length > 0 && <div className="close-attention-section"><strong>Recargos aplicados</strong><div className="close-attention-discounts">{activeSurcharges.map((surcharge) => {
-            const baseAmount = noCostClosure ? 0 : paymentBaseAmounts[surcharge.paymentMethod] || 0;
-            const amount = noCostClosure ? 0 : getSurchargeAmount(surcharge, baseAmount);
-            return <span className="settings-check-row" key={getSurchargeKey(surcharge)}><span>{formatSurchargeOption(surcharge)} sobre {formatPaymentMethod(surcharge.paymentMethod)}: +{formatMoney(amount)}{amount > 0 ? ` · Base: ${formatMoney(baseAmount)}` : ''}</span></span>;
-          })}</div></div>}
+            </div>
+          </div>
+          <div className="close-attention-help">Cargá el importe cobrado por cada medio. La base de servicio se calcula automaticamente.</div>
           <div className="close-attention-total">
             <span><span>Valor servicios</span><span>{formatMoney(grossTotal)}</span></span>
             <span><span>Descuentos</span><span>-{formatMoney(lineDiscountTotal + totalDiscountTotal)}</span></span>
             <span><span>Recargos</span><span>+{formatMoney(surchargeTotal)}</span></span>
             <strong><span>Total a cobrar</span><span>{formatMoney(displayFinalTotal)}</span></strong>
-            <span><span>Pagado efectivo</span><span>{formatMoney(paymentInputAmounts.cash)}</span></span>
-            <span><span>Pagado transferencia</span><span>{formatMoney(paymentInputAmounts.transfer)}</span></span>
-            <span><span>Pagado tarjeta</span><span>{formatMoney(paymentInputAmounts.card)}</span></span>
+            {paymentCoverageRows.filter((row) => row.chargedAmount > 0).map((row) => <span key={`paid-${row.method}`}><span>Pagado {row.label.toLowerCase()}</span><span>{formatMoney(row.chargedAmount)}</span></span>)}
             <strong><span>Cobrado total</span><span>{formatMoney(displayChargedTotal)}</span></strong>
             <span><span>Base cubierta</span><span>{formatMoney(totalPaymentInputAmount)}</span></span>
             <span><span>Base requerida</span><span>{formatMoney(serviceNetTotal)}</span></span>
             <span><span>Saldo pendiente</span><span>{formatMoney(Math.abs(displayPaymentDifference))}</span></span>
             <strong className={canConfirmClosure ? 'close-attention-balanced' : 'close-attention-unbalanced'}><span>Estado</span><span>{canConfirmClosure ? '✅ Balanceado' : '❌ Con diferencias'}</span></strong>
             {closureValidationErrors.map((message) => <span className="close-attention-difference" key={message}>{message}</span>)}
+            {fiscalValidationErrors.map((message) => <span className="close-attention-difference" key={message}>{message}</span>)}
           </div>
-          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>Cerrar</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !canConfirmClosure}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button>}</div>
+          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>{displayMode === 'page' ? 'Volver al calendario' : 'Cerrar'}</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !canConfirmClosure}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button>}</div>
         </div>
       </div>
+  );
+
+  if (displayMode === 'page') {
+    return <section className="close-attention-page">{closeAttentionContent}</section>;
+  }
+
+  return (
+    <div className="modal">
+      {closeAttentionContent}
     </div>
   );
 }
@@ -1130,7 +1356,7 @@ function BookingDetailsModal({ booking, service, employee, companyContext, canEd
   );
 }
 
-export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext, onRequestNewBooking = null, pendingView = false, rescheduleActive = false, onCancelReschedule = null, preferredBranchId = null }) {
+export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', employeeId, onBookingsChanged, clientCanChooseEmployee = false, selectedPromotion = null, promotions = [], adminProfileSummary = null, companySlug, companyContext, onRequestNewBooking = null, pendingView = false, rescheduleActive = false, onCancelReschedule = null, preferredBranchId = null, closeAttentionPage = false, onCloseAttentionPageClose = null }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -1569,6 +1795,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setCloseAttentionInitialDate(formatDateOnlyForDb(new Date()));
     setCloseAttentionOpen(true);
   };
+
+  useEffect(() => {
+    if (!closeAttentionPage || !preciosHabilitados) return;
+    openCloseAttention();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closeAttentionPage, preciosHabilitados, refreshKey]);
 
   useEffect(() => {
     let active = true;
@@ -2400,6 +2632,34 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
      RENDER
   ========================= */
 
+  if (closeAttentionPage) {
+    return closeAttentionOpen ? (
+      <CloseAttentionModal
+        bookings={bookings}
+        services={services}
+        employees={employees}
+        promotions={closurePromotions}
+        discounts={closureDiscounts}
+        surcharges={closureSurcharges}
+        accessProfile={accessProfile}
+        employeeId={employeeId}
+        user={user}
+        initialServiceDate={closeAttentionInitialDate}
+        companyContext={companyContext}
+        displayMode="page"
+        onClose={() => onCloseAttentionPageClose?.()}
+        onClosed={async () => {
+          await loadAll();
+          onBookingsChanged?.();
+        }}
+      />
+    ) : (
+      <section className="close-attention-page">
+        <div className="agenda-empty-state">Preparando cierre de atención...</div>
+      </section>
+    );
+  }
+
   return (
     <div
       className={`agenda-grid${pendingView ? ' agenda-grid-pending' : ''}`}
@@ -2513,11 +2773,6 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
         {rescheduleActive && onCancelReschedule && (
           <button className="agenda-cancel-reschedule-button" type="button" onClick={onCancelReschedule}>
             Cancelar modificación
-          </button>
-        )}
-        {!isClientView && preciosHabilitados && (
-          <button className="agenda-close-attention-button" type="button" onClick={openCloseAttention}>
-            Cerrar atención
           </button>
         )}
       </div>

@@ -1074,6 +1074,22 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         </article>
       )}
 
+      {activeView === 'close-attention' && (
+        <article className="employee-card employee-agenda-card employee-close-attention-card">
+          <AgendaGrid
+            user={user}
+            accessProfile="employee"
+            employeeId={employeeId}
+            refreshKey={refreshKey}
+            onBookingsChanged={refreshEmployeeWorkspace}
+            promotions={enabledPromotions}
+            companySlug={companySlug}
+            companyContext={effectiveCompanyContext}
+            closeAttentionPage
+          />
+        </article>
+      )}
+
       {activeView === 'profile' && (
         <div className="employee-profile-view">
           <article className="employee-card employee-profile-details-card">

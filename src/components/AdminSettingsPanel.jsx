@@ -33,10 +33,26 @@ const emptySurcharge = () => ({
   id: '',
   name: '',
   description: '',
-  paymentMethod: 'card',
+  paymentMethod: 'mercado_pago',
   value: '',
-  percent: ''
+  percent: '',
+  validFrom: '',
+  validUntil: ''
 });
+
+const PAYMENT_METHOD_OPTIONS = [
+  { value: 'cash', label: 'Efectivo' },
+  { value: 'transfer', label: 'Transferencia' },
+  { value: 'qr', label: 'QR' },
+  { value: 'mercado_pago', label: 'Mercado Pago' },
+  { value: 'wallet', label: 'Billetera virtual' },
+  { value: 'debit_card', label: 'Tarjeta de debito' },
+  { value: 'credit_card', label: 'Tarjeta de credito' },
+  { value: 'card', label: 'Tarjeta' },
+  { value: 'other', label: 'Otro medio' }
+];
+
+const PAYMENT_METHOD_VALUES = new Set(PAYMENT_METHOD_OPTIONS.map((method) => method.value));
 
 const parseMoney = (value) => {
   const normalized = String(value || '')
@@ -99,9 +115,11 @@ const normalizeSurcharges = (surcharges) => {
     id: String(surcharge?.id || ''),
     name: String(surcharge?.name || ''),
     description: String(surcharge?.description || ''),
-    paymentMethod: ['cash', 'transfer', 'card'].includes(surcharge?.paymentMethod) ? surcharge.paymentMethod : 'card',
+    paymentMethod: PAYMENT_METHOD_VALUES.has(surcharge?.paymentMethod) ? surcharge.paymentMethod : 'card',
     value: surcharge?.value === 0 || surcharge?.value ? String(surcharge.value) : (surcharge?.percent === 0 || surcharge?.percent ? String(surcharge.percent) : ''),
-    percent: surcharge?.percent === 0 || surcharge?.percent ? String(surcharge.percent) : ''
+    percent: surcharge?.percent === 0 || surcharge?.percent ? String(surcharge.percent) : '',
+    validFrom: String(surcharge?.validFrom || surcharge?.valid_from || ''),
+    validUntil: String(surcharge?.validUntil || surcharge?.valid_until || '')
   }));
 };
 
@@ -145,7 +163,7 @@ const normalizeBannerImages = (config) => {
   return normalizedImages;
 };
 
-export default function AdminSettingsPanel({ user, adminProfileSummary = null, companySlug, companyContext }) {
+export default function AdminSettingsPanel({ user, adminProfileSummary = null, companySlug }) {
   const [savedConfig, setSavedConfig] = useState(defaultConfig);
   const [form, setForm] = useState(defaultConfig);
   const [isLoading, setIsLoading] = useState(true);
@@ -532,7 +550,14 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
 
     const invalidPercentSurcharge = form.surcharges.find((surcharge) => surcharge.enabled && parseMoney(surcharge.value) > 100);
     if (invalidPercentSurcharge) {
-      alert(`El recargo ${invalidPercentSurcharge.name || 'sin nombre'} no puede superar el 100%.`);
+      alert(`El recargo del medio ${invalidPercentSurcharge.name || 'sin nombre'} no puede superar el 100%.`);
+      setIsSaving(false);
+      return;
+    }
+
+    const invalidDateRangeSurcharge = form.surcharges.find((surcharge) => surcharge.enabled && surcharge.validFrom && surcharge.validUntil && surcharge.validFrom > surcharge.validUntil);
+    if (invalidDateRangeSurcharge) {
+      alert(`La vigencia de ${invalidDateRangeSurcharge.name || 'un recargo'} tiene fecha desde posterior a fecha hasta.`);
       setIsSaving(false);
       return;
     }
@@ -563,9 +588,11 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       return {
         ...surcharge,
         id: surcharge.id || `recargo_${String(surchargeCounter).padStart(2, '0')}`,
-        paymentMethod: ['cash', 'transfer', 'card'].includes(surcharge.paymentMethod) ? surcharge.paymentMethod : 'card',
+        paymentMethod: PAYMENT_METHOD_VALUES.has(surcharge.paymentMethod) ? surcharge.paymentMethod : 'card',
         value: Math.min(100, Math.max(0, parseMoney(surcharge.value))),
-        percent: Math.min(100, Math.max(0, parseMoney(surcharge.value)))
+        percent: Math.min(100, Math.max(0, parseMoney(surcharge.value))),
+        validFrom: surcharge.validFrom || '',
+        validUntil: surcharge.validUntil || ''
       };
     });
 
@@ -985,7 +1012,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
 
         {recargosHabilitados && <article className="admin-form-card settings-card settings-promotions-card">
           <div className="agenda-modal-header settings-section-header admin-collapsible-form-header">
-            <span>Recargos por medio de pago</span>
+            <span>Medios de pago y recargos</span>
             <button
               className="availability-form-toggle admin-collapsible-form-toggle"
               type="button"
@@ -998,14 +1025,14 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
           </div>
           <div className={`agenda-modal-body settings-promotion-grid settings-discount-grid admin-collapsible-form-body ${surchargesOpen ? 'is-open' : 'is-collapsed'}`}>
             <div className="settings-section-toolbar">
-              <button className="agenda-option-button" type="button" onClick={addSurcharge}>Agregar recargo</button>
+              <button className="agenda-option-button" type="button" onClick={addSurcharge}>Agregar medio</button>
             </div>
             {surchargesOpen && (activeSurcharges.length === 0 ? (
-              <p className="settings-empty-text">Todavía no hay recargos configurados.</p>
+              <p className="settings-empty-text">Todavía no hay medios de pago configurados.</p>
             ) : activeSurcharges.map(({ surcharge, index }) => (
               <div className="settings-promotion-card settings-discount-card settings-management-card" key={index}>
                 <div className="settings-management-card-header">
-                  <strong>{surcharge.name || `Recargo ${index + 1}`}</strong>
+                  <strong>{surcharge.name || `Medio ${index + 1}`}</strong>
                 </div>
                 <label className="settings-check-row">
                   <input
@@ -1018,23 +1045,29 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
 
                 <label>
                   Nombre
-                  <input value={surcharge.name} onChange={(event) => updateSurcharge(index, 'name', event.target.value)} placeholder="Tarjeta Santander" />
+                  <input value={surcharge.name} onChange={(event) => updateSurcharge(index, 'name', event.target.value)} placeholder="Mercado Pago" />
                 </label>
                 <label>
                   Medio de pago
                   <select value={surcharge.paymentMethod} onChange={(event) => updateSurcharge(index, 'paymentMethod', event.target.value)}>
-                    <option value="card">Tarjeta</option>
-                    <option value="transfer">Transferencia</option>
-                    <option value="cash">Efectivo</option>
+                    {PAYMENT_METHOD_OPTIONS.map((method) => <option value={method.value} key={method.value}>{method.label}</option>)}
                   </select>
                 </label>
                 <label>
-                  Porcentaje
+                  Recargo al cliente %
                   <input type="text" inputMode="decimal" value={surcharge.value} onChange={(event) => updateSurcharge(index, 'value', event.target.value)} placeholder="10" />
                 </label>
                 <label>
+                  Vigente desde
+                  <input type="date" value={surcharge.validFrom} onChange={(event) => updateSurcharge(index, 'validFrom', event.target.value)} />
+                </label>
+                <label>
+                  Vigente hasta
+                  <input type="date" value={surcharge.validUntil} onChange={(event) => updateSurcharge(index, 'validUntil', event.target.value)} />
+                </label>
+                <label>
                   Descripción
-                  <textarea value={surcharge.description} onChange={(event) => updateSurcharge(index, 'description', event.target.value)} placeholder="Ej: recargo por pago con tarjeta" />
+                  <textarea value={surcharge.description} onChange={(event) => updateSurcharge(index, 'description', event.target.value)} placeholder="Ej: QR de la empresa, billetera virtual o credito en cuotas" />
                 </label>
 
                 <button className="agenda-option-button" type="button" onClick={() => removeSurcharge(index)}>
