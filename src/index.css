@@ -6537,7 +6537,7 @@ body .platform-admin-header .app-navbar-logout:hover {
   border: 1px solid #e0cfa6;
   border-radius: 999px;
   color: #7c2d12;
-  background: #fffdf5;
+  background: #fff;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -21956,7 +21956,6 @@ body .client-card-status-field strong.is-active {
 .dashboard-shell .agenda-refresh-button,
 .dashboard-shell .availability-day-filter-all,
 .dashboard-shell .availability-day-filter-all.is-selected,
-.dashboard-shell .availability-branch-pill,
 .dashboard-shell .settings-check-summary-row,
 .dashboard-shell .settings-check-summary-chip,
 .dashboard-shell .settings-check-summary-chip.is-selected {
@@ -21965,6 +21964,14 @@ body .client-card-status-field strong.is-active {
   background: rgba(var(--app-primary-rgb), 0.14) !important;
   background-image: none !important;
   box-shadow: 0 0 0 1px rgba(var(--app-primary-rgb), 0.1) !important;
+}
+
+.dashboard-shell .availability-branch-pill {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.56) !important;
+  background: #fff !important;
+  background-image: none !important;
+  box-shadow: 0 0 0 1px rgba(var(--app-text-rgb), 0.08) !important;
 }
 
 .dashboard-shell .availability-branch-pill.is-selected {
