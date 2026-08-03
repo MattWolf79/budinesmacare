@@ -609,16 +609,64 @@ body .service-button-grid .service-record-card .admin-management-card-header,
 body .service-button-grid .promotion-record-card .admin-management-card-header,
 body .employee-button-list .employee-record-card .admin-management-card-header,
 body .admin-record-card .admin-management-card-header,
+body .dashboard-shell .agenda-modal-header,
+body .role-workspace-employee .agenda-modal-header,
+body .role-workspace-client .agenda-modal-header,
 body .admin-shell .form-card-header,
 body .admin-shell .admin-collapsible-form-header,
 body .agenda-modal-header.form-card-header,
-body .agenda-modal-header.admin-collapsible-form-header {
+body .agenda-modal-header.admin-collapsible-form-header,
+body .booking-detail-modal .agenda-modal-header,
+body .employee-booking-detail-header,
+body .employee-availability-manager .availability-form-header,
+body .employee-availability-manager .availability-card-header,
+body .role-workspace-employee .employee-availability-manager .availability-form-header,
+body .role-workspace-employee .employee-availability-manager .availability-card-header,
+body .dashboard-shell .employee-availability-manager .availability-form-header,
+body .dashboard-shell .employee-availability-manager .availability-card-header,
+body .availability-form-card > .agenda-modal-header,
+body .availability-card-grid .availability-card-header {
   color: var(--app-text) !important;
   border-color: rgba(var(--app-accent-rgb), 0.46) !important;
-  background: linear-gradient(150deg, rgba(var(--app-primary-rgb), 0.2), var(--app-surface-strong)) !important;
-  box-shadow: inset 0 0 0 1px rgba(var(--app-primary-rgb), 0.12) !important;
+  background: radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.2), transparent 34%), linear-gradient(160deg, #fff 0%, var(--app-surface) 100%) !important;
+  box-shadow: inset 0 -1px 0 rgba(var(--app-text-rgb), 0.12), inset 0 0 0 1px rgba(var(--app-primary-rgb), 0.12) !important;
 }
 
+body .booking-detail-modal .agenda-modal-header *,
+body .employee-booking-detail-header *,
+body .employee-availability-manager .availability-form-header *,
+body .employee-availability-manager .availability-card-header *,
+body .role-workspace-employee .employee-availability-manager .availability-form-header *,
+body .role-workspace-employee .employee-availability-manager .availability-card-header *,
+body .dashboard-shell .employee-availability-manager .availability-form-header *,
+body .dashboard-shell .employee-availability-manager .availability-card-header *,
+body .availability-form-card > .agenda-modal-header *,
+body .availability-card-grid .availability-card-header * {
+  color: var(--app-text) !important;
+}
+
+body .booking-detail-modal .agenda-close-button,
+body .booking-detail-modal .agenda-option-button,
+body .settings-banner-preview .agenda-close-button,
+body .settings-banner-preview .agenda-option-button,
+body .settings-promotion-card .agenda-close-button,
+body .settings-promotion-card .agenda-option-button,
+body .availability-branch-pill,
+body .availability-range-remove {
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.56) !important;
+  background: rgba(var(--app-primary-rgb), 0.14) !important;
+  background-image: none !important;
+  box-shadow: 0 0 0 1px rgba(var(--app-primary-rgb), 0.1) !important;
+}
+
+
+body .availability-branch-pill.is-selected {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: rgba(var(--app-primary-rgb), 0.24) !important;
+  background-image: none !important;
+}
 body .service-button-grid .service-record-card .admin-management-card-header *,
 body .service-button-grid .promotion-record-card .admin-management-card-header *,
 body .employee-button-list .employee-record-card .admin-management-card-header *,
