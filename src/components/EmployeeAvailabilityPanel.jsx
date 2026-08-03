@@ -88,6 +88,17 @@ const formatDateLabel = (value, weekday) => {
 const getEmployeeName = (employees, employeeId, fallback = 'Empleado') =>
   employees.find((employee) => String(employee.id) === String(employeeId))?.name || fallback;
 
+const normalizeBranch = (branch) => {
+  const id = branch?.id ?? branch?.branch_id;
+  if (!id) return null;
+
+  return {
+    ...branch,
+    id: String(id),
+    name: branch?.name || branch?.branch_name || 'Sucursal'
+  };
+};
+
 const isValidWeekdayFilter = (value) =>
   value === 'all' || weekdayOptions.some((option) => String(option.value) === String(value));
 
@@ -128,7 +139,9 @@ export default function EmployeeAvailabilityPanel({
   const isAdminMode = mode === 'admin';
   const sucursalesHabilitadas = companyContext?.configuracion_operativa?.sucursales_habilitadas === true;
   const branches = useMemo(
-    () => (Array.isArray(companyContext?.branches) ? companyContext.branches : []),
+    () => (Array.isArray(companyContext?.branches)
+      ? companyContext.branches.map(normalizeBranch).filter(Boolean)
+      : []),
     [companyContext]
   );
   const showBranchSelector = sucursalesHabilitadas && branches.length > 0;
@@ -930,7 +943,7 @@ export default function EmployeeAvailabilityPanel({
                       key={branch.id}
                       type="button"
                       className={`availability-branch-pill ${String(form.branchId) === String(branch.id) ? 'is-selected' : ''}`}
-                      onClick={() => updateField('branchId', branch.id)}
+                      onClick={() => updateField('branchId', String(branch.id))}
                     >
                       {branch.name}
                     </button>
