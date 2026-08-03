@@ -2703,12 +2703,19 @@ code {
 }
 
 .internal-register-field {
-  display: grid;
-  gap: 6px;
+  display: block;
   margin-bottom: 12px;
   color: #475569;
   font-size: 12px;
   font-weight: 900;
+}
+
+.internal-register-field > * {
+  margin-top: 6px;
+}
+
+.internal-register-field > .internal-required-mark {
+  margin-top: 0;
 }
 
 .internal-register-field input {
@@ -3215,8 +3222,8 @@ code {
   width: fit-content;
   border-radius: 999px;
   padding: 3px 9px;
-  color: #7c2d12;
-  background: #ffe9c2;
+  color: var(--app-text, #7c2d12);
+  background: var(--app-surface-strong, #ffe9c2);
   font-size: 9px;
   font-weight: 900;
   line-height: 1;
@@ -4826,15 +4833,15 @@ code {
 }
 
 .employee-date-chip:hover {
-  border-color: #e0a020;
-  color: #b45309;
+  border-color: var(--app-accent);
+  color: var(--app-accent);
 }
 
 .employee-date-chip.is-selected {
-  border-color: #e0a020;
-  background: linear-gradient(150deg, #f7b733, #e0a020);
-  color: #7c2d12;
-  box-shadow: 0 6px 14px rgba(224, 160, 32, 0.32);
+  border-color: var(--app-accent);
+  background: linear-gradient(150deg, var(--app-primary), var(--app-accent));
+  color: var(--app-text);
+  box-shadow: 0 6px 14px rgba(var(--app-accent-rgb), 0.32);
 }
 
 .employee-date-chip-day {
@@ -4868,11 +4875,11 @@ code {
   width: 5px;
   height: 5px;
   border-radius: 999px;
-  background: #e0a020;
+  background: var(--app-accent);
 }
 
 .employee-date-chip.has-bookings.is-selected::after {
-  background: #7c2d12;
+  background: var(--app-text);
 }
 
 .employee-upcoming-row-arrow {
@@ -6651,13 +6658,13 @@ body .platform-admin-header .app-navbar-logout:hover {
 .client-branch-bar-title {
   font-size: 15px;
   font-weight: 800;
-  color: #7c2d12;
+  color: var(--app-text, #7c2d12);
 }
 
 .client-branch-bar-hint {
   margin: 0;
   font-size: 12.5px;
-  color: #8a7350;
+  color: rgba(var(--app-text-rgb, 124, 45, 18), 0.7);
 }
 
 .client-branch-bar-pills {
@@ -20652,18 +20659,18 @@ body .clients-panel .clients-delete-button:hover:not(:disabled) {
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
-  border: 1px solid #f0e0bf !important;
+  border: 1px solid rgba(var(--app-accent-rgb), 0.28) !important;
   border-radius: 12px !important;
   padding: 12px 13px !important;
-  color: #7c2d12 !important;
+  color: var(--app-text) !important;
   background:
-    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
-    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
-  box-shadow: 0 10px 22px rgba(240, 161, 31, 0.16) !important;
+    radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, var(--app-surface) 100%) !important;
+  box-shadow: 0 10px 22px rgba(var(--app-accent-rgb), 0.16) !important;
 }
 
 .dashboard-metric-card > span {
-  color: #b45309 !important;
+  color: var(--app-accent) !important;
   font-size: 10px !important;
   font-weight: 900 !important;
   letter-spacing: 0.04em !important;
@@ -20674,11 +20681,11 @@ body .clients-panel .clients-delete-button:hover:not(:disabled) {
 .dashboard-metric-card > strong {
   display: block !important;
   margin-top: 8px !important;
-  border: 1px solid #f2dfb4 !important;
+  border: 1px solid rgba(var(--app-accent-rgb), 0.3) !important;
   border-radius: 8px !important;
   padding: 7px 9px !important;
-  color: #7c2d12 !important;
-  background: rgba(247, 183, 51, 0.16) !important;
+  color: var(--app-text) !important;
+  background: rgba(var(--app-primary-rgb), 0.16) !important;
   font-size: 22px !important;
   font-weight: 950 !important;
   line-height: 1 !important;
@@ -20687,7 +20694,7 @@ body .clients-panel .clients-delete-button:hover:not(:disabled) {
 .dashboard-metric-card > small {
   display: block !important;
   margin-top: 6px !important;
-  color: #9a6a2f !important;
+  color: rgba(var(--app-text-rgb), 0.7) !important;
   font-size: 11px !important;
   font-weight: 800 !important;
   background: transparent !important;
@@ -20708,7 +20715,7 @@ body .clients-panel .clients-delete-button:hover:not(:disabled) {
 .dashboard-metric-card--monthly-closures > small + small {
   margin-top: 2px !important;
   padding-top: 4px !important;
-  border-top: 1px solid rgba(124, 45, 18, 0.14) !important;
+  border-top: 1px solid rgba(var(--app-text-rgb), 0.14) !important;
 }
 
 /* Variante Recaudación (Empleado): dos filas por semana en tono dorado */
@@ -20719,31 +20726,31 @@ body .clients-panel .clients-delete-button:hover:not(:disabled) {
 }
 
 .dashboard-metric-card--earnings .employee-closed-week-row {
-  border: 1px solid #f2dfb4 !important;
+  border: 1px solid rgba(var(--app-accent-rgb), 0.3) !important;
   border-radius: 8px !important;
-  background: rgba(247, 183, 51, 0.10) !important;
+  background: rgba(var(--app-primary-rgb), 0.10) !important;
 }
 
 .dashboard-metric-card--earnings .employee-closed-week-row.is-current {
-  border-color: #e0a020 !important;
-  background: rgba(247, 183, 51, 0.2) !important;
+  border-color: var(--app-accent) !important;
+  background: rgba(var(--app-primary-rgb), 0.2) !important;
 }
 
 .dashboard-metric-card--earnings .employee-closed-week-row span {
-  color: #b45309 !important;
+  color: var(--app-accent) !important;
 }
 
 .dashboard-metric-card--earnings .employee-closed-week-row strong {
   margin-top: 0 !important;
   border: 0 !important;
   padding: 0 !important;
-  color: #7c2d12 !important;
+  color: var(--app-text) !important;
   background: transparent !important;
 }
 
 .dashboard-metric-card--earnings .employee-closed-week-row small {
   margin-top: 0 !important;
-  color: #9a6a2f !important;
+  color: rgba(var(--app-text-rgb), 0.7) !important;
 }
 
 /* ===== Navbar unificado dorado (admin, empleado, cliente, plataforma) ===== */
@@ -20864,7 +20871,7 @@ body .platform-admin-header .app-navbar-logout:hover {
   min-height: 88vh;
   padding: 22px clamp(20px, 6vw, 96px) 34px;
   background:
-    radial-gradient(circle at 12% 10%, rgba(224, 160, 32, 0.16), transparent 46%),
+    radial-gradient(circle at 12% 10%, rgba(var(--app-accent-rgb, 224, 160, 32), 0.16), transparent 46%),
     linear-gradient(155deg, #1c1710 0%, #12100a 60%, #0d0b07 100%);
   background-size: cover;
   background-position: center;
@@ -20880,7 +20887,7 @@ body .platform-admin-header .app-navbar-logout:hover {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 85% 20%, rgba(247, 183, 51, 0.18), transparent 42%);
+  background: radial-gradient(circle at 85% 20%, rgba(var(--app-primary-rgb, 247, 183, 51), 0.18), transparent 42%);
   pointer-events: none;
 }
 
@@ -20923,8 +20930,8 @@ body .platform-admin-header .app-navbar-logout:hover {
   border-radius: 12px;
   font-size: 20px;
   font-weight: 900;
-  color: #12100a;
-  background: linear-gradient(150deg, #f7b733 0%, #e0a020 100%);
+  color: var(--app-text, #12100a);
+  background: linear-gradient(150deg, var(--app-primary, #f7b733) 0%, var(--app-accent, #e0a020) 100%);
 }
 
 .landing-brand-name {
@@ -20954,27 +20961,27 @@ body .platform-admin-header .app-navbar-logout:hover {
 }
 
 .landing-nav-link:hover {
-  color: #ffd98a;
-  background: rgba(247, 183, 51, 0.12);
+  color: var(--app-surface-strong, #ffd98a);
+  background: rgba(var(--app-primary-rgb, 247, 183, 51), 0.12);
 }
 
 .landing-nav-cta {
   display: inline-flex;
   align-items: center;
-  color: #12100a;
+  color: var(--app-text, #12100a);
   font-size: 14px;
   font-weight: 800;
   text-decoration: none;
   padding: 9px 18px;
   border-radius: 999px;
-  background: linear-gradient(150deg, #f7b733 0%, #e0a020 100%);
-  box-shadow: 0 8px 20px rgba(224, 160, 32, 0.34);
+  background: linear-gradient(150deg, var(--app-primary, #f7b733) 0%, var(--app-accent, #e0a020) 100%);
+  box-shadow: 0 8px 20px rgba(var(--app-accent-rgb, 224, 160, 32), 0.34);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .landing-nav-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 26px rgba(224, 160, 32, 0.42);
+  box-shadow: 0 12px 26px rgba(var(--app-accent-rgb, 224, 160, 32), 0.42);
 }
 
 .landing-hero-content {
@@ -20996,9 +21003,9 @@ body .platform-admin-header .app-navbar-logout:hover {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #ffd98a;
-  background: rgba(247, 183, 51, 0.14);
-  border: 1px solid rgba(247, 183, 51, 0.32);
+  color: var(--app-surface-strong, #ffd98a);
+  background: rgba(var(--app-primary-rgb, 247, 183, 51), 0.14);
+  border: 1px solid rgba(var(--app-primary-rgb, 247, 183, 51), 0.32);
 }
 
 .landing-hero-title {
@@ -21016,11 +21023,11 @@ body .platform-admin-header .app-navbar-logout:hover {
   margin-top: 10px;
   font-size: clamp(24px, 4vw, 40px);
   line-height: 1.1;
-  background: linear-gradient(120deg, #f7b733 0%, #ffd98a 100%);
+  background: linear-gradient(120deg, var(--app-primary, #f7b733) 0%, var(--app-surface-strong, #ffd98a) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  color: #f7b733;
+  color: var(--app-primary, #f7b733);
   text-shadow: none;
 }
 
@@ -21043,20 +21050,20 @@ body .platform-admin-header .app-navbar-logout:hover {
 .landing-hero-primary {
   display: inline-flex;
   align-items: center;
-  color: #12100a;
+  color: var(--app-text, #12100a);
   font-size: 16px;
   font-weight: 800;
   text-decoration: none;
   padding: 14px 30px;
   border-radius: 999px;
-  background: linear-gradient(150deg, #f7b733 0%, #e0a020 100%);
-  box-shadow: 0 14px 30px rgba(224, 160, 32, 0.4);
+  background: linear-gradient(150deg, var(--app-primary, #f7b733) 0%, var(--app-accent, #e0a020) 100%);
+  box-shadow: 0 14px 30px rgba(var(--app-accent-rgb, 224, 160, 32), 0.4);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .landing-hero-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 38px rgba(224, 160, 32, 0.5);
+  box-shadow: 0 18px 38px rgba(var(--app-accent-rgb, 224, 160, 32), 0.5);
 }
 
 .landing-hero-secondary {
@@ -21068,14 +21075,14 @@ body .platform-admin-header .app-navbar-logout:hover {
   text-decoration: none;
   padding: 14px 26px;
   border-radius: 999px;
-  border: 1px solid rgba(247, 183, 51, 0.5);
-  background: rgba(247, 183, 51, 0.06);
+  border: 1px solid rgba(var(--app-primary-rgb, 247, 183, 51), 0.5);
+  background: rgba(var(--app-primary-rgb, 247, 183, 51), 0.06);
   transition: background 0.18s ease, border-color 0.18s ease;
 }
 
 .landing-hero-secondary:hover {
-  background: rgba(247, 183, 51, 0.16);
-  border-color: rgba(247, 183, 51, 0.75);
+  background: rgba(var(--app-primary-rgb, 247, 183, 51), 0.16);
+  border-color: rgba(var(--app-primary-rgb, 247, 183, 51), 0.75);
 }
 
 .landing-hero-benefits {
@@ -21105,8 +21112,8 @@ body .platform-admin-header .app-navbar-logout:hover {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 900;
-  color: #12100a;
-  background: linear-gradient(150deg, #f7b733 0%, #e0a020 100%);
+  color: var(--app-text, #12100a);
+  background: linear-gradient(150deg, var(--app-primary, #f7b733) 0%, var(--app-accent, #e0a020) 100%);
 }
 
 /* ===== Sección Accesos ===== */
@@ -21127,14 +21134,14 @@ body .platform-admin-header .app-navbar-logout:hover {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #b07d1a;
+  color: var(--app-accent, #b07d1a);
 }
 
 .landing-access-title {
   margin: 0 0 32px;
   font-size: clamp(24px, 4vw, 34px);
   font-weight: 900;
-  color: #5b3d17;
+  color: var(--app-text, #5b3d17);
 }
 
 .landing-access-grid {
@@ -21152,15 +21159,15 @@ body .platform-admin-header .app-navbar-logout:hover {
   text-decoration: none;
   color: #3f342a;
   background: #fff;
-  border: 1px solid #ecdcb8;
-  box-shadow: 0 12px 26px rgba(180, 138, 40, 0.1);
+  border: 1px solid rgba(var(--app-accent-rgb, 224, 160, 32), 0.28);
+  box-shadow: 0 12px 26px rgba(var(--app-accent-rgb, 224, 160, 32), 0.12);
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .landing-access-card:hover {
   transform: translateY(-3px);
-  border-color: #e0a020;
-  box-shadow: 0 18px 34px rgba(224, 160, 32, 0.22);
+  border-color: var(--app-accent, #e0a020);
+  box-shadow: 0 18px 34px rgba(var(--app-accent-rgb, 224, 160, 32), 0.22);
 }
 
 .landing-access-icon {
@@ -21171,24 +21178,20 @@ body .platform-admin-header .app-navbar-logout:hover {
   height: 52px;
   border-radius: 14px;
   font-size: 24px;
-  background: linear-gradient(150deg, #fef0cf 0%, #f8e0a8 100%);
-  border: 1px solid #f0d79a;
+  background: linear-gradient(150deg, var(--app-surface, #fef0cf) 0%, var(--app-surface-strong, #f8e0a8) 100%);
+  border: 1px solid rgba(var(--app-accent-rgb, 224, 160, 32), 0.4);
 }
 
-.landing-access-icon.variant-employee {
-  background: linear-gradient(150deg, #e9f2ff 0%, #cfe2ff 100%);
-  border-color: #bcd6fb;
-}
-
+.landing-access-icon.variant-employee,
 .landing-access-icon.variant-admin {
-  background: linear-gradient(150deg, #f2ecff 0%, #e0d3ff 100%);
-  border-color: #d0bdfb;
+  background: linear-gradient(150deg, var(--app-surface, #fef0cf) 0%, var(--app-surface-strong, #f8e0a8) 100%);
+  border-color: rgba(var(--app-accent-rgb, 224, 160, 32), 0.4);
 }
 
 .landing-access-card-title {
   font-size: 18px;
   font-weight: 800;
-  color: #5b3d17;
+  color: var(--app-text, #5b3d17);
 }
 
 .landing-access-card-copy {
@@ -21202,7 +21205,7 @@ body .platform-admin-header .app-navbar-logout:hover {
   padding-top: 8px;
   font-size: 14px;
   font-weight: 800;
-  color: #c98a12;
+  color: var(--app-accent, #c98a12);
 }
 
 /* ===== Sección Contacto ===== */
@@ -21221,7 +21224,7 @@ body .platform-admin-header .app-navbar-logout:hover {
   margin: 0 0 20px;
   font-size: clamp(22px, 3.6vw, 30px);
   font-weight: 900;
-  color: #ffd98a;
+  color: var(--app-surface-strong, #ffd98a);
 }
 
 .landing-contact-list {
@@ -21243,7 +21246,7 @@ body .platform-admin-header .app-navbar-logout:hover {
 }
 
 .landing-contact-item a {
-  color: #ffd98a;
+  color: var(--app-surface-strong, #ffd98a);
   text-decoration: none;
 }
 
@@ -21271,7 +21274,7 @@ body .platform-admin-header .app-navbar-logout:hover {
 }
 
 .landing-footer-powered strong {
-  color: #ffd98a;
+  color: var(--app-surface-strong, #ffd98a);
 }
 
 @media (max-width: 640px) {
