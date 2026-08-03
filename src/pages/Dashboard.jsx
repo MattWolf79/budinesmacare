@@ -19,6 +19,7 @@ const getAdminViewFromHash = () => {
   const hash = window.location.hash.replace(/^#/, '');
 
   if (hash === 'admin-agenda') return 'agenda';
+  if (hash === 'admin-close-attention') return 'close-attention';
   if (hash === 'assign-booking' || hash === 'admin-pending') return 'pending';
   if (hash === 'admin-employees') return 'employees';
   if (hash === 'admin-branches') return 'sucursales';
@@ -147,6 +148,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     const gestion = [
       { id: 'new-booking', label: 'Nueva reserva', icon: '➕' },
       { id: 'agenda', label: 'Calendario', icon: '📅' },
+      { id: 'close-attention', label: 'Cerrar atención', icon: '💳' },
       { id: 'pending', label: 'Pendientes de asignar', icon: '📌' },
       { id: 'clients', label: 'Clientes', icon: '🙋' },
       { id: 'employees', label: 'Empleados', icon: '👥' },
@@ -213,6 +215,11 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
           {activeView === 'agenda' && (
             <div className="agenda-responsive-shell">
               <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={(options) => { setNewBookingInitial(options); setIsNewBookingOpen(true); }} />
+            </div>
+          )}
+          {activeView === 'close-attention' && preciosHabilitados && (
+            <div className="agenda-responsive-shell close-attention-responsive-shell">
+              <AgendaGrid key={`close-attention-${adminDataVersion}`} closeAttentionPage user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onCloseAttentionPageClose={() => changeView('agenda')} onBookingsChanged={notifyAdminDataChanged} />
             </div>
           )}
           {activeView === 'pending' && (

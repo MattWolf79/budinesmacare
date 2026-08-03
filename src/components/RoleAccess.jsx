@@ -43,6 +43,7 @@ const profileList = ['client', 'employee', 'admin'];
 const employeeNavItems = [
   { id: 'summary', label: 'Resumen', mobileLabel: 'Resumen', icon: '▦' },
   { id: 'agenda', label: 'Agenda', mobileLabel: 'Agenda', icon: '📅' },
+  { id: 'close-attention', label: 'Cerrar atención', mobileLabel: 'Cerrar', icon: '💳' },
   { id: 'clients', label: 'Clientes', mobileLabel: 'Clientes', icon: '🙋' },
   { id: 'profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: '👤' },
   { id: 'availability', label: 'Disponibilidad', mobileLabel: 'Horario', icon: '🕒' }
@@ -81,6 +82,7 @@ const clientHeroCopy = {
 const employeeHeroCopy = {
   summary: { eyebrow: 'Acceso interno', title: 'Mi espacio', description: 'Un vistazo a tu día, próximos turnos y disponibilidad.' },
   agenda: { eyebrow: 'Acceso interno', title: 'Mi agenda laboral', description: 'Un panel enfocado en los turnos asignados.' },
+  'close-attention': { eyebrow: 'Cobro', title: 'Cerrar atención', description: 'Liquidá turnos atendidos, cargá medios de pago y generá el comprobante.' },
   'new-booking': { eyebrow: 'Reserva', title: 'Nueva reserva', description: 'Creá un turno para un cliente.' },
   clients: { eyebrow: 'Clientes', title: 'Gestión de clientes', description: 'Administrá y organizá tu base de clientes.' },
   profile: { eyebrow: 'Mi perfil', title: 'Mi perfil', description: 'Revisá y actualizá tus datos personales.' },

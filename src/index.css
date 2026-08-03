@@ -409,6 +409,7 @@ code {
 .close-attention-modal {
   width: min(94vw, 760px);
   max-width: min(94vw, 760px) !important;
+  min-width: 0;
 }
 
 .close-attention-body {
@@ -416,13 +417,15 @@ code {
   gap: 12px;
   max-height: min(78vh, 720px);
   overflow: auto;
+  min-width: 0;
 }
 
 .close-attention-controls,
 .close-attention-payments {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
   gap: 10px;
+  min-width: 0;
 }
 
 .close-attention-controls label,
@@ -432,12 +435,16 @@ code {
   color: #475569;
   font-size: 12px;
   font-weight: 900;
+  min-width: 0;
 }
 
 .close-attention-controls input,
 .close-attention-controls select,
 .close-attention-payments input {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   padding: 8px 10px;
@@ -458,6 +465,36 @@ code {
   border-radius: 8px;
   padding: 10px;
   background: #f8fafc;
+}
+
+.close-attention-fiscal-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.close-attention-fiscal-summary > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.close-attention-fiscal-summary b {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 950;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .close-attention-item-check span {
@@ -626,6 +663,120 @@ code {
 .close-attention-modal .agenda-option-button:hover {
   background: #fdf1d8;
   border-color: #e0a020;
+}
+
+.close-attention-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.close-attention-page-card {
+  width: 100%;
+  max-width: none !important;
+  border: 1px solid #e8edf4;
+  border-radius: 8px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+}
+
+.close-attention-page-card .close-attention-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-height: none;
+  overflow: visible;
+  padding: 20px;
+}
+
+.close-attention-page-card .close-attention-total { position: static; }
+.close-attention-page-card .agenda-modal-actions { justify-self: end; }
+
+.close-attention-page-card .close-attention-page-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.close-attention-page-card .close-attention-page-column {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.close-attention-page-card .close-attention-controls,
+.close-attention-page-card .close-attention-payments {
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+}
+
+.close-attention-page-card .close-attention-items {
+  align-content: start;
+}
+
+.close-attention-page-card .close-attention-item,
+.close-attention-page-card .close-attention-section,
+.close-attention-page-card .close-attention-total {
+  border-radius: 8px;
+}
+
+.close-attention-page-card .close-attention-total {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+
+.close-attention-page-card .close-attention-total > span,
+.close-attention-page-card .close-attention-total > strong {
+  min-width: 0;
+}
+
+.close-attention-page-card .close-attention-total .close-attention-difference,
+.close-attention-page-card .close-attention-total .close-attention-balanced,
+.close-attention-page-card .close-attention-total .close-attention-unbalanced {
+  grid-column: 1 / -1;
+}
+
+.close-attention-page-card .agenda-modal-actions {
+  width: min(100%, 520px);
+}
+
+@media (max-width: 1100px) {
+  .close-attention-page-card .close-attention-page-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .close-attention-page-card .close-attention-total {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .close-attention-responsive-shell {
+    margin-inline: -6px;
+  }
+
+  .close-attention-page-card {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .close-attention-page-card .agenda-modal-header {
+    padding: 14px 14px;
+  }
+
+  .close-attention-page-card .close-attention-body {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .close-attention-page-card .close-attention-item,
+  .close-attention-page-card .close-attention-section,
+  .close-attention-page-card .close-attention-total {
+    padding: 11px;
+  }
+
+  .close-attention-page-card .close-attention-total {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ===== Cancelar turno · estilo amarillo moderno ===== */
@@ -5458,8 +5609,8 @@ body .platform-admin-header .app-navbar-logout:hover {
 }
 
 @media (max-width: 760px) {
-  body .role-workspace-employee .agenda-modal-card.close-attention-modal,
-  body .dashboard-shell .agenda-modal-card.close-attention-modal,
+  body .role-workspace-employee .agenda-modal-card.close-attention-modal:not(.close-attention-page-card),
+  body .dashboard-shell .agenda-modal-card.close-attention-modal:not(.close-attention-page-card),
   body .dashboard-shell .agenda-modal-card.booking-detail-modal,
   body .dashboard-shell .agenda-modal-card.settlement-modal {
     position: fixed !important;
@@ -5479,8 +5630,8 @@ body .platform-admin-header .app-navbar-logout:hover {
     box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28) !important;
   }
 
-  body .role-workspace-employee .agenda-modal-card.close-attention-modal .close-attention-body,
-  body .dashboard-shell .agenda-modal-card.close-attention-modal .close-attention-body,
+  body .role-workspace-employee .agenda-modal-card.close-attention-modal:not(.close-attention-page-card) .close-attention-body,
+  body .dashboard-shell .agenda-modal-card.close-attention-modal:not(.close-attention-page-card) .close-attention-body,
   body .dashboard-shell .agenda-modal-card.booking-detail-modal .booking-detail-body,
   body .dashboard-shell .agenda-modal-card.settlement-modal .settlement-body {
     flex: 1 1 auto !important;
@@ -18791,6 +18942,9 @@ body {
     flex-wrap: nowrap !important;
     align-items: center !important;
     justify-content: space-between !important;
+    color: #f8fafc !important;
+    background: #174c55 !important;
+    border-bottom: 1px solid #174c55 !important;
   }
 
   body .dashboard-shell > .app-navbar .app-navbar-session,
@@ -21127,4 +21281,113 @@ body .platform-admin-header .app-navbar-logout:hover {
   .landing-access-card {
     transition: none;
   }
+}
+
+/* Corrección final: paleta única de la app para navbars internos en todos los anchos. */
+body .dashboard-shell > .app-navbar,
+body .role-workspace-employee > .app-navbar,
+body .role-workspace-client > .app-navbar {
+  color: #7c2d12 !important;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
+  border-bottom: 1px solid #f0d9a6 !important;
+  box-shadow: 0 10px 24px rgba(124, 45, 18, 0.08) !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-title,
+body .role-workspace-employee > .app-navbar .app-navbar-title,
+body .role-workspace-client > .app-navbar .app-navbar-title,
+body .dashboard-shell > .app-navbar .app-navbar-company-text,
+body .role-workspace-employee > .app-navbar .app-navbar-company-text,
+body .role-workspace-client > .app-navbar .app-navbar-company-text,
+body .dashboard-shell > .app-navbar .app-navbar-email,
+body .role-workspace-employee > .app-navbar .app-navbar-email,
+body .role-workspace-client > .app-navbar .app-navbar-email {
+  color: #7c2d12 !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-subtitle,
+body .role-workspace-employee > .app-navbar .app-navbar-subtitle,
+body .role-workspace-client > .app-navbar .app-navbar-subtitle,
+body .dashboard-shell > .app-navbar .app-navbar-profile,
+body .role-workspace-employee > .app-navbar .app-navbar-profile,
+body .role-workspace-client > .app-navbar .app-navbar-profile {
+  color: #b45309 !important;
+  background: rgba(247, 183, 51, 0.14) !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-button,
+body .role-workspace-employee > .app-navbar .app-navbar-button,
+body .role-workspace-client > .app-navbar .app-navbar-button,
+body .dashboard-shell > .app-navbar .app-navbar-switch,
+body .role-workspace-employee > .app-navbar .app-navbar-switch,
+body .role-workspace-client > .app-navbar .app-navbar-switch,
+body .dashboard-shell > .app-navbar .app-navbar-logout,
+body .role-workspace-employee > .app-navbar .app-navbar-logout,
+body .role-workspace-client > .app-navbar .app-navbar-logout {
+  color: #7c2d12 !important;
+  border-color: #e0a020 !important;
+  background: #fffdf5 !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-button:hover,
+body .dashboard-shell > .app-navbar .app-navbar-button.is-active,
+body .role-workspace-employee > .app-navbar .app-navbar-button:hover,
+body .role-workspace-employee > .app-navbar .app-navbar-button.is-active,
+body .role-workspace-client > .app-navbar .app-navbar-button:hover,
+body .role-workspace-client > .app-navbar .app-navbar-button.is-active,
+body .dashboard-shell > .app-navbar .app-navbar-switch:hover,
+body .role-workspace-employee > .app-navbar .app-navbar-switch:hover,
+body .role-workspace-client > .app-navbar .app-navbar-switch:hover,
+body .dashboard-shell > .app-navbar .app-navbar-logout:hover,
+body .role-workspace-employee > .app-navbar .app-navbar-logout:hover,
+body .role-workspace-client > .app-navbar .app-navbar-logout:hover {
+  color: #7c2d12 !important;
+  border-color: #c98a12 !important;
+  background: #f0a91f !important;
+}
+
+body .dashboard-shell > .app-navbar .app-navbar-avatar,
+body .role-workspace-employee > .app-navbar .app-navbar-avatar,
+body .role-workspace-client > .app-navbar .app-navbar-avatar,
+body .dashboard-shell > .app-navbar .app-navbar-mark,
+body .role-workspace-employee > .app-navbar .app-navbar-mark,
+body .role-workspace-client > .app-navbar .app-navbar-mark {
+  color: #7c2d12 !important;
+  border-color: #e0a020 !important;
+  background: #f7b733 !important;
+}
+
+body .dashboard-shell .admin-bottom-nav,
+body .role-workspace-employee .employee-bottom-nav,
+body .role-workspace-client .client-bottom-nav {
+  color: #7c2d12 !important;
+  border-top-color: #f0d9a6 !important;
+  background: #fff4de !important;
+  box-shadow: 0 -12px 28px rgba(124, 45, 18, 0.12) !important;
+}
+
+body .dashboard-shell .admin-bottom-nav-button,
+body .role-workspace-employee .employee-bottom-nav-button,
+body .role-workspace-client .client-bottom-nav-button {
+  color: #b45309 !important;
+}
+
+body .dashboard-shell .admin-bottom-nav-button.is-active,
+body .role-workspace-employee .employee-bottom-nav-button.is-active,
+body .role-workspace-client .client-bottom-nav-button.is-active {
+  color: #7c2d12 !important;
+}
+
+body .dashboard-shell .admin-bottom-nav-button.is-active .admin-bottom-nav-icon,
+body .role-workspace-employee .employee-bottom-nav-button.is-active .employee-bottom-nav-icon,
+body .role-workspace-client .client-bottom-nav-button.is-active .client-bottom-nav-icon {
+  background: rgba(247, 183, 51, 0.22) !important;
+}
+
+body .app-navbar {
+  color: #7c2d12 !important;
+  background: linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
+  border-bottom-color: #f0d9a6 !important;
 }
