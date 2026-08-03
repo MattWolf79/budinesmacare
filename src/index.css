@@ -21957,7 +21957,6 @@ body .client-card-status-field strong.is-active {
 .dashboard-shell .availability-day-filter-all,
 .dashboard-shell .availability-day-filter-all.is-selected,
 .dashboard-shell .availability-branch-pill,
-.dashboard-shell .availability-branch-pill.is-selected,
 .dashboard-shell .settings-check-summary-row,
 .dashboard-shell .settings-check-summary-chip,
 .dashboard-shell .settings-check-summary-chip.is-selected {
@@ -21966,6 +21965,13 @@ body .client-card-status-field strong.is-active {
   background: rgba(var(--app-primary-rgb), 0.14) !important;
   background-image: none !important;
   box-shadow: 0 0 0 1px rgba(var(--app-primary-rgb), 0.1) !important;
+}
+
+.dashboard-shell .availability-branch-pill.is-selected {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: rgba(var(--app-primary-rgb), 0.28) !important;
+  box-shadow: 0 0 0 1px rgba(var(--app-accent-rgb), 0.35) !important;
 }
 
 .dashboard-shell .agenda-refresh-button:hover,
