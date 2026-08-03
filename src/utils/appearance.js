@@ -652,6 +652,11 @@ body .settings-banner-preview .agenda-option-button,
 body .settings-promotion-card .agenda-close-button,
 body .settings-promotion-card .agenda-option-button,
 body .availability-branch-pill,
+body .employee-availability-manager .availability-card-edit-arrow,
+body .employee-availability-manager .availability-card-grid .agenda-close-button,
+body .employee-availability-manager .availability-card-grid .agenda-option-button,
+body .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-close-button,
+body .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-option-button,
 body .availability-range-remove {
   color: var(--app-text) !important;
   border-color: rgba(var(--app-accent-rgb), 0.56) !important;
@@ -666,6 +671,17 @@ body .availability-branch-pill.is-selected {
   border-color: var(--app-accent) !important;
   background: rgba(var(--app-primary-rgb), 0.24) !important;
   background-image: none !important;
+}
+
+body .employee-availability-manager .availability-summary-strip,
+body .employee-availability-manager .availability-day-filter-all.is-selected,
+body .employee-availability-manager .availability-day-circle.is-selected,
+body .dashboard-shell .employee-availability-manager .availability-day-filter-all.is-selected,
+body .dashboard-shell .employee-availability-manager .availability-day-circle.is-selected {
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
+  background: radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.22), transparent 34%), linear-gradient(160deg, #fffdf8 0%, var(--app-surface) 100%) !important;
+  background-image: radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.22), transparent 34%), linear-gradient(160deg, #fffdf8 0%, var(--app-surface) 100%) !important;
 }
 body .service-button-grid .service-record-card .admin-management-card-header *,
 body .service-button-grid .promotion-record-card .admin-management-card-header *,

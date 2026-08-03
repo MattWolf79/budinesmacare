@@ -20327,38 +20327,39 @@ body {
   background: #fff7e6 !important;
 }
 
-/* ===== Disponibilidad: resumen y filtros del dashboard en amarillo ===== */
+/* ===== Disponibilidad: resumen y filtros del dashboard con paleta configurable ===== */
 .employee-availability-manager .availability-summary-strip {
-  border: 1px solid #f0e0bf !important;
+  border: 1px solid rgba(var(--app-accent-rgb), 0.46) !important;
   background:
-    radial-gradient(circle at 96% 10%, rgba(247, 183, 51, 0.20), transparent 40%),
-    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
-  box-shadow: 0 10px 22px rgba(240, 161, 31, 0.16) !important;
+    radial-gradient(circle at 96% 10%, rgba(var(--app-primary-rgb), 0.2), transparent 40%),
+    linear-gradient(160deg, #fffdf8 0%, var(--app-surface) 100%) !important;
+  box-shadow: 0 10px 22px rgba(var(--app-primary-rgb), 0.16) !important;
 }
 
 .employee-availability-manager .availability-summary-strip span {
-  color: #7c2d12 !important;
+  color: var(--app-text) !important;
 }
 
 .employee-availability-manager .availability-day-filter-all.is-selected,
 .employee-availability-manager .availability-day-circle.is-selected,
 .dashboard-shell .employee-availability-manager .availability-day-filter-all.is-selected,
 .dashboard-shell .employee-availability-manager .availability-day-circle.is-selected {
-  color: #7c2d12 !important;
-  border-color: #e0a020 !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-accent) !important;
   background:
-    radial-gradient(circle at 92% 8%, rgba(247, 183, 51, 0.22), transparent 34%),
-    linear-gradient(160deg, #fffdf8 0%, #fff4de 100%) !important;
+    radial-gradient(circle at 92% 8%, rgba(var(--app-primary-rgb), 0.22), transparent 34%),
+    linear-gradient(160deg, #fffdf8 0%, var(--app-surface) 100%) !important;
 }
 
 .employee-availability-manager .agenda-refresh-button {
-  color: #b45309 !important;
-  border-color: #f0d9a8 !important;
-  background: #fffaf0 !important;
+  color: var(--app-text) !important;
+  border-color: rgba(var(--app-accent-rgb), 0.56) !important;
+  background: rgba(var(--app-primary-rgb), 0.14) !important;
 }
 
 .employee-availability-manager .agenda-refresh-button:hover {
-  background: #fff7e6 !important;
+  border-color: var(--app-accent) !important;
+  background: rgba(var(--app-primary-rgb), 0.22) !important;
 }
 
 /* ===== Tarjetas de empleado: valor más ancho (menos separación) ===== */
@@ -21967,6 +21968,11 @@ body .settings-banner-preview .agenda-option-button,
 body .settings-promotion-card .agenda-close-button,
 body .settings-promotion-card .agenda-option-button,
 body .settings-upload-field + .agenda-close-button,
+body .employee-availability-manager .availability-card-edit-arrow,
+body .employee-availability-manager .availability-card-grid .agenda-close-button,
+body .employee-availability-manager .availability-card-grid .agenda-option-button,
+body .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-close-button,
+body .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-option-button,
 body .availability-range-remove {
   color: var(--app-text) !important;
   border-color: rgba(var(--app-accent-rgb), 0.56) !important;
@@ -21982,6 +21988,11 @@ body .settings-banner-preview .agenda-option-button:hover,
 body .settings-promotion-card .agenda-close-button:hover,
 body .settings-promotion-card .agenda-option-button:hover,
 body .settings-upload-field + .agenda-close-button:hover,
+body .employee-availability-manager .availability-card-edit-arrow:hover:not(:disabled),
+body .employee-availability-manager .availability-card-grid .agenda-close-button:hover,
+body .employee-availability-manager .availability-card-grid .agenda-option-button:hover,
+body .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-close-button:hover,
+body .employee-availability-manager .availability-card-grid .admin-record-actions .agenda-option-button:hover,
 body .availability-range-remove:hover {
   color: var(--app-text) !important;
   border-color: var(--app-accent) !important;
