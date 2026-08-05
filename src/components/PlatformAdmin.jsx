@@ -9,6 +9,7 @@ const initialLoginForm = {
 };
 
 const initialCompanyForm = {
+  tipoEmpresa: 'turno_cobro',
   companyName: '',
   companySlug: '',
   adminUsername: '',
@@ -33,6 +34,7 @@ const initialCompanyForm = {
 };
 
 const initialEditForm = {
+  tipoEmpresa: 'turno_cobro',
   lookupSlug: '',
   companySlug: '',
   companyName: '',
@@ -81,6 +83,99 @@ const platformSections = [
   { id: 'maintenance', label: 'Mantenimiento', shortLabel: 'Mant.', icon: '↺' }
 ];
 
+const tiposEmpresa = [
+  { id: 'turno_cobro', label: 'Empresa Turno Cobro' },
+  { id: 'turno_sin_cobro', label: 'Empresa Turno Sin Cobro' },
+  { id: 'pedido_cobro', label: 'Empresa Pedido Cobro' },
+  { id: 'pedido_sin_cobro', label: 'Empresa Pedido Sin Cobro' }
+];
+
+const presetsTipoEmpresa = {
+  turno_cobro: {
+    preciosHabilitados: true,
+    descuentosHabilitados: true,
+    recargosHabilitados: true,
+    promocionesHabilitadas: true,
+    turnosSuperpuestosHabilitados: true,
+    intervaloGrillaMinutos: '30',
+    empleadosPuedenReservar: true,
+    visibilidadTurnosEmpleado: 'completa',
+    empleadosCancelanTurnos: 'propios',
+    empleadosVenDetalleTurnos: 'propios'
+  },
+  turno_sin_cobro: {
+    preciosHabilitados: false,
+    descuentosHabilitados: false,
+    recargosHabilitados: false,
+    promocionesHabilitadas: true,
+    turnosSuperpuestosHabilitados: true,
+    intervaloGrillaMinutos: '30',
+    empleadosPuedenReservar: true,
+    visibilidadTurnosEmpleado: 'completa',
+    empleadosCancelanTurnos: 'propios',
+    empleadosVenDetalleTurnos: 'propios'
+  },
+  pedido_cobro: {
+    preciosHabilitados: true,
+    descuentosHabilitados: true,
+    recargosHabilitados: true,
+    promocionesHabilitadas: true,
+    turnosSuperpuestosHabilitados: false,
+    intervaloGrillaMinutos: '30',
+    empleadosPuedenReservar: true,
+    visibilidadTurnosEmpleado: 'solo_propios',
+    empleadosCancelanTurnos: 'propios',
+    empleadosVenDetalleTurnos: 'propios',
+    pdfDetalleTurnoHabilitado: false
+  },
+  pedido_sin_cobro: {
+    preciosHabilitados: false,
+    descuentosHabilitados: false,
+    recargosHabilitados: false,
+    promocionesHabilitadas: true,
+    turnosSuperpuestosHabilitados: false,
+    intervaloGrillaMinutos: '30',
+    empleadosPuedenReservar: true,
+    visibilidadTurnosEmpleado: 'solo_propios',
+    empleadosCancelanTurnos: 'propios',
+    empleadosVenDetalleTurnos: 'propios',
+    pdfDetalleTurnoHabilitado: false
+  }
+};
+
+const obtenerModoOperacionDesdeTipoEmpresa = (tipoEmpresa) => (
+  String(tipoEmpresa || '').startsWith('pedido_') ? 'pedido' : 'turno'
+);
+
+const obtenerUsoAgendaDesdeTipoEmpresa = (tipoEmpresa) => !String(tipoEmpresa || '').startsWith('pedido_');
+
+const aplicarPresetTipoEmpresa = (formulario, tipoEmpresa) => {
+  const preset = presetsTipoEmpresa[tipoEmpresa];
+  if (!preset) return { ...formulario, tipoEmpresa };
+
+  return {
+    ...formulario,
+    tipoEmpresa,
+    ...preset
+  };
+};
+
+const resolverTipoEmpresaDesdeConfiguracion = (configuracionOperativa = {}) => {
+  const usaPrecios = configuracionOperativa.precios_habilitados !== false;
+  const modoOperacion = String(configuracionOperativa.modo_operacion || '').trim().toLowerCase();
+  const usaAgenda = configuracionOperativa.usa_agenda !== false;
+
+  if (usaAgenda === false) {
+    return usaPrecios ? 'pedido_cobro' : 'pedido_sin_cobro';
+  }
+
+  if (modoOperacion === 'pedido') {
+    return usaPrecios ? 'pedido_cobro' : 'pedido_sin_cobro';
+  }
+
+  return usaPrecios ? 'turno_cobro' : 'turno_sin_cobro';
+};
+
 const Field = ({ label, children }) => (
   <label className="platform-field">
     <span>{label}</span>
@@ -103,6 +198,8 @@ const ConfigSection = ({ title, children }) => (
 );
 
 const getConfigPayload = (form) => ({
+  modo_operacion_valor: obtenerModoOperacionDesdeTipoEmpresa(form.tipoEmpresa),
+  usa_agenda_valor: obtenerUsoAgendaDesdeTipoEmpresa(form.tipoEmpresa),
   precios_habilitados_valor: Boolean(form.preciosHabilitados),
   descuentos_habilitados_valor: Boolean(form.descuentosHabilitados),
   recargos_habilitados_valor: Boolean(form.recargosHabilitados),
@@ -172,6 +269,7 @@ const applyConfigData = (data) => {
   const config = data?.configuracion_operativa || {};
 
   return {
+    tipoEmpresa: resolverTipoEmpresaDesdeConfiguracion(config),
     lookupSlug: data?.company_slug || '',
     companySlug: data?.company_slug || '',
     companyName: data?.company_name || '',
@@ -226,6 +324,11 @@ export default function PlatformAdmin() {
   };
 
   const updateCompanyField = (field, value) => {
+    if (field === 'tipoEmpresa') {
+      setCompanyForm((current) => aplicarPresetTipoEmpresa(current, value));
+      return;
+    }
+
     setCompanyForm((current) => ({
       ...current,
       [field]: field === 'companySlug' ? normalizeSlug(value) : value
@@ -233,6 +336,11 @@ export default function PlatformAdmin() {
   };
 
   const updateEditField = (field, value) => {
+    if (field === 'tipoEmpresa') {
+      setEditForm((current) => aplicarPresetTipoEmpresa(current, value));
+      return;
+    }
+
     setEditForm((current) => ({
       ...current,
       [field]: ['lookupSlug', 'companySlug'].includes(field) ? normalizeSlug(value) : value
@@ -564,6 +672,13 @@ export default function PlatformAdmin() {
               <h2>Nueva empresa</h2>
             </div>
               <div className="platform-form-grid">
+                <Field label="Tipo de empresa">
+                  <select value={companyForm.tipoEmpresa} onChange={(event) => updateCompanyField('tipoEmpresa', event.target.value)}>
+                    {tiposEmpresa.map((tipo) => (
+                      <option key={tipo.id} value={tipo.id}>{tipo.label}</option>
+                    ))}
+                  </select>
+                </Field>
                 <Field label="Nombre de empresa">
                 <input value={companyForm.companyName} onChange={(event) => updateCompanyField('companyName', event.target.value)} placeholder="Jardin Masajes" required />
                 </Field>
@@ -681,6 +796,13 @@ export default function PlatformAdmin() {
                 </div>
               </div>
               {editForm.companyName && <p className="platform-company-loaded">Empresa: {editForm.companyName}</p>}
+              <Field label="Tipo de empresa">
+                <select value={editForm.tipoEmpresa} onChange={(event) => updateEditField('tipoEmpresa', event.target.value)}>
+                  {tiposEmpresa.map((tipo) => (
+                    <option key={tipo.id} value={tipo.id}>{tipo.label}</option>
+                  ))}
+                </select>
+              </Field>
               <Field label="Slug URL">
                 <input value={editForm.companySlug} onChange={(event) => updateEditField('companySlug', event.target.value)} placeholder="verificacion" required />
               </Field>

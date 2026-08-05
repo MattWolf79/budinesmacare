@@ -11,6 +11,7 @@ import BundlesPanel from "../components/BundlesPanel";
 import ClientsPanel from "../components/ClientsPanel";
 import NewBookingPanel from "../components/NewBookingPanel";
 import EmployeeAvailabilityPanel from "../components/EmployeeAvailabilityPanel";
+import PanelPedidosAdmin from "../components/PanelPedidosAdmin";
 import { WorkspaceProfileIdentity } from "../components/WorkspaceHero";
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
@@ -61,6 +62,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   const [adminDataVersion, setAdminDataVersion] = useState(0);
   const [promotions, setPromotions] = useState([]);
   const configuracionOperativa = companyContext?.configuracion_operativa || {};
+  const esModoPedido = configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false;
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
   const sucursalesHabilitadas = configuracionOperativa.sucursales_habilitadas === true;
@@ -111,6 +113,13 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     };
   }, [adminDataVersion, companySlug]);
 
+  useEffect(() => {
+    if (!esModoPedido) return;
+    if (['close-attention', 'pending', 'availability'].includes(activeView)) {
+      setActiveView('agenda');
+    }
+  }, [activeView, esModoPedido]);
+
   const enabledPromotions = useMemo(() => (
     promocionesHabilitadas
       ? promotions
@@ -145,15 +154,22 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   };
 
   const adminNavGroups = useMemo(() => {
-    const gestion = [
-      { id: 'new-booking', label: 'Nueva reserva', icon: '➕' },
-      { id: 'agenda', label: 'Calendario', icon: '📅' },
-      { id: 'close-attention', label: 'Cerrar atención', icon: '💳' },
-      { id: 'pending', label: 'Pendientes de asignar', icon: '📌' },
-      { id: 'clients', label: 'Clientes', icon: '🙋' },
-      { id: 'employees', label: 'Empleados', icon: '👥' },
-      { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
-    ];
+    const gestion = esModoPedido
+      ? [
+          { id: 'new-booking', label: 'Nuevo pedido', icon: '➕' },
+          { id: 'agenda', label: 'Pedidos', icon: '📋' },
+          { id: 'clients', label: 'Clientes', icon: '🙋' },
+          { id: 'employees', label: 'Empleados', icon: '👥' }
+        ]
+      : [
+          { id: 'new-booking', label: 'Nueva reserva', icon: '➕' },
+          { id: 'agenda', label: 'Calendario', icon: '📅' },
+          { id: 'close-attention', label: 'Cerrar atención', icon: '💳' },
+          { id: 'pending', label: 'Pendientes de asignar', icon: '📌' },
+          { id: 'clients', label: 'Clientes', icon: '🙋' },
+          { id: 'employees', label: 'Empleados', icon: '👥' },
+          { id: 'availability', label: 'Disponibilidad', icon: '🕒' }
+        ];
 
     if (sucursalesHabilitadas) {
       gestion.push({ id: 'sucursales', label: 'Sucursales', icon: '🏢' });
@@ -173,7 +189,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         ]
       }
     ];
-  }, [sucursalesHabilitadas, bundlesHabilitados]);
+  }, [sucursalesHabilitadas, bundlesHabilitados, esModoPedido]);
 
   const adminProfileSummary = (
     <WorkspaceProfileIdentity user={user} roleLabel="Administrador" />
@@ -212,17 +228,20 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         )}
 
         <Box className="dashboard-content">
-          {activeView === 'agenda' && (
+          {activeView === 'agenda' && !esModoPedido && (
             <div className="agenda-responsive-shell">
               <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={(options) => { setNewBookingInitial(options); setIsNewBookingOpen(true); }} />
             </div>
           )}
-          {activeView === 'close-attention' && preciosHabilitados && (
+          {activeView === 'agenda' && esModoPedido && (
+            <PanelPedidosAdmin user={user} companySlug={companySlug} />
+          )}
+          {activeView === 'close-attention' && preciosHabilitados && !esModoPedido && (
             <div className="agenda-responsive-shell close-attention-responsive-shell">
               <AgendaGrid key={`close-attention-${adminDataVersion}`} closeAttentionPage user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onCloseAttentionPageClose={() => changeView('agenda')} onBookingsChanged={notifyAdminDataChanged} />
             </div>
           )}
-          {activeView === 'pending' && (
+          {activeView === 'pending' && !esModoPedido && (
             <div className="agenda-responsive-shell">
               <AgendaGrid key={`pending-${adminDataVersion}`} pendingView user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />
             </div>
@@ -230,7 +249,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
           {activeView === 'clients' && <ClientsPanel user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
           {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
           {activeView === 'services' && <AdminPanel view="services" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-          {activeView === 'availability' && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
+          {activeView === 'availability' && !esModoPedido && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
           {activeView === 'sucursales' && sucursalesHabilitadas && <BranchesPanel user={user} onDataChanged={notifyBranchesChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
           {activeView === 'bundles' && bundlesHabilitados && <BundlesPanel user={user} onDataChanged={notifyBranchesChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} packsHabilitados={packsHabilitados} promosHabilitadas={promocionesHabilitadas} />}
           {activeView === 'settings' && <AdminSettingsPanel user={user} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onCompanyContextRefresh={onCompanyContextRefresh} />}
