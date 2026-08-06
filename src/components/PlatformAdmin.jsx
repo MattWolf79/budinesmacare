@@ -160,6 +160,8 @@ const aplicarPresetTipoEmpresa = (formulario, tipoEmpresa) => {
   };
 };
 
+const esTipoPedido = (tipoEmpresa) => obtenerModoOperacionDesdeTipoEmpresa(tipoEmpresa) === 'pedido';
+
 const resolverTipoEmpresaDesdeConfiguracion = (configuracionOperativa = {}) => {
   const usaPrecios = configuracionOperativa.precios_habilitados !== false;
   const modoOperacion = String(configuracionOperativa.modo_operacion || '').trim().toLowerCase();
@@ -183,10 +185,11 @@ const Field = ({ label, children }) => (
   </label>
 );
 
-const CheckField = ({ label, checked, onChange }) => (
+const CheckField = ({ label, checked, onChange, disabled = false, disabledHint = '' }) => (
   <label className="platform-check-field">
-    <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+    <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} disabled={disabled} title={disabledHint || undefined} />
     <span>{label}</span>
+    {disabled && disabledHint && <small>{disabledHint}</small>}
   </label>
 );
 
@@ -197,23 +200,41 @@ const ConfigSection = ({ title, children }) => (
   </div>
 );
 
+const getTipoEmpresaSummary = (tipoEmpresa) => {
+  const modoPedido = esTipoPedido(tipoEmpresa);
+  const conCobro = String(tipoEmpresa || '').endsWith('_cobro');
+
+  return {
+    aplica: [
+      modoPedido ? 'Flujo de pedidos (sin grilla horaria).' : 'Flujo de turnos con agenda horaria.',
+      conCobro ? 'Cobros activos (precios y valor monetario).' : 'Operación sin cobros.'
+    ],
+    noAplica: [
+      modoPedido ? 'Turnos superpuestos.' : 'N/A',
+      modoPedido ? 'PDF detalle de turno.' : 'N/A',
+      modoPedido ? 'Bloque de grilla y visibilidad de agenda.' : 'N/A',
+      conCobro ? 'N/A' : 'Descuentos y recargos.'
+    ].filter((item) => item !== 'N/A')
+  };
+};
+
 const getConfigPayload = (form) => ({
   modo_operacion_valor: obtenerModoOperacionDesdeTipoEmpresa(form.tipoEmpresa),
   usa_agenda_valor: obtenerUsoAgendaDesdeTipoEmpresa(form.tipoEmpresa),
   precios_habilitados_valor: Boolean(form.preciosHabilitados),
-  descuentos_habilitados_valor: Boolean(form.descuentosHabilitados),
-  recargos_habilitados_valor: Boolean(form.recargosHabilitados),
+  descuentos_habilitados_valor: Boolean(form.preciosHabilitados) ? Boolean(form.descuentosHabilitados) : false,
+  recargos_habilitados_valor: Boolean(form.preciosHabilitados) ? Boolean(form.recargosHabilitados) : false,
   promociones_habilitadas_valor: Boolean(form.promocionesHabilitadas),
   sucursales_habilitadas_valor: Boolean(form.sucursalesHabilitadas),
   packs_habilitados_valor: Boolean(form.packsHabilitados),
-  turnos_superpuestos_habilitados_valor: Boolean(form.turnosSuperpuestosHabilitados),
-  intervalo_grilla_minutos_valor: Number(form.intervaloGrillaMinutos) || 30,
+  turnos_superpuestos_habilitados_valor: esTipoPedido(form.tipoEmpresa) ? false : Boolean(form.turnosSuperpuestosHabilitados),
+  intervalo_grilla_minutos_valor: esTipoPedido(form.tipoEmpresa) ? 30 : (Number(form.intervaloGrillaMinutos) || 30),
   empleados_pueden_reservar_valor: Boolean(form.empleadosPuedenReservar),
-  empleados_ven_agenda_completa_valor: form.visibilidadTurnosEmpleado !== 'solo_propios',
-  visibilidad_turnos_empleado_valor: form.visibilidadTurnosEmpleado || 'completa',
+  empleados_ven_agenda_completa_valor: esTipoPedido(form.tipoEmpresa) ? false : form.visibilidadTurnosEmpleado !== 'solo_propios',
+  visibilidad_turnos_empleado_valor: esTipoPedido(form.tipoEmpresa) ? 'solo_propios' : (form.visibilidadTurnosEmpleado || 'completa'),
   empleados_cancelan_turnos_valor: form.empleadosCancelanTurnos || 'propios',
   empleados_ven_detalle_turnos_valor: form.empleadosVenDetalleTurnos || 'propios',
-  pdf_detalle_turno_habilitado_valor: Boolean(form.pdfDetalleTurnoHabilitado)
+  pdf_detalle_turno_habilitado_valor: esTipoPedido(form.tipoEmpresa) ? false : Boolean(form.pdfDetalleTurnoHabilitado)
 });
 
 const buildLandingConfig = (form) => {
@@ -318,6 +339,12 @@ export default function PlatformAdmin() {
   const [message, setMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [activeSection, setActiveSection] = useState('setup');
+  const modoPedidoAlta = esTipoPedido(companyForm.tipoEmpresa);
+  const modoPedidoEdicion = esTipoPedido(editForm.tipoEmpresa);
+  const etiquetaOperacionAlta = modoPedidoAlta ? 'pedido' : 'turno';
+  const etiquetaOperacionEdicion = modoPedidoEdicion ? 'pedido' : 'turno';
+  const resumenAlta = getTipoEmpresaSummary(companyForm.tipoEmpresa);
+  const resumenEdicion = getTipoEmpresaSummary(editForm.tipoEmpresa);
 
   const updateLoginField = (field, value) => {
     setLoginForm((current) => ({ ...current, [field]: value }));
@@ -329,10 +356,20 @@ export default function PlatformAdmin() {
       return;
     }
 
-    setCompanyForm((current) => ({
-      ...current,
-      [field]: field === 'companySlug' ? normalizeSlug(value) : value
-    }));
+    setCompanyForm((current) => {
+      const nextValue = field === 'companySlug' ? normalizeSlug(value) : value;
+      const next = {
+        ...current,
+        [field]: nextValue
+      };
+
+      if (field === 'preciosHabilitados' && value === false) {
+        next.descuentosHabilitados = false;
+        next.recargosHabilitados = false;
+      }
+
+      return next;
+    });
   };
 
   const updateEditField = (field, value) => {
@@ -341,10 +378,20 @@ export default function PlatformAdmin() {
       return;
     }
 
-    setEditForm((current) => ({
-      ...current,
-      [field]: ['lookupSlug', 'companySlug'].includes(field) ? normalizeSlug(value) : value
-    }));
+    setEditForm((current) => {
+      const nextValue = ['lookupSlug', 'companySlug'].includes(field) ? normalizeSlug(value) : value;
+      const next = {
+        ...current,
+        [field]: nextValue
+      };
+
+      if (field === 'preciosHabilitados' && value === false) {
+        next.descuentosHabilitados = false;
+        next.recargosHabilitados = false;
+      }
+
+      return next;
+    });
   };
 
   const changeLogo = async (event, setForm) => {
@@ -722,17 +769,22 @@ export default function PlatformAdmin() {
                   <p>Modo operativo</p>
                   <h2>Agenda y permisos</h2>
                 </div>
+                <div className="platform-company-loaded">
+                  <strong>Resumen del tipo seleccionado</strong>
+                  <p>Aplica: {resumenAlta.aplica.join(' ')}</p>
+                  {resumenAlta.noAplica.length > 0 && <p>No aplica: {resumenAlta.noAplica.join(' ')}</p>}
+                </div>
                 <ConfigSection title="Sistema">
                   <CheckField label="Usa precios en el sistema" checked={companyForm.preciosHabilitados} onChange={(value) => updateCompanyField('preciosHabilitados', value)} />
-                  <CheckField label="Habilita descuentos" checked={companyForm.descuentosHabilitados} onChange={(value) => updateCompanyField('descuentosHabilitados', value)} />
-                  <CheckField label="Habilita recargos" checked={companyForm.recargosHabilitados} onChange={(value) => updateCompanyField('recargosHabilitados', value)} />
+                  <CheckField label="Habilita descuentos" checked={companyForm.descuentosHabilitados} onChange={(value) => updateCompanyField('descuentosHabilitados', value)} disabled={!companyForm.preciosHabilitados} disabledHint="Requiere precios habilitados." />
+                  <CheckField label="Habilita recargos" checked={companyForm.recargosHabilitados} onChange={(value) => updateCompanyField('recargosHabilitados', value)} disabled={!companyForm.preciosHabilitados} disabledHint="Requiere precios habilitados." />
                   <CheckField label="Habilita promociones" checked={companyForm.promocionesHabilitadas} onChange={(value) => updateCompanyField('promocionesHabilitadas', value)} />
-                  <CheckField label="Permite turnos superpuestos" checked={companyForm.turnosSuperpuestosHabilitados} onChange={(value) => updateCompanyField('turnosSuperpuestosHabilitados', value)} />
-                  <CheckField label="Habilita PDF de detalle de turno" checked={companyForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateCompanyField('pdfDetalleTurnoHabilitado', value)} />
+                  <CheckField label="Permite turnos superpuestos" checked={companyForm.turnosSuperpuestosHabilitados} onChange={(value) => updateCompanyField('turnosSuperpuestosHabilitados', value)} disabled={modoPedidoAlta} disabledHint="No aplica en empresas de pedido." />
+                  <CheckField label="Habilita PDF de detalle de turno" checked={companyForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateCompanyField('pdfDetalleTurnoHabilitado', value)} disabled={modoPedidoAlta} disabledHint="No aplica en empresas de pedido." />
                 </ConfigSection>
                 <ConfigSection title="Agenda">
                   <Field label="Bloque de grilla">
-                    <select value={companyForm.intervaloGrillaMinutos} onChange={(event) => updateCompanyField('intervaloGrillaMinutos', event.target.value)}>
+                    <select value={companyForm.intervaloGrillaMinutos} onChange={(event) => updateCompanyField('intervaloGrillaMinutos', event.target.value)} disabled={modoPedidoAlta} title={modoPedidoAlta ? 'No aplica en empresas de pedido.' : undefined}>
                       <option value="15">15 minutos</option>
                       <option value="30">30 minutos</option>
                       <option value="45">45 minutos</option>
@@ -740,7 +792,7 @@ export default function PlatformAdmin() {
                     </select>
                   </Field>
                   <Field label="Visibilidad empleado">
-                    <select value={companyForm.visibilidadTurnosEmpleado} onChange={(event) => updateCompanyField('visibilidadTurnosEmpleado', event.target.value)}>
+                    <select value={companyForm.visibilidadTurnosEmpleado} onChange={(event) => updateCompanyField('visibilidadTurnosEmpleado', event.target.value)} disabled={modoPedidoAlta} title={modoPedidoAlta ? 'No aplica en empresas de pedido.' : undefined}>
                       <option value="completa">Completa</option>
                       <option value="cliente_servicio">Cliente/Servicio</option>
                       <option value="solo_ocupado">Solo ocupado</option>
@@ -748,17 +800,18 @@ export default function PlatformAdmin() {
                       <option value="solo_propios">Solo sus turnos</option>
                     </select>
                   </Field>
+                  {modoPedidoAlta && <p className="platform-company-loaded">En modo pedido no se usa grilla horaria ni visibilidad de agenda.</p>}
                 </ConfigSection>
                 <ConfigSection title="Permisos empleado">
-                  <CheckField label="Pueden crear turnos" checked={companyForm.empleadosPuedenReservar} onChange={(value) => updateCompanyField('empleadosPuedenReservar', value)} />
-                  <Field label="Cancelan turnos">
+                  <CheckField label={`Pueden crear ${etiquetaOperacionAlta}s`} checked={companyForm.empleadosPuedenReservar} onChange={(value) => updateCompanyField('empleadosPuedenReservar', value)} />
+                  <Field label={`Cancelan ${etiquetaOperacionAlta}s`}>
                     <select value={companyForm.empleadosCancelanTurnos} onChange={(event) => updateCompanyField('empleadosCancelanTurnos', event.target.value)}>
                       <option value="propios">Propios</option>
                       <option value="todos">Todos</option>
                       <option value="ninguno">Ninguno</option>
                     </select>
                   </Field>
-                  <Field label="Ven detalle">
+                  <Field label={`Ven detalle de ${etiquetaOperacionAlta}`}>
                     <select value={companyForm.empleadosVenDetalleTurnos} onChange={(event) => updateCompanyField('empleadosVenDetalleTurnos', event.target.value)}>
                       <option value="propios">Propios</option>
                       <option value="todos">Todos</option>
@@ -877,19 +930,24 @@ export default function PlatformAdmin() {
                 </ConfigSection>
               </div>
               <div className="platform-config-block platform-config-block-compact">
+                <div className="platform-company-loaded">
+                  <strong>Resumen del tipo seleccionado</strong>
+                  <p>Aplica: {resumenEdicion.aplica.join(' ')}</p>
+                  {resumenEdicion.noAplica.length > 0 && <p>No aplica: {resumenEdicion.noAplica.join(' ')}</p>}
+                </div>
                 <ConfigSection title="Sistema">
                   <CheckField label="Usa precios en el sistema" checked={editForm.preciosHabilitados} onChange={(value) => updateEditField('preciosHabilitados', value)} />
-                  <CheckField label="Habilita descuentos" checked={editForm.descuentosHabilitados} onChange={(value) => updateEditField('descuentosHabilitados', value)} />
-                  <CheckField label="Habilita recargos" checked={editForm.recargosHabilitados} onChange={(value) => updateEditField('recargosHabilitados', value)} />
+                  <CheckField label="Habilita descuentos" checked={editForm.descuentosHabilitados} onChange={(value) => updateEditField('descuentosHabilitados', value)} disabled={!editForm.preciosHabilitados} disabledHint="Requiere precios habilitados." />
+                  <CheckField label="Habilita recargos" checked={editForm.recargosHabilitados} onChange={(value) => updateEditField('recargosHabilitados', value)} disabled={!editForm.preciosHabilitados} disabledHint="Requiere precios habilitados." />
                   <CheckField label="Habilita promociones" checked={editForm.promocionesHabilitadas} onChange={(value) => updateEditField('promocionesHabilitadas', value)} />
                   <CheckField label="Habilita multi-sucursal" checked={editForm.sucursalesHabilitadas} onChange={(value) => updateEditField('sucursalesHabilitadas', value)} />
                   <CheckField label="Habilita packs" checked={editForm.packsHabilitados} onChange={(value) => updateEditField('packsHabilitados', value)} />
-                  <CheckField label="Permite turnos superpuestos" checked={editForm.turnosSuperpuestosHabilitados} onChange={(value) => updateEditField('turnosSuperpuestosHabilitados', value)} />
-                  <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} />
+                  <CheckField label="Permite turnos superpuestos" checked={editForm.turnosSuperpuestosHabilitados} onChange={(value) => updateEditField('turnosSuperpuestosHabilitados', value)} disabled={modoPedidoEdicion} disabledHint="No aplica en empresas de pedido." />
+                  <CheckField label="Habilita PDF de detalle de turno" checked={editForm.pdfDetalleTurnoHabilitado} onChange={(value) => updateEditField('pdfDetalleTurnoHabilitado', value)} disabled={modoPedidoEdicion} disabledHint="No aplica en empresas de pedido." />
                 </ConfigSection>
                 <ConfigSection title="Agenda">
                   <Field label="Bloque de grilla">
-                    <select value={editForm.intervaloGrillaMinutos} onChange={(event) => updateEditField('intervaloGrillaMinutos', event.target.value)}>
+                    <select value={editForm.intervaloGrillaMinutos} onChange={(event) => updateEditField('intervaloGrillaMinutos', event.target.value)} disabled={modoPedidoEdicion} title={modoPedidoEdicion ? 'No aplica en empresas de pedido.' : undefined}>
                       <option value="15">15 minutos</option>
                       <option value="30">30 minutos</option>
                       <option value="45">45 minutos</option>
@@ -897,7 +955,7 @@ export default function PlatformAdmin() {
                     </select>
                   </Field>
                   <Field label="Visibilidad empleado">
-                    <select value={editForm.visibilidadTurnosEmpleado} onChange={(event) => updateEditField('visibilidadTurnosEmpleado', event.target.value)}>
+                    <select value={editForm.visibilidadTurnosEmpleado} onChange={(event) => updateEditField('visibilidadTurnosEmpleado', event.target.value)} disabled={modoPedidoEdicion} title={modoPedidoEdicion ? 'No aplica en empresas de pedido.' : undefined}>
                       <option value="completa">Completa</option>
                       <option value="cliente_servicio">Cliente/Servicio</option>
                       <option value="solo_ocupado">Solo ocupado</option>
@@ -905,17 +963,18 @@ export default function PlatformAdmin() {
                       <option value="solo_propios">Solo sus turnos</option>
                     </select>
                   </Field>
+                  {modoPedidoEdicion && <p className="platform-company-loaded">En modo pedido no se usa grilla horaria ni visibilidad de agenda.</p>}
                 </ConfigSection>
                 <ConfigSection title="Permisos empleado">
-                  <CheckField label="Pueden crear turnos" checked={editForm.empleadosPuedenReservar} onChange={(value) => updateEditField('empleadosPuedenReservar', value)} />
-                  <Field label="Cancelan turnos">
+                  <CheckField label={`Pueden crear ${etiquetaOperacionEdicion}s`} checked={editForm.empleadosPuedenReservar} onChange={(value) => updateEditField('empleadosPuedenReservar', value)} />
+                  <Field label={`Cancelan ${etiquetaOperacionEdicion}s`}>
                     <select value={editForm.empleadosCancelanTurnos} onChange={(event) => updateEditField('empleadosCancelanTurnos', event.target.value)}>
                       <option value="propios">Propios</option>
                       <option value="todos">Todos</option>
                       <option value="ninguno">Ninguno</option>
                     </select>
                   </Field>
-                  <Field label="Ven detalle">
+                  <Field label={`Ven detalle de ${etiquetaOperacionEdicion}`}>
                     <select value={editForm.empleadosVenDetalleTurnos} onChange={(event) => updateEditField('empleadosVenDetalleTurnos', event.target.value)}>
                       <option value="propios">Propios</option>
                       <option value="todos">Todos</option>

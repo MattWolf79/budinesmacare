@@ -3,6 +3,7 @@ import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import ClientProfilePanel from './ClientProfilePanel';
 import ClientsPanel from './ClientsPanel';
+import AdminPanel from './AdminPanel';
 import Navbar from './Navbar';
 import AdminSidebar from './AdminSidebar';
 import NewBookingPanel from './NewBookingPanel';
@@ -110,6 +111,7 @@ const employeeHeroCopy = {
   'close-attention': { eyebrow: 'Cobro', title: 'Cerrar atención', description: 'Liquidá turnos atendidos, cargá medios de pago y generá el comprobante.' },
   'new-booking': { eyebrow: 'Reserva', title: 'Nueva reserva', description: 'Creá un turno para un cliente.' },
   clients: { eyebrow: 'Clientes', title: 'Gestión de clientes', description: 'Administrá y organizá tu base de clientes.' },
+  products: { eyebrow: 'Catálogo', title: 'Productos', description: 'Consultá productos y tipos de producto configurados.' },
   profile: { eyebrow: 'Mi perfil', title: 'Mi perfil', description: 'Revisá y actualizá tus datos personales.' },
   availability: { eyebrow: 'Agenda disponible', title: 'Disponibilidad', description: 'Configurá los días y horarios en los que atendés.' }
 };
@@ -119,7 +121,9 @@ const crearNavegacionEmpleado = ({ esModoPedido, empleadosPuedenReservar }) => {
     ? [
         { id: 'summary', label: 'Resumen', mobileLabel: 'Resumen', icon: '▦' },
         { id: 'agenda', label: 'Pedidos', mobileLabel: 'Pedidos', icon: '📋' },
+        { id: 'close-attention', label: 'Cerrar pedido', mobileLabel: 'Cerrar', icon: '💳' },
         { id: 'clients', label: 'Clientes', mobileLabel: 'Clientes', icon: '🙋' },
+        { id: 'products', label: 'Productos', mobileLabel: 'Productos', icon: '✨' },
         { id: 'profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: '👤' }
       ]
     : employeeNavItems;
@@ -155,6 +159,11 @@ const crearTextoHeroEmpleado = (esModoPedido) => ({
     eyebrow: 'Acceso interno',
     title: esModoPedido ? 'Pedidos' : 'Mi agenda laboral',
     description: esModoPedido ? 'Listado cronológico de pedidos por día.' : employeeHeroCopy.agenda.description
+  },
+  'close-attention': {
+    eyebrow: 'Cobro',
+    title: esModoPedido ? 'Cerrar pedido' : 'Cerrar atención',
+    description: esModoPedido ? 'Cerrá pedidos entregados, cargá medios de pago y generá el comprobante.' : employeeHeroCopy['close-attention'].description
   },
   'new-booking': {
     eyebrow: esModoPedido ? 'Pedido' : 'Reserva',
@@ -360,6 +369,8 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             />
             {employeeActiveView === 'clients' ? (
               <ClientsPanel user={user} companySlug={companySlug} companyContext={companyContext} hideHeading />
+            ) : employeeActiveView === 'products' ? (
+              <AdminPanel view="services" user={user} onDataChanged={() => {}} companySlug={companySlug} companyContext={companyContext} />
             ) : (
               <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={empleadosPuedenReservar ? openEmployeeNewBooking : undefined} />
             )}

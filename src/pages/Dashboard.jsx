@@ -115,7 +115,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
 
   useEffect(() => {
     if (!esModoPedido) return;
-    if (['close-attention', 'pending', 'availability'].includes(activeView)) {
+    if (['pending', 'availability'].includes(activeView)) {
       setActiveView('agenda');
     }
   }, [activeView, esModoPedido]);
@@ -158,6 +158,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
       ? [
           { id: 'new-booking', label: 'Nuevo pedido', icon: '➕' },
           { id: 'agenda', label: 'Pedidos', icon: '📋' },
+          ...(preciosHabilitados ? [{ id: 'close-attention', label: 'Cerrar pedido', icon: '💳' }] : []),
           { id: 'clients', label: 'Clientes', icon: '🙋' },
           { id: 'employees', label: 'Empleados', icon: '👥' }
         ]
@@ -184,12 +185,12 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
       {
         label: 'CONFIGURACIÓN',
         items: [
-          { id: 'services', label: 'Servicios', icon: '✨' },
+          { id: 'services', label: esModoPedido ? 'Productos' : 'Servicios', icon: '✨' },
           { id: 'settings', label: 'Configuración del negocio', icon: '⚙' }
         ]
       }
     ];
-  }, [sucursalesHabilitadas, bundlesHabilitados, esModoPedido]);
+  }, [sucursalesHabilitadas, bundlesHabilitados, esModoPedido, preciosHabilitados]);
 
   const adminProfileSummary = (
     <WorkspaceProfileIdentity user={user} roleLabel="Administrador" />
@@ -234,9 +235,9 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
             </div>
           )}
           {activeView === 'agenda' && esModoPedido && (
-            <PanelPedidosAdmin user={user} companySlug={companySlug} />
+            <PanelPedidosAdmin key={`pedidos-${adminDataVersion}`} user={user} companySlug={companySlug} adminProfileSummary={adminProfileSummary} />
           )}
-          {activeView === 'close-attention' && preciosHabilitados && !esModoPedido && (
+          {activeView === 'close-attention' && preciosHabilitados && (
             <div className="agenda-responsive-shell close-attention-responsive-shell">
               <AgendaGrid key={`close-attention-${adminDataVersion}`} closeAttentionPage user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onCloseAttentionPageClose={() => changeView('agenda')} onBookingsChanged={notifyAdminDataChanged} />
             </div>

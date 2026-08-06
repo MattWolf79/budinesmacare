@@ -184,6 +184,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
   const [selectedActivityCheckIndex, setSelectedActivityCheckIndex] = useState(null);
   const [previewBannerIndex, setPreviewBannerIndex] = useState(0);
   const configuracionOperativa = form.configuracion_operativa || {};
+  const esModoPedido = configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false;
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && configuracionOperativa.descuentos_habilitados !== false;
   const recargosHabilitados = preciosHabilitados && configuracionOperativa.recargos_habilitados !== false;
@@ -1122,7 +1123,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                 <div>
                   <p className="admin-kicker">Bienvenida</p>
                   <h1><span className="client-welcome-name">{form.company_name.trim() || 'QuieroTurnoApp'}</span></h1>
-                  <p>Consultá tus próximos turnos y elegí un servicio cuando quieras reservar.</p>
+                  <p>{esModoPedido ? 'Consultá tus próximos pedidos y elegí productos para reservar con horario.' : 'Consultá tus próximos turnos y elegí un servicio cuando quieras reservar.'}</p>
                   {form.business_hours_text.trim() && <p className="client-business-hours-text">{form.business_hours_text.trim()}</p>}
                 </div>
               </section>
@@ -1181,11 +1182,11 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
               )}
 
               <div className="client-summary-panel settings-preview-summary">
-                <div className="client-summary-header"><h2>Próximos turnos</h2></div>
+                <div className="client-summary-header"><h2>{esModoPedido ? 'Próximos pedidos' : 'Próximos turnos'}</h2></div>
                 <div className="client-booking-list">
                   <article className="client-booking-card settings-preview-booking">
                     <div className="client-card-header">
-                      <strong>Servicio ejemplo</strong>
+                      <strong>{esModoPedido ? 'Pedido ejemplo' : 'Servicio ejemplo'}</strong>
                     </div>
                     <div className="client-card-fields">
                       <div className="client-card-field">
@@ -1193,7 +1194,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
                         <strong>jue 09/07</strong>
                       </div>
                       <div className="client-card-field">
-                        <span>Horario</span>
+                        <span>{esModoPedido ? 'Horario solicitado' : 'Horario'}</span>
                         <strong>10:00 - 10:30</strong>
                       </div>
                       <div className="client-card-field client-card-status-field">

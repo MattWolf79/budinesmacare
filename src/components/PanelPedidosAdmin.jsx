@@ -119,7 +119,7 @@ const splitCatalogName = (value) => {
   };
 };
 
-export default function PanelPedidosAdmin({ user, companySlug }) {
+export default function PanelPedidosAdmin({ user, companySlug, adminProfileSummary = null }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [offsetDias, setOffsetDias] = useState(0);
@@ -372,6 +372,16 @@ export default function PanelPedidosAdmin({ user, companySlug }) {
 
   return (
     <section className="employee-panel">
+      {adminProfileSummary && (
+        <div className="admin-page-heading">
+          <div>
+            <h1>Pedidos</h1>
+            <p>Seguimiento diario de pedidos y detalle de productos por cliente.</p>
+          </div>
+          {adminProfileSummary}
+        </div>
+      )}
+
       <div className="employee-summary-grid">
         <MetricCard label="Pedidos" value={pedidosNoCancelados.length} hint="totales no cancelados" />
         <MetricCard label="Cerrados" value={pedidosCerrados.length} hint="pedidos finalizados" />

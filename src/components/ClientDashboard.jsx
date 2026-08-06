@@ -55,6 +55,20 @@ const getHoraActual = () => {
   return `${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
 };
 
+const PRODUCT_NAME_SEPARATOR = '::';
+
+const parseProductCatalogName = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw.includes(PRODUCT_NAME_SEPARATOR)) {
+    return { type: '', itemName: raw };
+  }
+
+  const [typeRaw, ...rest] = raw.split(PRODUCT_NAME_SEPARATOR);
+  const type = String(typeRaw || '').trim();
+  const itemName = rest.join(PRODUCT_NAME_SEPARATOR).trim();
+  return { type, itemName: itemName || raw };
+};
+
 export default function ClientDashboard({ user, activeView = 'home', selectedPromotion = null, onReservePromotion, onReserveTurn, onRescheduleDone, activityLegend = null, companySlug, companyContext }) {
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
@@ -333,14 +347,39 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     services.filter((service) => !service.deleted_at && service.active !== false)
   ), [services]);
 
+  const productosAgrupados = useMemo(() => {
+    if (!esModoPedido) {
+      return [{ groupName: '', products: productosActivos.map((producto) => ({ producto, parsed: parseProductCatalogName(producto.name) })) }];
+    }
+
+    const groups = new Map();
+    productosActivos.forEach((producto) => {
+      const parsed = parseProductCatalogName(producto.name);
+      const key = parsed.type || 'Sin tipo';
+      const list = groups.get(key) || [];
+      list.push({ producto, parsed });
+      groups.set(key, list);
+    });
+
+    return Array.from(groups.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+      .map(([groupName, products]) => ({
+        groupName,
+        products: products.sort((a, b) => (a.parsed.itemName || '').localeCompare(b.parsed.itemName || '', 'es'))
+      }));
+  }, [productosActivos, esModoPedido]);
+
   const itemsPedido = useMemo(() => (
     productosActivos
       .map((producto) => {
         const cantidad = Math.max(0, Number(cantidadesProducto[producto.id] || 0));
         if (!cantidad) return null;
         const precioUnitario = Number(producto.base_price || 0);
+        const parsed = parseProductCatalogName(producto.name);
         return {
           producto,
+          productoNombre: parsed.itemName || producto.name,
+          productoTipo: parsed.type || '',
           cantidad,
           precioUnitario,
           subtotal: cantidad * precioUnitario
@@ -734,14 +773,14 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                     <strong>{getBookingRef(selectedEntry.booking)}</strong>
                   </div>
                 </div>
-                <p className="client-turno-policy">Podés cancelar o reprogramar tu turno antes de la fecha reservada.</p>
+                <p className="client-turno-policy">{esModoPedido ? 'Podés cancelar o reprogramar tu pedido antes de la fecha solicitada.' : 'Podés cancelar o reprogramar tu turno antes de la fecha reservada.'}</p>
                 {selectedIsActive && (
                   <button
                     type="button"
                     className="client-turno-manage-button"
                     onClick={() => { setManageBooking(selectedEntry.booking); setActionMessage(''); }}
                   >
-                    {esModoPedido ? 'Gestionar pedido' : 'Tratar'}
+                    {esModoPedido ? 'Gestionar pedido' : 'Gestionar turno'}
                   </button>
                 )}
               </article>
@@ -761,28 +800,35 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
             <p className="client-summary-empty">Todavía no hay productos activos para pedir.</p>
           ) : (
             <div className="client-services-grid">
-              {productosActivos.map((producto) => (
-                <article className="client-service-card" key={producto.id}>
-                  <span className="client-service-icon" style={{ background: producto.color || '#e2e8f0' }} aria-hidden="true">{producto.icon || '🛒'}</span>
-                  <div className="client-service-info">
-                    <strong>{producto.name}</strong>
-                    <span>{etiquetaItemCatalogo}</span>
+              {productosAgrupados.map((group) => (
+                <div key={group.groupName || 'sin-tipo'} style={{ gridColumn: '1 / -1' }}>
+                  {group.groupName && <h3 style={{ margin: '0 0 .6rem' }}>{group.groupName}</h3>}
+                  <div className="client-services-grid">
+                    {group.products.map(({ producto, parsed }) => (
+                      <article className="client-service-card" key={producto.id}>
+                        <span className="client-service-icon" style={{ background: producto.color || '#e2e8f0' }} aria-hidden="true">{producto.icon || '🛒'}</span>
+                        <div className="client-service-info">
+                          <strong>{parsed.itemName || producto.name}</strong>
+                          <span>{etiquetaItemCatalogo}</span>
+                        </div>
+                        {preciosHabilitados && Number(producto.base_price || 0) > 0 && (
+                          <span className="client-service-price">{formatMoney(producto.base_price)}</span>
+                        )}
+                        <label className="platform-field">
+                          <span>Cantidad</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={cantidadesProducto[producto.id] || ''}
+                            onChange={(event) => cambiarCantidadProducto(producto.id, event.target.value)}
+                            placeholder="0"
+                          />
+                        </label>
+                      </article>
+                    ))}
                   </div>
-                  {preciosHabilitados && Number(producto.base_price || 0) > 0 && (
-                    <span className="client-service-price">{formatMoney(producto.base_price)}</span>
-                  )}
-                  <label className="platform-field">
-                    <span>Cantidad</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={cantidadesProducto[producto.id] || ''}
-                      onChange={(event) => cambiarCantidadProducto(producto.id, event.target.value)}
-                      placeholder="0"
-                    />
-                  </label>
-                </article>
+                </div>
               ))}
             </div>
           )}
@@ -795,6 +841,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
             <label className="platform-field">
               <span>Horario solicitado</span>
               <input type="time" value={horaPedido} onChange={(event) => setHoraPedido(event.target.value)} />
+              <small>Seleccioná hora y minutos (HH:MM). No se usa grilla de turnos en modo pedido.</small>
             </label>
             <label className="platform-field" style={{ gridColumn: '1 / -1' }}>
               <span>Aclaraciones y componentes</span>
@@ -813,7 +860,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
               <div className="client-turno-detail-fields">
                 {itemsPedido.map((item) => (
                   <div className="client-turno-detail-field" key={item.producto.id}>
-                    <span>{item.producto.name}</span>
+                    <span>{item.productoTipo ? `${item.productoTipo} · ${item.productoNombre}` : item.productoNombre}</span>
                     <strong>{item.cantidad} x {preciosHabilitados ? formatMoney(item.precioUnitario) : 'item'}{preciosHabilitados ? ` = ${formatMoney(item.subtotal)}` : ''}</strong>
                   </div>
                 ))}
