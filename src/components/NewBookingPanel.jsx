@@ -68,6 +68,64 @@ const formatDayLabel = (isoDate) => {
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
 
+const isoToDisplayDate = (isoDate) => {
+  const [year, month, day] = String(isoDate || '').split('-');
+  if (!year || !month || !day) return '';
+  return `${day}/${month}/${year}`;
+};
+
+const displayDateToIso = (value) => {
+  const trimmed = String(value || '').trim();
+  const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const [, day, month, year] = match;
+  const dayNumber = Number(day);
+  const monthNumber = Number(month);
+  const yearNumber = Number(year);
+  if (monthNumber < 1 || monthNumber > 12 || dayNumber < 1 || dayNumber > 31 || yearNumber < 1900) return null;
+  const iso = `${year}-${month}-${day}`;
+  const date = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  if (date.getFullYear() !== yearNumber || date.getMonth() + 1 !== monthNumber || date.getDate() !== dayNumber) return null;
+  return iso;
+};
+
+const PRODUCT_NAME_SEPARATOR = '::';
+const parseProductName = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw.includes(PRODUCT_NAME_SEPARATOR)) return { group: '', name: raw };
+  const [groupRaw, ...rest] = raw.split(PRODUCT_NAME_SEPARATOR);
+  return {
+    group: String(groupRaw || '').trim(),
+    name: rest.join(PRODUCT_NAME_SEPARATOR).trim() || raw
+  };
+};
+
+const createEmptyAddonRow = (kind = '') => ({
+  key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  kind,
+  quantity: 1,
+  unitPrice: 0
+});
+
+const buildAddonsSummary = (rows) => {
+  if (!Array.isArray(rows)) return '';
+  const normalized = rows
+    .map((row) => ({
+      kind: String(row?.kind || '').trim(),
+      quantity: Math.max(1, Number(row?.quantity || 1)),
+      unitPrice: Math.max(0, Number(row?.unitPrice || 0))
+    }))
+    .filter((row) => row.kind);
+  if (normalized.length === 0) return '';
+  return normalized
+    .map((row) => {
+      const priceLabel = row.unitPrice > 0 ? ` ($ ${Number(row.unitPrice).toLocaleString('es-AR')} c/u)` : '';
+      return `${row.kind} x${row.quantity}${priceLabel}`;
+    })
+    .join(' | ');
+};
+
 // Estados de turno que ocupan la agenda del profesional.
 const ACTIVE_BOOKING_STATUSES = new Set(['reserved', 'confirmed', 'pending_assignment']);
 
@@ -168,6 +226,7 @@ export default function NewBookingPanel({
   rescheduleMode = false
 }) {
   const configuracionOperativa = companyContext?.configuracion_operativa || {};
+  const esModoPedido = configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false;
   const gridInterval = getGridInterval(configuracionOperativa.intervalo_grilla_minutos);
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const companyName = companyContext?.company_name || companyContext?.name || 'Nueva reserva';
@@ -176,14 +235,14 @@ export default function NewBookingPanel({
   const isClient = user?.role === 'client';
   const clientAccountId = isClient && user?.isInternal ? user.id : null;
   // El cliente ve el combo de profesional solo si la plataforma lo habilita.
-  const showEmployeePicker = !isClient || clientCanChooseEmployee;
+  const showEmployeePicker = !esModoPedido && (!isClient || clientCanChooseEmployee);
 
   const sucursalesHabilitadas = configuracionOperativa.sucursales_habilitadas === true;
   const branches = useMemo(
     () => (Array.isArray(companyContext?.branches) ? companyContext.branches : []),
     [companyContext]
   );
-  const showBranchSelector = sucursalesHabilitadas && branches.length > 0;
+  const showBranchSelector = branches.length > 0 && (sucursalesHabilitadas || esModoPedido);
 
   // Abierto desde una casilla de la grilla: sucursal, dia y hora quedan fijos.
   // Desde el menu "Nueva reserva" (sin casilla) siguen siendo editables.
@@ -205,6 +264,7 @@ export default function NewBookingPanel({
   const [employeeBranches, setEmployeeBranches] = useState([]);
 
   const [date, setDate] = useState(initialDate || todayIso());
+  const [dateDisplay, setDateDisplay] = useState(() => isoToDisplayDate(initialDate || todayIso()));
   const [startTime, setStartTime] = useState(() => {
     if (initialStartTime) return initialStartTime;
     const suggested = parseTime(defaultStartTime(gridInterval));
@@ -221,11 +281,13 @@ export default function NewBookingPanel({
   const [selectedClientAccountId, setSelectedClientAccountId] = useState(null);
   const suppressClientSearchRef = useRef(false);
   const [comment, setComment] = useState('');
+  const [pedidoAddons, setPedidoAddons] = useState([]);
   const [cart, setCart] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState(branchId || '');
 
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [configDraft, setConfigDraft] = useState(null);
+  const [productQuantities, setProductQuantities] = useState({});
   const [depositEnabled, setDepositEnabled] = useState(false);
   const [showHoursModal, setShowHoursModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -235,6 +297,10 @@ export default function NewBookingPanel({
 
   // Autocompletado de clientes existentes para admin / empleado.
   const internalManagerAccountId = internalAdminAccountId || internalEmployeeAccountId;
+
+  useEffect(() => {
+    setDateDisplay(isoToDisplayDate(date));
+  }, [date]);
 
   useEffect(() => {
     if (isClient || bookForSelf) {
@@ -492,8 +558,59 @@ export default function NewBookingPanel({
     [cart]
   );
 
+  const groupedProducts = useMemo(() => {
+    if (!esModoPedido) return [];
+    const map = new Map();
+    activeServices.forEach((service) => {
+      const parsed = parseProductName(service.name);
+      const group = parsed.group || 'Productos';
+      const rows = map.get(group) || [];
+      rows.push({ service, parsed });
+      map.set(group, rows);
+    });
+
+    return Array.from(map.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+      .map(([group, rows]) => ({
+        group,
+        rows: rows.sort((a, b) => a.parsed.name.localeCompare(b.parsed.name, 'es'))
+      }));
+  }, [activeServices, esModoPedido]);
+
+  const modalSelectedProductsTotal = useMemo(() => {
+    if (!esModoPedido) return 0;
+    return activeServices.reduce((sum, service) => {
+      const quantity = Math.max(0, Number(productQuantities[service.id] || 0));
+      const unitPrice = Number(service.base_price || 0);
+      return sum + quantity * unitPrice;
+    }, 0);
+  }, [activeServices, productQuantities, esModoPedido]);
+
+  const confirmProductsGroupedByType = useMemo(() => {
+    if (!esModoPedido) return [];
+    const grouped = new Map();
+    cart.forEach((item) => {
+      const parsed = parseProductName(item.name);
+      const type = parsed.group || 'General';
+      const bucket = grouped.get(type) || [];
+      bucket.push({
+        key: item.key,
+        name: parsed.name || item.name,
+        quantity: Math.max(1, Number(item.quantity || 1))
+      });
+      grouped.set(type, bucket);
+    });
+
+    return Array.from(grouped.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+      .map(([type, lines]) => ({
+        type,
+        lines: lines.sort((a, b) => a.name.localeCompare(b.name, 'es'))
+      }));
+  }, [cart, esModoPedido]);
+
   // Motivo por el que la reserva no entra en el horario de atención (o '').
-  const hoursIssue = useMemo(() => businessHoursIssue(cart, date), [cart, date]);
+  const hoursIssue = useMemo(() => (esModoPedido ? '' : businessHoursIssue(cart, date)), [cart, date, esModoPedido]);
 
   // Avisa con un modal cuando la reserva pasa a estar fuera del horario.
   useEffect(() => {
@@ -504,6 +621,7 @@ export default function NewBookingPanel({
 
   // Claves de los items del carrito cuyo profesional asignado quedó ocupado.
   const conflictingKeys = useMemo(() => {
+    if (esModoPedido) return new Set();
     const keys = new Set();
     cart.forEach((item) => {
       if (item.employeeId && !employeeFreeForSlot(item.employeeId, item.startTime, item.duration)) {
@@ -511,7 +629,7 @@ export default function NewBookingPanel({
       }
     });
     return keys;
-  }, [cart, employeeFreeForSlot]);
+  }, [cart, employeeFreeForSlot, esModoPedido]);
 
   // Intenta un orden de los servicios en el que todos los profesionales queden libres.
   const findAvailableOrder = useCallback(() => {
@@ -533,6 +651,31 @@ export default function NewBookingPanel({
     const changed = ordered.some((item, index) => item.key !== cart[index].key);
     if (changed) setCart(ordered);
   }, [conflictingKeys, findAvailableOrder, cart]);
+
+  const normalizedPedidoAddons = useMemo(() => pedidoAddons
+    .map((row) => ({
+      kind: String(row?.kind || '').trim(),
+      quantity: Math.max(1, Number(row?.quantity || 1)),
+      unitPrice: Math.max(0, Number(row?.unitPrice || 0))
+    }))
+    .filter((row) => row.kind), [pedidoAddons]);
+
+  const addonsTotal = useMemo(() => {
+    if (!esModoPedido || !preciosHabilitados) return 0;
+    return normalizedPedidoAddons.reduce((sum, row) => sum + row.quantity * row.unitPrice, 0);
+  }, [normalizedPedidoAddons, esModoPedido, preciosHabilitados]);
+
+  const orderTotal = useMemo(() => cartTotal + addonsTotal, [cartTotal, addonsTotal]);
+
+  const pedidoCommentSummary = useMemo(() => buildAddonsSummary(normalizedPedidoAddons), [normalizedPedidoAddons]);
+
+  const bookingComment = useMemo(() => {
+    if (!esModoPedido) return comment || null;
+    const parts = [String(comment || '').trim()];
+    if (pedidoCommentSummary) parts.push(`Agregados: ${pedidoCommentSummary}`);
+    const merged = parts.filter(Boolean).join(' · ');
+    return merged || null;
+  }, [comment, pedidoCommentSummary, esModoPedido]);
 
   const packsHabilitados = configuracionOperativa.packs_habilitados === true;
   const promosHabilitadas = configuracionOperativa.promociones_habilitadas === true;
@@ -569,8 +712,77 @@ export default function NewBookingPanel({
     setCart((current) => current.map((item) => (item.key === key ? { ...item, employeeId } : item)));
   };
 
+  const updatePedidoItemQuantity = (key, nextQuantity) => {
+    const parsedQuantity = Math.max(0, Number(nextQuantity || 0));
+    setCart((current) => current
+      .map((item) => {
+        if (item.key !== key) return item;
+        if (!esModoPedido || item.bundleId) return item;
+        if (parsedQuantity <= 0) return null;
+        const unitPrice = Number(item.unitPrice ?? item.base_price ?? 0);
+        return {
+          ...item,
+          quantity: parsedQuantity,
+          price: unitPrice * parsedQuantity
+        };
+      })
+      .filter(Boolean));
+  };
+
+  const syncPedidoProductsToCart = (quantities) => {
+    const selectedRows = activeServices
+      .map((service) => ({ service, quantity: Math.max(0, Number(quantities[service.id] || 0)) }))
+      .filter((row) => row.quantity > 0);
+
+    if (selectedRows.length === 0) {
+      alert('Seleccioná al menos un producto con cantidad mayor a cero.');
+      return;
+    }
+
+    setCart((current) => {
+      const preserved = current.filter((item) => item.bundleId);
+      const currentByService = new Map(
+        current
+          .filter((item) => !item.bundleId)
+          .map((item) => [String(item.serviceId), item])
+      );
+
+      const baseStart = (current.find((item) => !item.bundleId)?.startTime) || nextStartTime();
+      let cursor = baseStart;
+      const rebuilt = selectedRows.map(({ service, quantity }) => {
+        const existing = currentByService.get(String(service.id));
+        const unitPrice = preciosHabilitados ? Number(service.base_price || 0) : 0;
+        const row = {
+          key: existing?.key || `${service.id}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          serviceId: service.id,
+          name: service.name,
+          icon: service.icon,
+          color: service.color,
+          duration: serviceDuration(service),
+          quantity,
+          unitPrice,
+          price: unitPrice * quantity,
+          startTime: cursor,
+          employeeId: '',
+          bundleId: null,
+          bundleType: null,
+          bundleName: null
+        };
+        cursor = addMinutesToTime(cursor, row.duration);
+        return row;
+      });
+
+      return [...rebuilt, ...preserved];
+    });
+
+    setProductQuantities({});
+    setIsServiceModalOpen(false);
+  };
+
   const addServiceToCart = ({ service, startTime, employeeId, bundle = null, price = null }) => {
     const duration = serviceDuration(service);
+    const quantity = Math.max(1, Number(service.quantity || 1));
+    const unitPrice = preciosHabilitados ? Number(price ?? service.base_price ?? 0) : 0;
     const item = {
       key: `${service.id}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       serviceId: service.id,
@@ -578,7 +790,9 @@ export default function NewBookingPanel({
       icon: service.icon,
       color: service.color,
       duration,
-      price: preciosHabilitados ? Number(price ?? service.base_price ?? 0) : 0,
+      quantity,
+      unitPrice,
+      price: unitPrice * quantity,
       startTime,
       employeeId: employeeId || '',
       bundleId: bundle?.id || null,
@@ -625,6 +839,13 @@ export default function NewBookingPanel({
   ========================= */
 
   const handlePickService = (service) => {
+    if (esModoPedido) {
+      const merged = { ...productQuantities, [service.id]: Math.max(1, Number(productQuantities[service.id] || 0) + 1) };
+      syncPedidoProductsToCart(merged);
+      setIsServiceModalOpen(false);
+      return;
+    }
+
     setIsServiceModalOpen(false);
     const options = employeesForService(service.id);
     setConfigDraft({
@@ -647,6 +868,43 @@ export default function NewBookingPanel({
     setConfigDraft(null);
   };
 
+  const addPedidoProductsToCart = () => syncPedidoProductsToCart(productQuantities);
+
+  const openServiceSelector = () => {
+    if (esModoPedido) {
+      const currentQuantities = {};
+      cart.forEach((item) => {
+        if (!item.bundleId) {
+          currentQuantities[item.serviceId] = Math.max(0, Number(item.quantity || 0));
+        }
+      });
+      setProductQuantities(currentQuantities);
+    }
+    setIsServiceModalOpen(true);
+  };
+
+  const updateAddonRow = (key, field, value) => {
+    setPedidoAddons((current) => current.map((row) => {
+      if (row.key !== key) return row;
+      if (field === 'quantity') {
+        return { ...row, quantity: Math.max(1, Number(value || 1)) };
+      }
+      if (field === 'unitPrice') {
+        return { ...row, unitPrice: Math.max(0, Number(value || 0)) };
+      }
+      return { ...row, [field]: value };
+    }));
+  };
+
+  const addAddonRow = () => setPedidoAddons((current) => [...current, createEmptyAddonRow('')]);
+  const removeAddonRow = (key) => setPedidoAddons((current) => current.filter((row) => row.key !== key));
+
+  const handleDateDisplayChange = (value) => {
+    setDateDisplay(value);
+    const parsed = displayDateToIso(value);
+    if (parsed) setDate(parsed);
+  };
+
   /* =========================
      CONFIRMAR
   ========================= */
@@ -655,14 +913,14 @@ export default function NewBookingPanel({
   const openConfirmDialog = () => {
     if (cart.length === 0) return;
     if (showBranchSelector && !activeBranchId) {
-      alert('Elegí la sucursal para la reserva.');
+      alert(`Elegí la sucursal para ${esModoPedido ? 'el pedido' : 'la reserva'}.`);
       return;
     }
-    if (hoursIssue) {
+    if (!esModoPedido && hoursIssue) {
       setShowHoursModal(true);
       return;
     }
-    if (conflictingKeys.size > 0) {
+    if (!esModoPedido && conflictingKeys.size > 0) {
       alert('Hay servicios con un profesional ocupado en su horario. Cambiá el profesional o dejalo en «Indistinto» para continuar.');
       return;
     }
@@ -676,14 +934,14 @@ export default function NewBookingPanel({
   const confirmReservation = async () => {
     if (cart.length === 0) return;
     if (showBranchSelector && !activeBranchId) {
-      alert('Elegí la sucursal para la reserva.');
+      alert(`Elegí la sucursal para ${esModoPedido ? 'el pedido' : 'la reserva'}.`);
       return;
     }
-    if (hoursIssue) {
+    if (!esModoPedido && hoursIssue) {
       setShowHoursModal(true);
       return;
     }
-    if (conflictingKeys.size > 0) {
+    if (!esModoPedido && conflictingKeys.size > 0) {
       alert('Hay servicios con un profesional ocupado en su horario. Cambiá el profesional o dejalo en «Indistinto» para continuar.');
       return;
     }
@@ -706,8 +964,8 @@ export default function NewBookingPanel({
         const startAt = `${date}T${item.startTime}:00`;
         const endAt = `${date}T${addMinutesToTime(item.startTime, item.duration)}:00`;
         const description = item.bundleName
-          ? [item.bundleName, comment].filter(Boolean).join(' · ')
-          : (comment || null);
+          ? [item.bundleName, bookingComment].filter(Boolean).join(' · ')
+          : bookingComment;
 
         const { data, error } = await supabase.rpc('request_client_booking', {
           service_id_value: item.serviceId || null,
@@ -777,12 +1035,14 @@ export default function NewBookingPanel({
         return;
       }
 
-      if (clientHasWaitlist) {
+      if (!esModoPedido && clientHasWaitlist) {
         setWaitlistNotice(true);
         return;
       }
       const [, cMonth, cDay] = String(date).split('-');
-      setSuccessMessage(`Reservaste turno para el ${cDay}/${cMonth}. Muchas gracias.`);
+      setSuccessMessage(esModoPedido
+        ? `Pedido cargado para el ${cDay}/${cMonth}. Muchas gracias.`
+        : `Reservaste turno para el ${cDay}/${cMonth}. Muchas gracias.`);
       return;
     }
 
@@ -800,7 +1060,7 @@ export default function NewBookingPanel({
       items_value: items,
       customer_name_value: customerName || null,
       customer_email_value: customerEmail || null,
-      booking_description_value: comment || null,
+      booking_description_value: bookingComment,
       branch_id_value: activeBranchId || branchId || null,
       account_id_value: internalAdminAccountId || internalEmployeeAccountId,
       session_token_value: internalSessionToken,
@@ -820,13 +1080,15 @@ export default function NewBookingPanel({
       (booking) => String(booking?.status || '').toLowerCase() === 'waitlist'
     );
 
-    if (hasWaitlist) {
+    if (!esModoPedido && hasWaitlist) {
       setWaitlistNotice(true);
       return;
     }
 
     const [year, month, day] = String(date).split('-');
-    setSuccessMessage(`Reservaste turno para el ${day}/${month}. Muchas gracias.`);
+    setSuccessMessage(esModoPedido
+      ? `Pedido cargado para el ${day}/${month}. Muchas gracias.`
+      : `Reservaste turno para el ${day}/${month}. Muchas gracias.`);
   };
 
   const configOptions = configDraft ? employeesForService(configDraft.service.id) : [];
@@ -838,7 +1100,7 @@ export default function NewBookingPanel({
           <div className="new-booking-header-title">
             <span className="new-booking-header-icon" aria-hidden="true">🗓️</span>
             <div>
-              <h2>Nueva reserva</h2>
+              <h2>{esModoPedido ? 'Nuevo pedido' : 'Nueva reserva'}</h2>
               <p>{showBranchSelector && activeBranchName ? activeBranchName : companyName}</p>
             </div>
           </div>
@@ -874,13 +1136,21 @@ export default function NewBookingPanel({
               )}
 
               <label className="new-booking-field">
-                <span className="new-booking-label">Día de la reserva</span>
-                <input type="date" value={date} min={todayIso()} disabled={lockedFromSlot} onChange={(event) => setDate(event.target.value)} />
+                <span className="new-booking-label">{esModoPedido ? 'Día del pedido' : 'Día de la reserva'}</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="DD/MM/AAAA"
+                  value={dateDisplay}
+                  disabled={lockedFromSlot}
+                  onChange={(event) => handleDateDisplayChange(event.target.value)}
+                  onBlur={() => setDateDisplay(isoToDisplayDate(date))}
+                />
                 <span className="new-booking-day-hint">{formatDayLabel(date)}</span>
               </label>
 
               <label className="new-booking-field">
-                <span className="new-booking-label">Hora de inicio</span>
+                <span className="new-booking-label">{esModoPedido ? 'Hora de entrega' : 'Hora de inicio'}</span>
                 <select value={startTime} disabled={lockedFromSlot} onChange={(event) => handleStartTimeChange(event.target.value)}>
                   {!startTimeOptions.includes(startTime) && (
                     <option value={startTime}>{startTime} hs</option>
@@ -898,7 +1168,7 @@ export default function NewBookingPanel({
 
               {!isClient && (
                 <div className="new-booking-field new-booking-client">
-                  <span className="new-booking-label">Cliente de la reserva</span>
+                  <span className="new-booking-label">{esModoPedido ? 'Cliente del pedido' : 'Cliente de la reserva'}</span>
                   <label className="new-booking-self-check">
                     <input
                       type="checkbox"
@@ -970,10 +1240,10 @@ export default function NewBookingPanel({
               )}
 
               <div className="new-booking-field">
-                <span className="new-booking-label">Servicios</span>
+                <span className="new-booking-label">{esModoPedido ? 'Productos' : 'Servicios'}</span>
                 {cart.length === 0 ? (
-                  <button type="button" className="new-booking-select-service" onClick={() => setIsServiceModalOpen(true)}>
-                    <span>Seleccionar servicio</span>
+                  <button type="button" className="new-booking-select-service" onClick={openServiceSelector}>
+                    <span>{esModoPedido ? 'Seleccionar producto' : 'Seleccionar servicio'}</span>
                     <span aria-hidden="true">›</span>
                   </button>
                 ) : (
@@ -992,23 +1262,39 @@ export default function NewBookingPanel({
                           >
                             <div className="new-booking-cart-main">
                               <span className="new-booking-cart-name">
-                                <ActivityIcon service={item} size="small" /> {item.name}
+                                {!esModoPedido && <ActivityIcon service={item} size="small" />} {esModoPedido ? (parseProductName(item.name).name || item.name) : item.name}
+                                {esModoPedido && <span className="new-booking-inline-qty">x{Number(item.quantity || 1)}</span>}
                                 {item.bundleName && <span className="new-booking-cart-badge">{item.bundleType === 'promo' ? '🔥' : '🎁'} {item.bundleName}</span>}
                               </span>
-                              <button
-                                type="button"
-                                className="new-booking-cart-remove"
-                                onClick={() => removeItem(item.key)}
-                                aria-label={isBundle ? `Quitar ${item.bundleType === 'promo' ? 'promo' : 'pack'} completo` : 'Quitar servicio'}
-                                title={isBundle ? `Quitar ${item.bundleType === 'promo' ? 'la promo' : 'el pack'} completo` : 'Quitar servicio'}
-                              >🗑️</button>
+                              <div className="new-booking-cart-actions">
+                                {esModoPedido && (
+                                  <div className="new-booking-qty-editor">
+                                    <button type="button" onClick={() => updatePedidoItemQuantity(item.key, Number(item.quantity || 1) - 1)} aria-label="Restar unidad">−</button>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={Number(item.quantity || 0)}
+                                      onChange={(event) => updatePedidoItemQuantity(item.key, event.target.value)}
+                                      aria-label="Cantidad"
+                                    />
+                                    <button type="button" onClick={() => updatePedidoItemQuantity(item.key, Number(item.quantity || 1) + 1)} aria-label="Sumar unidad">+</button>
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  className="new-booking-cart-remove"
+                                  onClick={() => removeItem(item.key)}
+                                  aria-label={isBundle ? `Quitar ${item.bundleType === 'promo' ? 'promo' : 'pack'} completo` : `Quitar ${esModoPedido ? 'producto' : 'servicio'}`}
+                                  title={isBundle ? `Quitar ${item.bundleType === 'promo' ? 'la promo' : 'el pack'} completo` : `Quitar ${esModoPedido ? 'producto' : 'servicio'}`}
+                                >🗑️</button>
+                              </div>
                             </div>
                             <div className="new-booking-cart-meta">
-                              <span>🕒 {item.startTime} - {endTime}</span>
-                              <span>⏱️ {formatDurationLabel(item.duration)}</span>
-                              {preciosHabilitados && <span className="new-booking-cart-price">{formatPrice(item.price)}</span>}
+                              {!esModoPedido && <span>🕒 {item.startTime} - {endTime}</span>}
+                              {!esModoPedido && <span>⏱️ {formatDurationLabel(item.duration)}</span>}
+                              {preciosHabilitados && <span className="new-booking-cart-price">{esModoPedido ? `${formatPrice(item.unitPrice || 0)} c/u · ${formatPrice(item.price)}` : formatPrice(item.price)}</span>}
                             </div>
-                            {showEmployeePicker && (
+                            {showEmployeePicker && !esModoPedido && (
                               <label className="new-booking-cart-employee">
                                 <span>Profesional</span>
                                 <select value={item.employeeId} onChange={(event) => updateItemEmployee(item.key, event.target.value)}>
@@ -1035,12 +1321,60 @@ export default function NewBookingPanel({
                         );
                       })}
                     </ul>
-                    <button type="button" className="new-booking-add-more" onClick={() => setIsServiceModalOpen(true)}>
-                      ＋ Agregar otro servicio
+                    <button type="button" className="new-booking-add-more" onClick={openServiceSelector}>
+                      ＋ {esModoPedido ? 'Agregar producto' : 'Agregar otro servicio'}
                     </button>
                   </>
                 )}
               </div>
+
+              {esModoPedido && (
+                <div className="new-booking-field">
+                  <div className="new-booking-addons-header">
+                    <span className="new-booking-label">Agregados del pedido</span>
+                    <button type="button" className="new-booking-addons-add" onClick={addAddonRow}>+ Agregado</button>
+                  </div>
+                  <div className="new-booking-addons-list">
+                    {pedidoAddons.length === 0 && (
+                      <p className="new-booking-addons-empty">Aún no agregaste extras. Tocá + Agregado para sumar uno.</p>
+                    )}
+                    {pedidoAddons.length > 0 && (
+                      <div className="new-booking-addon-head" aria-hidden="true">
+                        <span>Agregado</span>
+                        <span>Precio</span>
+                        <span>Cant.</span>
+                        <span />
+                      </div>
+                    )}
+                    {pedidoAddons.map((row) => (
+                      <div key={row.key} className="new-booking-addon-row">
+                        <input
+                          type="text"
+                          placeholder="Nombre del agregado"
+                          value={row.kind}
+                          onChange={(event) => updateAddonRow(row.key, 'kind', event.target.value)}
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          step="1"
+                          placeholder="Precio"
+                          value={Number(row.unitPrice || 0)}
+                          onChange={(event) => updateAddonRow(row.key, 'unitPrice', event.target.value)}
+                        />
+                        <input
+                          type="number"
+                          min={1}
+                          value={Number(row.quantity || 1)}
+                          onChange={(event) => updateAddonRow(row.key, 'quantity', event.target.value)}
+                        />
+                        <button type="button" className="new-booking-addon-remove" onClick={() => removeAddonRow(row.key)} aria-label="Quitar agregado">✕</button>
+                      </div>
+                    ))}
+                  </div>
+                  <span className="new-booking-day-hint">Se guardan en el comentario del pedido. Si tienen costo, se suman al total.</span>
+                </div>
+              )}
 
               {!isClient && (
                 <div className="new-booking-field new-booking-deposit">
@@ -1080,7 +1414,7 @@ export default function NewBookingPanel({
           {preciosHabilitados && (
             <div className="new-booking-total">
               <span>Monto total</span>
-              <strong>{formatPrice(cartTotal)}</strong>
+              <strong>{formatPrice(orderTotal)}</strong>
             </div>
           )}
           <button
@@ -1089,9 +1423,9 @@ export default function NewBookingPanel({
             disabled={cart.length === 0 || isSaving || conflictingKeys.size > 0 || Boolean(hoursIssue) || !emailFormatValid}
             onClick={openConfirmDialog}
           >
-            {isSaving ? 'Confirmando…' : 'Confirmar reserva →'}
+            {isSaving ? 'Confirmando…' : `${esModoPedido ? 'Confirmar pedido' : 'Confirmar reserva'} →`}
           </button>
-          {cart.length === 0 && <p className="new-booking-footer-hint">Seleccioná al menos un servicio para continuar</p>}
+          {cart.length === 0 && <p className="new-booking-footer-hint">Seleccioná al menos un {esModoPedido ? 'producto' : 'servicio'} para continuar</p>}
           {cart.length > 0 && Boolean(hoursIssue) && (
             <p className="new-booking-footer-hint new-booking-footer-warning">{hoursIssue}</p>
           )}
@@ -1107,7 +1441,7 @@ export default function NewBookingPanel({
           <div className="new-booking-modal-card new-booking-confirm-card">
             <div className="new-booking-confirm-body">
               <p className="new-booking-confirm-title">
-                {rescheduleMode ? 'Vas a modificar tu turno a:' : 'Estás reservando turno para los servicios:'}
+                {rescheduleMode ? 'Vas a modificar tu turno a:' : `Estás ${esModoPedido ? 'cargando un pedido con los productos' : 'reservando turno para los servicios'}:`}
               </p>
               {(() => {
                 const [cy, cm, cd] = String(date || '').split('-');
@@ -1118,29 +1452,80 @@ export default function NewBookingPanel({
               {activeBranchName && (
                 <p className="new-booking-confirm-branch">Sucursal: {activeBranchName.toUpperCase()}</p>
               )}
-              <ul className="new-booking-confirm-list">
-                {cart.map((item) => {
-                  const tipo = item.bundleType === 'promo'
-                    ? { label: 'PROMO', cls: 'is-promo' }
-                    : item.bundleType === 'pack'
-                      ? { label: 'PACK', cls: 'is-pack' }
-                      : { label: 'Servicio', cls: 'is-service' };
-                  const timeLabel = item.startTime
-                    ? `${item.startTime} - ${addMinutesToTime(item.startTime, item.duration)}`
-                    : '';
-                  return (
-                    <li key={item.key}>
-                      <span className="new-booking-confirm-item-name">
-                        <ActivityIcon service={item} size="small" /> {item.name}
-                        {timeLabel && <span className="new-booking-confirm-item-time">{timeLabel}</span>}
-                      </span>
-                      <span className={`new-booking-confirm-tag ${tipo.cls}`}>{tipo.label}</span>
-                    </li>
-                  );
-                })}
-              </ul>
+              {!esModoPedido && (
+                <ul className="new-booking-confirm-list">
+                  {cart.map((item) => {
+                    const tipo = item.bundleType === 'promo'
+                      ? { label: 'PROMO', cls: 'is-promo' }
+                      : item.bundleType === 'pack'
+                        ? { label: 'PACK', cls: 'is-pack' }
+                        : { label: 'Servicio', cls: 'is-service' };
+                    const timeLabel = item.startTime
+                      ? `${item.startTime} - ${addMinutesToTime(item.startTime, item.duration)}`
+                      : '';
+                    return (
+                      <li key={item.key}>
+                        <span className="new-booking-confirm-item-name">
+                          <ActivityIcon service={item} size="small" /> {item.name}
+                          {timeLabel && <span className="new-booking-confirm-item-time">{timeLabel}</span>}
+                        </span>
+                        <span className={`new-booking-confirm-tag ${tipo.cls}`}>{tipo.label}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              {esModoPedido && (
+                <div className="new-booking-confirm-groups">
+                  {confirmProductsGroupedByType.map((group) => (
+                    <div key={group.type} className="new-booking-confirm-group">
+                      <p className="new-booking-confirm-group-title">Tipo: {group.type}</p>
+                      <ul className="new-booking-confirm-list">
+                        {group.lines.map((line) => (
+                          <li key={line.key}>
+                            <span className="new-booking-confirm-item-name">
+                              {line.name}
+                              <span className="new-booking-confirm-item-time">x{line.quantity}</span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {esModoPedido && normalizedPedidoAddons.length > 0 && (
+                <div className="new-booking-confirm-addons">
+                  <p className="new-booking-confirm-addons-title">Agregados</p>
+                  <ul>
+                    {normalizedPedidoAddons.map((row, index) => (
+                      <li key={`${row.kind}-${index}`}>
+                        <span>{row.kind || 'Agregado'}</span>
+                        <strong>x{row.quantity}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {esModoPedido && preciosHabilitados && (
+                <div className="new-booking-confirm-totals">
+                  <div>
+                    <span>Total productos</span>
+                    <strong>{formatPrice(cartTotal)}</strong>
+                  </div>
+                  <div>
+                    <span>Total agregados</span>
+                    <strong>{formatPrice(addonsTotal)}</strong>
+                  </div>
+                  <div>
+                    <span>Total pedido</span>
+                    <strong>{formatPrice(orderTotal)}</strong>
+                  </div>
+                </div>
+              )}
               <p className="new-booking-confirm-question">
-                {rescheduleMode ? '¿Confirmás la modificación?' : '¿Confirmás la reserva?'}
+                {rescheduleMode ? '¿Confirmás la modificación?' : `¿Confirmás ${esModoPedido ? 'el pedido' : 'la reserva'}?`}
               </p>
             </div>
             <div className="new-booking-confirm-actions">
@@ -1168,11 +1553,11 @@ export default function NewBookingPanel({
         <div className="new-booking-modal">
           <div className="new-booking-modal-card">
             <header className="new-booking-modal-header">
-              <h3>Seleccionar servicio</h3>
+              <h3>{esModoPedido ? 'Seleccionar producto' : 'Seleccionar servicio'}</h3>
               <button type="button" onClick={() => setIsServiceModalOpen(false)} aria-label="Cerrar">✕</button>
             </header>
             <div className="new-booking-modal-body">
-              {visibleBundles.length > 0 && (
+              {!esModoPedido && visibleBundles.length > 0 && (
                 <div className="new-booking-modal-group">
                   <span className="new-booking-modal-group-title">Packs y promos</span>
                   {visibleBundles.map((bundle) => {
@@ -1201,27 +1586,77 @@ export default function NewBookingPanel({
                 </div>
               )}
 
-              <div className="new-booking-modal-group">
-                <span className="new-booking-modal-group-title">Servicios</span>
-                {activeServices.length === 0 ? (
-                  <div className="new-booking-empty">No hay servicios disponibles.</div>
-                ) : activeServices.map((service) => (
-                  <button type="button" key={`service-${service.id}`} className="new-booking-option" onClick={() => handlePickService(service)}>
-                    <span className="new-booking-option-main">
-                      <span className="new-booking-option-name"><ActivityIcon service={service} size="small" /> {service.name}</span>
-                      <span className="new-booking-option-sub">{formatDurationLabel(serviceDuration(service))}</span>
-                    </span>
-                    {preciosHabilitados && <span className="new-booking-option-price">{formatPrice(service.base_price)} ›</span>}
-                  </button>
-                ))}
-              </div>
+              {!esModoPedido && (
+                <div className="new-booking-modal-group">
+                  <span className="new-booking-modal-group-title">Servicios</span>
+                  {activeServices.length === 0 ? (
+                    <div className="new-booking-empty">No hay servicios disponibles.</div>
+                  ) : activeServices.map((service) => (
+                    <button type="button" key={`service-${service.id}`} className="new-booking-option" onClick={() => handlePickService(service)}>
+                      <span className="new-booking-option-main">
+                        <span className="new-booking-option-name"><ActivityIcon service={service} size="small" /> {service.name}</span>
+                        <span className="new-booking-option-sub">{formatDurationLabel(serviceDuration(service))}</span>
+                      </span>
+                      {preciosHabilitados && <span className="new-booking-option-price">{formatPrice(service.base_price)} ›</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {esModoPedido && (
+                <div className="new-booking-modal-group">
+                  {groupedProducts.length === 0 ? (
+                    <div className="new-booking-empty">No hay productos disponibles.</div>
+                  ) : groupedProducts.map((group) => (
+                    <div key={group.group} className="new-booking-product-group">
+                      <span className="new-booking-modal-group-title">{group.group}</span>
+                      <div className="new-booking-product-list">
+                        {group.rows.map(({ service, parsed }) => {
+                          const quantity = Math.max(0, Number(productQuantities[service.id] || 0));
+                          const unit = Number(service.base_price || 0);
+                          const subtotal = unit * quantity;
+                          return (
+                            <div key={`product-${service.id}`} className="new-booking-product-row">
+                              <div className="new-booking-product-main">
+                                <strong>{parsed.name || service.name}</strong>
+                                <span>{preciosHabilitados ? `${formatPrice(unit)} c/u` : 'Producto'}</span>
+                              </div>
+                              <label className="new-booking-product-qty">
+                                Cant.
+                                <select
+                                  value={quantity}
+                                  onChange={(event) => setProductQuantities((current) => ({ ...current, [service.id]: Number(event.target.value) }))}
+                                >
+                                  {Array.from({ length: 16 }, (_, index) => (
+                                    <option key={index} value={index}>{index}</option>
+                                  ))}
+                                </select>
+                              </label>
+                              <div className="new-booking-product-subtotal">
+                                {preciosHabilitados ? formatPrice(subtotal) : `x${quantity}`}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="new-booking-product-footer">
+                    <div>
+                      <span>Total productos seleccionados</span>
+                      <strong>{preciosHabilitados ? formatPrice(modalSelectedProductsTotal) : Object.values(productQuantities).reduce((sum, value) => sum + Number(value || 0), 0)}</strong>
+                    </div>
+                    <button type="button" className="new-booking-config-confirm" onClick={addPedidoProductsToCart}>Agregar al pedido</button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* SUB-MODAL CONFIGURAR SERVICIO */}
-      {configDraft && (
+      {!esModoPedido && configDraft && (
         <div className="new-booking-modal">
           <div className="new-booking-modal-card new-booking-config-card">
             <header className="new-booking-modal-header">

@@ -317,6 +317,7 @@ export default function App() {
     setSessionExpiredMessage('');
     setSession(null);
     setAuthProfile(null);
+    clearInternalSession();
     setLocalClientSession(nextSession);
     setAccessProfile('client');
     touchLastActivity();
@@ -342,6 +343,8 @@ export default function App() {
     };
 
     setSessionExpiredMessage('');
+    setLocalClientSession(null);
+    sessionStorage.removeItem(localClientSessionStorageKey);
     setInternalSession(nextSession);
     setAccessProfile(role);
     touchLastActivity();

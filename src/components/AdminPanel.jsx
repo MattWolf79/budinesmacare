@@ -26,6 +26,8 @@ const emptyEmployee = {
 
 const emptyService = {
   name: '',
+  product_type: '',
+  product_type_id: '',
   icon: '✨',
   color: '#42A5F5',
   default_duration: 30,
@@ -34,7 +36,58 @@ const emptyService = {
   active: true
 };
 
+const emptyProductType = {
+  name: ''
+};
+
 const GRID_INTERVAL_OPTIONS = new Set([15, 30, 45, 60]);
+const PRODUCT_NAME_SEPARATOR = '::';
+
+const normalizeProductTypeName = (value) =>
+  String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ');
+
+const parseCatalogName = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw.includes(PRODUCT_NAME_SEPARATOR)) {
+    return { productType: '', itemName: raw };
+  }
+
+  const [productTypeRaw, ...rest] = raw.split(PRODUCT_NAME_SEPARATOR);
+  const productType = String(productTypeRaw || '').trim();
+  const itemName = rest.join(PRODUCT_NAME_SEPARATOR).trim();
+  return { productType, itemName: itemName || raw };
+};
+
+const buildCatalogName = ({ itemName, productType, isPedidoMode }) => {
+  const cleanItem = String(itemName || '').trim();
+  const cleanType = normalizeProductTypeName(productType);
+  if (!isPedidoMode || !cleanType) return cleanItem;
+  return `${cleanType} ${PRODUCT_NAME_SEPARATOR} ${cleanItem}`;
+};
+
+const inferProductTypesFromServices = (serviceRows) => {
+  const byName = new Map();
+
+  (serviceRows || []).forEach((service) => {
+    const parsed = parseCatalogName(service?.name);
+    const normalizedName = normalizeProductTypeName(parsed.productType);
+    if (!normalizedName) return;
+    const key = normalizeComparableText(normalizedName);
+    if (!key || byName.has(key)) return;
+
+    byName.set(key, {
+      id: `legacy:${normalizedName}`,
+      name: normalizedName,
+      active: true,
+      isLegacy: true
+    });
+  });
+
+  return Array.from(byName.values())
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+};
 
 const getValidGridInterval = (value) => {
   const minutes = Number(value) || 30;
@@ -300,7 +353,8 @@ const saveAdminServiceRecord = async ({
   accountId,
   sessionToken,
   activityDiscountCheckId,
-  companySlug
+  companySlug,
+  productTypeId
 }) => {
   const baseArgs = {
     service_id_value: serviceId,
@@ -317,7 +371,8 @@ const saveAdminServiceRecord = async ({
 
   const resultWithCheck = await supabase.rpc('save_admin_service', {
     ...baseArgs,
-    activity_discount_check_id_value: activityDiscountCheckId || null
+    activity_discount_check_id_value: activityDiscountCheckId || null,
+    product_type_id_value: productTypeId || null
   }).single();
 
   if (!resultWithCheck.error || !isMissingSaveServiceSignatureError(resultWithCheck.error)) {
@@ -415,7 +470,7 @@ const getEmployeeActivityNames = (employeeId, links, services, promotions) => {
   return [
     ...services
     .filter((service) => serviceIds.has(String(service.id)))
-    .map((service) => service.name),
+    .map((service) => parseCatalogName(service.name).itemName || service.name),
     ...promotionNames
   ].join(' · ');
 };
@@ -428,6 +483,7 @@ const serviceMatchesPayload = (service, payload) =>
   Number(service.default_duration) === Number(payload.default_duration) &&
   Number(service.base_price || 0) === Number(payload.base_price || 0) &&
   (!Object.prototype.hasOwnProperty.call(service, 'activity_discount_check_id') || String(service.activity_discount_check_id || '') === String(payload.activity_discount_check_id || '')) &&
+  (!Object.prototype.hasOwnProperty.call(service, 'product_type_id') || String(service.product_type_id || '') === String(payload.product_type_id || '')) &&
   service.active === payload.active;
 
 const employeeMatchesPayload = (employee, payload) =>
@@ -484,6 +540,7 @@ const formatSupabaseError = (error) => [
 export default function AdminPanel({ view, user, onDataChanged, adminProfileSummary = null, companySlug, companyContext }) {
   const [employees, setEmployees] = useState([]);
   const [services, setServices] = useState([]);
+  const [productTypes, setProductTypes] = useState([]);
   const [employeeServices, setEmployeeServices] = useState([]);
   const [appConfig, setAppConfig] = useState(null);
   const [promotions, setPromotions] = useState([]);
@@ -492,10 +549,13 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   const [accessRequests, setAccessRequests] = useState([]);
   const [employeeForm, setEmployeeForm] = useState(emptyEmployee);
   const [serviceForm, setServiceForm] = useState(emptyService);
+  const [productTypeForm, setProductTypeForm] = useState(emptyProductType);
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
   const [editingServiceId, setEditingServiceId] = useState(null);
+  const [editingProductTypeId, setEditingProductTypeId] = useState(null);
   const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
+  const [isProductTypeFormOpen, setIsProductTypeFormOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [emojiSearch, setEmojiSearch] = useState('');
   const emojiPickerRef = useRef(null);
@@ -508,6 +568,9 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   const [isSettlementLoading, setIsSettlementLoading] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
   const [localSettledBookingIds, setLocalSettledBookingIds] = useState([]);
+  const esModoPedido = companyContext?.configuracion_operativa?.modo_operacion === 'pedido'
+    || companyContext?.configuracion_operativa?.usa_agenda === false;
+  const canManageCatalog = user?.isLocalInternal || (user?.isInternal && user?.role === 'admin');
   const preciosHabilitados = companyContext?.configuracion_operativa?.precios_habilitados !== false;
   const descuentosHabilitados = preciosHabilitados && companyContext?.configuracion_operativa?.descuentos_habilitados !== false;
   const promocionesHabilitadas = companyContext?.configuracion_operativa?.promociones_habilitadas !== false;
@@ -521,6 +584,63 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     () => services.filter((service) => service.active !== false),
     [services]
   );
+  const productTypeOptions = useMemo(() => {
+    const normalizedMap = new Map();
+
+    productTypes.forEach((typeRow) => {
+      const normalizedName = normalizeProductTypeName(typeRow?.name);
+      const key = normalizeComparableText(normalizedName);
+      if (!key) return;
+      normalizedMap.set(key, {
+        id: String(typeRow.id),
+        name: normalizedName,
+        active: typeRow.active !== false,
+        isLegacy: false
+      });
+    });
+
+    inferProductTypesFromServices(services).forEach((legacyType) => {
+      const key = normalizeComparableText(legacyType.name);
+      if (!key || normalizedMap.has(key)) return;
+      normalizedMap.set(key, legacyType);
+    });
+
+    return Array.from(normalizedMap.values())
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  }, [productTypes, services]);
+  const productTypeById = useMemo(() => {
+    const map = new Map();
+    productTypeOptions.forEach((typeOption) => {
+      map.set(String(typeOption.id), typeOption);
+    });
+    return map;
+  }, [productTypeOptions]);
+  const selectedProductTypeId = String(serviceForm.product_type_id || '');
+  const availableProductTypeOptions = useMemo(() => productTypeOptions.filter((typeOption) => {
+    if (typeOption.active !== false) return true;
+    return String(typeOption.id) === selectedProductTypeId;
+  }), [productTypeOptions, selectedProductTypeId]);
+  const groupedServicesByType = useMemo(() => {
+    if (!esModoPedido) return [];
+
+    const groups = new Map();
+    services.forEach((service) => {
+      const parsed = parseCatalogName(service.name);
+      const typeById = service?.product_type_id ? productTypeById.get(String(service.product_type_id)) : null;
+      const resolvedType = normalizeProductTypeName(typeById?.name || parsed.productType);
+      const group = resolvedType || 'Sin tipo';
+      const rows = groups.get(group) || [];
+      rows.push({ service, parsed });
+      groups.set(group, rows);
+    });
+
+    return Array.from(groups.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+      .map(([groupName, rows]) => ({
+        groupName,
+        rows: rows.sort((a, b) => (a.parsed.itemName || '').localeCompare(b.parsed.itemName || '', 'es'))
+      }));
+  }, [services, esModoPedido, productTypeById]);
   const enabledPromotions = useMemo(
     () => promocionesHabilitadas
       ? promotions
@@ -596,6 +716,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       const localData = buildLocalAdminData();
       setEmployees(localData.employees);
       setServices(localData.services);
+      setProductTypes(inferProductTypesFromServices(localData.services));
       setEmployeeServices(localData.employeeServices);
       setAppConfig({ promotions: [], discounts: [] });
       setPromotions([]);
@@ -605,7 +726,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       return;
     }
 
-    const [adminResult, configResult] = await Promise.all([
+    const [adminResult, configResult, productTypesResult] = await Promise.all([
       supabase.rpc('get_admin_panel_data', {
         account_id_value: internalAdminAccountId,
         session_token_value: internalSessionToken,
@@ -613,6 +734,11 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
         company_slug_value: companySlug
       }),
       supabase.rpc('get_app_configuration', {
+        company_slug_value: companySlug
+      }),
+      supabase.rpc('get_admin_product_types', {
+        account_id_value: internalAdminAccountId,
+        session_token_value: internalSessionToken,
         company_slug_value: companySlug
       })
     ]);
@@ -625,8 +751,14 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       return;
     }
 
+    const serviceRows = data?.services || [];
     setEmployees(data?.employees || []);
-    setServices(data?.services || []);
+    setServices(serviceRows);
+    if (productTypesResult?.error) {
+      setProductTypes(inferProductTypesFromServices(serviceRows));
+    } else {
+      setProductTypes(Array.isArray(productTypesResult?.data) ? productTypesResult.data : []);
+    }
     setEmployeeServices(data?.employeeServices || []);
     setAppConfig(configResult.data || null);
     setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
@@ -684,6 +816,11 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     setEmojiSearch('');
   };
 
+  const resetProductTypeForm = () => {
+    setProductTypeForm(emptyProductType);
+    setEditingProductTypeId(null);
+  };
+
   const updateEmployeeField = (field, value) => {
     setEmployeeForm((current) => ({ ...current, [field]: value }));
   };
@@ -712,6 +849,19 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
 
   const updateServiceField = (field, value) => {
     setServiceForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const updateProductTypeField = (field, value) => {
+    setProductTypeForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const updateServiceProductType = (typeId) => {
+    const selectedType = productTypeById.get(String(typeId));
+    setServiceForm((current) => ({
+      ...current,
+      product_type_id: String(typeId || ''),
+      product_type: selectedType?.name || ''
+    }));
   };
 
   const selectServiceIcon = (icon) => {
@@ -850,10 +1000,19 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   };
 
   const editService = (service) => {
+    const parsedName = parseCatalogName(service.name);
+    const selectedType = service?.product_type_id ? productTypeById.get(String(service.product_type_id)) : null;
+    const resolvedTypeName = normalizeProductTypeName(selectedType?.name || parsedName.productType);
+    const masterTypeByName = productTypeOptions.find((typeOption) => !typeOption.isLegacy && normalizeComparableText(typeOption.name) === normalizeComparableText(resolvedTypeName));
+    const resolvedTypeId = selectedType?.id
+      ? String(selectedType.id)
+      : (masterTypeByName?.id ? String(masterTypeByName.id) : (resolvedTypeName ? `legacy:${resolvedTypeName}` : ''));
     setEditingServiceId(service.id);
     setIsServiceFormOpen(true);
     setServiceForm({
-      name: service.name || '',
+      name: parsedName.itemName || '',
+      product_type: resolvedTypeName,
+      product_type_id: resolvedTypeId,
       icon: service.icon || '✨',
       color: service.color || '#42A5F5',
       default_duration: service.default_duration || 30,
@@ -861,6 +1020,107 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       activity_discount_check_id: getServiceActivityCheckId(service),
       active: service.active !== false
     });
+  };
+
+  const editProductType = (typeRow) => {
+    setEditingProductTypeId(typeRow.id);
+    setIsProductTypeFormOpen(true);
+    setProductTypeForm({
+      name: typeRow.name || ''
+    });
+  };
+
+  const saveProductType = async (event) => {
+    event.preventDefault();
+
+    if (!canManageCatalog) {
+      alert('No tenés permisos para modificar tipos de producto.');
+      return;
+    }
+
+    const cleanName = normalizeProductTypeName(productTypeForm.name);
+    if (!cleanName) {
+      alert('Ingresá el nombre del tipo de producto.');
+      return;
+    }
+
+    setIsSaving(true);
+
+    const { data, error } = await supabase.rpc('save_admin_product_type', {
+      product_type_id_value: editingProductTypeId,
+      name_value: cleanName,
+      active_value: true,
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
+    }).single();
+
+    if (error) {
+      alert(`No se pudo guardar el tipo de producto:\n${formatSupabaseError(error)}`);
+      setIsSaving(false);
+      return;
+    }
+
+    setProductTypes((current) => {
+      const currentList = Array.isArray(current) ? current : [];
+      if (!editingProductTypeId) return [...currentList, data];
+      return currentList.map((item) => (String(item.id) === String(data.id) ? data : item));
+    });
+
+    setServiceForm((current) => {
+      const matchesCurrentType = normalizeComparableText(current.product_type) === normalizeComparableText(cleanName)
+        || String(current.product_type_id) === String(data.id);
+
+      if (!matchesCurrentType) return current;
+      return {
+        ...current,
+        product_type_id: String(data.id),
+        product_type: data.name
+      };
+    });
+
+    resetProductTypeForm();
+    setIsProductTypeFormOpen(false);
+    await loadAdminData();
+    onDataChanged?.();
+    setIsSaving(false);
+  };
+
+  const deleteProductType = async (typeRow) => {
+    if (!canManageCatalog) {
+      alert('No tenés permisos para eliminar tipos de producto.');
+      return;
+    }
+
+    const shouldDelete = window.confirm(`¿Eliminar el tipo de producto ${typeRow.name}?`);
+    if (!shouldDelete) return;
+
+    const { error } = await supabase.rpc('delete_admin_product_type', {
+      product_type_id_value: typeRow.id,
+      account_id_value: internalAdminAccountId,
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
+    });
+
+    if (error) {
+      alert(`No se pudo eliminar el tipo de producto:\n${formatSupabaseError(error)}`);
+      return;
+    }
+
+    if (String(serviceForm.product_type_id || '') === String(typeRow.id)) {
+      setServiceForm((current) => ({
+        ...current,
+        product_type_id: '',
+        product_type: ''
+      }));
+    }
+
+    if (String(editingProductTypeId || '') === String(typeRow.id)) {
+      resetProductTypeForm();
+    }
+
+    await loadAdminData();
+    onDataChanged?.();
   };
 
   const saveEmployee = async (event) => {
@@ -916,7 +1176,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
         photo_url_value: payload.photo_url,
         active_value: payload.active,
         is_admin_value: payload.is_admin,
-        service_ids_value: employeeForm.serviceIds,
+        service_ids_value: esModoPedido ? [] : employeeForm.serviceIds,
         account_id_value: adminAccountId,
         session_token_value: internalSessionToken,
         company_slug_value: companySlug
@@ -932,7 +1192,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
         address_number_value: payload.address_number,
         address_locality_value: payload.address_locality,
         photo_url_value: payload.photo_url,
-        service_ids_value: employeeForm.serviceIds,
+        service_ids_value: esModoPedido ? [] : employeeForm.serviceIds,
         is_admin_value: payload.is_admin,
         account_id_value: adminAccountId,
         session_token_value: internalSessionToken,
@@ -1156,13 +1416,29 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   const saveService = async (event) => {
     event.preventDefault();
 
+    if (!canManageCatalog) {
+      alert('No tenés permisos para modificar productos.');
+      return;
+    }
+
+    const selectedType = productTypeById.get(String(serviceForm.product_type_id || ''));
+    const selectedTypeName = normalizeProductTypeName(selectedType?.name || serviceForm.product_type);
+    const selectedTypeId = selectedType?.isLegacy ? null : (selectedType?.id ? Number(selectedType.id) : null);
+
+    const nombreGuardado = buildCatalogName({
+      itemName: serviceForm.name,
+      productType: selectedTypeName,
+      isPedidoMode: esModoPedido
+    });
+
     const payload = {
-      name: serviceForm.name.trim(),
+      name: nombreGuardado,
       icon: serviceForm.icon.trim() || null,
       color: serviceForm.color || '#42A5F5',
-      default_duration: snapDurationToGrid(serviceForm.default_duration, gridInterval),
+      default_duration: esModoPedido ? 30 : snapDurationToGrid(serviceForm.default_duration, gridInterval),
       base_price: preciosHabilitados ? parseMoney(serviceForm.base_price) : 0,
       activity_discount_check_id: preciosHabilitados ? serviceForm.activity_discount_check_id || '' : '',
+      product_type_id: selectedTypeId,
       active: serviceForm.active
     };
 
@@ -1172,8 +1448,13 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       return;
     }
 
-    if (!payload.name) {
-      alert('Ingresá el nombre del servicio.');
+    if (!String(serviceForm.name || '').trim()) {
+      alert(esModoPedido ? 'Ingresá el nombre del producto.' : 'Ingresá el nombre del servicio.');
+      return;
+    }
+
+    if (esModoPedido && !selectedTypeName) {
+      alert('Seleccioná un tipo de producto.');
       return;
     }
 
@@ -1201,7 +1482,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       accountId: internalAdminAccountId,
       sessionToken: internalSessionToken,
       activityDiscountCheckId: payload.activity_discount_check_id,
-      companySlug
+      companySlug,
+      productTypeId: payload.product_type_id
     });
 
     if (serviceResult.error) {
@@ -1232,7 +1514,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     setServices((currentServices) => {
       const serviceWithCheck = {
         ...serviceResult.data,
-        activity_discount_check_id: payload.activity_discount_check_id || ''
+        activity_discount_check_id: payload.activity_discount_check_id || '',
+        product_type_id: payload.product_type_id
       };
       if (editingServiceId) {
         return currentServices.map((service) =>
@@ -1251,6 +1534,11 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   };
 
   const toggleServiceStatus = async (service) => {
+    if (!canManageCatalog) {
+      alert('No tenés permisos para modificar productos.');
+      return;
+    }
+
     const nextActive = service.active === false;
     const { data: updatedService, error } = await saveAdminServiceRecord({
       serviceId: service.id,
@@ -1262,7 +1550,9 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       active: nextActive,
       accountId: internalAdminAccountId,
       sessionToken: internalSessionToken,
-      activityDiscountCheckId: getServiceActivityCheckId(service)
+      activityDiscountCheckId: getServiceActivityCheckId(service),
+      productTypeId: service.product_type_id,
+      companySlug
     });
 
     if (error) {
@@ -1280,6 +1570,11 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
   };
 
   const deleteService = async (service) => {
+    if (!canManageCatalog) {
+      alert('No tenés permisos para eliminar productos.');
+      return;
+    }
+
     const shouldDelete = window.confirm(`¿Eliminar el servicio ${service.name}?`);
     if (!shouldDelete) return;
 
@@ -1523,36 +1818,38 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                 Administrador
               </label>
 
-              <div className="admin-fieldset">
-                <div className="admin-fieldset-title">Servicios que atiende</div>
-                <div className="admin-chip-grid">
-                  {activeServices.map((service) => (
-                    <button
-                      key={service.id}
-                      type="button"
-                      className={`admin-service-chip ${employeeForm.serviceIds.includes(String(service.id)) ? 'is-selected' : ''}`}
-                      style={{ '--service-chip-color': service.color || '#3fc9d5' }}
-                      onClick={() => toggleEmployeeService(service.id)}
-                    >
-                      <ActivityIcon service={service} size="small" />
-                      {service.name}
-                    </button>
-                  ))}
-                  {promotionServices.map((promotionService) => (
-                    <button
-                      key={promotionService.id}
-                      type="button"
-                      className={`admin-service-chip admin-promotion-service-chip ${employeeForm.promotionIds.includes(promotionService.id) ? 'is-selected' : ''}`}
-                      style={{ '--service-chip-color': promotionService.color }}
-                      title="Promoción asignable desde la agenda"
-                      onClick={() => toggleEmployeePromotion(promotionService.id)}
-                    >
-                      <ActivityIcon service={promotionService} size="small" />
-                      {promotionService.name}
-                    </button>
-                  ))}
+              {!esModoPedido && (
+                <div className="admin-fieldset">
+                  <div className="admin-fieldset-title">Servicios que atiende</div>
+                  <div className="admin-chip-grid">
+                    {activeServices.map((service) => (
+                      <button
+                        key={service.id}
+                        type="button"
+                        className={`admin-service-chip ${employeeForm.serviceIds.includes(String(service.id)) ? 'is-selected' : ''}`}
+                        style={{ '--service-chip-color': service.color || '#3fc9d5' }}
+                        onClick={() => toggleEmployeeService(service.id)}
+                      >
+                        <ActivityIcon service={service} size="small" />
+                        {parseCatalogName(service.name).itemName || service.name}
+                      </button>
+                    ))}
+                    {promotionServices.map((promotionService) => (
+                      <button
+                        key={promotionService.id}
+                        type="button"
+                        className={`admin-service-chip admin-promotion-service-chip ${employeeForm.promotionIds.includes(promotionService.id) ? 'is-selected' : ''}`}
+                        style={{ '--service-chip-color': promotionService.color }}
+                        title="Promoción asignable desde la agenda"
+                        onClick={() => toggleEmployeePromotion(promotionService.id)}
+                      >
+                        <ActivityIcon service={promotionService} size="small" />
+                        {promotionService.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="admin-actions">
                 <button className="agenda-close-button" type="submit" disabled={isSaving} aria-label={editingEmployeeId ? 'Guardar empleado' : 'Crear empleado'} title={editingEmployeeId ? 'Guardar empleado' : 'Crear empleado'}>
@@ -1574,11 +1871,6 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                     {employee.photo_url ? <img src={employee.photo_url} alt="" /> : (employee.name || 'E').slice(0, 1).toUpperCase()}
                   </span>
                   <strong>{employee.name}</strong>
-                  {preciosHabilitados && (
-                    <button className="employee-header-settlement-button" type="button" onClick={() => openSettlement(employee)} aria-label={`Rendición de ${employee.name}`} title="Rendición">
-                      Rendición
-                    </button>
-                  )}
                 </div>
                 <div className="admin-record-main admin-management-card-main">
                   <div className="admin-management-card-fields">
@@ -1697,8 +1989,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     <section className="admin-shell service-admin-manager">
       <div className="admin-page-heading">
         <div>
-          <h1>Administración de servicios</h1>
-          <p>Configurá servicios, colores y disponibilidad operativa.</p>
+          <h1>{esModoPedido ? 'Administración de productos' : 'Administración de servicios'}</h1>
+          <p>{esModoPedido ? 'Configurá productos, tipos y disponibilidad comercial.' : 'Configurá servicios, colores y disponibilidad operativa.'}</p>
         </div>
         {adminProfileSummary}
       </div>
@@ -1710,10 +2002,10 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       </div>
 
       <div className="admin-metric-grid service-metric-grid" aria-label="Resumen de servicios">
-        <MetricCard label="Servicios" value={services.length} hint="Total configuradas." />
-        <MetricCard label="Activas" value={services.filter((service) => service.active !== false).length} hint="Disponibles para turnos." />
+        <MetricCard label={esModoPedido ? 'Productos' : 'Servicios'} value={services.length} hint={esModoPedido ? 'Total configurados.' : 'Total configuradas.'} />
+        <MetricCard label="Activas" value={services.filter((service) => service.active !== false).length} hint={esModoPedido ? 'Disponibles para pedidos.' : 'Disponibles para turnos.'} />
         <MetricCard label="Pausadas" value={services.filter((service) => service.active === false).length} hint="Ocultas temporalmente." />
-        <MetricCard label="Asignaciones" value={employeeServices.length} hint="Empleado por servicio." />
+        <MetricCard label="Asignaciones" value={employeeServices.length} hint={esModoPedido ? 'Empleado por producto.' : 'Empleado por servicio.'} />
         {preciosHabilitados && (
           <MetricCard
             label={getCurrentMonthName()}
@@ -1731,46 +2023,64 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       <div className="admin-hero service-legacy-heading">
         <div>
           <span className="admin-kicker">ABM</span>
-          <h1>Servicios</h1>
+          <h1>{esModoPedido ? 'Productos' : 'Servicios'}</h1>
         </div>
       </div>
 
-      <div className="admin-layout">
-        <FormCard
-          title={editingServiceId ? 'Editar servicio' : 'Nuevo servicio'}
-          className="service-form-card"
-          headerClassName="admin-collapsible-form-header"
-          bodyClassName="admin-collapsible-form-body"
-          isOpen={isServiceFormOpen}
-          onToggle={() => setIsServiceFormOpen((current) => !current)}
-          toggleLabel={isServiceFormOpen ? 'Ocultar formulario de servicio' : 'Mostrar formulario de servicio'}
-          onSubmit={saveService}
-        >
+      <div className={`admin-layout ${canManageCatalog ? '' : 'is-readonly-catalog'}`}>
+        {canManageCatalog && (
+        <div className="service-admin-forms-column">
+          <FormCard
+            title={editingServiceId ? (esModoPedido ? 'Editar producto' : 'Editar servicio') : (esModoPedido ? 'Nuevo producto' : 'Nuevo servicio')}
+            className="service-form-card"
+            headerClassName="admin-collapsible-form-header"
+            bodyClassName="admin-collapsible-form-body"
+            isOpen={isServiceFormOpen}
+            onToggle={() => setIsServiceFormOpen((current) => !current)}
+            toggleLabel={isServiceFormOpen ? 'Ocultar formulario de servicio' : 'Mostrar formulario de servicio'}
+            onSubmit={saveService}
+          >
             <label>
               Nombre
-              <input value={serviceForm.name} onChange={(event) => updateServiceField('name', event.target.value)} placeholder="Peluquería" />
+              <input value={serviceForm.name} onChange={(event) => updateServiceField('name', event.target.value)} placeholder={esModoPedido ? 'Carne cortada a cuchillo' : 'Peluquería'} />
             </label>
 
-            <label>
-              Duración
-              <select
-                value={snapDurationToGrid(serviceForm.default_duration, gridInterval)}
-                onChange={(event) => updateServiceField('default_duration', Number(event.target.value))}
-              >
-                {durationOptions.map((minutes) => {
-                  const fractions = minutes / gridInterval;
-                  return (
-                    <option key={minutes} value={minutes}>
-                      {formatDurationLabel(minutes)} ({fractions} {fractions === 1 ? 'casilla' : 'casillas'})
+            {esModoPedido && (
+              <label>
+                Tipo de producto
+                <select value={serviceForm.product_type_id || ''} onChange={(event) => updateServiceProductType(event.target.value)}>
+                  <option value="">Seleccionar tipo</option>
+                  {availableProductTypeOptions.map((typeOption) => (
+                    <option key={typeOption.id} value={typeOption.id}>
+                      {typeOption.name}{typeOption.active === false ? ' (inactivo)' : ''}
                     </option>
-                  );
-                })}
-              </select>
-            </label>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {!esModoPedido && (
+              <label>
+                Duración
+                <select
+                  value={snapDurationToGrid(serviceForm.default_duration, gridInterval)}
+                  onChange={(event) => updateServiceField('default_duration', Number(event.target.value))}
+                >
+                  {durationOptions.map((minutes) => {
+                    const fractions = minutes / gridInterval;
+                    return (
+                      <option key={minutes} value={minutes}>
+                        {formatDurationLabel(minutes)} ({fractions} {fractions === 1 ? 'casilla' : 'casillas'})
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+            )}
 
             {preciosHabilitados && (
               <label>
-                Precio base
+                {esModoPedido ? 'Precio unitario' : 'Precio base'}
                 <input type="text" inputMode="decimal" value={serviceForm.base_price} onChange={(event) => updateServiceField('base_price', event.target.value)} placeholder="20000" />
               </label>
             )}
@@ -1789,11 +2099,17 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
 
             <label className="admin-switch-row">
               <input type="checkbox" checked={serviceForm.active} onChange={(event) => updateServiceField('active', event.target.checked)} />
-              Servicio activo
+              {esModoPedido ? 'Producto activo' : 'Servicio activo'}
             </label>
 
             <div className="admin-actions">
-              <button className="agenda-close-button" type="submit" disabled={isSaving} aria-label={editingServiceId ? 'Guardar servicio' : 'Crear servicio'} title={editingServiceId ? 'Guardar servicio' : 'Crear servicio'}>
+              <button
+                className="agenda-close-button"
+                type="submit"
+                disabled={isSaving}
+                aria-label={editingServiceId ? (esModoPedido ? 'Guardar producto' : 'Guardar servicio') : (esModoPedido ? 'Crear producto' : 'Crear servicio')}
+                title={editingServiceId ? (esModoPedido ? 'Guardar producto' : 'Guardar servicio') : (esModoPedido ? 'Crear producto' : 'Crear servicio')}
+              >
                 {editingServiceId ? 'Guardar' : 'Crear'}
               </button>
               {editingServiceId && (
@@ -1802,10 +2118,109 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
                 </button>
               )}
             </div>
-        </FormCard>
+          </FormCard>
+
+          {esModoPedido && (
+            <FormCard
+              title={editingProductTypeId ? 'Editar tipo de producto' : 'ABM Tipo Producto'}
+              className="service-form-card"
+              headerClassName="admin-collapsible-form-header"
+              bodyClassName="admin-collapsible-form-body"
+              isOpen={isProductTypeFormOpen}
+              onToggle={() => setIsProductTypeFormOpen((current) => !current)}
+              toggleLabel={isProductTypeFormOpen ? 'Ocultar formulario de tipo de producto' : 'Mostrar formulario de tipo de producto'}
+              onSubmit={saveProductType}
+            >
+            <label>
+              Nombre del tipo
+              <input
+                value={productTypeForm.name}
+                onChange={(event) => updateProductTypeField('name', event.target.value)}
+                placeholder="Empanadas"
+              />
+            </label>
+
+            <div className="admin-actions">
+              <button
+                className="agenda-close-button"
+                type="submit"
+                disabled={isSaving}
+                aria-label={editingProductTypeId ? 'Guardar tipo de producto' : 'Crear tipo de producto'}
+                title={editingProductTypeId ? 'Guardar tipo de producto' : 'Crear tipo de producto'}
+              >
+                {editingProductTypeId ? 'Guardar' : 'Crear'}
+              </button>
+              {editingProductTypeId && (
+                <button className="agenda-option-button" type="button" onClick={resetProductTypeForm} aria-label="Cancelar edición" title="Cancelar edición">
+                  Limpiar
+                </button>
+              )}
+            </div>
+
+            <div className="admin-list service-record-list service-button-grid product-type-list-grid" style={{ marginTop: '0.8rem' }}>
+              {productTypeOptions.length === 0 && (
+                <div className="agenda-empty-state">No hay tipos de producto creados.</div>
+              )}
+              <ul className="catalog-list" aria-label="Tipos de producto">
+                {productTypeOptions.map((typeRow) => (
+                  <li key={typeRow.id} className="catalog-row">
+                    <div className="catalog-row-main">
+                      <span className="catalog-row-name">{typeRow.name}</span>
+                    </div>
+                    <div className="catalog-row-actions">
+                      <button
+                        className="agenda-close-button service-card-action catalog-icon-action"
+                        type="button"
+                        onClick={() => (typeRow.isLegacy ? null : editProductType(typeRow))}
+                        disabled={typeRow.isLegacy}
+                        aria-label="Editar tipo de producto"
+                        title={typeRow.isLegacy ? 'Editá desde SQL migrando a tabla maestra' : 'Editar tipo de producto'}
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="agenda-danger-button service-card-action catalog-icon-action"
+                        type="button"
+                        onClick={() => (typeRow.isLegacy ? null : deleteProductType(typeRow))}
+                        disabled={typeRow.isLegacy}
+                        aria-label="Eliminar tipo de producto"
+                        title={typeRow.isLegacy ? 'No se puede eliminar un tipo legacy' : 'Eliminar tipo de producto'}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            </FormCard>
+          )}
+        </div>
+        )}
 
         <div className="admin-list service-record-list service-button-grid">
-          {services.map((service) => {
+          {esModoPedido && !canManageCatalog && (
+            <div className="service-group-block">
+              <div className="catalog-group-title">Tipos de producto</div>
+              <ul className="catalog-list" aria-label="Tipos de producto">
+                {productTypeOptions.length === 0 ? (
+                  <li className="catalog-row">
+                    <div className="catalog-row-main">
+                      <span className="catalog-row-meta">No hay tipos de producto creados.</span>
+                    </div>
+                  </li>
+                ) : productTypeOptions.map((typeRow) => (
+                  <li className="catalog-row" key={typeRow.id}>
+                    <div className="catalog-row-main">
+                      <span className="catalog-row-name">{typeRow.name}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {!esModoPedido && services.map((service) => {
             const activityCheckId = getServiceActivityCheckId(service);
             const activityCheck = activityDiscountChecks.find((discount) => String(discount.id) === String(activityCheckId));
 
@@ -1856,6 +2271,40 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
               </article>
             );
           })}
+          {esModoPedido && groupedServicesByType.map((group) => (
+            <div key={group.groupName} className="service-group-block">
+              <div className="catalog-group-title">{group.groupName}</div>
+              <ul className="catalog-list" aria-label={`Productos tipo ${group.groupName}`}>
+              {group.rows.map(({ service, parsed }) => {
+                const activityCheckId = getServiceActivityCheckId(service);
+                const activityCheck = activityDiscountChecks.find((discount) => String(discount.id) === String(activityCheckId));
+                return (
+                  <li className={`catalog-row ${service.active === false ? 'is-muted' : ''}`} key={service.id}>
+                    <div className="catalog-row-main">
+                      <span className="catalog-row-color" style={{ background: service.color || '#174c55' }} aria-hidden="true" />
+                      <span className="catalog-row-name">{parsed.itemName || service.name}</span>
+                      {preciosHabilitados && <span className="catalog-row-meta catalog-row-meta-price">{formatMoney(service.base_price)}</span>}
+                      {activityCheckId && <span className="catalog-row-meta catalog-row-meta-check">Check: {activityCheck?.name || 'Configurado'}</span>}
+                    </div>
+                    {canManageCatalog && (
+                    <div className="catalog-row-actions">
+                      <button className="agenda-close-button service-card-action catalog-icon-action" type="button" onClick={() => editService(service)} aria-label="Editar producto" title="Editar producto">
+                        ✏️
+                      </button>
+                      <button className="agenda-option-button service-card-action catalog-icon-action" type="button" onClick={() => toggleServiceStatus(service)} aria-label={service.active === false ? 'Activar producto' : 'Desactivar producto'} title={service.active === false ? 'Activar producto' : 'Desactivar producto'}>
+                        {service.active === false ? '▶️' : '⏸️'}
+                      </button>
+                      <button className="agenda-danger-button service-card-action catalog-icon-action" type="button" onClick={() => deleteService(service)} aria-label="Eliminar producto" title="Eliminar producto">
+                        🗑️
+                      </button>
+                    </div>
+                    )}
+                  </li>
+                );
+              })}
+              </ul>
+            </div>
+          ))}
           {promotionServices.map((promotionService) => (
             <article className="admin-record-card service-record-card promotion-record-card" key={promotionService.id}>
               <div className="admin-management-card-header" style={{ '--admin-management-card-color': promotionService.color || '#174c55' }}>

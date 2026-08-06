@@ -214,6 +214,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const [detailBookingId, setDetailBookingId] = useState(null);
   const [selectedUpcomingDate, setSelectedUpcomingDate] = useState(null);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [pedidoDiaOffset, setPedidoDiaOffset] = useState(0);
 
   const employeeId = user?.employeeId;
   const effectiveCompanyContext = useMemo(() => {
@@ -225,6 +226,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       configuracion_operativa: appConfig.configuracion_operativa || companyContext?.configuracion_operativa || {}
     };
   }, [appConfig, companyContext]);
+  const esModoPedido = effectiveCompanyContext?.configuracion_operativa?.modo_operacion === 'pedido'
+    || effectiveCompanyContext?.configuracion_operativa?.usa_agenda === false;
   const preciosHabilitados = effectiveCompanyContext?.configuracion_operativa?.precios_habilitados !== false;
   const empleadosPuedenReservar = effectiveCompanyContext?.configuracion_operativa?.empleados_pueden_reservar !== false;
 
@@ -617,6 +620,22 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     [visibleUpcomingBookings, selectedUpcomingDate]
   );
 
+  const fechaPedidoSeleccionada = useMemo(() => {
+    const base = addDays(new Date(), pedidoDiaOffset);
+    base.setHours(0, 0, 0, 0);
+    return base;
+  }, [pedidoDiaOffset]);
+
+  const isoFechaPedidoSeleccionada = useMemo(() => getDateKey(fechaPedidoSeleccionada), [fechaPedidoSeleccionada]);
+
+  const pedidosAgendaRows = useMemo(() => bookings
+    .filter((booking) => !isCancelledBooking(booking))
+    .filter((booking) => {
+      const bookingDateKey = getDateKey(booking.start_at || booking.created_at);
+      return bookingDateKey === isoFechaPedidoSeleccionada;
+    })
+    .sort((left, right) => parseDate(left.created_at || left.start_at) - parseDate(right.created_at || right.start_at)), [bookings, isoFechaPedidoSeleccionada]);
+
   const todayBookings = useMemo(
     () => activeUpcomingBookings.filter((booking) => isToday(booking.start_at)),
     [activeUpcomingBookings]
@@ -625,8 +644,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   const detailBooking = useMemo(
     () => (detailBookingId == null
       ? null
-      : visibleUpcomingBookings.find((booking) => String(booking.id) === String(detailBookingId)) || null),
-    [detailBookingId, visibleUpcomingBookings]
+      : bookings.find((booking) => String(booking.id) === String(detailBookingId)) || null),
+    [detailBookingId, bookings]
   );
 
   const activeAvailability = useMemo(
@@ -698,6 +717,32 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       total: summary.total + Number(closedBookingAmounts[booking.id] || 0)
     }), { count: 0, total: 0 });
   }, [bookings, closedBookingAmounts]);
+
+  const pedidosNoCancelados = useMemo(
+    () => bookings.filter((booking) => !isCancelledBooking(booking)),
+    [bookings]
+  );
+
+  const pedidosCerrados = useMemo(
+    () => pedidosNoCancelados.filter((booking) => isClosedBooking(booking)),
+    [pedidosNoCancelados]
+  );
+
+  const totalMonetarioPedidos = useMemo(() => pedidosNoCancelados.reduce((total, booking) => {
+    const closedValue = Number(closedBookingAmounts[booking.id] || 0);
+    if (closedValue > 0) return total + closedValue;
+
+    const itemPrice = Number(booking?.item_price || 0);
+    if (itemPrice > 0) return total + itemPrice;
+
+    const totalAmount = Number(booking?.total_amount || 0);
+    if (totalAmount > 0) return total + totalAmount;
+
+    const price = Number(booking?.price || 0);
+    if (price > 0) return total + price;
+
+    return total;
+  }, 0), [pedidosNoCancelados, closedBookingAmounts]);
 
   const activityRows = useMemo(() => [...bookings]
     .sort((left, right) => parseDate(right.start_at) - parseDate(left.start_at)), [bookings]);
@@ -908,15 +953,25 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       {activeView === 'summary' && (
         <>
           <div className="employee-summary-grid">
-            <MetricCard label="Hoy" value={todayBookings.length} hint="turno(s) asignado(s)" />
-            <MetricCard label="Próximos" value={activeUpcomingBookings.length} hint="turno(s) activos" />
+            {esModoPedido ? (
+              <>
+                <MetricCard label="Pedidos" value={pedidosNoCancelados.length} hint="totales no cancelados" />
+                <MetricCard label="Cerrados" value={pedidosCerrados.length} hint="pedidos finalizados" />
+                <MetricCard label="Valor total" value={formatMoney(totalMonetarioPedidos)} hint="suma monetaria de pedidos" />
+              </>
+            ) : (
+              <>
+                <MetricCard label="Hoy" value={todayBookings.length} hint="turno(s) asignado(s)" />
+                <MetricCard label="Próximos" value={activeUpcomingBookings.length} hint="turno(s) activos" />
+              </>
+            )}
             <MetricCard
               label="Disponibilidad"
               value={availabilityDayCount}
               hint={todayAvailabilityLabel}
               variant="availability"
             />
-            {preciosHabilitados && (
+            {preciosHabilitados && !esModoPedido && (
               <>
                 <MetricCard
                   label="Pendiente cobro"
@@ -928,12 +983,12 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                     <div className="employee-closed-week-row is-current">
                       <span>Esta semana</span>
                       <strong>{formatMoney(weeklyClosedSummary.current.total)}</strong>
-                      <small>{weeklyClosedSummary.current.count} turnos</small>
+                      <small>{weeklyClosedSummary.current.count} {esModoPedido ? 'pedidos' : 'turnos'}</small>
                     </div>
                     <div className="employee-closed-week-row">
                       <span>Semana anterior</span>
                       <strong>{formatMoney(weeklyClosedSummary.previous.total)}</strong>
-                      <small>{weeklyClosedSummary.previous.count} turnos</small>
+                      <small>{weeklyClosedSummary.previous.count} {esModoPedido ? 'pedidos' : 'turnos'}</small>
                     </div>
                   </div>
                 </MetricCard>
@@ -946,14 +1001,14 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
               <div className="employee-card-header employee-upcoming-header">
                 <div className="employee-upcoming-header-top">
                   <div>
-                    <p className="admin-kicker">Agenda</p>
-                    <h2>Próximos turnos</h2>
+                    <p className="admin-kicker">{esModoPedido ? 'Pedidos' : 'Agenda'}</p>
+                    <h2>{esModoPedido ? 'Próximos pedidos' : 'Próximos turnos'}</h2>
                   </div>
                   <button
                     className="admin-link-button employee-upcoming-refresh"
                     type="button"
                     onClick={refreshEmployeeWorkspace}
-                    title="Actualizar turnos"
+                    title={esModoPedido ? 'Actualizar pedidos' : 'Actualizar turnos'}
                   >
                     Actualizar
                   </button>
@@ -1009,7 +1064,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
 
               <div className="employee-upcoming-list">
                 {filteredUpcomingBookings.length === 0 ? (
-                  <div className="employee-empty-line">No tenés turnos próximos asignados.</div>
+                  <div className="employee-empty-line">No tenés {esModoPedido ? 'pedidos' : 'turnos'} próximos asignados.</div>
                 ) : filteredUpcomingBookings.map((booking) => {
                   const service = getServiceForBooking(booking, services);
                   const bookingTitle = getBookingTitle(booking, service);
@@ -1044,7 +1099,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                         type="button"
                         className="employee-upcoming-row-arrow"
                         onClick={() => setDetailBookingId(booking.id)}
-                        aria-label={`Ver detalle del turno de ${customerFields.name}`}
+                        aria-label={`Ver detalle del ${esModoPedido ? 'pedido' : 'turno'} de ${customerFields.name}`}
                         title="Ver detalle"
                       >
                         ›
@@ -1058,7 +1113,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         </>
       )}
 
-      {activeView === 'agenda' && (
+      {activeView === 'agenda' && !esModoPedido && (
         <article className="employee-card employee-agenda-card">
           <AgendaGrid
             user={user}
@@ -1071,6 +1126,91 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
             companyContext={effectiveCompanyContext}
             onRequestNewBooking={onRequestNewBooking && empleadosPuedenReservar ? onRequestNewBooking : undefined}
           />
+        </article>
+      )}
+
+      {activeView === 'agenda' && esModoPedido && (
+        <article className="employee-card">
+          <div className="employee-card-header employee-upcoming-header">
+            <div className="employee-upcoming-header-top">
+              <div>
+                <p className="admin-kicker">Pedidos</p>
+                <h2>Listado cronológico</h2>
+              </div>
+              <div className="employee-top-actions-inline">
+                <button
+                  className="admin-link-button employee-upcoming-refresh"
+                  type="button"
+                  onClick={() => setPedidoDiaOffset(0)}
+                  title="Ir a hoy"
+                >
+                  Hoy
+                </button>
+                <button
+                  className="admin-link-button employee-upcoming-refresh"
+                  type="button"
+                  onClick={refreshEmployeeWorkspace}
+                  title="Actualizar pedidos"
+                >
+                  Actualizar
+                </button>
+              </div>
+            </div>
+            <div className="employee-upcoming-date-filter" aria-label="Navegación por día">
+              <button
+                type="button"
+                className="employee-date-nav"
+                onClick={() => setPedidoDiaOffset((value) => value - 1)}
+                aria-label="Día anterior"
+                title="Día anterior"
+              >
+                ‹
+              </button>
+              <button type="button" className="employee-date-chip is-selected" onClick={() => {}}>
+                <span className="employee-date-chip-day">{formatDate(fechaPedidoSeleccionada)}</span>
+              </button>
+              <button
+                type="button"
+                className="employee-date-nav"
+                onClick={() => setPedidoDiaOffset((value) => value + 1)}
+                aria-label="Día siguiente"
+                title="Día siguiente"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+
+          <div className="employee-upcoming-list">
+            {pedidosAgendaRows.length === 0 ? (
+              <div className="employee-empty-line">No hay pedidos para este día.</div>
+            ) : pedidosAgendaRows.map((booking) => {
+              const service = getServiceForBooking(booking, services);
+              const bookingTitle = getBookingTitle(booking, service);
+              const customerFields = getCustomerFields(booking);
+
+              return (
+                <div className="employee-upcoming-row" key={booking.id}>
+                  <button
+                    type="button"
+                    className="employee-upcoming-row-main"
+                    onClick={() => setDetailBookingId(booking.id)}
+                  >
+                    <span className="employee-upcoming-row-info">
+                      <span className="employee-upcoming-row-title">{bookingTitle}</span>
+                      <span className="employee-upcoming-row-client">{customerFields.name}</span>
+                      <span className="employee-upcoming-row-date">
+                        Creado {formatTime(booking.created_at || booking.start_at)} · Entrega {formatDate(booking.start_at)} · {formatTime(booking.start_at)}-{formatTime(booking.end_at)}
+                      </span>
+                    </span>
+                    <span className="employee-upcoming-row-badges">
+                      <span className="employee-upcoming-row-kind employee-upcoming-row-kind-servicio">Pedido</span>
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </article>
       )}
 
@@ -1145,13 +1285,13 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
           <article className="employee-card employee-profile-activity-card">
             <div className="employee-card-header">
               <div>
-                <p className="admin-kicker">Mis actividades</p>
-                <h2>Turnos realizados</h2>
+                <p className="admin-kicker">{esModoPedido ? 'Historial de pedidos' : 'Mis actividades'}</p>
+                <h2>{esModoPedido ? 'Pedidos realizados' : 'Turnos realizados'}</h2>
               </div>
               <span>{visibleActivityRows.length}</span>
             </div>
 
-            <div className="employee-activity-filter-row" aria-label="Filtro de historial de turnos">
+            <div className="employee-activity-filter-row" aria-label={`Filtro de historial de ${esModoPedido ? 'pedidos' : 'turnos'}`}>
               <div className="employee-activity-filter-tabs" role="tablist" aria-label="Rango">
                 <button
                   type="button"
@@ -1198,7 +1338,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                     <small className={isClosed ? 'is-muted' : 'is-active'}>{isClosed ? 'Cerrado' : 'Asignado'}</small>
                   </div>
                 );
-              }) : <div className="employee-empty-line">No hay turnos para el rango seleccionado.</div>}
+              }) : <div className="employee-empty-line">No hay {esModoPedido ? 'pedidos' : 'turnos'} para el rango seleccionado.</div>}
             </div>
           </article>
 
@@ -1206,8 +1346,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
             <article className="employee-card employee-profile-payments-card">
               <div className="employee-card-header">
                 <div>
-                  <p className="admin-kicker">Cobros</p>
-                  <h2>Historial de cobros</h2>
+                  <p className="admin-kicker">{esModoPedido ? 'Cobros de pedidos' : 'Cobros'}</p>
+                  <h2>{esModoPedido ? 'Historial de cobros de pedidos' : 'Historial de cobros'}</h2>
                 </div>
                 <span>{paymentHistoryRows.length}</span>
               </div>
@@ -1218,7 +1358,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                       <button className="agenda-week-button" type="button" onClick={goToPreviousPaymentWeek} disabled={!canGoToPreviousPaymentWeek} aria-label="Semana anterior">←</button>
                       <div>
                         <strong>Semana del {selectedPaymentWeek.label}</strong>
-                        <span>{selectedPaymentWeek.rows.length} turno(s)</span>
+                        <span>{selectedPaymentWeek.rows.length} {esModoPedido ? 'pedido(s)' : 'turno(s)'}</span>
                       </div>
                       <button className="agenda-week-button" type="button" onClick={goToNextPaymentWeek} disabled={!canGoToNextPaymentWeek} aria-label="Semana siguiente">→</button>
                     </div>
@@ -1242,15 +1382,15 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
                             <span>{formatDate(booking.start_at)} · {getCustomerFields(booking).name}</span>
                           </div>
                           <div className="employee-payment-amounts">
-                            <span>Total cobrado <strong>{formatMoney(amount)}</strong></span>
+                            <span>{esModoPedido ? 'Total cobrado del pedido' : 'Total cobrado'} <strong>{formatMoney(amount)}</strong></span>
                             {employeeAmount != null ? <span>Empleado <strong>{formatMoney(employeeAmount)}</strong></span> : <span>Rendición <strong>Pendiente</strong></span>}
                             {companyAmount != null && <span>Empresa <strong>{formatMoney(companyAmount)}</strong></span>}
                           </div>
                         </div>
                       );
-                    }) : <div className="employee-empty-line">No hay cobros registrados en esta semana.</div>}
+                    }) : <div className="employee-empty-line">No hay {esModoPedido ? 'cobros de pedidos' : 'cobros'} registrados en esta semana.</div>}
                   </section>
-                ) : <div className="employee-empty-line">Todavía no tenés cobros registrados.</div>}
+                ) : <div className="employee-empty-line">Todavía no tenés {esModoPedido ? 'cobros de pedidos' : 'cobros'} registrados.</div>}
               </div>
             </article>
           )}
@@ -1287,7 +1427,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
             <div className="employee-booking-detail-modal" onClick={(event) => event.stopPropagation()}>
               <header className="employee-booking-detail-header">
                 <div>
-                  <p className="admin-kicker">Detalle del turno</p>
+                  <p className="admin-kicker">Detalle del {esModoPedido ? 'pedido' : 'turno'}</p>
                   <h2>{bookingTitle}</h2>
                 </div>
                 <button
