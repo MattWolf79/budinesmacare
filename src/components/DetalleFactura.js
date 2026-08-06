@@ -36,7 +36,7 @@ const formatFiscalId = (value) => {
   return cleanValue || 'No informado';
 };
 
-export const generateDetalleFacturaPdf = async ({ companyContext, clientName, clientEmail, items, discountDetails = [], surchargeDetails = [], totals, fiscalInfo = null, fiscalQrPayload = null, payments, paymentCoverage = [], invoiceDate: providedInvoiceDate, invoiceNumber: providedInvoiceNumber }) => {
+export const generateDetalleFacturaPdf = async ({ companyContext, isPedidoMode = false, isNoCostClosure = false, clientName, clientEmail, items, discountDetails = [], surchargeDetails = [], totals, fiscalInfo = null, fiscalQrPayload = null, payments, paymentCoverage = [], invoiceDate: providedInvoiceDate, invoiceNumber: providedInvoiceNumber }) => {
   if (!items?.length) return alert('Seleccioná al menos un turno para facturar.');
 
   const { jsPDF } = await import('jspdf');
@@ -56,6 +56,111 @@ export const generateDetalleFacturaPdf = async ({ companyContext, clientName, cl
   const margin = 14;
   let currentY = 18;
   const companyNameLines = doc.splitTextToSize(companyName, 74);
+
+  if (isPedidoMode) {
+    const firstCreatedAt = items
+      .map((item) => item?.createdAt)
+      .filter(Boolean)
+      .sort((left, right) => parseBookingDate(left) - parseBookingDate(right))[0] || providedInvoiceDate || new Date();
+    const firstDeliveryAt = items
+      .map((item) => item?.startAt)
+      .filter(Boolean)
+      .sort((left, right) => parseBookingDate(left) - parseBookingDate(right))[0] || new Date();
+    const requestedShippingDate = formatDisplayDate(firstDeliveryAt);
+    const orderCreatedDate = formatDisplayDate(firstCreatedAt);
+    const safeClientContact = clientEmail || items.find((item) => item?.customerPhone)?.customerPhone || 'No informado';
+    const groupedItems = Object.values(items.reduce((accumulator, item) => {
+      const key = normalizeComparableText(item?.serviceName || 'Producto');
+      const current = accumulator[key] || {
+        serviceName: item?.serviceName || 'Producto',
+        quantity: 0,
+        total: 0
+      };
+
+      current.quantity += 1;
+      current.total += Number(item?.basePrice ?? item?.subtotal ?? 0);
+      accumulator[key] = current;
+      return accumulator;
+    }, {}));
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('COMPROBANTE DE PEDIDO', margin, currentY);
+    doc.setFontSize(13);
+    doc.text(companyNameLines, 196, currentY, { align: 'right' });
+
+    currentY += Math.max(12, companyNameLines.length * 5 + 2);
+    doc.setDrawColor(56, 95, 140);
+    doc.line(margin, currentY, 196, currentY);
+    currentY += 8;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Cliente', margin, currentY);
+    doc.text('Fecha pedido', 98, currentY);
+    doc.text('Fecha solicitada de envio', 142, currentY);
+    currentY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.text(doc.splitTextToSize(clientName || 'Cliente sin datos', 74), margin, currentY);
+    doc.text(doc.splitTextToSize(safeClientContact, 40), margin, currentY + 5);
+    doc.text(orderCreatedDate, 98, currentY);
+    doc.text(requestedShippingDate, 142, currentY);
+    doc.text(`Nro: ${invoiceNumber}`, 196, currentY, { align: 'right' });
+
+    currentY += 16;
+    doc.setDrawColor(120, 150, 185);
+    doc.rect(margin, currentY, 182, 9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ITEM', margin + 3, currentY + 6);
+    doc.text('DETALLE', margin + 26, currentY + 6);
+    doc.text('CANTIDAD', 158, currentY + 6, { align: 'right' });
+    if (!isNoCostClosure) {
+      doc.text('TOTAL', 192, currentY + 6, { align: 'right' });
+    }
+    currentY += 9;
+    doc.setFont('helvetica', 'normal');
+
+    groupedItems.forEach((item, index) => {
+      doc.rect(margin, currentY, 182, 10);
+      doc.text(String(index + 1), margin + 3, currentY + 6.5);
+      doc.text(doc.splitTextToSize(item.serviceName, 112), margin + 26, currentY + 4.5);
+      doc.text(String(item.quantity), 158, currentY + 6.5, { align: 'right' });
+      if (!isNoCostClosure) {
+        doc.text(formatMoney(item.total), 192, currentY + 6.5, { align: 'right' });
+      }
+      currentY += 10;
+    });
+
+    if (!isNoCostClosure) {
+      currentY += 8;
+      const totalsX = 196;
+      const labelX = 110;
+      doc.setFont('helvetica', 'normal');
+      doc.text('Subtotal pedido', labelX, currentY);
+      doc.text(formatMoney(totals.grossTotal), totalsX, currentY, { align: 'right' });
+      currentY += 6;
+
+      discountDetails.filter((item) => item.amount > 0).forEach((discountDetail) => {
+        doc.text(doc.splitTextToSize(discountDetail.label, 80), labelX, currentY);
+        doc.text(`-${formatMoney(discountDetail.amount)}`, totalsX, currentY, { align: 'right' });
+        currentY += 6;
+      });
+      surchargeDetails.filter((item) => item.amount > 0).forEach((surchargeDetail) => {
+        doc.text(doc.splitTextToSize(surchargeDetail.label, 80), labelX, currentY);
+        doc.text(`+${formatMoney(surchargeDetail.amount)}`, totalsX, currentY, { align: 'right' });
+        currentY += 6;
+      });
+
+      doc.setFillColor(239, 246, 255);
+      doc.rect(104, currentY - 4, 92, 9, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL', labelX, currentY + 1);
+      doc.text(formatMoney(totals.finalTotal), totalsX, currentY + 1, { align: 'right' });
+    }
+
+    doc.save(`factura-pedido-${normalizeComparableText(safeClientName).replace(/[^a-z0-9]+/g, '-') || 'cliente'}-${invoiceNumber}.pdf`);
+    return;
+  }
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);

@@ -41,8 +41,35 @@ const getBookingCardTitle = (booking, service) => (
   String(booking.booking_description || service?.name || 'Servicio').split('·')[0].trim() || 'Servicio'
 );
 
+const resolverModoPedido = (configuracionOperativa = {}) => (
+  configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false
+);
+
+const getFechaActual = () => {
+  const ahora = new Date();
+  return `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}`;
+};
+
+const getHoraActual = () => {
+  const ahora = new Date();
+  return `${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
+};
+
+const PRODUCT_NAME_SEPARATOR = '::';
+
+const parseProductCatalogName = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw.includes(PRODUCT_NAME_SEPARATOR)) {
+    return { type: '', itemName: raw };
+  }
+
+  const [typeRaw, ...rest] = raw.split(PRODUCT_NAME_SEPARATOR);
+  const type = String(typeRaw || '').trim();
+  const itemName = rest.join(PRODUCT_NAME_SEPARATOR).trim();
+  return { type, itemName: itemName || raw };
+};
+
 export default function ClientDashboard({ user, activeView = 'home', selectedPromotion = null, onReservePromotion, onReserveTurn, onRescheduleDone, activityLegend = null, companySlug, companyContext }) {
-  const showAgenda = activeView === 'reserve';
   const [bookings, setBookings] = useState([]);
   const [services, setServices] = useState([]);
   const [appConfig, setAppConfig] = useState(null);
@@ -58,6 +85,11 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [bannerIndex, setBannerIndex] = useState(0);
+  const [cantidadesProducto, setCantidadesProducto] = useState({});
+  const [fechaPedido, setFechaPedido] = useState(getFechaActual());
+  const [horaPedido, setHoraPedido] = useState(getHoraActual());
+  const [aclaracionesPedido, setAclaracionesPedido] = useState('');
+  const [mensajePedido, setMensajePedido] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -151,8 +183,15 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     booking,
     service: services.find((service) => Number(service.id) === Number(booking.service))
   })), [bookings, services]);
-  const preciosHabilitados = appConfig?.configuracion_operativa?.precios_habilitados !== false;
-  const promocionesHabilitadas = appConfig?.configuracion_operativa?.promociones_habilitadas !== false;
+  const configuracionOperativa = appConfig?.configuracion_operativa || companyContext?.configuracion_operativa || {};
+  const esModoPedido = resolverModoPedido(configuracionOperativa);
+  const showAgenda = activeView === 'reserve' && !esModoPedido;
+  const showFormularioPedido = activeView === 'reserve' && esModoPedido;
+  const etiquetaReserva = esModoPedido ? 'Hacer pedido' : 'Reservar turno';
+  const etiquetaHistorial = esModoPedido ? 'pedidos' : 'turnos';
+  const etiquetaItemCatalogo = esModoPedido ? 'Producto' : 'Servicio';
+  const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
+  const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
   const enabledPromotions = useMemo(() => (
     promocionesHabilitadas && Array.isArray(appConfig?.promotions)
       ? appConfig.promotions
@@ -303,6 +342,75 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     const first = activeBookings[0] || historyBookings[0];
     if (first) setSelectedBookingId(first.booking.id);
   }, [activeView, selectedBookingId, activeBookings, historyBookings]);
+
+  const productosActivos = useMemo(() => (
+    services.filter((service) => !service.deleted_at && service.active !== false)
+  ), [services]);
+
+  const productosAgrupados = useMemo(() => {
+    if (!esModoPedido) {
+      return [{ groupName: '', products: productosActivos.map((producto) => ({ producto, parsed: parseProductCatalogName(producto.name) })) }];
+    }
+
+    const groups = new Map();
+    productosActivos.forEach((producto) => {
+      const parsed = parseProductCatalogName(producto.name);
+      const key = parsed.type || 'Sin tipo';
+      const list = groups.get(key) || [];
+      list.push({ producto, parsed });
+      groups.set(key, list);
+    });
+
+    return Array.from(groups.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+      .map(([groupName, products]) => ({
+        groupName,
+        products: products.sort((a, b) => (a.parsed.itemName || '').localeCompare(b.parsed.itemName || '', 'es'))
+      }));
+  }, [productosActivos, esModoPedido]);
+
+  const itemsPedido = useMemo(() => (
+    productosActivos
+      .map((producto) => {
+        const cantidad = Math.max(0, Number(cantidadesProducto[producto.id] || 0));
+        if (!cantidad) return null;
+        const precioUnitario = Number(producto.base_price || 0);
+        const parsed = parseProductCatalogName(producto.name);
+        return {
+          producto,
+          productoNombre: parsed.itemName || producto.name,
+          productoTipo: parsed.type || '',
+          cantidad,
+          precioUnitario,
+          subtotal: cantidad * precioUnitario
+        };
+      })
+      .filter(Boolean)
+  ), [productosActivos, cantidadesProducto]);
+
+  const totalPedido = useMemo(
+    () => itemsPedido.reduce((total, item) => total + item.subtotal, 0),
+    [itemsPedido]
+  );
+
+  const cambiarCantidadProducto = (productoId, valor) => {
+    const cantidadNormalizada = Number.parseInt(String(valor || '0'), 10);
+    const siguienteCantidad = Number.isNaN(cantidadNormalizada) ? 0 : Math.max(0, cantidadNormalizada);
+
+    setCantidadesProducto((actual) => ({
+      ...actual,
+      [productoId]: siguienteCantidad
+    }));
+  };
+
+  const registrarBorradorPedido = () => {
+    if (!itemsPedido.length) {
+      setMensajePedido('Seleccioná al menos un producto para armar el pedido.');
+      return;
+    }
+
+    setMensajePedido(`Borrador listo: ${itemsPedido.length} item(s), entrega ${fechaPedido} ${horaPedido}. La confirmación final se activará cuando esté el backend de pedidos.`);
+  };
 
   const formatMoney = (value) => `$ ${Number(value || 0).toLocaleString('es-AR')}`;
 
@@ -493,7 +601,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
       {isHome && (
         <>
           <button className="client-welcome-action client-home-reserve-action" type="button" onClick={onReserveTurn}>
-            Reservar turno
+            {etiquetaReserva}
           </button>
 
           {activityLegend}
@@ -528,7 +636,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                       {preciosHabilitados && pack.total_price != null && (
                         <span className="client-pack-total">{formatMoney(pack.total_price)}</span>
                       )}
-                      <button className="client-pack-reserve" type="button" onClick={onReserveTurn}>Reservar</button>
+                      <button className="client-pack-reserve" type="button" onClick={onReserveTurn}>{etiquetaReserva}</button>
                     </div>
                   </article>
                 ))}
@@ -536,12 +644,11 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
             </section>
           )}
 
-          {services.filter((service) => !service.deleted_at && service.active !== false).length > 0 && (
+          {productosActivos.length > 0 && (
             <section className="client-services-panel">
-              <h2>Servicios</h2>
+              <h2>{esModoPedido ? 'Productos' : 'Servicios'}</h2>
               <div className="client-services-grid">
-                {services
-                  .filter((service) => !service.deleted_at && service.active !== false)
+                {productosActivos
                   .map((service) => (
                     <article className="client-service-card" key={service.id}>
                       <span className="client-service-icon" style={{ background: service.color || '#e2e8f0' }} aria-hidden="true">{service.icon || '✳️'}</span>
@@ -567,13 +674,13 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
 
             <div className="client-turnos-group">
               <div className="client-turnos-group-header">
-                <h3>Próximos Turnos</h3>
+                <h3>{esModoPedido ? 'Próximos pedidos' : 'Próximos Turnos'}</h3>
                 <span className="client-turnos-count">{activeBookings.length}</span>
               </div>
               {isLoading ? (
-                <p className="client-summary-empty">Cargando tus turnos...</p>
+                <p className="client-summary-empty">Cargando tus {etiquetaHistorial}...</p>
               ) : activeBookings.length === 0 ? (
-                <p className="client-summary-empty">No tenés turnos próximos.</p>
+                <p className="client-summary-empty">No tenés {esModoPedido ? 'pedidos' : 'turnos'} próximos.</p>
               ) : (
                 activeBookings.map(({ booking, service }) => (
                   <button
@@ -666,22 +773,117 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                     <strong>{getBookingRef(selectedEntry.booking)}</strong>
                   </div>
                 </div>
-                <p className="client-turno-policy">Podés cancelar o reprogramar tu turno antes de la fecha reservada.</p>
+                <p className="client-turno-policy">{esModoPedido ? 'Podés cancelar o reprogramar tu pedido antes de la fecha solicitada.' : 'Podés cancelar o reprogramar tu turno antes de la fecha reservada.'}</p>
                 {selectedIsActive && (
                   <button
                     type="button"
                     className="client-turno-manage-button"
                     onClick={() => { setManageBooking(selectedEntry.booking); setActionMessage(''); }}
                   >
-                    Tratar
+                    {esModoPedido ? 'Gestionar pedido' : 'Gestionar turno'}
                   </button>
                 )}
               </article>
             ) : (
-              <p className="client-summary-empty">Elegí un turno para ver el detalle.</p>
+              <p className="client-summary-empty">Elegí un {esModoPedido ? 'pedido' : 'turno'} para ver el detalle.</p>
             )}
           </div>
         </div>
+      )}
+
+      {showFormularioPedido && (
+        <section className="client-services-panel">
+          <h2>Armá tu pedido</h2>
+          <p className="client-pack-desc">Elegí productos y cantidades. Podés agregar componentes en aclaraciones (ejemplo: salsas, aderezos, caja o bolsa).</p>
+
+          {productosActivos.length === 0 ? (
+            <p className="client-summary-empty">Todavía no hay productos activos para pedir.</p>
+          ) : (
+            <div className="client-services-grid">
+              {productosAgrupados.map((group) => (
+                <div key={group.groupName || 'sin-tipo'} style={{ gridColumn: '1 / -1' }}>
+                  {group.groupName && <h3 style={{ margin: '0 0 .6rem' }}>{group.groupName}</h3>}
+                  <div className="client-services-grid">
+                    {group.products.map(({ producto, parsed }) => (
+                      <article className="client-service-card" key={producto.id}>
+                        <span className="client-service-icon" style={{ background: producto.color || '#e2e8f0' }} aria-hidden="true">{producto.icon || '🛒'}</span>
+                        <div className="client-service-info">
+                          <strong>{parsed.itemName || producto.name}</strong>
+                          <span>{etiquetaItemCatalogo}</span>
+                        </div>
+                        {preciosHabilitados && Number(producto.base_price || 0) > 0 && (
+                          <span className="client-service-price">{formatMoney(producto.base_price)}</span>
+                        )}
+                        <label className="platform-field">
+                          <span>Cantidad</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={cantidadesProducto[producto.id] || ''}
+                            onChange={(event) => cambiarCantidadProducto(producto.id, event.target.value)}
+                            placeholder="0"
+                          />
+                        </label>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="platform-form-grid" style={{ marginTop: '1rem' }}>
+            <label className="platform-field">
+              <span>Día solicitado</span>
+              <input type="date" value={fechaPedido} onChange={(event) => setFechaPedido(event.target.value)} />
+            </label>
+            <label className="platform-field">
+              <span>Horario solicitado</span>
+              <input type="time" value={horaPedido} onChange={(event) => setHoraPedido(event.target.value)} />
+              <small>Seleccioná hora y minutos (HH:MM). No se usa grilla de turnos en modo pedido.</small>
+            </label>
+            <label className="platform-field" style={{ gridColumn: '1 / -1' }}>
+              <span>Aclaraciones y componentes</span>
+              <textarea
+                rows={3}
+                value={aclaracionesPedido}
+                onChange={(event) => setAclaracionesPedido(event.target.value)}
+                placeholder="Ejemplo: 2 empanadas con salsa picante, 1 pizza en caja."
+              />
+            </label>
+          </div>
+
+          {itemsPedido.length > 0 && (
+            <div className="client-turno-detail-card" style={{ marginTop: '1rem' }}>
+              <h3>Resumen del pedido</h3>
+              <div className="client-turno-detail-fields">
+                {itemsPedido.map((item) => (
+                  <div className="client-turno-detail-field" key={item.producto.id}>
+                    <span>{item.productoTipo ? `${item.productoTipo} · ${item.productoNombre}` : item.productoNombre}</span>
+                    <strong>{item.cantidad} x {preciosHabilitados ? formatMoney(item.precioUnitario) : 'item'}{preciosHabilitados ? ` = ${formatMoney(item.subtotal)}` : ''}</strong>
+                  </div>
+                ))}
+                <div className="client-turno-detail-field">
+                  <span>Entrega solicitada</span>
+                  <strong>{fechaPedido || '-'} {horaPedido || ''}</strong>
+                </div>
+                {preciosHabilitados && (
+                  <div className="client-turno-detail-field">
+                    <span>Total estimado</span>
+                    <strong>{formatMoney(totalPedido)}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {mensajePedido && <p className="platform-admin-success">{mensajePedido}</p>}
+
+          <div className="platform-action-row platform-action-row-end" style={{ marginTop: '1rem' }}>
+            <button type="button" onClick={registrarBorradorPedido}>Guardar borrador</button>
+          </div>
+        </section>
       )}
 
       {showAgenda && (
@@ -721,7 +923,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
         </div>
       )}
 
-      {newBookingSlot && (
+      {newBookingSlot && !esModoPedido && (
         <NewBookingPanel
           user={user}
           companySlug={companySlug}
@@ -747,7 +949,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
         <div className="client-modal-overlay" role="dialog" aria-modal="true">
           <div className="client-manage-modal">
             <div className="client-manage-modal-header">
-              <h3>Gestionar turno</h3>
+              <h3>{esModoPedido ? 'Gestionar pedido' : 'Gestionar turno'}</h3>
               <button type="button" className="client-modal-close" onClick={closeManage} aria-label="Cerrar">✕</button>
             </div>
             {actionMessage && <p className="client-profile-error">{actionMessage}</p>}
@@ -759,16 +961,16 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
               <button type="button" className="client-manage-option" onClick={startReschedule} disabled={isProcessingAction}>
                 <span className="client-manage-option-icon" aria-hidden="true">🔁</span>
                 <span className="client-manage-option-text">
-                  <strong>Modificar Reserva</strong>
-                  <small>Elegís de nuevo día, hora y profesional. Tu turno actual sigue vigente hasta que confirmes el cambio.</small>
+                  <strong>{esModoPedido ? 'Modificar pedido' : 'Modificar Reserva'}</strong>
+                  <small>{esModoPedido ? 'Actualizá día, hora o detalle del pedido.' : 'Elegís de nuevo día, hora y profesional. Tu turno actual sigue vigente hasta que confirmes el cambio.'}</small>
                 </span>
               </button>
             )}
             <button type="button" className="client-manage-option client-manage-option-danger" onClick={requestCancel} disabled={isProcessingAction}>
               <span className="client-manage-option-icon" aria-hidden="true">🗑️</span>
               <span className="client-manage-option-text">
-                <strong>Cancelar Reserva</strong>
-                <small>Liberar el turno y notificar al negocio.</small>
+                <strong>{esModoPedido ? 'Cancelar pedido' : 'Cancelar Reserva'}</strong>
+                <small>{esModoPedido ? 'Cancelar el pedido y notificar al negocio.' : 'Liberar el turno y notificar al negocio.'}</small>
               </span>
             </button>
           </div>
@@ -778,7 +980,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
       {bookingToCancel && (
         <div className="client-modal-overlay" role="dialog" aria-modal="true">
           <div className="client-confirm-modal">
-            <h3>Confirmar cancelación</h3>
+            <h3>Confirmar cancelación de {esModoPedido ? 'pedido' : 'turno'}</h3>
             <p>
               {isBundleBooking(bookingToCancel) && getBundleGroupIds(bookingToCancel).length > 1
                 ? 'Esta promo/pack incluye varios turnos y se cancelarán todos juntos. Esta acción no se puede deshacer y se notificará al negocio.'

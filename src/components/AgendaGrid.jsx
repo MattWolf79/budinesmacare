@@ -104,6 +104,9 @@ const isActiveBooking = (booking) =>
 const isClosedBooking = (booking) =>
   ['completed', 'closed'].includes(String(booking?.status || '').trim().toLowerCase());
 
+const isCancelledBooking = (booking) =>
+  ['cancelled', 'canceled', 'cancelado', 'cancelada'].includes(String(booking?.status || '').trim().toLowerCase());
+
 const isVisibleGridBooking = (booking) =>
   isActiveBooking(booking) || isClosedBooking(booking) || isWaitlistBooking(booking);
 
@@ -618,7 +621,9 @@ const isPastBookingStart = (booking) =>
    COMPONENT
 ========================= */
 
-function CloseAttentionModal({ bookings, services, employees, promotions, discounts, surcharges, accessProfile, employeeId, user, initialServiceDate, companyContext, onClose, onClosed, displayMode = 'modal' }) {
+function CloseAttentionModal({ bookings, closureBookings = null, services, employees, promotions, discounts, surcharges, accessProfile, employeeId, user, initialServiceDate, companyContext, onClose, onClosed, displayMode = 'modal' }) {
+  const configuracionOperativa = companyContext?.configuracion_operativa || {};
+  const esModoPedido = configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false;
   const todayInput = formatDateOnlyForDb(new Date());
   const initialDate = initialServiceDate && initialServiceDate <= todayInput ? initialServiceDate : todayInput;
   const [serviceDate] = useState(initialDate);
@@ -656,29 +661,55 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
   const lineDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && !isCashPaymentDiscount(discount) && (discount.scope === 'line' || discount.scope === 'both'));
   const activityDiscountOptions = activeDiscounts.filter((discount) => discount.discountType === 'activity');
   const totalDiscountOptions = activeDiscounts.filter((discount) => discount.discountType !== 'activity' && (discount.scope === 'total' || discount.scope === 'both'));
-  const pendingClosureBookings = useMemo(() => bookings
-    .filter((booking) => isActiveBooking(booking) && booking.employee_id)
+  const getClosureClientKey = (booking) => {
+    if (!esModoPedido) return getClientKey(booking);
+
+    const clientAccountId = String(booking?.client_account_id || '').trim();
+    if (clientAccountId) return `account:${clientAccountId}`;
+
+    const email = String(booking?.user_email || '').trim().toLowerCase();
+    if (email) return `email:${email}`;
+
+    const normalizedName = normalizeComparableText(booking?.customer_name);
+    const isAnonymousName = !normalizedName || ['cliente sin datos', 'cliente sin nombre', 'sin nombre', 'anon', 'anonimo', 'anónimo'].includes(normalizedName);
+    if (isAnonymousName) {
+      const bookingGroupId = booking?.booking_group_id || booking?.group_id;
+      if (bookingGroupId) return `group:${bookingGroupId}`;
+      return `booking:${booking?.id}`;
+    }
+
+    return `name:${normalizedName}`;
+  };
+
+  const sourceBookings = Array.isArray(closureBookings) ? closureBookings : bookings;
+  const pendingClosureBookings = useMemo(() => sourceBookings
+    .filter((booking) => {
+      if (esModoPedido) {
+        return !isClosedBooking(booking) && !isCancelledBooking(booking);
+      }
+      return isActiveBooking(booking) && booking.employee_id;
+    })
     .filter((booking) => formatDateOnlyForDb(parseBookingDate(booking.start_at)) <= closureCutoffDate)
-    .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [bookings, closureCutoffDate]);
+    .sort((left, right) => parseBookingDate(left.start_at) - parseBookingDate(right.start_at)), [closureCutoffDate, esModoPedido, sourceBookings]);
   const clients = useMemo(() => {
     const map = new Map();
     pendingClosureBookings.forEach((booking) => {
       const bookingDate = formatDateOnlyForDb(parseBookingDate(booking.start_at));
-      const clientKey = getClientKey(booking);
+      const clientKey = getClosureClientKey(booking);
       const key = `${bookingDate}|${clientKey}`;
       const current = map.get(key) || { key, clientKey, serviceDate: bookingDate, name: getClientName(booking), email: getClientEmail(booking), canEmployeeClose: false };
-      if (String(booking.employee_id) === String(employeeId)) current.canEmployeeClose = true;
+      if (esModoPedido || String(booking.employee_id) === String(employeeId)) current.canEmployeeClose = true;
       map.set(key, current);
     });
     return [...map.values()].filter((client) => !isEmployeeView || client.canEmployeeClose);
-  }, [employeeId, isEmployeeView, pendingClosureBookings]);
+  }, [employeeId, isEmployeeView, pendingClosureBookings, esModoPedido]);
 
   const effectiveSelectedClientKey = clients.some((client) => client.key === selectedClientKey) ? selectedClientKey : clients[0]?.key || '';
   const selectedClient = clients.find((client) => client.key === effectiveSelectedClientKey);
   const clientBookings = useMemo(() => pendingClosureBookings.filter((booking) =>
     selectedClient &&
     formatDateOnlyForDb(parseBookingDate(booking.start_at)) === selectedClient.serviceDate &&
-    getClientKey(booking) === selectedClient.clientKey
+    getClosureClientKey(booking) === selectedClient.clientKey
   ), [pendingClosureBookings, selectedClient]);
   const effectiveSelectedBookingIds = useMemo(() => {
     const availableIds = clientBookings.map((booking) => booking.id);
@@ -954,14 +985,19 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     return {
       invoiceNumber,
       invoiceDate,
+      isPedidoMode: esModoPedido,
+      isNoCostClosure: noCostClosure,
       clientName: selectedClient?.name,
       clientEmail: selectedClient?.email,
       items: selectedItems.map((item) => ({
         serviceName: item.serviceName,
         employeeName: item.employeeName,
         basePrice: item.basePrice,
+        subtotal: item.subtotal,
+        createdAt: item.booking.created_at || null,
         startAt: item.booking.start_at,
-        endAt: item.booking.end_at
+        endAt: item.booking.end_at,
+        customerPhone: item.booking.customer_phone || item.booking.customer_phone_number || null
       })),
       discountDetails: [
         ...(noCostClosure ? [] : selectedItems.flatMap((item) => item.appliedDiscounts.map((discount) => ({
@@ -1008,12 +1044,83 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     if (!noCostClosure && Math.abs(displayPaymentDifference) > 0) return alert('La suma cobrada por medio de pago debe cubrir el valor de los servicios luego de descuentos y recargos.');
     if (!noCostClosure && Math.abs(displayChargedDifference) > 0) return alert('La suma cobrada debe coincidir con el total final, incluyendo descuentos y recargos.');
     setIsClosing(true);
+    const serviceDateForRpc = selectedClient?.serviceDate || serviceDate;
+    const selectedBookingDetails = selectedItems.map((item) => item.booking);
+    const selectedClientKeyPrefix = String(selectedClient?.clientKey || '').split(':')[0];
+    const uniqueBookingEmails = [...new Set(selectedBookingDetails
+      .map((booking) => String(booking?.user_email || '').trim().toLowerCase())
+      .filter(Boolean))];
+    const uniqueBookingNames = [...new Set(selectedBookingDetails
+      .map((booking) => String(booking?.customer_name || '').trim())
+      .filter(Boolean))];
+
+    let clientEmailForRpc = selectedClient?.email || null;
+    let clientNameForRpc = selectedClient?.name || null;
+
+    if (esModoPedido) {
+      const shouldOmitIdentityFilters = selectedClientKeyPrefix === 'group' || selectedClientKeyPrefix === 'booking';
+
+      if (shouldOmitIdentityFilters) {
+        clientEmailForRpc = null;
+        clientNameForRpc = null;
+      } else if (uniqueBookingEmails.length === 1) {
+        clientEmailForRpc = uniqueBookingEmails[0];
+        clientNameForRpc = null;
+      } else if (uniqueBookingEmails.length > 1) {
+        clientEmailForRpc = null;
+        clientNameForRpc = null;
+      } else if (uniqueBookingNames.length === 1) {
+        clientEmailForRpc = null;
+        clientNameForRpc = uniqueBookingNames[0];
+      } else {
+        clientEmailForRpc = null;
+        clientNameForRpc = null;
+      }
+    }
+
+
+    const backendAllowedStatuses = new Set(['reserved', 'confirmed', 'pending_assignment']);
+    const normalizedClientNameForRpc = normalizeComparableText(clientNameForRpc);
+    const rpcSelectedItems = selectedItems.filter((item) => {
+      const booking = item.booking;
+      const bookingStatus = String(booking?.status || '').trim().toLowerCase();
+      const bookingDate = formatDateOnlyForDb(parseBookingDate(booking.start_at));
+      if (esModoPedido) {
+        if (isClosedBooking(booking) || isCancelledBooking(booking)) return false;
+      } else if (!backendAllowedStatuses.has(bookingStatus)) {
+        return false;
+      }
+      if (bookingDate !== serviceDateForRpc) return false;
+
+      if (clientEmailForRpc) {
+        return String(booking?.user_email || '').trim().toLowerCase() === String(clientEmailForRpc).trim().toLowerCase();
+      }
+
+      if (clientNameForRpc) {
+        return normalizeComparableText(booking?.customer_name) === normalizedClientNameForRpc;
+      }
+
+      return true;
+    });
+
+    if (!rpcSelectedItems.length) {
+      setIsClosing(false);
+      return alert(esModoPedido
+        ? 'Los pedidos seleccionados ya no estan pendientes de cierre o fueron cancelados.'
+        : 'Los pedidos seleccionados no tienen un estado habilitado para cierre. Dejanos solo Confirmado, Reservado o Pendiente de asignacion.');
+    }
+
+    if (rpcSelectedItems.length !== selectedItems.length) {
+      setIsClosing(false);
+      return alert('Hay pedidos seleccionados que no corresponden al cliente, fecha o estado habilitado para cierre. Ajusta la seleccion e intenta de nuevo.');
+    }
+
     const rpcPayload = {
-      service_date_value: selectedClient?.serviceDate || serviceDate,
-      client_name_value: selectedClient?.name || null,
-      client_email_value: selectedClient?.email || null,
-      booking_ids_value: selectedItems.map((item) => item.booking.id),
-      closure_items_value: selectedItems.map((item) => ({ bookingId: item.booking.id, serviceName: item.serviceName, employeeId: item.employee?.id || item.booking.employee_id || null, employeeName: item.employeeName, basePrice: item.basePrice, lineDiscountTotal: noCostClosure ? 0 : item.lineDiscountTotal, subtotal: noCostClosure ? item.basePrice : item.subtotal, appliedDiscounts: noCostClosure ? [] : item.appliedDiscounts })),
+      service_date_value: serviceDateForRpc,
+      client_name_value: clientNameForRpc,
+      client_email_value: clientEmailForRpc,
+      booking_ids_value: rpcSelectedItems.map((item) => item.booking.id),
+      closure_items_value: rpcSelectedItems.map((item) => ({ bookingId: item.booking.id, serviceName: item.serviceName, employeeId: item.employee?.id || item.booking.employee_id || null, employeeName: item.employeeName, basePrice: item.basePrice, lineDiscountTotal: noCostClosure ? 0 : item.lineDiscountTotal, subtotal: noCostClosure ? item.basePrice : item.subtotal, appliedDiscounts: noCostClosure ? [] : item.appliedDiscounts })),
       total_discounts_value: selectedTotalDiscounts,
       surcharges_value: selectedSurchargeDetails.map(({ surcharge, baseAmount, amount }) => ({ ...surcharge, baseAmount, amount })),
       gross_total_value: grossTotal,
@@ -1032,9 +1139,10 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       service_date: rpcPayload.service_date_value,
       client_name: rpcPayload.client_name_value,
       client_email: rpcPayload.client_email_value,
+      selectedClientKeyPrefix,
       booking_ids: rpcPayload.booking_ids_value,
-      num_items: selectedItems.length,
-      selectedItems: selectedItems.map(item => ({
+      num_items: rpcSelectedItems.length,
+      selectedItems: rpcSelectedItems.map(item => ({
         id: item.booking.id,
         customer_name: item.booking.customer_name,
         user_email: item.booking.user_email,
@@ -1053,10 +1161,11 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
       }
     });
     
-    const { data, error } = await supabase.rpc('close_booking_attention', rpcPayload);
+    const closeRpcName = esModoPedido ? 'close_booking_attention_pedido' : 'close_booking_attention';
+    const { data, error } = await supabase.rpc(closeRpcName, rpcPayload);
     setIsClosing(false);
     
-    console.log('CLOSE_BOOKING - Response:', { data, error });
+    console.log('CLOSE_BOOKING - Response:', { rpc: closeRpcName, data, error });
     
     // Check if we have valid data with an ID (successful closure)
     if (data && data.id) {
@@ -1082,6 +1191,8 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
 
     await generateDetalleFacturaPdf({
       companyContext,
+      isPedidoMode: invoiceDetails.isPedidoMode,
+      isNoCostClosure: invoiceDetails.isNoCostClosure,
       clientName: invoiceDetails.clientName,
       clientEmail: invoiceDetails.clientEmail,
       items: invoiceDetails.items,
@@ -1098,9 +1209,12 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
     });
   };
 
+  const closeAttentionTitle = esModoPedido ? 'Cerrar pedido' : 'Cerrar atención';
+  const closeAttentionEmptyLabel = esModoPedido ? 'No hay pedidos pendientes de cierre.' : 'No hay turnos pendientes de cierre.';
+
   const closeAttentionContent = (
       <div className={`agenda-modal-card close-attention-modal ${displayMode === 'page' ? 'close-attention-page-card' : ''}`}>
-        <div className="agenda-modal-header">Cerrar atención</div>
+        <div className="agenda-modal-header">{closeAttentionTitle}</div>
         <div className="agenda-modal-body close-attention-body">
           <div className="close-attention-controls">
             <label>Hasta hoy<input type="text" value={closureCutoffLabel} readOnly /></label>
@@ -1128,7 +1242,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
                   return <label className="settings-check-row" key={`${booking.id}-${discountKey}`}><input type="checkbox" checked={(lineDiscounts[booking.id] || []).includes(discountKey)} disabled={isClosureConfirmed || noCostClosure} onChange={() => toggleLineDiscount(booking.id, discountKey)} /><span>{formatDiscountOption(discount)}</span></label>;
                 })}</div>}
               </article>;
-            }) : <div className="agenda-empty-state">No hay turnos pendientes de cierre.</div>}
+            }) : <div className="agenda-empty-state">{closeAttentionEmptyLabel}</div>}
           </div>
           <div className="close-attention-section close-attention-fiscal">
             <strong>Comprobante fiscal</strong>
@@ -1185,7 +1299,7 @@ function CloseAttentionModal({ bookings, services, employees, promotions, discou
             {closureValidationErrors.map((message) => <span className="close-attention-difference" key={message}>{message}</span>)}
             {fiscalValidationErrors.map((message) => <span className="close-attention-difference" key={message}>{message}</span>)}
           </div>
-          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>{displayMode === 'page' ? 'Volver al calendario' : 'Cerrar'}</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !canConfirmClosure}>{isClosing ? 'Cerrando...' : 'Confirmar cierre'}</button>}</div>
+          <div className="agenda-modal-actions"><button className="agenda-close-button" type="button" onClick={closeModal}>{displayMode === 'page' ? (esModoPedido ? 'Volver a pedidos' : 'Volver al calendario') : 'Cerrar'}</button>{isClosureConfirmed ? <button className="agenda-option-button" type="button" onClick={generateInvoice}>Abrir factura</button> : <button className="agenda-danger-button" type="button" onClick={confirmClosure} disabled={isClosing || !canConfirmClosure}>{isClosing ? 'Cerrando...' : `Confirmar ${esModoPedido ? 'cierre de pedido' : 'cierre'}`}</button>}</div>
         </div>
       </div>
   );
@@ -1389,6 +1503,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [closureDiscounts, setClosureDiscounts] = useState([]);
   const [closureSurcharges, setClosureSurcharges] = useState([]);
   const [closurePromotions, setClosurePromotions] = useState(promotions);
+  const [closeAttentionBookings, setCloseAttentionBookings] = useState(null);
 
   const [dragStart, setDragStart] = useState(null);
   const [dragEnd, setDragEnd] = useState(null);
@@ -1403,6 +1518,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const isEmployeeView = accessProfile === 'employee';
   const isClientView = accessProfile === 'client';
   const configuracionOperativa = companyContext?.configuracion_operativa || {};
+  const esModoPedido = configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false;
   const slotMinutes = getValidSlotMinutes(configuracionOperativa.intervalo_grilla_minutos);
   const totalSlots = Math.max(1, Math.floor(AGENDA_TOTAL_MINUTES / slotMinutes));
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
@@ -1789,6 +1905,53 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const { data } = await supabase.rpc('get_app_configuration', {
       company_slug_value: companySlug
     });
+
+    if (closeAttentionPage && esModoPedido) {
+      if (user?.isLocalInternal) {
+        await loadAll();
+      } else if (user?.isInternal) {
+        const shouldLoadAdminPayload = !Array.isArray(services) || services.length === 0 || !Array.isArray(employees) || employees.length === 0;
+        if (shouldLoadAdminPayload) {
+          const { data: adminPayload } = await supabase.rpc('get_admin_panel_data', {
+            account_id_value: user.id,
+            session_token_value: user.sessionToken,
+            request_status_value: null,
+            company_slug_value: companySlug
+          });
+
+          if (Array.isArray(adminPayload?.bookings)) setBookings(adminPayload.bookings);
+          if (Array.isArray(adminPayload?.services)) setServices(adminPayload.services);
+          if (Array.isArray(adminPayload?.employees)) setEmployees(adminPayload.employees);
+          if (Array.isArray(adminPayload?.employeeServices)) setEmployeeServices(adminPayload.employeeServices);
+          if (Array.isArray(adminPayload?.availability)) setEmployeeAvailability(adminPayload.availability);
+        }
+      } else {
+        const { data: bookingOptionsData } = await supabase.rpc('get_client_booking_options', {
+          company_slug_value: companySlug
+        });
+
+        if (Array.isArray(bookingOptionsData?.bookings)) setBookings(bookingOptionsData.bookings);
+        if (Array.isArray(bookingOptionsData?.services)) setServices(bookingOptionsData.services);
+        if (Array.isArray(bookingOptionsData?.employees)) setEmployees(bookingOptionsData.employees);
+        if (Array.isArray(bookingOptionsData?.employeeServices)) setEmployeeServices(bookingOptionsData.employeeServices);
+        if (Array.isArray(bookingOptionsData?.employeeAvailability)) setEmployeeAvailability(bookingOptionsData.employeeAvailability);
+      }
+    }
+
+    setCloseAttentionBookings(null);
+    if (esModoPedido && user?.isInternal && !user?.isLocalInternal && user?.sessionToken) {
+      const { data: pendingClosureData, error: pendingClosureError } = await supabase.rpc('get_pending_closure_bookings', {
+        account_id_value: user.id,
+        session_token_value: user.sessionToken,
+        company_slug_value: companySlug,
+        cutoff_date_value: formatDateOnlyForDb(new Date())
+      });
+
+      if (!pendingClosureError && Array.isArray(pendingClosureData)) {
+        setCloseAttentionBookings(pendingClosureData);
+      }
+    }
+
     setClosureDiscounts(descuentosHabilitados && Array.isArray(data?.discounts) ? data.discounts : []);
     setClosureSurcharges(recargosHabilitados && Array.isArray(data?.surcharges) ? data.surcharges : []);
     setClosurePromotions(promocionesHabilitadas && Array.isArray(data?.promotions) ? data.promotions : []);
@@ -1804,6 +1967,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   useEffect(() => {
     let active = true;
+
+    if (closeAttentionPage && esModoPedido) {
+      return () => {
+        active = false;
+      };
+    }
 
     fetchAll().then((results) => {
       if (active) applyAll(results);
@@ -2636,6 +2805,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     return closeAttentionOpen ? (
       <CloseAttentionModal
         bookings={bookings}
+        closureBookings={closeAttentionBookings}
         services={services}
         employees={employees}
         promotions={closurePromotions}
@@ -3145,6 +3315,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       {closeAttentionOpen && (
         <CloseAttentionModal
           bookings={bookings}
+          closureBookings={closeAttentionBookings}
           services={services}
           employees={employees}
           promotions={closurePromotions}

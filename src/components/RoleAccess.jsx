@@ -3,6 +3,7 @@ import EmployeeDashboard from './EmployeeDashboard';
 import ClientDashboard from './ClientDashboard';
 import ClientProfilePanel from './ClientProfilePanel';
 import ClientsPanel from './ClientsPanel';
+import AdminPanel from './AdminPanel';
 import Navbar from './Navbar';
 import AdminSidebar from './AdminSidebar';
 import NewBookingPanel from './NewBookingPanel';
@@ -58,26 +59,51 @@ const employeeSidebarGroups = [
   }
 ];
 
-const clientNavItems = [
-  { id: 'home', label: 'Inicio', icon: '⌂' },
-  { id: 'reserve', label: 'Nueva Reserva', icon: '📅' },
-  { id: 'mis-turnos', label: 'Mis turnos', icon: '📋' },
-  { id: 'perfil', label: 'Perfil', icon: '👤' }
-];
+const crearNavegacionCliente = (esModoPedido) => {
+  const etiquetaReserva = esModoPedido ? 'Hacer Pedido' : 'Nueva Reserva';
+  const etiquetaHistorial = esModoPedido ? 'Mis pedidos' : 'Mis turnos';
 
-const clientSidebarGroups = [
-  {
-    label: 'MI CUENTA',
-    items: clientNavItems.map((item) => ({ id: item.id, label: item.label, icon: item.icon }))
-  }
-];
+  const items = [
+    { id: 'home', label: 'Inicio', icon: '⌂' },
+    { id: 'reserve', label: etiquetaReserva, icon: esModoPedido ? '🛒' : '📅' },
+    { id: 'mis-turnos', label: etiquetaHistorial, icon: '📋' },
+    { id: 'perfil', label: 'Perfil', icon: '👤' }
+  ];
 
-const clientHeroCopy = {
-  home: { eyebrow: 'Bienvenida', description: 'Descubrí promos, packs y servicios, y reservá cuando quieras.' },
-  reserve: { eyebrow: 'Reserva', title: 'Reservar turno', description: 'Seleccioná un horario disponible en la grilla para crear tu turno.' },
-  'mis-turnos': { eyebrow: 'Mis turnos', title: 'Mis turnos', description: 'Revisá tus turnos activos y tu historial.' },
-  perfil: { eyebrow: 'Perfil', title: 'Mi perfil', description: 'Revisá y actualizá tus datos personales.' }
+  return {
+    items,
+    gruposSidebar: [
+      {
+        label: 'MI CUENTA',
+        items: items.map((item) => ({ id: item.id, label: item.label, icon: item.icon }))
+      }
+    ]
+  };
 };
+
+const crearTextoHeroCliente = (esModoPedido) => ({
+  home: {
+    eyebrow: 'Bienvenida',
+    description: esModoPedido
+      ? 'Descubrí promos, combos y productos, y armá tu pedido en minutos.'
+      : 'Descubrí promos, packs y servicios, y reservá cuando quieras.'
+  },
+  reserve: {
+    eyebrow: esModoPedido ? 'Pedido' : 'Reserva',
+    title: esModoPedido ? 'Hacer pedido' : 'Reservar turno',
+    description: esModoPedido
+      ? 'Elegí productos, cantidades y detalles para enviar tu pedido.'
+      : 'Seleccioná un horario disponible en la grilla para crear tu turno.'
+  },
+  'mis-turnos': {
+    eyebrow: esModoPedido ? 'Mis pedidos' : 'Mis turnos',
+    title: esModoPedido ? 'Mis pedidos' : 'Mis turnos',
+    description: esModoPedido
+      ? 'Revisá tus pedidos activos y tu historial.'
+      : 'Revisá tus turnos activos y tu historial.'
+  },
+  perfil: { eyebrow: 'Perfil', title: 'Mi perfil', description: 'Revisá y actualizá tus datos personales.' }
+});
 
 const employeeHeroCopy = {
   summary: { eyebrow: 'Acceso interno', title: 'Mi espacio', description: 'Un vistazo a tu día, próximos turnos y disponibilidad.' },
@@ -85,9 +111,66 @@ const employeeHeroCopy = {
   'close-attention': { eyebrow: 'Cobro', title: 'Cerrar atención', description: 'Liquidá turnos atendidos, cargá medios de pago y generá el comprobante.' },
   'new-booking': { eyebrow: 'Reserva', title: 'Nueva reserva', description: 'Creá un turno para un cliente.' },
   clients: { eyebrow: 'Clientes', title: 'Gestión de clientes', description: 'Administrá y organizá tu base de clientes.' },
+  products: { eyebrow: 'Catálogo', title: 'Productos', description: 'Consultá productos y tipos de producto configurados.' },
   profile: { eyebrow: 'Mi perfil', title: 'Mi perfil', description: 'Revisá y actualizá tus datos personales.' },
   availability: { eyebrow: 'Agenda disponible', title: 'Disponibilidad', description: 'Configurá los días y horarios en los que atendés.' }
 };
+
+const crearNavegacionEmpleado = ({ esModoPedido, empleadosPuedenReservar }) => {
+  const base = esModoPedido
+    ? [
+        { id: 'summary', label: 'Resumen', mobileLabel: 'Resumen', icon: '▦' },
+        { id: 'agenda', label: 'Pedidos', mobileLabel: 'Pedidos', icon: '📋' },
+        { id: 'close-attention', label: 'Cerrar pedido', mobileLabel: 'Cerrar', icon: '💳' },
+        { id: 'clients', label: 'Clientes', mobileLabel: 'Clientes', icon: '🙋' },
+        { id: 'products', label: 'Productos', mobileLabel: 'Productos', icon: '✨' },
+        { id: 'profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: '👤' }
+      ]
+    : employeeNavItems;
+
+  const conAccionNueva = empleadosPuedenReservar
+    ? [
+        base[0],
+        { id: 'new-booking', label: esModoPedido ? 'Nuevo pedido' : 'Nueva reserva', mobileLabel: esModoPedido ? 'Pedido' : 'Reservar', icon: '➕' },
+        ...base.slice(1)
+      ]
+    : base;
+
+  return {
+    items: conAccionNueva,
+    gruposSidebar: [
+      {
+        label: 'MI ESPACIO',
+        items: conAccionNueva.map((item) => ({ id: item.id, label: item.label, icon: item.icon }))
+      }
+    ],
+    itemsBottom: conAccionNueva.filter((item) => item.id !== 'profile' && item.id !== 'clients')
+  };
+};
+
+const crearTextoHeroEmpleado = (esModoPedido) => ({
+  ...employeeHeroCopy,
+  summary: {
+    eyebrow: 'Acceso interno',
+    title: 'Mi espacio',
+    description: esModoPedido ? 'Un vistazo a tus pedidos del día y próximos pendientes.' : employeeHeroCopy.summary.description
+  },
+  agenda: {
+    eyebrow: 'Acceso interno',
+    title: esModoPedido ? 'Pedidos' : 'Mi agenda laboral',
+    description: esModoPedido ? 'Listado cronológico de pedidos por día.' : employeeHeroCopy.agenda.description
+  },
+  'close-attention': {
+    eyebrow: 'Cobro',
+    title: esModoPedido ? 'Cerrar pedido' : 'Cerrar atención',
+    description: esModoPedido ? 'Cerrá pedidos entregados, cargá medios de pago y generá el comprobante.' : employeeHeroCopy['close-attention'].description
+  },
+  'new-booking': {
+    eyebrow: esModoPedido ? 'Pedido' : 'Reserva',
+    title: esModoPedido ? 'Nuevo pedido' : 'Nueva reserva',
+    description: esModoPedido ? 'Creá un pedido para un cliente.' : employeeHeroCopy['new-booking'].description
+  }
+});
 
 const getRoleViewFromHash = (selectedProfile) => {
   const hash = window.location.hash.replace(/^#/, '');
@@ -242,21 +325,11 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   };
 
   if (isEmployeeProfile) {
+    const configuracionOperativa = companyContext?.configuracion_operativa || {};
+    const esModoPedido = configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false;
     const empleadosPuedenReservar = companyContext?.configuracion_operativa?.empleados_pueden_reservar !== false;
-    const employeeNavItemsForUser = empleadosPuedenReservar
-      ? [
-          employeeNavItems[0],
-          { id: 'new-booking', label: 'Nueva reserva', mobileLabel: 'Reservar', icon: '➕' },
-          ...employeeNavItems.slice(1)
-        ]
-      : employeeNavItems;
-    const employeeSidebarGroupsForUser = [
-      {
-        label: 'MI ESPACIO',
-        items: employeeNavItemsForUser.map((item) => ({ id: item.id, label: item.label, icon: item.icon }))
-      }
-    ];
-    const employeeBottomNavItemsForUser = employeeNavItemsForUser.filter((item) => item.id !== 'profile' && item.id !== 'clients');
+    const navegacionEmpleado = crearNavegacionEmpleado({ esModoPedido, empleadosPuedenReservar });
+    const textosHeroEmpleado = crearTextoHeroEmpleado(esModoPedido);
 
     return (
       <main className="role-workspace role-workspace-employee has-role-sidebar">
@@ -277,7 +350,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
         />
         <div className="role-workspace-body">
           <AdminSidebar
-            groups={employeeSidebarGroupsForUser}
+            groups={navegacionEmpleado.gruposSidebar}
             activeView={employeeActiveView}
             onViewChange={changeEmployeeView}
             open={sidebarOpen}
@@ -289,13 +362,15 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             <WorkspaceHero
               className={shouldUseWelcomeBackground ? 'employee-welcome-hero has-custom-background' : ''}
               style={shouldUseWelcomeBackground ? welcomeBackgroundStyle : undefined}
-              eyebrow={(employeeHeroCopy[employeeActiveView] || profile).eyebrow}
-              title={(employeeHeroCopy[employeeActiveView] || profile).title}
-              description={(employeeHeroCopy[employeeActiveView] || profile).description}
+              eyebrow={(textosHeroEmpleado[employeeActiveView] || profile).eyebrow}
+              title={(textosHeroEmpleado[employeeActiveView] || profile).title}
+              description={(textosHeroEmpleado[employeeActiveView] || profile).description}
               identity={<WorkspaceProfileIdentity user={user} roleLabel={profile.label} photoFallback={profile.icon} />}
             />
             {employeeActiveView === 'clients' ? (
               <ClientsPanel user={user} companySlug={companySlug} companyContext={companyContext} hideHeading />
+            ) : employeeActiveView === 'products' ? (
+              <AdminPanel view="services" user={user} onDataChanged={() => {}} companySlug={companySlug} companyContext={companyContext} />
             ) : (
               <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={empleadosPuedenReservar ? openEmployeeNewBooking : undefined} />
             )}
@@ -321,7 +396,11 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   }
 
   if (isClientProfile) {
-    const heroCopy = clientHeroCopy[clientActiveView] || clientHeroCopy.home;
+    const configuracionOperativa = companyContext?.configuracion_operativa || {};
+    const esModoPedido = configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false;
+    const navegacionCliente = crearNavegacionCliente(esModoPedido);
+    const textosHeroCliente = crearTextoHeroCliente(esModoPedido);
+    const heroCopy = textosHeroCliente[clientActiveView] || textosHeroCliente.home;
     const heroTitle = clientActiveView === 'home'
       ? <span className="client-welcome-name">{companyName}</span>
       : (heroCopy.title || companyName);
@@ -345,7 +424,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
         />
         <div className="role-workspace-body">
           <AdminSidebar
-            groups={clientSidebarGroups}
+            groups={navegacionCliente.gruposSidebar}
             activeView={clientActiveView}
             onViewChange={changeClientView}
             open={sidebarOpen}
@@ -370,6 +449,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
               <ClientDashboard
                 user={user}
                 activeView={clientActiveView}
+                navItems={navegacionCliente.items}
                 selectedPromotion={selectedPromotion}
                 onReservePromotion={reservePromotion}
                 onReserveTurn={() => {
