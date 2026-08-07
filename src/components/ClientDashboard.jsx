@@ -426,6 +426,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
       : null;
     const baseStartDate = new Date(`${fechaPedido}T${horaPedido}:00`);
     const totalItems = itemsPedido.reduce((total, item) => total + item.cantidad, 0);
+    const reservasPedidoCreadas = [];
 
     for (const [index, item] of itemsPedido.entries()) {
       const itemStartDate = new Date(baseStartDate);
@@ -443,7 +444,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
         aclaracionesPedido.trim() ? `Aclaraciones: ${aclaracionesPedido.trim()}` : ''
       ].filter(Boolean).join(' · ');
 
-      const { error } = await supabase.rpc('request_client_booking', {
+      const { data, error } = await supabase.rpc('request_client_booking', {
         service_id_value: item.producto.id,
         employee_id_value: null,
         booking_description_value: descripcion,
@@ -461,6 +462,28 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
         setIsProcessingAction(false);
         setMensajePedido(error.message || 'No se pudo guardar el pedido.');
         return;
+      }
+
+      if (data?.id) {
+        reservasPedidoCreadas.push(data.id);
+      }
+    }
+
+    if (bookingGroupId && reservasPedidoCreadas.length > 0) {
+      try {
+        const { error: notifyError } = await supabase.rpc('notify_booking_group', {
+          group_id_value: bookingGroupId,
+          company_slug_value: companySlug,
+          account_id_value: user?.isInternal ? user.id : null,
+          session_token_value: user?.isInternal ? user.sessionToken : null,
+          event_kind: 'new'
+        });
+
+        if (notifyError) {
+          console.warn('No se pudo enviar el mail del pedido.', notifyError);
+        }
+      } catch (notifyError) {
+        console.warn('No se pudo enviar el mail del pedido.', notifyError);
       }
     }
 
