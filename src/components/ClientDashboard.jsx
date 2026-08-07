@@ -193,7 +193,6 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   const showFormularioPedido = activeView === 'reserve' && esModoPedido;
   const etiquetaReserva = esModoPedido ? 'Hacer pedido' : 'Reservar turno';
   const etiquetaHistorial = esModoPedido ? 'pedidos' : 'turnos';
-  const etiquetaItemCatalogo = esModoPedido ? 'Producto' : 'Servicio';
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const promocionesHabilitadas = configuracionOperativa.promociones_habilitadas !== false;
   const enabledPromotions = useMemo(() => (
@@ -727,22 +726,38 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
           )}
 
           {productosActivos.length > 0 && (
-            <section className="client-services-panel">
+            <section className={`client-services-panel${esModoPedido ? ' client-products-panel' : ''}`}>
               <h2>{esModoPedido ? 'Productos' : 'Servicios'}</h2>
-              <div className="client-services-grid">
+              <div className={esModoPedido ? 'client-products-grid' : 'client-services-grid'}>
                 {productosActivos
-                  .map((service) => (
-                    <article className="client-service-card" key={service.id}>
-                      <span className="client-service-icon" style={{ background: service.color || '#e2e8f0' }} aria-hidden="true">{service.icon || '✳️'}</span>
-                      <div className="client-service-info">
-                        <strong>{service.name}</strong>
-                        {service.default_duration ? <span>{service.default_duration} min</span> : null}
-                      </div>
-                      {preciosHabilitados && Number(service.base_price || 0) > 0 && (
-                        <span className="client-service-price">desde {formatMoney(service.base_price)}</span>
-                      )}
-                    </article>
-                  ))}
+                  .map((service) => {
+                    if (esModoPedido) {
+                      const parsed = parseProductCatalogName(service.name);
+
+                      return (
+                        <article className="client-product-card" key={service.id}>
+                          {parsed.type && <span className="client-product-type">{parsed.type}</span>}
+                          <strong>{parsed.itemName || service.name}</strong>
+                          {preciosHabilitados && Number(service.base_price || 0) > 0 && (
+                            <span className="client-product-price">desde {formatMoney(service.base_price)}</span>
+                          )}
+                        </article>
+                      );
+                    }
+
+                    return (
+                      <article className="client-service-card" key={service.id}>
+                        <span className="client-service-icon" style={{ background: service.color || '#e2e8f0' }} aria-hidden="true">{service.icon || '✳️'}</span>
+                        <div className="client-service-info">
+                          <strong>{service.name}</strong>
+                          {service.default_duration ? <span>{service.default_duration} min</span> : null}
+                        </div>
+                        {preciosHabilitados && Number(service.base_price || 0) > 0 && (
+                          <span className="client-service-price">desde {formatMoney(service.base_price)}</span>
+                        )}
+                      </article>
+                    );
+                  })}
               </div>
             </section>
           )}
@@ -881,20 +896,19 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
           {productosActivos.length === 0 ? (
             <p className="client-summary-empty">Todavía no hay productos activos para pedir.</p>
           ) : (
-            <div className="client-services-grid">
+            <div className="client-product-groups">
               {productosAgrupados.map((group) => (
-                <div key={group.groupName || 'sin-tipo'} style={{ gridColumn: '1 / -1' }}>
-                  {group.groupName && <h3 style={{ margin: '0 0 .6rem' }}>{group.groupName}</h3>}
-                  <div className="client-services-grid">
+                <div className="client-product-group" key={group.groupName || 'sin-tipo'}>
+                  {group.groupName && <h3 className="client-product-group-title">{group.groupName}</h3>}
+                  <div className="client-products-grid client-products-order-grid">
                     {group.products.map(({ producto, parsed }) => (
-                      <article className="client-service-card" key={producto.id}>
-                        <span className="client-service-icon" style={{ background: producto.color || '#e2e8f0' }} aria-hidden="true">{producto.icon || '🛒'}</span>
-                        <div className="client-service-info">
+                      <article className="client-product-card client-product-order-card" key={producto.id}>
+                        <div className="client-product-main">
                           <strong>{parsed.itemName || producto.name}</strong>
-                          <span>{etiquetaItemCatalogo}</span>
+                          {!group.groupName && parsed.type && <span className="client-product-type">{parsed.type}</span>}
                         </div>
                         {preciosHabilitados && Number(producto.base_price || 0) > 0 && (
-                          <span className="client-service-price">{formatMoney(producto.base_price)}</span>
+                          <span className="client-product-price">{formatMoney(producto.base_price)}</span>
                         )}
                         <label className="platform-field">
                           <span>Cantidad</span>
