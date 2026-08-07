@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './api/supabaseClient';
 // Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
 import { showAppAlert as alert } from './utils/appAlert';
@@ -598,6 +598,38 @@ export default function App() {
 
   const internalSessionAllowed = internalSession && routeAllowedProfiles.includes(internalSession.role);
 
+  // Objetos user estables (no recrear en cada render para evitar re-disparar efectos en hijos)
+  const internalUser = useMemo(() => {
+    if (!internalSession) return null;
+    return {
+      id: internalSession.id,
+      sessionToken: internalSession.sessionToken,
+      email: internalSession.email || '',
+      role: internalSession.role,
+      employeeId: internalSession.employeeId,
+      username: internalSession.username,
+      displayName: internalSession.displayName,
+      firstName: internalSession.firstName,
+      lastName: internalSession.lastName,
+      photoUrl: internalSession.photoUrl,
+      isInternal: true,
+      isLocalInternal: internalSession.isLocalInternal === true
+    };
+  }, [internalSession]);
+
+  const authenticatedUser = useMemo(() => {
+    if (!session) return null;
+    return {
+      ...session.user,
+      email: authProfile?.email || session.user.email,
+      role: authProfile?.role || accessProfile,
+      displayName: authProfile?.display_name || getAuthDisplayName(session.user),
+      photoUrl: getAuthPhotoUrl(session.user),
+      employeeId: authProfile?.employee_id || null,
+      isInternal: false
+    };
+  }, [session, authProfile, accessProfile]);
+
   if (isClientPortal && !session && !localClientSession && !internalSessionAllowed) {
     return loginView;
   }
@@ -627,21 +659,6 @@ export default function App() {
   }
 
   if (internalSessionAllowed) {
-    const internalUser = {
-      id: internalSession.id,
-      sessionToken: internalSession.sessionToken,
-      email: internalSession.email || '',
-      role: internalSession.role,
-      employeeId: internalSession.employeeId,
-      username: internalSession.username,
-      displayName: internalSession.displayName,
-      firstName: internalSession.firstName,
-      lastName: internalSession.lastName,
-      photoUrl: internalSession.photoUrl,
-      isInternal: true,
-      isLocalInternal: internalSession.isLocalInternal === true
-    };
-
     if (internalSession.role === 'admin') {
       return (
         <Dashboard
@@ -685,16 +702,6 @@ export default function App() {
       />
     );
   }
-
-  const authenticatedUser = {
-    ...session.user,
-    email: authProfile?.email || session.user.email,
-    role: authProfile?.role || accessProfile,
-    displayName: authProfile?.display_name || getAuthDisplayName(session.user),
-    photoUrl: getAuthPhotoUrl(session.user),
-    employeeId: authProfile?.employee_id || null,
-    isInternal: false
-  };
 
   return (
     <RoleAccess

@@ -157,7 +157,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
       active = false;
       window.clearTimeout(timeoutId);
     };
-  }, [user, refreshKey, configRefreshKey, activeView, companySlug, companyContext?.id]);
+  }, [user, refreshKey, configRefreshKey, companySlug, companyContext?.id]);
 
   useEffect(() => {
     const refreshConfiguration = () => {
