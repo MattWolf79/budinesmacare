@@ -68,6 +68,8 @@ export default function ClientProfilePanel({ user, companySlug }) {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const internalAccountId = user?.isInternal ? user.id : null;
+  const internalSessionToken = user?.isInternal ? user.sessionToken : null;
 
   useEffect(() => {
     let active = true;
@@ -77,8 +79,8 @@ export default function ClientProfilePanel({ user, companySlug }) {
       setErrorMessage('');
 
       const { data, error } = await supabase.rpc('get_client_self', {
-        account_id_value: user?.id || null,
-        session_token_value: user?.sessionToken || null,
+        account_id_value: internalAccountId,
+        session_token_value: internalSessionToken,
         company_slug_value: companySlug
       });
 
@@ -118,7 +120,7 @@ export default function ClientProfilePanel({ user, companySlug }) {
     return () => {
       active = false;
     };
-  }, [user?.id, user?.sessionToken, companySlug]);
+  }, [internalAccountId, internalSessionToken, companySlug]);
 
   const startEditing = () => {
     setForm(profile);
@@ -171,8 +173,8 @@ export default function ClientProfilePanel({ user, companySlug }) {
     setIsSaving(true);
 
     const { data, error } = await supabase.rpc('update_client_self', {
-      account_id_value: user?.id || null,
-      session_token_value: user?.sessionToken || null,
+      account_id_value: internalAccountId,
+      session_token_value: internalSessionToken,
       first_name_value: form.firstName.trim(),
       last_name_value: form.lastName.trim(),
       phone_value: phone,

@@ -44,6 +44,7 @@ Ejecutar en este orden:
 38. `38_admin_panel_30d_window.sql`
 39. `39_close_pedido_function.sql`
 40. `40_google_client_sync.sql`
+41. `41_google_client_self_profile.sql`
 
 Notas:
 

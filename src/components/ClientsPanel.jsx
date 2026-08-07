@@ -49,6 +49,14 @@ const bookingStatusLabels = {
   cancelled: 'Cancelado'
 };
 
+const orderStatusLabels = {
+  reserved: 'Pedido recibido',
+  confirmed: 'Pedido confirmado',
+  pending_assignment: 'Pedido recibido',
+  waitlist: 'Pedido recibido',
+  cancelled: 'Cancelado'
+};
+
 const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
   reader.onload = () => resolve(String(reader.result || ''));
@@ -92,7 +100,7 @@ const buildAddress = (client) => [
   client.address_locality
 ].filter(Boolean).join(', ');
 
-export default function ClientsPanel({ user, companySlug, adminProfileSummary = null, onDataChanged, hideHeading = false }) {
+export default function ClientsPanel({ user, companySlug, companyContext = null, adminProfileSummary = null, onDataChanged, hideHeading = false }) {
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -110,6 +118,11 @@ export default function ClientsPanel({ user, companySlug, adminProfileSummary = 
 
   const internalAccountId = user?.isInternal ? user.id : null;
   const internalSessionToken = user?.isInternal ? user.sessionToken : null;
+  const configuracionOperativa = companyContext?.configuracion_operativa || {};
+  const esModoPedido = configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false;
+  const etiquetaHistorial = esModoPedido ? 'pedidos' : 'turnos';
+  const etiquetaItemHistorial = esModoPedido ? 'Producto' : 'Servicio';
+  const etiquetasEstadoHistorial = esModoPedido ? orderStatusLabels : bookingStatusLabels;
 
   const loadClients = useCallback(async () => {
     setIsLoading(true);
@@ -514,7 +527,7 @@ export default function ClientsPanel({ user, companySlug, adminProfileSummary = 
                       className="clients-row-history"
                       onClick={() => openHistory(client)}
                       aria-label={`Ver historial de ${client.display_name || 'cliente'}`}
-                      title="Ver historial de turnos"
+                      title={`Ver historial de ${etiquetaHistorial}`}
                     >
                       🕒
                     </button>
@@ -544,7 +557,7 @@ export default function ClientsPanel({ user, companySlug, adminProfileSummary = 
           <div className="clients-history-modal" onClick={(event) => event.stopPropagation()}>
             <header className="clients-history-header">
               <div>
-                <h2>Historial de turnos</h2>
+                <h2>Historial de {etiquetaHistorial}</h2>
                 <p>{historyClient.display_name || `${historyClient.first_name || ''} ${historyClient.last_name || ''}`.trim() || 'Cliente'}</p>
               </div>
               <button type="button" className="clients-history-close" onClick={closeHistory} aria-label="Cerrar">✕</button>
@@ -556,18 +569,18 @@ export default function ClientsPanel({ user, companySlug, adminProfileSummary = 
               ) : historyError ? (
                 <p className="clients-error">{historyError}</p>
               ) : historyBookings.length === 0 ? (
-                <p className="clients-empty">Este cliente todavía no tiene turnos.</p>
+                <p className="clients-empty">Este cliente todavía no tiene {etiquetaHistorial}.</p>
               ) : (
                 <ul className="clients-history-list">
                   {historyBookings.map((booking) => (
                     <li key={booking.id} className={`clients-history-item status-${booking.status}`}>
                       <div className="clients-history-main">
-                        <span className="clients-history-service">{booking.service_name || 'Servicio'}</span>
+                        <span className="clients-history-service">{booking.service_name || etiquetaItemHistorial}</span>
                         <span className="clients-history-date">{formatDisplayDateTime(booking.start_at)}</span>
                       </div>
                       <div className="clients-history-meta">
                         {booking.employee_name && <span>👤 {booking.employee_name}</span>}
-                        <span className={`clients-history-status status-${booking.status}`}>{bookingStatusLabels[booking.status] || booking.status}</span>
+                        <span className={`clients-history-status status-${booking.status}`}>{etiquetasEstadoHistorial[booking.status] || booking.status}</span>
                       </div>
                     </li>
                   ))}
