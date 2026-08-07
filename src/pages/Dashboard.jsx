@@ -3,7 +3,7 @@ import { Container, Box } from "@mui/material";
 import { supabase } from "../api/supabaseClient";
 import Navbar from "../components/Navbar";
 import AdminSidebar from "../components/AdminSidebar";
-import AgendaGrid from "../components/AgendaGrid";
+import AgendaGrid, { invalidarCacheSucursales } from "../components/AgendaGrid";
 import AdminPanel from "../components/AdminPanel";
 import AdminSettingsPanel from "../components/AdminSettingsPanel";
 import BranchesPanel from "../components/BranchesPanel";
@@ -133,6 +133,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   };
 
   const notifyBranchesChanged = () => {
+    invalidarCacheSucursales();
     setAdminDataVersion((current) => current + 1);
     onCompanyContextRefresh?.();
   };

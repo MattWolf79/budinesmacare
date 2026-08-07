@@ -12,6 +12,9 @@ import { generateDetalleFacturaPdf } from './DetalleFactura';
 import { formatDisplayDate } from '../utils/dateFormat';
 
 const SLOT_MINUTES = 30;
+// Cache de sucursales a nivel módulo — cambia solo cuando admin modifica sucursales
+const branchRelationsCache = { slug: null, data: null };
+export const invalidarCacheSucursales = () => { branchRelationsCache.slug = null; branchRelationsCache.data = null; };
 // Rango visible de la grilla: 1 hora antes de la apertura y 1 hora después
 // del cierre del negocio (apertura 09:00 / cierre 18:00) => de 08:00 a 19:00.
 const START_HOUR = 8;
@@ -1681,7 +1684,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           company_slug_value: companySlug
         })
       : Promise.resolve({ data: null, error: null });
-    const bookingOptionsRequest = isClientView || isAdminView || isEmployeeView
+    const bookingOptionsRequest = !isAdminView && (isClientView || isEmployeeView)
       ? supabase.rpc('get_client_booking_options', {
           company_slug_value: companySlug
         })
@@ -1696,7 +1699,16 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
 
     const branchRelationsRequest = showBranchSelector
-      ? supabase.rpc('get_branch_relations', { company_slug_value: companySlug })
+      ? (branchRelationsCache.slug === companySlug && branchRelationsCache.data
+          ? Promise.resolve({ data: branchRelationsCache.data, error: null })
+          : supabase.rpc('get_branch_relations', { company_slug_value: companySlug })
+              .then((result) => {
+                if (!result.error && result.data) {
+                  branchRelationsCache.slug = companySlug;
+                  branchRelationsCache.data = result.data;
+                }
+                return result;
+              }))
       : Promise.resolve({ data: { branchServices: [], employeeBranches: [] }, error: null });
 
     return Promise.all([
@@ -1750,7 +1762,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
     setServices(isAdminView ? adminData.services || fallbackServices : usesInternalEmployeeData ? fallbackServices.length ? fallbackServices : internalEmployeeData.services || [] : isClientView ? fallbackServices : srv || []);
     setEmployees(isAdminView ? adminData.employees || fallbackEmployees : usesInternalEmployeeData ? fallbackEmployees.length ? fallbackEmployees : internalEmployeeData.employees || [] : isClientView ? fallbackEmployees : emp || []);
     setEmployeeServices(isAdminView ? adminData.employeeServices || fallbackEmployeeServices : usesInternalEmployeeData ? fallbackEmployeeServices.length ? fallbackEmployeeServices : internalEmployeeData.employeeServices || [] : isClientView ? fallbackEmployeeServices : []);
-    setEmployeeAvailability(usesInternalEmployeeData ? internalEmployeeData.agendaAvailability || internalEmployeeData.availability || fallbackAvailability : isClientView || isAdminView ? fallbackAvailability : availabilityResult.data || []);
+    setEmployeeAvailability(usesInternalEmployeeData ? internalEmployeeData.agendaAvailability || internalEmployeeData.availability || fallbackAvailability : isAdminView ? adminData.availability || adminData.employeeAvailability || [] : isClientView ? fallbackAvailability : availabilityResult.data || []);
     setBookingClosureItems(isAdminView ? adminData.bookingClosureItems || [] : usesInternalEmployeeData ? internalEmployeeData.bookingClosureItems || [] : []);
     setBookingClosures(isAdminView ? adminData.bookingClosures || [] : usesInternalEmployeeData ? internalEmployeeData.bookingClosures || [] : []);
     setBookingClosureInvoices(Array.isArray(closureInvoicesResult.data) ? closureInvoicesResult.data : []);
