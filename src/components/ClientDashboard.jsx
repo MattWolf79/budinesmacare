@@ -403,13 +403,68 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     }));
   };
 
-  const registrarBorradorPedido = () => {
+  const registrarPedido = async () => {
     if (!itemsPedido.length) {
       setMensajePedido('Seleccioná al menos un producto para armar el pedido.');
       return;
     }
 
-    setMensajePedido(`Borrador listo: ${itemsPedido.length} item(s), entrega ${fechaPedido} ${horaPedido}. La confirmación final se activará cuando esté el backend de pedidos.`);
+    if (!fechaPedido || !horaPedido) {
+      setMensajePedido('Seleccioná día y horario solicitado para el pedido.');
+      return;
+    }
+
+    setIsProcessingAction(true);
+    setMensajePedido('Guardando pedido...');
+
+    const bookingGroupId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : null;
+    const baseStartDate = new Date(`${fechaPedido}T${horaPedido}:00`);
+    const totalItems = itemsPedido.reduce((total, item) => total + item.cantidad, 0);
+
+    for (const [index, item] of itemsPedido.entries()) {
+      const itemStartDate = new Date(baseStartDate);
+      itemStartDate.setMinutes(itemStartDate.getMinutes() + index);
+      const itemEndDate = new Date(itemStartDate);
+      itemEndDate.setMinutes(itemEndDate.getMinutes() + 1);
+      const itemDate = `${itemStartDate.getFullYear()}-${pad(itemStartDate.getMonth() + 1)}-${pad(itemStartDate.getDate())}`;
+      const itemEndDateLabel = `${itemEndDate.getFullYear()}-${pad(itemEndDate.getMonth() + 1)}-${pad(itemEndDate.getDate())}`;
+      const startAt = `${itemDate}T${pad(itemStartDate.getHours())}:${pad(itemStartDate.getMinutes())}:00`;
+      const endAt = `${itemEndDateLabel}T${pad(itemEndDate.getHours())}:${pad(itemEndDate.getMinutes())}:00`;
+      const descripcion = [
+        `Pedido x${item.cantidad}`,
+        item.productoTipo ? `${item.productoTipo} · ${item.productoNombre}` : item.productoNombre,
+        preciosHabilitados ? `${formatMoney(item.precioUnitario)} c/u` : '',
+        aclaracionesPedido.trim() ? `Aclaraciones: ${aclaracionesPedido.trim()}` : ''
+      ].filter(Boolean).join(' · ');
+
+      const { error } = await supabase.rpc('request_client_booking', {
+        service_id_value: item.producto.id,
+        employee_id_value: null,
+        booking_description_value: descripcion,
+        start_at_value: startAt,
+        end_at_value: endAt,
+        customer_name_value: user?.displayName || user?.email || null,
+        customer_email_value: user?.email || null,
+        company_slug_value: companySlug,
+        account_id_value: user?.isInternal ? user.id : null,
+        session_token_value: user?.isInternal ? user.sessionToken : null,
+        booking_group_id_value: bookingGroupId
+      });
+
+      if (error) {
+        setIsProcessingAction(false);
+        setMensajePedido(error.message || 'No se pudo guardar el pedido.');
+        return;
+      }
+    }
+
+    setCantidadesProducto({});
+    setAclaracionesPedido('');
+    setMensajePedido(`Pedido registrado: ${totalItems} item(s), entrega solicitada ${fechaPedido} ${horaPedido}.`);
+    setRefreshKey((current) => current + 1);
+    setIsProcessingAction(false);
   };
 
   const formatMoney = (value) => `$ ${Number(value || 0).toLocaleString('es-AR')}`;
@@ -881,7 +936,9 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
           {mensajePedido && <p className="platform-admin-success">{mensajePedido}</p>}
 
           <div className="platform-action-row platform-action-row-end" style={{ marginTop: '1rem' }}>
-            <button type="button" onClick={registrarBorradorPedido}>Guardar borrador</button>
+            <button type="button" onClick={registrarPedido} disabled={isProcessingAction}>
+              {isProcessingAction ? 'Guardando...' : 'Confirmar pedido'}
+            </button>
           </div>
         </section>
       )}
