@@ -635,12 +635,15 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
             {bannerImages.map((image, index) => (
               <div
                 className="client-home-carousel-slide"
-                role="img"
-                aria-label={`Flyer ${index + 1} de ${bannerImages.length}`}
                 aria-hidden={index !== bannerIndex}
                 key={`${image.fileName || 'flyer'}-${index}`}
-                style={{ backgroundImage: `url(${image.dataUrl})` }}
-              />
+              >
+                <img
+                  src={image.dataUrl}
+                  alt={image.fileName || `Flyer ${index + 1} de ${bannerImages.length}`}
+                  draggable="false"
+                />
+              </div>
             ))}
           </div>
 
