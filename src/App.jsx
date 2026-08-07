@@ -537,6 +537,38 @@ export default function App() {
     };
   }, [session, internalSession, localClientSession]);
 
+  // Objetos user estables — deben estar aquí, antes de cualquier return condicional
+  const internalUser = useMemo(() => {
+    if (!internalSession) return null;
+    return {
+      id: internalSession.id,
+      sessionToken: internalSession.sessionToken,
+      email: internalSession.email || '',
+      role: internalSession.role,
+      employeeId: internalSession.employeeId,
+      username: internalSession.username,
+      displayName: internalSession.displayName,
+      firstName: internalSession.firstName,
+      lastName: internalSession.lastName,
+      photoUrl: internalSession.photoUrl,
+      isInternal: true,
+      isLocalInternal: internalSession.isLocalInternal === true
+    };
+  }, [internalSession]);
+
+  const authenticatedUser = useMemo(() => {
+    if (!session) return null;
+    return {
+      ...session.user,
+      email: authProfile?.email || session.user.email,
+      role: authProfile?.role || accessProfile,
+      displayName: authProfile?.display_name || getAuthDisplayName(session.user),
+      photoUrl: getAuthPhotoUrl(session.user),
+      employeeId: authProfile?.employee_id || null,
+      isInternal: false
+    };
+  }, [session, authProfile, accessProfile]);
+
   if (isPlatformAdminRoute) {
     return <PlatformAdmin />;
   }
@@ -597,38 +629,6 @@ export default function App() {
   );
 
   const internalSessionAllowed = internalSession && routeAllowedProfiles.includes(internalSession.role);
-
-  // Objetos user estables (no recrear en cada render para evitar re-disparar efectos en hijos)
-  const internalUser = useMemo(() => {
-    if (!internalSession) return null;
-    return {
-      id: internalSession.id,
-      sessionToken: internalSession.sessionToken,
-      email: internalSession.email || '',
-      role: internalSession.role,
-      employeeId: internalSession.employeeId,
-      username: internalSession.username,
-      displayName: internalSession.displayName,
-      firstName: internalSession.firstName,
-      lastName: internalSession.lastName,
-      photoUrl: internalSession.photoUrl,
-      isInternal: true,
-      isLocalInternal: internalSession.isLocalInternal === true
-    };
-  }, [internalSession]);
-
-  const authenticatedUser = useMemo(() => {
-    if (!session) return null;
-    return {
-      ...session.user,
-      email: authProfile?.email || session.user.email,
-      role: authProfile?.role || accessProfile,
-      displayName: authProfile?.display_name || getAuthDisplayName(session.user),
-      photoUrl: getAuthPhotoUrl(session.user),
-      employeeId: authProfile?.employee_id || null,
-      isInternal: false
-    };
-  }, [session, authProfile, accessProfile]);
 
   if (isClientPortal && !session && !localClientSession && !internalSessionAllowed) {
     return loginView;
