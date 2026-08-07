@@ -18740,6 +18740,30 @@ body {
   min-height: 42px !important;
 }
 
+.client-order-submit-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid #5b21b6 !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #6d28d9, #4c1d95) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  box-shadow: 0 10px 20px rgba(76, 29, 149, 0.2) !important;
+  cursor: pointer !important;
+}
+
+.client-order-submit-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6) !important;
+  transform: translateY(-1px) !important;
+}
+
+.client-order-submit-button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.72 !important;
+}
+
 .platform-admin-success,
 .platform-admin-error {
   display: block !important;

@@ -9,20 +9,24 @@ const ACTIVE_BOOKING_STATUSES = ['confirmed', 'reserved', 'pending_assignment', 
 
 const isWaitlistBooking = (booking) => String(booking?.status || '').trim().toLowerCase() === 'waitlist';
 
-const getBookingStatusLabel = (booking) => (
-  isWaitlistBooking(booking)
-    ? 'Lista de espera'
-    : !booking.employee_id || booking.status === 'pending_assignment'
-      ? 'Pendiente de asignación'
-      : 'Turno confirmado'
+const getBookingStatusLabel = (booking, esModoPedido = false) => (
+  esModoPedido
+    ? (booking.status === 'cancelled' ? 'Cancelado' : isWaitlistBooking(booking) || booking.status === 'pending_assignment' ? 'Pedido recibido' : 'Pedido confirmado')
+    : isWaitlistBooking(booking)
+      ? 'Lista de espera'
+      : !booking.employee_id || booking.status === 'pending_assignment'
+        ? 'Pendiente de asignación'
+        : 'Turno confirmado'
 );
 
-const getBookingStatusValue = (booking) => (
-  isWaitlistBooking(booking)
-    ? 'Lista de espera'
-    : !booking.employee_id || booking.status === 'pending_assignment'
-      ? 'Pendiente'
-      : 'Asignado'
+const getBookingStatusValue = (booking, esModoPedido = false) => (
+  esModoPedido
+    ? (isWaitlistBooking(booking) || booking.status === 'pending_assignment' ? 'Pedido recibido' : 'Confirmado')
+    : isWaitlistBooking(booking)
+      ? 'Lista de espera'
+      : !booking.employee_id || booking.status === 'pending_assignment'
+        ? 'Pendiente'
+        : 'Asignado'
 );
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -749,8 +753,8 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                       <span className="client-turno-row-service">{getBookingServiceName(booking)}</span>
                     )}
                     <span className="client-turno-row-date">{formatBookingDate(booking.start_at)} · {formatBookingTimeRange(booking.start_at, booking.end_at)}</span>
-                    <span className={`client-turno-row-status ${booking.employee_id && booking.status !== 'pending_assignment' ? 'is-active' : 'is-muted'}`}>
-                      {getBookingStatusValue(booking)}
+                    <span className={`client-turno-row-status ${esModoPedido || (booking.employee_id && booking.status !== 'pending_assignment') ? 'is-active' : 'is-muted'}`}>
+                      {getBookingStatusValue(booking, esModoPedido)}
                     </span>
                   </button>
                 ))
@@ -765,7 +769,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
               {isLoading ? (
                 <p className="client-summary-empty">Cargando...</p>
               ) : historyBookings.length === 0 ? (
-                <p className="client-summary-empty">Sin turnos anteriores.</p>
+                <p className="client-summary-empty">Sin {esModoPedido ? 'pedidos' : 'turnos'} anteriores.</p>
               ) : (
                 historyBookings.map(({ booking, service }) => (
                   <button
@@ -795,7 +799,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                 <div className="client-turno-detail-fields">
                   {resolveServiceName(selectedEntry.booking) && (
                     <div className="client-turno-detail-field">
-                      <span>Servicio</span>
+                      <span>{esModoPedido ? 'Producto' : 'Servicio'}</span>
                       <strong>{resolveServiceName(selectedEntry.booking)}</strong>
                     </div>
                   )}
@@ -815,7 +819,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                   )}
                   <div className="client-turno-detail-field">
                     <span>Estado</span>
-                    <strong>{selectedEntry.booking.status === 'cancelled' ? 'Cancelado' : getBookingStatusLabel(selectedEntry.booking)}</strong>
+                    <strong>{selectedEntry.booking.status === 'cancelled' ? 'Cancelado' : getBookingStatusLabel(selectedEntry.booking, esModoPedido)}</strong>
                   </div>
                   {preciosHabilitados && (
                     <div className="client-turno-detail-field">
@@ -936,7 +940,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
           {mensajePedido && <p className="platform-admin-success">{mensajePedido}</p>}
 
           <div className="platform-action-row platform-action-row-end" style={{ marginTop: '1rem' }}>
-            <button type="button" onClick={registrarPedido} disabled={isProcessingAction}>
+            <button type="button" className="client-order-submit-button" onClick={registrarPedido} disabled={isProcessingAction}>
               {isProcessingAction ? 'Guardando...' : 'Confirmar pedido'}
             </button>
           </div>
