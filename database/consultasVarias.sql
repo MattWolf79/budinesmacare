@@ -157,6 +157,31 @@ where companies.slug = 'empresa-prueba'
   and accounts.role = 'client'
 order by accounts.created_at desc;
 
+-- Ver clientes creados o vinculados por login con Google.
+select
+  accounts.id,
+  accounts.company_id,
+  companies.name as company_name,
+  companies.slug as company_slug,
+  accounts.auth_user_id,
+  accounts.username,
+  accounts.display_name,
+  accounts.first_name,
+  accounts.last_name,
+  accounts.email,
+  accounts.phone,
+  accounts.photo_url,
+  accounts.active,
+  accounts.created_at,
+  accounts.updated_at
+from public.internal_accounts accounts
+join public.companies companies
+  on companies.id = accounts.company_id
+where companies.slug = 'empresa-prueba'
+  and accounts.role = 'client'
+  and accounts.auth_user_id is not null
+order by accounts.updated_at desc nulls last, accounts.created_at desc;
+
 -- Ver reservas vinculadas a cliente interno por DNI.
 select
   bookings.id,

@@ -15,6 +15,7 @@ const profileStorageKey = 'turnos_access_profile';
 const requestedProfileStorageKey = 'turnos_requested_profile';
 const internalSessionStorageKey = 'turnos_internal_session';
 const localClientSessionStorageKey = 'turnos_local_client_session';
+const clienteGoogleSincronizadoStorageKey = 'turnos_google_client_synced';
 const lastActivityStorageKey = 'turnos_last_activity_at';
 const inactivityLimitMs = 5 * 60 * 1000;
 const inactivityMessage = 'Pasaron mas de 5 min sin operar, volver a intentar.';
@@ -55,6 +56,26 @@ const getAuthDisplayName = (user) => {
   const metadata = user?.user_metadata || {};
 
   return metadata.full_name || metadata.name || user?.email || '';
+};
+
+const separarNombreClienteGoogle = (user) => {
+  const metadata = user?.user_metadata || {};
+  const nombre = String(metadata.given_name || '').trim();
+  const apellido = String(metadata.family_name || '').trim();
+
+  if (nombre || apellido) return { nombre, apellido };
+
+  const partes = String(getAuthDisplayName(user) || '').trim().split(/\s+/).filter(Boolean);
+
+  return {
+    nombre: partes[0] || '',
+    apellido: partes.slice(1).join(' ')
+  };
+};
+
+const obtenerTelefonoClienteGoogle = (user) => {
+  const metadata = user?.user_metadata || {};
+  return String(user?.phone || metadata.phone || metadata.phone_number || metadata.mobile_phone || '').trim();
 };
 
 const loadStoredInternalSession = (expectedCompanySlug = null) => {
@@ -568,6 +589,46 @@ export default function App() {
       isInternal: false
     };
   }, [session, authProfile, accessProfile]);
+
+  useEffect(() => {
+    if (!session?.user || accessProfile !== 'client' || !companySlug || !companyContext?.active) return;
+
+    const emailCliente = String(session.user.email || '').trim().toLowerCase();
+    if (!emailCliente) return;
+
+    const claveSincronizacion = `${clienteGoogleSincronizadoStorageKey}:${companySlug}:${session.user.id}:${emailCliente}`;
+    if (window.sessionStorage.getItem(claveSincronizacion) === '1') return;
+
+    let cancelado = false;
+
+    const sincronizarClienteGoogle = async () => {
+      const { nombre, apellido } = separarNombreClienteGoogle(session.user);
+      const { error } = await supabase.rpc('sync_google_client_account', {
+        first_name_value: nombre || null,
+        last_name_value: apellido || null,
+        display_name_value: getAuthDisplayName(session.user) || null,
+        email_value: emailCliente,
+        phone_value: obtenerTelefonoClienteGoogle(session.user) || null,
+        photo_url_value: getAuthPhotoUrl(session.user),
+        company_slug_value: companySlug
+      });
+
+      if (cancelado) return;
+
+      if (error) {
+        console.warn('No se pudo registrar el cliente Google en la base de clientes.', error);
+        return;
+      }
+
+      window.sessionStorage.setItem(claveSincronizacion, '1');
+    };
+
+    sincronizarClienteGoogle();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [session, accessProfile, companySlug, companyContext?.active]);
 
   if (isPlatformAdminRoute) {
     return <PlatformAdmin />;

@@ -37,6 +37,13 @@ Ejecutar en este orden:
 31. `31_company_landing.sql`
 32. `32_repair_close_booking_attention.sql`
 33. `33_appearance_palette.sql`
+34. `34_tipo_empresa_modo_operacion.sql`
+35. `35_product_types_master.sql`
+36. `36_employee_username_tenant_and_close_pedido.sql`
+37. `37_close_pedido_dataset_optimization.sql`
+38. `38_admin_panel_30d_window.sql`
+39. `39_close_pedido_function.sql`
+40. `40_google_client_sync.sql`
 
 Notas:
 
