@@ -32,7 +32,7 @@ const addDays = (date, days) => {
 const isClosedBooking = (booking) => ['completed', 'closed'].includes(String(booking?.status || '').trim().toLowerCase());
 const isCancelledBooking = (booking) => ['cancelled', 'canceled', 'cancelado', 'cancelada'].includes(String(booking?.status || '').trim().toLowerCase());
 
-const getBookingMonetaryValue = (booking) => {
+const getBookingMonetaryValue = (booking, precioUnitario = 0) => {
   const itemPrice = Number(booking?.item_price || 0);
   if (itemPrice > 0) return itemPrice;
 
@@ -41,6 +41,9 @@ const getBookingMonetaryValue = (booking) => {
 
   const price = Number(booking?.price || 0);
   if (price > 0) return price;
+
+  const precioProducto = Number(precioUnitario || 0);
+  if (precioProducto > 0) return precioProducto * parseLineQuantity(booking, precioProducto);
 
   return 0;
 };
@@ -273,7 +276,7 @@ export default function PanelPedidosAdmin({ user, companySlug, adminProfileSumma
 
       const unitPrice = servicePriceById.get(String(booking.service)) || 0;
       const lineQuantity = parseLineQuantity(booking, unitPrice);
-      const lineAmount = getBookingMonetaryValue(booking);
+      const lineAmount = getBookingMonetaryValue(booking, unitPrice);
       current.lines.push(booking);
       current.totalAmount += lineAmount;
       current.totalQuantity += lineQuantity;
@@ -307,13 +310,19 @@ export default function PanelPedidosAdmin({ user, companySlug, adminProfileSumma
   );
 
   const valorTotalPedidos = useMemo(
-    () => pedidosNoCancelados.reduce((total, booking) => total + getBookingMonetaryValue(booking), 0),
-    [pedidosNoCancelados]
+    () => pedidosNoCancelados.reduce((total, booking) => {
+      const unitPrice = servicePriceById.get(String(booking.service)) || 0;
+      return total + getBookingMonetaryValue(booking, unitPrice);
+    }, 0),
+    [pedidosNoCancelados, servicePriceById]
   );
 
   const valorTotalDiaSeleccionado = useMemo(
-    () => pedidosDelDia.reduce((total, booking) => total + getBookingMonetaryValue(booking), 0),
-    [pedidosDelDia]
+    () => pedidosDelDia.reduce((total, booking) => {
+      const unitPrice = servicePriceById.get(String(booking.service)) || 0;
+      return total + getBookingMonetaryValue(booking, unitPrice);
+    }, 0),
+    [pedidosDelDia, servicePriceById]
   );
 
   const selectedOrderGroupedByType = useMemo(() => {
@@ -324,7 +333,7 @@ export default function PanelPedidosAdmin({ user, companySlug, adminProfileSumma
       const parsed = splitCatalogName(serviceName);
       const unitPrice = servicePriceById.get(String(booking.service)) || 0;
       const quantity = parseLineQuantity(booking, unitPrice);
-      const amount = getBookingMonetaryValue(booking);
+      const amount = getBookingMonetaryValue(booking, unitPrice);
 
       const bucket = grouped.get(parsed.type) || {
         type: parsed.type,
