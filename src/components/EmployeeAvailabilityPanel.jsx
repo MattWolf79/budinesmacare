@@ -225,23 +225,28 @@ export default function EmployeeAvailabilityPanel({
     return visibleAvailability.filter((item) => Number(item.weekday) === Number(selectedWeekdayFilter));
   }, [selectedWeekdayFilter, visibleAvailability]);
 
+  const userIdRef = user?.id;
+  const userSessionTokenRef = user?.sessionToken;
+  const userIsInternalRef = user?.isInternal;
+  const userRoleRef = user?.role;
+
   const loadAvailability = useCallback(async () => {
     setIsLoading(true);
     setLoadError('');
 
     const employeesRequest = isAdminMode
       ? supabase.rpc('get_admin_panel_data', {
-          account_id_value: user?.isInternal && user?.role === 'admin' ? user.id : null,
-          session_token_value: user?.isInternal ? user.sessionToken : null,
+          account_id_value: userIsInternalRef && userRoleRef === 'admin' ? userIdRef : null,
+          session_token_value: userIsInternalRef ? userSessionTokenRef : null,
           request_status_value: null,
           company_slug_value: companySlug
         })
       : Promise.resolve({ data: employeeId ? [{ id: employeeId, name: employeeName || 'Mi agenda', active: true }] : [], error: null });
 
-    const availabilityRequest = !isAdminMode && user?.isInternal
+    const availabilityRequest = !isAdminMode && userIsInternalRef
       ? supabase.rpc('list_internal_employee_availability', {
-          account_id_value: user.id,
-          session_token_value: user.sessionToken,
+          account_id_value: userIdRef,
+          session_token_value: userSessionTokenRef,
           company_slug_value: companySlug
         })
       : isAdminMode
@@ -274,7 +279,7 @@ export default function EmployeeAvailabilityPanel({
         : employeeId || nextEmployees[0]?.id || ''
     }));
     setIsLoading(false);
-  }, [companySlug, employeeId, employeeName, isAdminMode, user]);
+  }, [companySlug, employeeId, employeeName, isAdminMode, userIdRef, userSessionTokenRef, userIsInternalRef, userRoleRef]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {

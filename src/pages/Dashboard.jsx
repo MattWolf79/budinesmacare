@@ -111,7 +111,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     return () => {
       active = false;
     };
-  }, [adminDataVersion, companySlug]);
+  }, [companySlug]);
 
   useEffect(() => {
     if (!esModoPedido) return;
@@ -231,7 +231,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         <Box className="dashboard-content">
           {activeView === 'agenda' && !esModoPedido && (
             <div className="agenda-responsive-shell">
-              <AgendaGrid key={adminDataVersion} user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={(options) => { setNewBookingInitial(options); setIsNewBookingOpen(true); }} />
+              <AgendaGrid key="agenda" user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={(options) => { setNewBookingInitial(options); setIsNewBookingOpen(true); }} />
             </div>
           )}
           {activeView === 'agenda' && esModoPedido && (
@@ -239,12 +239,12 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
           )}
           {activeView === 'close-attention' && preciosHabilitados && (
             <div className="agenda-responsive-shell close-attention-responsive-shell">
-              <AgendaGrid key={`close-attention-${adminDataVersion}`} closeAttentionPage user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onCloseAttentionPageClose={() => changeView('agenda')} onBookingsChanged={notifyAdminDataChanged} />
+              <AgendaGrid key="close-attention" closeAttentionPage user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onCloseAttentionPageClose={() => changeView('agenda')} onBookingsChanged={notifyAdminDataChanged} />
             </div>
           )}
           {activeView === 'pending' && !esModoPedido && (
             <div className="agenda-responsive-shell">
-              <AgendaGrid key={`pending-${adminDataVersion}`} pendingView user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />
+              <AgendaGrid key="pending" pendingView user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />
             </div>
           )}
           {activeView === 'clients' && <ClientsPanel user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
