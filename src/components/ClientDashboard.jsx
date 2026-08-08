@@ -871,9 +871,12 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                   .map((service) => {
                     if (esModoPedido) {
                       const parsed = parseProductCatalogName(service.name);
+                      const productImageStyle = service.product_image_url
+                        ? { backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.68)), url(${service.product_image_url})` }
+                        : undefined;
 
                       return (
-                        <article className="client-product-card" key={service.id}>
+                        <article className={`client-product-card${service.product_image_url ? ' has-product-image' : ''}`} style={productImageStyle} key={service.id}>
                           {parsed.type && <span className="client-product-type">{parsed.type}</span>}
                           <strong>{parsed.itemName || service.name}</strong>
                           {preciosHabilitados && Number(service.base_price || 0) > 0 && (
@@ -1062,7 +1065,11 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                     )}
                     <div className="client-products-grid client-products-order-grid" id={`client-product-track-${indiceGrupo}`}>
                     {group.products.map(({ producto, parsed }) => (
-                      <article className="client-product-card client-product-order-card" key={producto.id}>
+                      <article
+                        className={`client-product-card client-product-order-card${producto.product_image_url ? ' has-product-image' : ''}`}
+                        style={producto.product_image_url ? { backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.16), rgba(2, 6, 23, 0.72)), url(${producto.product_image_url})` } : undefined}
+                        key={producto.id}
+                      >
                         <div className="client-product-main">
                           <strong>{parsed.itemName || producto.name}</strong>
                           {!group.groupName && parsed.type && <span className="client-product-type">{parsed.type}</span>}

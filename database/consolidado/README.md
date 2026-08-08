@@ -45,6 +45,7 @@ Ejecutar en este orden:
 39. `39_close_pedido_function.sql`
 40. `40_google_client_sync.sql`
 41. `41_google_client_self_profile.sql`
+42. `42_product_images.sql`
 
 Notas:
 

@@ -33,6 +33,7 @@ const emptyService = {
   default_duration: 30,
   base_price: '',
   activity_discount_check_id: '',
+  product_image_url: '',
   active: true
 };
 
@@ -354,7 +355,8 @@ const saveAdminServiceRecord = async ({
   sessionToken,
   activityDiscountCheckId,
   companySlug,
-  productTypeId
+  productTypeId,
+  productImageUrl
 }) => {
   const baseArgs = {
     service_id_value: serviceId,
@@ -368,6 +370,17 @@ const saveAdminServiceRecord = async ({
     session_token_value: sessionToken,
     company_slug_value: companySlug
   };
+
+  const resultWithImage = await supabase.rpc('save_admin_service', {
+    ...baseArgs,
+    activity_discount_check_id_value: activityDiscountCheckId || null,
+    product_type_id_value: productTypeId || null,
+    product_image_url_value: productImageUrl || null
+  }).single();
+
+  if (!resultWithImage.error || !isMissingSaveServiceSignatureError(resultWithImage.error)) {
+    return resultWithImage;
+  }
 
   const resultWithCheck = await supabase.rpc('save_admin_service', {
     ...baseArgs,
@@ -484,6 +497,7 @@ const serviceMatchesPayload = (service, payload) =>
   Number(service.base_price || 0) === Number(payload.base_price || 0) &&
   (!Object.prototype.hasOwnProperty.call(service, 'activity_discount_check_id') || String(service.activity_discount_check_id || '') === String(payload.activity_discount_check_id || '')) &&
   (!Object.prototype.hasOwnProperty.call(service, 'product_type_id') || String(service.product_type_id || '') === String(payload.product_type_id || '')) &&
+  (!Object.prototype.hasOwnProperty.call(service, 'product_image_url') || String(service.product_image_url || '') === String(payload.product_image_url || '')) &&
   service.active === payload.active;
 
 const employeeMatchesPayload = (employee, payload) =>
@@ -851,6 +865,28 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     setServiceForm((current) => ({ ...current, [field]: value }));
   };
 
+  const updateProductImage = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Seleccioná una imagen válida para el producto.');
+      return;
+    }
+
+    if (file.size > 500 * 1024) {
+      alert('La foto del producto debe pesar menos de 500 KB.');
+      return;
+    }
+
+    try {
+      const productImageUrl = await fileToDataUrl(file);
+      updateServiceField('product_image_url', productImageUrl);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
   const updateProductTypeField = (field, value) => {
     setProductTypeForm((current) => ({ ...current, [field]: value }));
   };
@@ -1018,6 +1054,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       default_duration: service.default_duration || 30,
       base_price: service.base_price === 0 || service.base_price ? String(service.base_price) : '',
       activity_discount_check_id: getServiceActivityCheckId(service),
+      product_image_url: service.product_image_url || '',
       active: service.active !== false
     });
   };
@@ -1439,6 +1476,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       base_price: preciosHabilitados ? parseMoney(serviceForm.base_price) : 0,
       activity_discount_check_id: preciosHabilitados ? serviceForm.activity_discount_check_id || '' : '',
       product_type_id: selectedTypeId,
+      product_image_url: esModoPedido ? serviceForm.product_image_url || '' : '',
       active: serviceForm.active
     };
 
@@ -1483,7 +1521,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       sessionToken: internalSessionToken,
       activityDiscountCheckId: payload.activity_discount_check_id,
       companySlug,
-      productTypeId: payload.product_type_id
+      productTypeId: payload.product_type_id,
+      productImageUrl: payload.product_image_url
     });
 
     if (serviceResult.error) {
@@ -1515,7 +1554,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       const serviceWithCheck = {
         ...serviceResult.data,
         activity_discount_check_id: payload.activity_discount_check_id || '',
-        product_type_id: payload.product_type_id
+        product_type_id: payload.product_type_id,
+        product_image_url: payload.product_image_url
       };
       if (editingServiceId) {
         return currentServices.map((service) =>
@@ -1552,6 +1592,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       sessionToken: internalSessionToken,
       activityDiscountCheckId: getServiceActivityCheckId(service),
       productTypeId: service.product_type_id,
+      productImageUrl: service.product_image_url || '',
       companySlug
     });
 
@@ -2085,6 +2126,19 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
               </label>
             )}
 
+            {esModoPedido && (
+              <label className="product-image-field">
+                Foto del producto
+                <input type="file" accept="image/*" onChange={updateProductImage} />
+                {serviceForm.product_image_url && (
+                  <span className="product-image-preview">
+                    <img src={serviceForm.product_image_url} alt="Vista previa del producto" />
+                    <button type="button" onClick={() => updateServiceField('product_image_url', '')}>Quitar</button>
+                  </span>
+                )}
+              </label>
+            )}
+
             {preciosHabilitados && activityDiscountChecks.length > 0 && (
               <label>
                 Check servicio
@@ -2198,7 +2252,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
         </div>
         )}
 
-        <div className="admin-list service-record-list service-button-grid">
+        <div className={`admin-list service-record-list service-button-grid${esModoPedido ? ' pedido-product-admin-list' : ''}`}>
           {esModoPedido && !canManageCatalog && (
             <div className="service-group-block">
               <div className="catalog-group-title">Tipos de producto</div>

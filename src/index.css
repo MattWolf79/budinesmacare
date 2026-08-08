@@ -9774,7 +9774,7 @@ body {
 .client-products-grid,
 .client-product-groups {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
   gap: 12px;
 }
 
@@ -9841,6 +9841,8 @@ body {
   border: 1px solid rgba(15, 118, 110, 0.14);
   border-radius: 14px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background-position: center;
+  background-size: cover;
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.07);
   overflow: hidden;
 }
@@ -9855,6 +9857,7 @@ body {
 }
 
 .client-product-card strong {
+  position: relative;
   display: block;
   max-width: 100%;
   margin: 2px 0 12px;
@@ -9865,6 +9868,28 @@ body {
   overflow-wrap: anywhere;
 }
 
+.client-product-card.has-product-image {
+  min-height: 140px;
+  border-color: rgba(15, 23, 42, 0.18);
+  background-color: #0f172a;
+}
+
+.client-product-card.has-product-image::before {
+  opacity: 0;
+}
+
+.client-product-card.has-product-image strong,
+.client-product-card.has-product-image .client-product-price {
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(2, 6, 23, 0.72);
+}
+
+.client-product-card.has-product-image .client-product-type {
+  color: #fff;
+  background: rgba(15, 23, 42, 0.44);
+  backdrop-filter: blur(4px);
+}
+
 .client-product-main {
   display: grid;
   gap: 7px;
@@ -9873,6 +9898,7 @@ body {
 }
 
 .client-product-type {
+  position: relative;
   display: inline-flex;
   max-width: 100%;
   width: fit-content;
@@ -9887,6 +9913,7 @@ body {
 }
 
 .client-product-price {
+  position: relative;
   margin-top: auto;
   font-size: 13px;
   line-height: 1.2;
@@ -9911,6 +9938,10 @@ body {
   gap: 9px;
   padding: 13px 14px 12px 16px;
   scroll-snap-align: start;
+}
+
+.client-product-order-card.has-product-image {
+  min-height: 152px;
 }
 
 .client-product-order-card strong {
@@ -10002,6 +10033,15 @@ body {
     gap: 7px;
     padding: 11px 11px 10px 14px;
     border-radius: 12px;
+  }
+
+  .client-products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .client-product-card.has-product-image,
+  .client-product-order-card.has-product-image {
+    min-height: 118px;
   }
 
   .client-product-order-card strong {
@@ -13270,6 +13310,43 @@ body {
 
 .service-admin-manager .admin-emoji-button {
   border-radius: 999px;
+}
+
+.product-image-field {
+  display: grid;
+  gap: 8px;
+}
+
+.product-image-preview {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 62px;
+  border: 1px solid #d8e0eb;
+  border-radius: 10px;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+.product-image-preview img {
+  width: 72px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.product-image-preview button {
+  justify-self: start;
+  min-height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 5px 10px;
+  color: #334155;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
 }
 
 @media (max-width: 1080px) {
@@ -20475,6 +20552,43 @@ body .clients-panel .clients-delete-button:hover:not(:disabled) {
   font-size: 14px !important;
 }
 
+.pedido-product-admin-list {
+  grid-template-columns: minmax(420px, 1fr) !important;
+}
+
+.pedido-product-admin-list .service-group-block {
+  width: min(100%, 560px);
+}
+
+.pedido-product-admin-list .catalog-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 48px;
+  padding: 8px 10px;
+}
+
+.pedido-product-admin-list .catalog-row-main {
+  gap: 10px;
+}
+
+.pedido-product-admin-list .catalog-row-name {
+  max-width: none;
+  min-width: 0;
+}
+
+.pedido-product-admin-list .catalog-row-actions {
+  grid-auto-columns: auto;
+  gap: 6px;
+}
+
+.pedido-product-admin-list .catalog-row-actions .catalog-icon-action {
+  width: 30px !important;
+  min-width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+}
+
 .new-booking-product-group {
   display: grid;
   gap: 6px;
@@ -20865,6 +20979,14 @@ body .clients-panel .clients-delete-button:hover:not(:disabled) {
     height: 36px !important;
     min-height: 36px !important;
     font-size: 15px !important;
+  }
+
+  .pedido-product-admin-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pedido-product-admin-list .service-group-block {
+    width: 100%;
   }
 
   .new-booking-product-row {
