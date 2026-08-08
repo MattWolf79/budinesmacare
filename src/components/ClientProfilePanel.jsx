@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import { comprimirImagen } from '../utils/imagenes';
 
 const emptyProfile = {
   firstName: '',
@@ -52,13 +53,6 @@ const splitPhone = (phone) => {
 
   return { phoneCode: '+54', phoneNumber: digits.replace(/^\+/, '') };
 };
-
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result || ''));
-  reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
-  reader.readAsDataURL(file);
-});
 
 export default function ClientProfilePanel({ user, companySlug }) {
   const [profile, setProfile] = useState(emptyProfile);
@@ -145,7 +139,7 @@ export default function ClientProfilePanel({ user, companySlug }) {
     if (!file) return;
 
     try {
-      const dataUrl = await fileToDataUrl(file);
+      const dataUrl = await comprimirImagen(file, { ladoMaximo: 512, calidad: 0.72 });
       setForm((current) => ({ ...current, photoUrl: dataUrl }));
     } catch (error) {
       setErrorMessage(error.message || 'No se pudo cargar la imagen.');

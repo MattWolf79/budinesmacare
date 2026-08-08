@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import { getClientPortalPath } from '../utils/tenant';
+import { comprimirImagen } from '../utils/imagenes';
 
 const requestedProfileStorageKey = 'turnos_requested_profile';
 // Se usa localStorage (no sessionStorage) para que el perfil solicitado y la
@@ -109,13 +110,6 @@ const calculateAge = (birthDateValue) => {
 
   return age >= 0 ? String(age) : '';
 };
-
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result || ''));
-  reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
-  reader.readAsDataURL(file);
-});
 
 export default function Login({ companySlug, companyContext, allowedProfiles = accessOptions.map((option) => option.id), onInternalAccess, onLocalClientAccess, onLocalInternalAccess, localClientAccessEnabled = false, localInternalAccessEnabled = false, sessionNotice = '', onDismissSessionNotice }) {
   const [registrationProfile, setRegistrationProfile] = useState(null);
@@ -242,7 +236,7 @@ export default function Login({ companySlug, companyContext, allowedProfiles = a
     }
 
     try {
-      const photoUrl = await fileToDataUrl(file);
+      const photoUrl = await comprimirImagen(file, { ladoMaximo: 512, calidad: 0.72 });
       updateRegistrationField('photoUrl', photoUrl);
     } catch (error) {
       setRegistrationError(error.message);

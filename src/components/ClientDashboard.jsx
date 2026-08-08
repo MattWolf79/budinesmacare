@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import { obtenerConfiguracionApp } from '../api/configuracionApp';
 import AgendaGrid from './AgendaGrid';
 import NewBookingPanel from './NewBookingPanel';
 import TarjetaPromocion from './TarjetaPromocion';
@@ -134,7 +135,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
       const [bookingResult, serviceResult, configResult] = await Promise.all([
         bookingRequest || Promise.resolve({ data: [], error: null }),
         serviceRequest,
-        supabase.rpc('get_app_configuration', { company_slug_value: companySlug })
+        obtenerConfiguracionApp(companySlug)
       ]);
 
       if (!active) return;

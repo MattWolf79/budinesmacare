@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import { obtenerConfiguracionApp } from '../api/configuracionApp';
 import AgendaGrid from './AgendaGrid';
 import EmployeeAvailabilityPanel from './EmployeeAvailabilityPanel';
 import MetricCard from './MetricCard';
 import { formatDisplayDate } from '../utils/dateFormat';
+import { comprimirImagen } from '../utils/imagenes';
 
 const parseDate = (value) => value instanceof Date ? value : new Date(value);
 
@@ -48,13 +50,6 @@ const buildProfileForm = (employee) => ({
   address_number: employee?.address_number || '',
   address_locality: employee?.address_locality || '',
   photo_url: employee?.photo_url || ''
-});
-
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = () => reject(reader.error);
-  reader.readAsDataURL(file);
 });
 
 const calculateAge = (birthDateValue) => {
@@ -340,9 +335,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
             session_token_value: user.sessionToken,
             company_slug_value: companySlug
           }),
-          supabase.rpc('get_app_configuration', {
-            company_slug_value: companySlug
-          })
+          obtenerConfiguracionApp(companySlug)
         ]);
 
         const { data, error: workspaceError } = workspaceResult;
@@ -402,9 +395,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         supabase.from('services').select('*'),
         supabase.from('employee_services').select('employee_id, service_id').eq('employee_id', employeeId),
         availabilityRequest,
-        supabase.rpc('get_app_configuration', {
-          company_slug_value: companySlug
-        })
+        obtenerConfiguracionApp(companySlug)
       ]);
 
       if (!active) {
@@ -497,7 +488,7 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     }
 
     try {
-      const dataUrl = await fileToDataUrl(file);
+      const dataUrl = await comprimirImagen(file, { ladoMaximo: 512, calidad: 0.72 });
       updateProfileField('photo_url', dataUrl);
       setProfileError('');
     } catch {

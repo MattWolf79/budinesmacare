@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import { obtenerConfiguracionApp } from '../api/configuracionApp';
 // Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
 import { showAppAlert as alert } from '../utils/appAlert';
 import { applyAppearanceStyle, getStoredAppearance, normalizeAppearance } from '../utils/appearance';
+import { comprimirImagen } from '../utils/imagenes';
 import AppearancePaletteSelector from './AppearancePaletteSelector';
 import TarjetaPromocion from './TarjetaPromocion';
 
@@ -257,9 +259,7 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
 
     const timeoutId = window.setTimeout(async () => {
       setIsLoading(true);
-      const { data, error } = await supabase.rpc('get_app_configuration', {
-        company_slug_value: companySlug
-      });
+      const { data, error } = await obtenerConfiguracionApp(companySlug, { forzar: true });
 
       if (!active) return;
 
@@ -316,23 +316,21 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
+    comprimirImagen(file, { ladoMaximo: 1024, calidad: 0.72 }).then((dataUrl) => {
       setForm((current) => ({
         ...current,
         promotions: current.promotions.map((promotion, promotionIndex) => (
           promotionIndex === index
             ? {
                 ...promotion,
-                imageDataUrl: String(reader.result || ''),
+                imageDataUrl: dataUrl,
                 imageFileName: file.name,
                 imageMimeType: file.type
               }
             : promotion
         ))
       }));
-    };
-    reader.readAsDataURL(file);
+    });
     event.target.value = '';
   };
 
@@ -426,15 +424,13 @@ export default function AdminSettingsPanel({ user, adminProfileSummary = null, c
       return;
     }
 
-    Promise.all(selectedFiles.map((file) => new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({
-        dataUrl: String(reader.result || ''),
+    Promise.all(selectedFiles.map((file) => (
+      comprimirImagen(file, { ladoMaximo: 1280, calidad: 0.72 }).then((dataUrl) => ({
+        dataUrl,
         fileName: file.name,
         mimeType: file.type
-      });
-      reader.readAsDataURL(file);
-    }))).then((newImages) => {
+      }))
+    ))).then((newImages) => {
       setForm((current) => ({
         ...current,
         banner_data_url: newImages[0]?.dataUrl || current.banner_data_url,

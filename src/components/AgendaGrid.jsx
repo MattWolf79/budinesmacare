@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import { obtenerConfiguracionApp } from '../api/configuracionApp';
 // Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
 import { showAppAlert as alert } from '../utils/appAlert';
 import BookingItem from './BookingItem';
@@ -1914,9 +1915,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const openCloseAttention = async () => {
     if (!preciosHabilitados) return;
 
-    const { data } = await supabase.rpc('get_app_configuration', {
-      company_slug_value: companySlug
-    });
+    const { data } = await obtenerConfiguracionApp(companySlug, { forzar: true });
 
     if (closeAttentionPage && esModoPedido) {
       if (user?.isLocalInternal) {

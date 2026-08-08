@@ -9,6 +9,7 @@ import AdminSidebar from './AdminSidebar';
 import NewBookingPanel from './NewBookingPanel';
 import { WorkspaceHero, WorkspaceProfileIdentity, UserPhoto } from './WorkspaceHero';
 import { supabase } from '../api/supabaseClient';
+import { obtenerConfiguracionApp } from '../api/configuracionApp';
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
@@ -267,9 +268,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
     let active = true;
 
     const loadConfiguration = async () => {
-      const { data, error } = await supabase.rpc('get_app_configuration', {
-        company_slug_value: companySlug
-      });
+      const { data, error } = await obtenerConfiguracionApp(companySlug);
 
       if (!active || error) return;
 

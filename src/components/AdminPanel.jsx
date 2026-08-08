@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import { obtenerConfiguracionApp } from '../api/configuracionApp';
 // Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
 import { showAppAlert as alert } from '../utils/appAlert';
 import ActivityIcon from './ActivityIcon';
 import FormCard from './FormCard';
 import MetricCard from './MetricCard';
 import { formatDisplayDateTime } from '../utils/dateFormat';
+import { comprimirImagen } from '../utils/imagenes';
 
 const emptyEmployee = {
   name: '',
@@ -537,13 +539,6 @@ const calculateAge = (birthDateValue) => {
   return age >= 0 ? String(age) : '';
 };
 
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result || ''));
-  reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
-  reader.readAsDataURL(file);
-});
-
 const formatSupabaseError = (error) => [
   error.message,
   error.code ? `Código: ${error.code}` : '',
@@ -747,9 +742,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
         request_status_value: view === 'employees' ? 'pending' : null,
         company_slug_value: companySlug
       }),
-      supabase.rpc('get_app_configuration', {
-        company_slug_value: companySlug
-      }),
+      obtenerConfiguracionApp(companySlug),
       supabase.rpc('get_admin_product_types', {
         account_id_value: internalAdminAccountId,
         session_token_value: internalSessionToken,
@@ -854,7 +847,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     }
 
     try {
-      const photoUrl = await fileToDataUrl(file);
+      const photoUrl = await comprimirImagen(file, { ladoMaximo: 512, calidad: 0.72 });
       updateEmployeeField('photo_url', photoUrl);
     } catch (error) {
       alert(error.message);
@@ -880,7 +873,7 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     }
 
     try {
-      const productImageUrl = await fileToDataUrl(file);
+      const productImageUrl = await comprimirImagen(file, { ladoMaximo: 800, calidad: 0.72 });
       updateServiceField('product_image_url', productImageUrl);
     } catch (error) {
       alert(error.message);

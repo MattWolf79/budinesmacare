@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../api/supabaseClient';
+import { comprimirImagen } from '../utils/imagenes';
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
@@ -320,13 +321,6 @@ const normalizeSlug = (value) => String(value || '')
   .toLowerCase()
   .replace(/[^a-z0-9-]/g, '');
 
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = () => reject(reader.error);
-  reader.readAsDataURL(file);
-});
-
 export default function PlatformAdmin() {
   const [loginForm, setLoginForm] = useState(initialLoginForm);
   const [platformSession, setPlatformSession] = useState(null);
@@ -409,7 +403,7 @@ export default function PlatformAdmin() {
       return;
     }
 
-    const dataUrl = await fileToDataUrl(file);
+    const dataUrl = await comprimirImagen(file, { ladoMaximo: 512, calidad: 0.8, conservarTransparencia: true });
     setForm((current) => ({
       ...current,
       clientLogoDataUrl: String(dataUrl || ''),
@@ -450,7 +444,7 @@ export default function PlatformAdmin() {
       return;
     }
 
-    const dataUrl = await fileToDataUrl(file);
+    const dataUrl = await comprimirImagen(file, { ladoMaximo: 1280, calidad: 0.72 });
     setEditForm((current) => ({
       ...current,
       landingHeroImageDataUrl: String(dataUrl || ''),

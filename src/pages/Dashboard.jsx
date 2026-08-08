@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Container, Box } from "@mui/material";
 import { supabase } from "../api/supabaseClient";
+import { obtenerConfiguracionApp } from "../api/configuracionApp";
 import Navbar from "../components/Navbar";
 import AdminSidebar from "../components/AdminSidebar";
 import AgendaGrid, { invalidarCacheSucursales } from "../components/AgendaGrid";
@@ -97,9 +98,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     let active = true;
 
     const loadConfiguration = async () => {
-      const { data, error } = await supabase.rpc('get_app_configuration', {
-        company_slug_value: companySlug
-      });
+      const { data, error } = await obtenerConfiguracionApp(companySlug);
 
       if (!active || error) return;
 

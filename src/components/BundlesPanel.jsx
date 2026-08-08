@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 // Reemplaza window.alert por el modal <AppAlertHost>; todas las llamadas alert() usan el componente.
 import { showAppAlert as alert } from '../utils/appAlert';
+import { comprimirImagen } from '../utils/imagenes';
 
 const emptyBundle = {
   type: 'pack',
@@ -14,13 +15,6 @@ const emptyBundle = {
   sort_order: 0,
   items: []
 };
-
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result || ''));
-  reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
-  reader.readAsDataURL(file);
-});
 
 const formatSupabaseError = (error) => [
   error.message,
@@ -206,7 +200,7 @@ export default function BundlesPanel({
     }
 
     try {
-      const imageUrl = await fileToDataUrl(file);
+      const imageUrl = await comprimirImagen(file, { ladoMaximo: 800, calidad: 0.72 });
       updateField('image_url', imageUrl);
     } catch (error) {
       alert(error.message);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../api/supabaseClient';
 import { formatDisplayDateTime } from '../utils/dateFormat';
+import { comprimirImagen } from '../utils/imagenes';
 import { WorkspaceHero } from './WorkspaceHero';
 
 const emptyClientForm = {
@@ -56,13 +57,6 @@ const orderStatusLabels = {
   waitlist: 'Pedido recibido',
   cancelled: 'Cancelado'
 };
-
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result || ''));
-  reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
-  reader.readAsDataURL(file);
-});
 
 const formatSupabaseError = (error) => [
   error.message,
@@ -245,7 +239,7 @@ export default function ClientsPanel({ user, companySlug, companyContext = null,
     if (!file) return;
 
     try {
-      const dataUrl = await fileToDataUrl(file);
+      const dataUrl = await comprimirImagen(file, { ladoMaximo: 512, calidad: 0.72 });
       setForm((current) => ({ ...current, photoUrl: dataUrl }));
     } catch (error) {
       setFormError(error.message || 'No se pudo cargar la imagen.');
