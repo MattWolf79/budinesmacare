@@ -89,6 +89,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [bannerIndex, setBannerIndex] = useState(0);
+  const [paginaPedidoBanner, setPaginaPedidoBanner] = useState(0);
   const [cantidadesProducto, setCantidadesProducto] = useState({});
   const [fechaPedido, setFechaPedido] = useState(getFechaActual());
   const [horaPedido, setHoraPedido] = useState(getHoraActual());
@@ -228,6 +229,25 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
       bannerImages.map((image, index) => ({ image, index, ciclo }))
     )).flat();
   }, [bannerImages]);
+  const paginasPedidoBanner = useMemo(() => {
+    if (!bannerImages.length) return [];
+    if (bannerImages.length === 1) {
+      return [[
+        { image: bannerImages[0], index: 0, slot: 0, repetida: false },
+        { image: bannerImages[0], index: 0, slot: 1, repetida: true }
+      ]];
+    }
+
+    const paginas = [];
+    for (let index = 0; index < bannerImages.length; index += 2) {
+      const segundaImagen = bannerImages[index + 1] || bannerImages[0];
+      paginas.push([
+        { image: bannerImages[index], index, slot: 0, repetida: false },
+        { image: segundaImagen, index: index + 1 < bannerImages.length ? index + 1 : 0, slot: 1, repetida: index + 1 >= bannerImages.length }
+      ]);
+    }
+    return paginas;
+  }, [bannerImages]);
 
   const refreshBookings = () => {
     setRefreshKey((current) => current + 1);
@@ -250,11 +270,26 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     return () => window.clearInterval(intervalId);
   }, [bannerImages.length]);
 
+  useEffect(() => {
+    setPaginaPedidoBanner((current) => (paginasPedidoBanner.length ? current % paginasPedidoBanner.length : 0));
+    if (paginasPedidoBanner.length <= 1) return undefined;
+    const intervalId = window.setInterval(() => {
+      setPaginaPedidoBanner((current) => (current + 1) % paginasPedidoBanner.length);
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [paginasPedidoBanner.length]);
+
   const showPrevBanner = () => {
     setBannerIndex((current) => (current - 1 + bannerImages.length) % bannerImages.length);
   };
   const showNextBanner = () => {
     setBannerIndex((current) => (current + 1) % bannerImages.length);
+  };
+  const mostrarPaginaPedidoAnterior = () => {
+    setPaginaPedidoBanner((current) => (current - 1 + paginasPedidoBanner.length) % paginasPedidoBanner.length);
+  };
+  const mostrarPaginaPedidoSiguiente = () => {
+    setPaginaPedidoBanner((current) => (current + 1) % paginasPedidoBanner.length);
   };
 
   const packs = useMemo(() => (
@@ -647,24 +682,84 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     <section className="client-dashboard">
       {isHome && bannerImages.length > 0 && (
         esModoPedido ? (
-          <div
-            className="client-pedido-banner-grid"
-            aria-label="Flyers de la empresa"
-          >
-            {imagenesPedidoBanner.map(({ image, index, ciclo }) => (
-              <figure
-                className="client-pedido-banner-item"
-                key={`${image.fileName || 'flyer'}-${index}-${ciclo}`}
-                aria-hidden={ciclo > 0}
+          <>
+            <div
+              className="client-pedido-banner-grid"
+              aria-label="Flyers de la empresa"
+            >
+              {imagenesPedidoBanner.map(({ image, index, ciclo }) => (
+                <figure
+                  className="client-pedido-banner-item"
+                  key={`${image.fileName || 'flyer'}-${index}-${ciclo}`}
+                  aria-hidden={ciclo > 0}
+                >
+                  <img
+                    src={image.dataUrl}
+                    alt={ciclo === 0 ? image.fileName || `Flyer ${index + 1} de ${bannerImages.length}` : ''}
+                    draggable="false"
+                  />
+                </figure>
+              ))}
+            </div>
+
+            <div className="client-pedido-banner-carousel" aria-roledescription="carrusel" aria-label="Flyers de la empresa">
+              <div
+                className="client-pedido-banner-carousel-track"
+                style={{ transform: `translateX(-${(paginaPedidoBanner % Math.max(paginasPedidoBanner.length, 1)) * 100}%)` }}
               >
-                <img
-                  src={image.dataUrl}
-                  alt={ciclo === 0 ? image.fileName || `Flyer ${index + 1} de ${bannerImages.length}` : ''}
-                  draggable="false"
-                />
-              </figure>
-            ))}
-          </div>
+                {paginasPedidoBanner.map((pagina, paginaIndex) => (
+                  <div
+                    className="client-pedido-banner-carousel-page"
+                    aria-hidden={paginaIndex !== paginaPedidoBanner}
+                    key={`pedido-banner-page-${paginaIndex}`}
+                  >
+                    {pagina.map(({ image, index, slot, repetida }) => (
+                      <figure className="client-pedido-banner-mobile-item" key={`${image.fileName || 'flyer'}-${index}-${paginaIndex}-${slot}`}>
+                        <img
+                          src={image.dataUrl}
+                          alt={repetida ? '' : image.fileName || `Flyer ${index + 1} de ${bannerImages.length}`}
+                          draggable="false"
+                        />
+                      </figure>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              {paginasPedidoBanner.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="client-home-carousel-arrow client-home-carousel-arrow-prev"
+                    onClick={mostrarPaginaPedidoAnterior}
+                    aria-label="Flyers anteriores"
+                  >
+                    &#8249;
+                  </button>
+                  <button
+                    type="button"
+                    className="client-home-carousel-arrow client-home-carousel-arrow-next"
+                    onClick={mostrarPaginaPedidoSiguiente}
+                    aria-label="Flyers siguientes"
+                  >
+                    &#8250;
+                  </button>
+                  <div className="client-home-carousel-dots">
+                    {paginasPedidoBanner.map((pagina, index) => (
+                      <button
+                        type="button"
+                        key={`pedido-banner-dot-${index}`}
+                        className={`client-home-carousel-dot ${index === paginaPedidoBanner ? 'is-active' : ''}`}
+                        onClick={() => setPaginaPedidoBanner(index)}
+                        aria-label={`Ir al grupo de flyers ${index + 1}`}
+                        aria-current={index === paginaPedidoBanner}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </>
         ) : (
           <div className="client-home-carousel" aria-roledescription="carrusel" aria-label="Flyers de la empresa">
             <div

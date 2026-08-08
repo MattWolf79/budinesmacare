@@ -3428,29 +3428,66 @@ code {
   user-select: none;
 }
 
+.client-pedido-banner-carousel {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .client-pedido-banner-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    max-height: none;
-    overflow: visible;
-    gap: 10px;
-  }
-
-  .client-pedido-banner-item {
-    width: 100%;
-    height: auto;
-    min-height: 130px;
-  }
-
-  .client-pedido-banner-item[aria-hidden="true"] {
     display: none;
   }
 
-  .client-pedido-banner-item img {
+  .client-pedido-banner-carousel {
+    position: relative;
+    display: block;
     width: 100%;
-    height: auto;
+    aspect-ratio: 16 / 7;
     max-height: 210px;
+    overflow: hidden;
+    border: 1px solid #d8e0eb;
+    border-radius: 12px;
+    background: #f8fafc;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  }
+
+  .client-pedido-banner-carousel-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.45s ease;
+  }
+
+  .client-pedido-banner-carousel-page {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+
+  .client-pedido-banner-mobile-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+
+  .client-pedido-banner-mobile-item + .client-pedido-banner-mobile-item {
+    border-left: 0;
+  }
+
+  .client-pedido-banner-mobile-item img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    user-select: none;
   }
 }
 
