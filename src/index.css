@@ -3396,18 +3396,20 @@ code {
 }
 
 .client-pedido-banner-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--pedido-banner-count, 1), minmax(0, 1fr));
+  display: flex;
+  align-items: stretch;
   gap: 12px;
   width: 100%;
+  max-height: 260px;
+  overflow: hidden;
 }
 
 .client-pedido-banner-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 170px;
-  max-height: 260px;
+  flex: 0 0 auto;
+  height: 260px;
   margin: 0;
   overflow: hidden;
   border: 1px solid #d8e0eb;
@@ -3418,10 +3420,9 @@ code {
 
 .client-pedido-banner-item img {
   display: block;
-  width: 100%;
+  width: auto;
   height: 100%;
-  max-width: 100%;
-  max-height: 260px;
+  max-width: none;
   object-fit: contain;
   object-position: center;
   user-select: none;
@@ -3429,16 +3430,26 @@ code {
 
 @media (max-width: 760px) {
   .client-pedido-banner-grid {
+    display: grid;
     grid-template-columns: 1fr;
+    max-height: none;
+    overflow: visible;
     gap: 10px;
   }
 
   .client-pedido-banner-item {
+    width: 100%;
+    height: auto;
     min-height: 130px;
-    max-height: 210px;
+  }
+
+  .client-pedido-banner-item[aria-hidden="true"] {
+    display: none;
   }
 
   .client-pedido-banner-item img {
+    width: 100%;
+    height: auto;
     max-height: 210px;
   }
 }

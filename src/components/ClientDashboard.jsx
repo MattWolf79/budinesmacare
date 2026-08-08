@@ -221,6 +221,13 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
 
     return [];
   }, [appConfig]);
+  const imagenesPedidoBanner = useMemo(() => {
+    if (!bannerImages.length) return [];
+    const repeticiones = bannerImages.length === 1 ? 1 : 3;
+    return Array.from({ length: repeticiones }, (_, ciclo) => (
+      bannerImages.map((image, index) => ({ image, index, ciclo }))
+    )).flat();
+  }, [bannerImages]);
 
   const refreshBookings = () => {
     setRefreshKey((current) => current + 1);
@@ -642,14 +649,17 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
         esModoPedido ? (
           <div
             className="client-pedido-banner-grid"
-            style={{ '--pedido-banner-count': bannerImages.length }}
             aria-label="Flyers de la empresa"
           >
-            {bannerImages.map((image, index) => (
-              <figure className="client-pedido-banner-item" key={`${image.fileName || 'flyer'}-${index}`}>
+            {imagenesPedidoBanner.map(({ image, index, ciclo }) => (
+              <figure
+                className="client-pedido-banner-item"
+                key={`${image.fileName || 'flyer'}-${index}-${ciclo}`}
+                aria-hidden={ciclo > 0}
+              >
                 <img
                   src={image.dataUrl}
-                  alt={image.fileName || `Flyer ${index + 1} de ${bannerImages.length}`}
+                  alt={ciclo === 0 ? image.fileName || `Flyer ${index + 1} de ${bannerImages.length}` : ''}
                   draggable="false"
                 />
               </figure>
