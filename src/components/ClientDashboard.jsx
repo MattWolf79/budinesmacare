@@ -396,14 +396,26 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     [itemsPedido]
   );
 
-  const cambiarCantidadProducto = (productoId, valor) => {
-    const cantidadNormalizada = Number.parseInt(String(valor || '0'), 10);
-    const siguienteCantidad = Number.isNaN(cantidadNormalizada) ? 0 : Math.max(0, cantidadNormalizada);
+  const ajustarCantidadProducto = (productoId, diferencia) => {
+    setCantidadesProducto((actual) => {
+      const cantidadActual = Math.max(0, Number(actual[productoId] || 0));
+      const siguienteCantidad = Math.max(0, cantidadActual + diferencia);
 
-    setCantidadesProducto((actual) => ({
-      ...actual,
-      [productoId]: siguienteCantidad
-    }));
+      return {
+        ...actual,
+        [productoId]: siguienteCantidad
+      };
+    });
+  };
+
+  const desplazarCarrilProductos = (indiceGrupo, direccion) => {
+    const carril = document.getElementById(`client-product-track-${indiceGrupo}`);
+    if (!carril) return;
+
+    carril.scrollBy({
+      left: direccion * Math.min(carril.clientWidth * 0.9, 520),
+      behavior: 'smooth'
+    });
   };
 
   const registrarPedido = async () => {
@@ -900,10 +912,32 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
             <p className="client-summary-empty">Todavía no hay productos activos para pedir.</p>
           ) : (
             <div className="client-product-groups">
-              {productosAgrupados.map((group) => (
+              {productosAgrupados.map((group, indiceGrupo) => {
+                const mostrarFlechasProductos = group.products.length > 4;
+
+                return (
                 <div className="client-product-group" key={group.groupName || 'sin-tipo'}>
-                  {group.groupName && <h3 className="client-product-group-title">{group.groupName}</h3>}
-                  <div className="client-products-grid client-products-order-grid">
+                  <div className="client-product-group-heading">
+                    {group.groupName && <h3 className="client-product-group-title">{group.groupName}</h3>}
+                    {mostrarFlechasProductos && (
+                      <div className="client-product-scroll-actions" aria-hidden="true">
+                        <button type="button" onClick={() => desplazarCarrilProductos(indiceGrupo, -1)} tabIndex={-1}>‹</button>
+                        <button type="button" onClick={() => desplazarCarrilProductos(indiceGrupo, 1)} tabIndex={-1}>›</button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="client-products-order-shell">
+                    {mostrarFlechasProductos && (
+                      <button
+                        type="button"
+                        className="client-product-scroll-button is-prev"
+                        onClick={() => desplazarCarrilProductos(indiceGrupo, -1)}
+                        aria-label={`Ver productos anteriores de ${group.groupName || 'este grupo'}`}
+                      >
+                        ‹
+                      </button>
+                    )}
+                    <div className="client-products-grid client-products-order-grid" id={`client-product-track-${indiceGrupo}`}>
                     {group.products.map(({ producto, parsed }) => (
                       <article className="client-product-card client-product-order-card" key={producto.id}>
                         <div className="client-product-main">
@@ -913,22 +947,41 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                         {preciosHabilitados && Number(producto.base_price || 0) > 0 && (
                           <span className="client-product-price">{formatMoney(producto.base_price)}</span>
                         )}
-                        <label className="platform-field">
-                          <span>Cantidad</span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={cantidadesProducto[producto.id] || ''}
-                            onChange={(event) => cambiarCantidadProducto(producto.id, event.target.value)}
-                            placeholder="0"
-                          />
-                        </label>
+                        <div className="client-product-quantity" aria-label={`Cantidad de ${parsed.itemName || producto.name}`}>
+                          <button
+                            type="button"
+                            onClick={() => ajustarCantidadProducto(producto.id, -1)}
+                            disabled={Math.max(0, Number(cantidadesProducto[producto.id] || 0)) === 0}
+                            aria-label={`Quitar ${parsed.itemName || producto.name}`}
+                          >
+                            −
+                          </button>
+                          <span>{Math.max(0, Number(cantidadesProducto[producto.id] || 0))}</span>
+                          <button
+                            type="button"
+                            onClick={() => ajustarCantidadProducto(producto.id, 1)}
+                            aria-label={`Agregar ${parsed.itemName || producto.name}`}
+                          >
+                            +
+                          </button>
+                        </div>
                       </article>
                     ))}
+                    </div>
+                    {mostrarFlechasProductos && (
+                      <button
+                        type="button"
+                        className="client-product-scroll-button is-next"
+                        onClick={() => desplazarCarrilProductos(indiceGrupo, 1)}
+                        aria-label={`Ver más productos de ${group.groupName || 'este grupo'}`}
+                      >
+                        ›
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
