@@ -639,59 +639,77 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   return (
     <section className="client-dashboard">
       {isHome && bannerImages.length > 0 && (
-        <div className="client-home-carousel" aria-roledescription="carrusel" aria-label="Flyers de la empresa">
+        esModoPedido ? (
           <div
-            className="client-home-carousel-track"
-            style={{ transform: `translateX(-${bannerIndex * 100}%)` }}
+            className="client-pedido-banner-grid"
+            style={{ '--pedido-banner-count': bannerImages.length }}
+            aria-label="Flyers de la empresa"
           >
             {bannerImages.map((image, index) => (
-              <div
-                className="client-home-carousel-slide"
-                aria-hidden={index !== bannerIndex}
-                key={`${image.fileName || 'flyer'}-${index}`}
-              >
+              <figure className="client-pedido-banner-item" key={`${image.fileName || 'flyer'}-${index}`}>
                 <img
                   src={image.dataUrl}
                   alt={image.fileName || `Flyer ${index + 1} de ${bannerImages.length}`}
                   draggable="false"
                 />
-              </div>
+              </figure>
             ))}
           </div>
-
-          {bannerImages.length > 1 && (
-            <>
-              <button
-                type="button"
-                className="client-home-carousel-arrow client-home-carousel-arrow-prev"
-                onClick={showPrevBanner}
-                aria-label="Flyer anterior"
-              >
-                &#8249;
-              </button>
-              <button
-                type="button"
-                className="client-home-carousel-arrow client-home-carousel-arrow-next"
-                onClick={showNextBanner}
-                aria-label="Flyer siguiente"
-              >
-                &#8250;
-              </button>
-              <div className="client-home-carousel-dots">
-                {bannerImages.map((image, index) => (
-                  <button
-                    type="button"
-                    key={`dot-${image.fileName || 'flyer'}-${index}`}
-                    className={`client-home-carousel-dot ${index === bannerIndex ? 'is-active' : ''}`}
-                    onClick={() => setBannerIndex(index)}
-                    aria-label={`Ir al flyer ${index + 1}`}
-                    aria-current={index === bannerIndex}
+        ) : (
+          <div className="client-home-carousel" aria-roledescription="carrusel" aria-label="Flyers de la empresa">
+            <div
+              className="client-home-carousel-track"
+              style={{ transform: `translateX(-${bannerIndex * 100}%)` }}
+            >
+              {bannerImages.map((image, index) => (
+                <div
+                  className="client-home-carousel-slide"
+                  aria-hidden={index !== bannerIndex}
+                  key={`${image.fileName || 'flyer'}-${index}`}
+                >
+                  <img
+                    src={image.dataUrl}
+                    alt={image.fileName || `Flyer ${index + 1} de ${bannerImages.length}`}
+                    draggable="false"
                   />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+                </div>
+              ))}
+            </div>
+
+            {bannerImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="client-home-carousel-arrow client-home-carousel-arrow-prev"
+                  onClick={showPrevBanner}
+                  aria-label="Flyer anterior"
+                >
+                  &#8249;
+                </button>
+                <button
+                  type="button"
+                  className="client-home-carousel-arrow client-home-carousel-arrow-next"
+                  onClick={showNextBanner}
+                  aria-label="Flyer siguiente"
+                >
+                  &#8250;
+                </button>
+                <div className="client-home-carousel-dots">
+                  {bannerImages.map((image, index) => (
+                    <button
+                      type="button"
+                      key={`dot-${image.fileName || 'flyer'}-${index}`}
+                      className={`client-home-carousel-dot ${index === bannerIndex ? 'is-active' : ''}`}
+                      onClick={() => setBannerIndex(index)}
+                      aria-label={`Ir al flyer ${index + 1}`}
+                      aria-current={index === bannerIndex}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )
       )}
 
       {isHome && (
