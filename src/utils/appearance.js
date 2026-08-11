@@ -776,12 +776,24 @@ body .role-workspace-client .client-welcome-hero.has-custom-background::before,
 body .role-workspace-client .client-reserve-hero.has-custom-background::before {
   background: linear-gradient(
     100deg,
-    rgba(var(--app-text-rgb), 0.92) 0%,
-    rgba(var(--app-text-rgb), 0.8) 24%,
-    rgba(var(--app-text-rgb), 0.42) 44%,
-    rgba(var(--app-text-rgb), 0.12) 56%,
-    rgba(var(--app-text-rgb), 0) 66%
+    rgba(var(--app-text-rgb), 0.96) 0%,
+    rgba(var(--app-text-rgb), 0.86) 28%,
+    rgba(var(--app-text-rgb), 0.56) 48%,
+    rgba(var(--app-primary-rgb), 0.22) 64%,
+    rgba(var(--app-primary-rgb), 0) 78%
   ) !important;
+}
+
+body .role-workspace-client .client-welcome-hero.has-custom-background .admin-kicker,
+body .role-workspace-client .client-welcome-hero.has-custom-background h1,
+body .role-workspace-client .client-welcome-hero.has-custom-background .workspace-profile-name,
+body .role-workspace-client .client-welcome-hero.has-custom-background p:not(.admin-kicker),
+body .role-workspace-client .client-reserve-hero.has-custom-background .admin-kicker,
+body .role-workspace-client .client-reserve-hero.has-custom-background h1,
+body .role-workspace-client .client-reserve-hero.has-custom-background .workspace-profile-name,
+body .role-workspace-client .client-reserve-hero.has-custom-background p:not(.admin-kicker) {
+  color: #fff !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.42) !important;
 }
 
 body .role-workspace-client .client-welcome-hero .client-welcome-name {
@@ -832,9 +844,9 @@ body .role-workspace-client .client-product-card.has-product-image {
   body .role-workspace-client .client-reserve-hero.has-custom-background::before {
     background: linear-gradient(
       180deg,
-      rgba(var(--app-text-rgb), 0.9) 0%,
-      rgba(var(--app-text-rgb), 0.72) 46%,
-      rgba(var(--app-text-rgb), 0.5) 100%
+      rgba(var(--app-text-rgb), 0.94) 0%,
+      rgba(var(--app-text-rgb), 0.78) 46%,
+      rgba(var(--app-primary-rgb), 0.38) 100%
     ) !important;
   }
 

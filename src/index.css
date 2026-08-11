@@ -3252,7 +3252,7 @@ code {
 
 .client-dashboard {
   display: grid;
-  gap: 20px;
+  gap: 28px;
 }
 
 .client-summary-panel,
@@ -9847,6 +9847,7 @@ body .role-workspace-client .admin-sidebar.has-sidebar-background {
 
 .client-products-panel {
   --product-accent: #0f766e;
+  margin-top: 12px;
 }
 
 /* Inicio (escritorio): tarjetas de producto mas grandes */
