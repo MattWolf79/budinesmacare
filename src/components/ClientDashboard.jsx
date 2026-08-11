@@ -873,7 +873,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
                     if (esModoPedido) {
                       const parsed = parseProductCatalogName(service.name);
                       const productImageStyle = service.product_image_url
-                        ? { backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.68)), url(${service.product_image_url})` }
+                        ? { backgroundImage: `linear-gradient(180deg, rgba(var(--app-text-rgb), 0.08) 0%, rgba(var(--app-text-rgb), 0.5) 58%, rgba(var(--app-text-rgb), 0.82) 100%), url(${service.product_image_url})` }
                         : undefined;
 
                       return (

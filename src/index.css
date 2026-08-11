@@ -3252,7 +3252,7 @@ code {
 
 .client-dashboard {
   display: grid;
-  gap: 12px;
+  gap: 20px;
 }
 
 .client-summary-panel,
@@ -3298,7 +3298,7 @@ code {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 7;
-  max-height: 320px;
+  max-height: 400px;
   overflow: hidden;
   border: 1px solid #d8e0eb;
   border-radius: 12px;
@@ -3398,9 +3398,9 @@ code {
 .client-pedido-banner-grid {
   display: flex;
   align-items: stretch;
-  gap: 12px;
+  gap: 18px;
   width: 100%;
-  max-height: 260px;
+  max-height: 325px;
   overflow: hidden;
 }
 
@@ -3409,7 +3409,7 @@ code {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  height: 260px;
+  height: 325px;
   margin: 0;
   overflow: hidden;
   border: 1px solid #d8e0eb;
@@ -9497,11 +9497,89 @@ body {
   border-bottom: 1px solid #eef0f5;
 }
 
-.admin-sidebar-logo {
-  display: block;
-  max-width: 160px;
-  max-height: 42px;
-  object-fit: contain;
+/* Cliente: foto de fondo en el menú lateral (se desvanece hacia el menú) */
+body .role-workspace-client .admin-sidebar.has-sidebar-background {
+  background:
+    linear-gradient(
+      180deg,
+      var(--app-surface) 0%,
+      var(--app-surface) 30%,
+      color-mix(in srgb, var(--app-surface) 82%, transparent) 46%,
+      color-mix(in srgb, var(--app-surface) 42%, transparent) 66%,
+      transparent 100%
+    ),
+    var(--sidebar-background-image) !important;
+  background-size: 100% 100%, cover !important;
+  background-position: top center, center bottom !important;
+  background-repeat: no-repeat, no-repeat !important;
+}
+
+/* Cliente (escritorio): logo grande en la esquina y encabezado encuadrado */
+@media (min-width: 761px) {
+  .role-workspace-client > .app-navbar {
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    min-height: 108px;
+  }
+
+  .role-workspace-client > .app-navbar > .app-navbar-logo-box {
+    flex: 0 0 240px !important;
+    width: 240px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
+    height: auto !important;
+    min-height: 108px !important;
+    max-height: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 18px !important;
+    border-right: 1px solid rgba(var(--app-accent-rgb), 0.28) !important;
+  }
+
+  .role-workspace-client > .app-navbar > .app-navbar-logo-box > .app-navbar-logo-frame {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 96px !important;
+    min-height: 96px !important;
+    max-height: 96px !important;
+    justify-content: center !important;
+  }
+
+  .role-workspace-client > .app-navbar > .app-navbar-logo-box > .app-navbar-logo-frame > .app-navbar-logo-image,
+  .role-workspace-client > .app-navbar > .app-navbar-logo-box > .app-navbar-logo-frame > .app-navbar-logo,
+  .role-workspace-client > .app-navbar > .app-navbar-logo-box > .app-navbar-logo {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: 96px !important;
+    max-height: 96px !important;
+  }
+
+  .role-workspace-client > .app-navbar > .app-navbar-company {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+  }
+
+  .role-workspace-client > .app-navbar > .app-navbar-company .app-navbar-company-text {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+  }
+
+  .role-workspace-client > .app-navbar > .app-navbar-session {
+    align-items: center;
+    padding: 0 20px;
+  }
+
+  .role-workspace-client .admin-sidebar {
+    top: 108px;
+    max-height: calc(100svh - 108px);
+  }
 }
 
 .admin-sidebar-brand-name {
@@ -9626,7 +9704,7 @@ body {
 .role-workspace-client .role-workspace-content {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 24px 28px 32px;
+  padding: 12px 28px 32px;
 }
 
 .role-workspace-client .role-workspace-content .role-workspace-hero {
@@ -9718,7 +9796,7 @@ body {
 .client-services-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .client-service-card {
@@ -9771,11 +9849,37 @@ body {
   --product-accent: #0f766e;
 }
 
+/* Inicio (escritorio): tarjetas de producto mas grandes */
+@media (min-width: 761px) {
+  .client-products-panel .client-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 22px;
+  }
+
+  .client-products-panel .client-product-card {
+    min-height: 210px;
+    padding: 20px 22px;
+  }
+
+  .client-products-panel .client-product-card.has-product-image {
+    min-height: 268px;
+  }
+
+  .client-products-panel .client-product-card strong {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  .client-products-panel .client-product-card .client-product-price {
+    font-size: 15px;
+  }
+}
+
 .client-products-grid,
 .client-product-groups {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
-  gap: 12px;
+  gap: 18px;
 }
 
 .client-product-groups {

@@ -745,6 +745,112 @@ body .service-button-grid .agenda-option-button.service-card-action {
   background-image: none !important;
   box-shadow: 0 0 0 1px rgba(var(--app-primary-rgb), 0.1) !important;
 }
+
+/* ===== Cliente: estetica premium/gourmet ligada al color activo ===== */
+body .role-workspace-client .client-welcome-hero,
+body .role-workspace-client .client-reserve-hero {
+  border-radius: 22px !important;
+  padding: 34px 36px !important;
+}
+
+body .role-workspace-client .client-welcome-hero:not(.has-custom-background),
+body .role-workspace-client .client-reserve-hero:not(.has-custom-background) {
+  border-color: rgba(var(--app-accent-rgb), 0.34) !important;
+  background:
+    radial-gradient(circle at 88% -20%, rgba(var(--app-primary-rgb), 0.32), transparent 48%),
+    radial-gradient(circle at 4% 128%, rgba(var(--app-accent-rgb), 0.2), transparent 52%),
+    linear-gradient(135deg, #fffdf9 0%, var(--app-surface) 60%, var(--app-surface-strong) 100%) !important;
+  box-shadow: 0 22px 48px rgba(var(--app-text-rgb), 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+body .role-workspace-client .client-welcome-hero.has-custom-background,
+body .role-workspace-client .client-reserve-hero.has-custom-background {
+  border-color: rgba(var(--app-accent-rgb), 0.5) !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: 0 26px 54px rgba(var(--app-text-rgb), 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+}
+
+body .role-workspace-client .client-welcome-hero.has-custom-background::before,
+body .role-workspace-client .client-reserve-hero.has-custom-background::before {
+  background: linear-gradient(
+    100deg,
+    rgba(var(--app-text-rgb), 0.92) 0%,
+    rgba(var(--app-text-rgb), 0.8) 24%,
+    rgba(var(--app-text-rgb), 0.42) 44%,
+    rgba(var(--app-text-rgb), 0.12) 56%,
+    rgba(var(--app-text-rgb), 0) 66%
+  ) !important;
+}
+
+body .role-workspace-client .client-welcome-hero .client-welcome-name {
+  text-shadow: 0 2px 12px rgba(var(--app-text-rgb), 0.3) !important;
+}
+
+/* Boton principal mas visible */
+body .role-workspace-client .client-home-reserve-action,
+body .role-workspace-client .client-welcome-action.client-home-reserve-action {
+  min-height: 54px !important;
+  width: min(320px, 100%) !important;
+  padding: 15px 38px !important;
+  font-size: 15px !important;
+  letter-spacing: 0.03em !important;
+  border-radius: 999px !important;
+  box-shadow: 0 18px 34px rgba(var(--app-primary-rgb), 0.42) !important;
+  transition: box-shadow 0.2s ease, filter 0.2s ease !important;
+}
+
+body .role-workspace-client .client-home-reserve-action:hover {
+  box-shadow: 0 22px 40px rgba(var(--app-primary-rgb), 0.5) !important;
+  filter: brightness(1.03) !important;
+}
+
+/* Carruseles y tarjetas con sombras suaves premium */
+body .role-workspace-client .client-home-carousel,
+body .role-workspace-client .client-pedido-banner-item,
+body .role-workspace-client .client-pedido-banner-carousel {
+  border-color: rgba(var(--app-accent-rgb), 0.3) !important;
+  background: var(--app-surface) !important;
+  box-shadow: 0 20px 44px rgba(var(--app-text-rgb), 0.2) !important;
+}
+
+body .role-workspace-client .client-product-card,
+body .role-workspace-client .client-service-card,
+body .role-workspace-client .client-pack-card {
+  border-color: rgba(var(--app-accent-rgb), 0.28) !important;
+  box-shadow: 0 16px 34px rgba(var(--app-text-rgb), 0.16) !important;
+}
+
+body .role-workspace-client .client-product-card.has-product-image {
+  border-color: rgba(var(--app-text-rgb), 0.4) !important;
+  box-shadow: 0 20px 40px rgba(var(--app-text-rgb), 0.28) !important;
+}
+
+@media (max-width: 760px) {
+  body .role-workspace-client .client-welcome-hero.has-custom-background::before,
+  body .role-workspace-client .client-reserve-hero.has-custom-background::before {
+    background: linear-gradient(
+      180deg,
+      rgba(var(--app-text-rgb), 0.9) 0%,
+      rgba(var(--app-text-rgb), 0.72) 46%,
+      rgba(var(--app-text-rgb), 0.5) 100%
+    ) !important;
+  }
+
+  body .role-workspace-client .client-welcome-hero,
+  body .role-workspace-client .client-reserve-hero {
+    padding: 22px 20px !important;
+    border-radius: 16px !important;
+  }
+
+  body .role-workspace-client .client-home-reserve-action,
+  body .role-workspace-client .client-welcome-action.client-home-reserve-action {
+    min-height: 50px !important;
+    width: 100% !important;
+    padding: 14px 22px !important;
+  }
+}
 `;
 }
 

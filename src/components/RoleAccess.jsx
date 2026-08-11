@@ -430,6 +430,7 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
             onClose={() => setSidebarOpen(false)}
             companyName={companyName}
             logoSrc={workspaceLogoSrc}
+            backgroundImageSrc={welcomeBackgroundUrl || undefined}
           />
           <div className="role-workspace-content">
             <WorkspaceHero

@@ -4,8 +4,7 @@ export default function AdminSidebar({
   onViewChange,
   open = false,
   onClose,
-  companyName = 'QuieroTurnoApp',
-  logoSrc
+  backgroundImageSrc
 }) {
   return (
     <>
@@ -14,7 +13,11 @@ export default function AdminSidebar({
         onClick={onClose}
         aria-hidden="true"
       />
-      <aside className={`admin-sidebar ${open ? 'is-open' : ''}`} aria-label="Menú administrador">
+      <aside
+        className={`admin-sidebar ${backgroundImageSrc ? 'has-sidebar-background' : ''} ${open ? 'is-open' : ''}`.trim()}
+        style={backgroundImageSrc ? { '--sidebar-background-image': `url("${backgroundImageSrc}")` } : undefined}
+        aria-label="Menú administrador"
+      >
         <div className="admin-sidebar-brand">
           <span className="admin-sidebar-brand-title">MENÚ</span>
           <button className="admin-sidebar-close" type="button" onClick={onClose} aria-label="Cerrar menú">✕</button>
