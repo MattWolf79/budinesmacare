@@ -10156,13 +10156,13 @@ body .role-workspace-client .admin-sidebar.has-sidebar-background {
     scroll-snap-type: none;
   }
 
-  .client-product-order-card {
+.client-product-order-card {
 
-    min-height: 110px !important;
+    min-height: 0 !important;
 
-    display: block !important;
+    height: auto !important;
 
-    padding: 12px 12px 12px 105px !important;
+    padding: 8px 12px 8px 105px !important;
 
     border-radius: 14px !important;
 
@@ -23576,16 +23576,18 @@ body ::selection {
         white
       ) !important;
 }
-  .client-product-main {
-    grid-column: 2;
-    grid-row: 1;
+.client-product-main {
 
-    display: flex !important;
-    flex-direction: column;
-    justify-content: center;
+    display:flex !important;
 
-    gap: 4px;
-  }
+    flex-direction:column !important;
+
+    justify-content:flex-start !important;
+
+    align-items:flex-start !important;
+
+    gap:2px !important;
+}
 
   .client-product-main strong {
     margin: 0 !important;
