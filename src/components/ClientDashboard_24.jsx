@@ -1073,14 +1073,7 @@ url(${service.product_image_url})` }
                     {group.products.map(({ producto, parsed }) => (
                       <article
                         className={`client-product-card client-product-order-card${producto.product_image_url ? ' has-product-image' : ''}`}
-                        style={producto.product_image_url
-                          ? { backgroundImage: `linear-gradient(
-  180deg,
-  rgba(255,255,255,0.00) 0%,
-  rgba(255,255,255,0.08) 100%
-),
-url(${producto.product_image_url})` }
-                          : undefined}
+                        style={producto.product_image_url ? { backgroundImage: `linear-gradient(180deg, rgba(2, 6, 23, 0.16), rgba(2, 6, 23, 0.72)), url(${producto.product_image_url})` } : undefined}
                         key={producto.id}
                       >
                         <div className="client-product-main">

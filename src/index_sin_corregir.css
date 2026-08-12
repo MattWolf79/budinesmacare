@@ -10070,7 +10070,8 @@ body .role-workspace-client .admin-sidebar.has-sidebar-background {
 }
 
 .client-product-order-card.has-product-image {
-  min-height: 152px;
+  min-height: 140px !important;
+  height: 140px !important;
 }
 
 .client-product-order-card strong {
@@ -23501,10 +23502,8 @@ body ::selection {
     display: grid !important;
     grid-template-columns: 90px 1fr !important;
     grid-template-rows: auto auto auto !important;
-
     min-height: 105px !important;
     padding: 10px !important;
-
     border-radius: 16px !important;
 
     background-color: color-mix(
@@ -23514,6 +23513,7 @@ body ::selection {
     ) !important;
 
     border: 1px solid rgba(var(--app-accent-rgb), .25) !important;
+
 
     box-shadow:
       0 6px 18px rgba(var(--app-text-rgb), .08) !important;
@@ -23958,59 +23958,4 @@ body ::selection {
       justify-content:center !important;
   }
 
-}
-/* =========================================================
-   CORRECCION FINAL - CARDS DE HACER PEDIDO
-   =========================================================
-   La card de pedido debe conservar la misma altura visual
-   que la card normal de Inicio. El selector de cantidad
-   entra dentro de la card y no debe hacerla crecer.
-*/
-
-/* ESCRITORIO / TABLET */
-@media (min-width: 761px) {
-  .client-products-panel .client-product-order-card {
-    box-sizing: border-box !important;
-    min-height: 112px !important;
-    height: 112px !important;
-    max-height: 112px !important;
-    padding: 13px 14px 12px 16px !important;
-    overflow: hidden !important;
-  }
-
-  .client-products-panel .client-product-order-card.has-product-image {
-    min-height: 140px !important;
-    height: 140px !important;
-    max-height: 140px !important;
-  }
-
-  .client-products-panel .client-product-order-card .client-product-main {
-    min-height: 0 !important;
-  }
-
-  .client-products-panel .client-product-order-card .client-product-quantity {
-    flex-shrink: 0 !important;
-    margin-top: auto !important;
-  }
-}
-
-/* CELULAR */
-@media (max-width: 760px) {
-  .client-products-panel .client-product-order-card {
-    box-sizing: border-box !important;
-    min-height: 110px !important;
-    height: 110px !important;
-    max-height: 110px !important;
-    overflow: hidden !important;
-  }
-
-  .client-products-panel .client-product-order-card.has-product-image {
-    min-height: 110px !important;
-    height: 110px !important;
-    max-height: 110px !important;
-  }
-
-  .client-products-panel .client-product-order-card .client-product-quantity {
-    flex-shrink: 0 !important;
-  }
 }
