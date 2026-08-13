@@ -24017,321 +24017,174 @@ body ::selection {
   }
 }
 
+/* =========================================================
+   AJUSTE FINAL - INICIO / HACER PEDIDO
+   ---------------------------------------------------------
+   1) La cabecera de "Hacer Pedido" queda compacta, igual
+      que la cabecera corta de Inicio.
+   2) El banner de bienvenida usa la misma altura y
+      comportamiento visual.
+   3) Las tarjetas de productos del pedido no se estiran.
+   ========================================================= */
 
-/* ============================================================
-   CORRECCIÓN DEFINITIVA - HACER PEDIDO + BANNER BIENVENIDA
-   Estas reglas están al FINAL para ganar a las reglas anteriores.
-   ============================================================ */
-
-/* ------------------------------------------------------------
-   1) CARDS DE PRODUCTOS EN "HACER PEDIDO"
-   ------------------------------------------------------------ */
-
-/* Evita que la grilla o la card crezcan por el contenido */
-.client-products-order-grid {
-  align-items: start !important;
-}
-
-.client-product-order-card {
-  box-sizing: border-box !important;
-  height: 150px !important;
-  min-height: 150px !important;
-  max-height: 150px !important;
-  overflow: hidden !important;
-  flex: 0 0 150px !important;
-  padding: 10px 12px 10px 115px !important;
-  border-radius: 16px !important;
-  position: relative !important;
-}
-
-/* La imagen del budín queda compacta y no define la altura de la card */
-.client-product-order-card.has-product-image {
-  height: 150px !important;
-  min-height: 150px !important;
-  max-height: 150px !important;
-  background-size: 95px 95px, cover !important;
-  background-repeat: no-repeat, no-repeat !important;
-  background-position: 10px center, center center !important;
-  padding-left: 115px !important;
-}
-
-/* Contenido interno: no permitir que fuerce la card */
-.client-product-order-card .client-product-main {
-  min-height: 0 !important;
-  height: auto !important;
-  max-height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  align-items: flex-start !important;
-  gap: 3px !important;
-  overflow: hidden !important;
-}
-
-/* Nombre */
-.client-product-order-card .client-product-main strong,
-.client-product-order-card strong {
-  margin: 0 !important;
-  font-size: 17px !important;
-  line-height: 1.15 !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-/* Precio */
-.client-product-order-card .client-product-price {
-  margin: 3px 0 0 !important;
-  font-size: 14px !important;
-  line-height: 1.15 !important;
-}
-
-/* Selector de cantidad */
-.client-product-order-card .client-product-quantity {
-  width: 110px !important;
-  min-width: 110px !important;
-  height: 34px !important;
-  min-height: 34px !important;
-  max-height: 34px !important;
-  margin: 7px 0 0 !important;
-  flex: 0 0 34px !important;
-  overflow: hidden !important;
-}
-
-.client-product-order-card .client-product-quantity button {
-  height: 34px !important;
-  min-height: 34px !important;
-  max-height: 34px !important;
-  font-size: 19px !important;
-}
-
-.client-product-order-card .client-product-quantity span {
-  font-size: 14px !important;
-}
-
-/* ------------------------------------------------------------
-   2) BANNER DE BIENVENIDA
-   ------------------------------------------------------------ */
-
-/* El hero completo pasa de ~220px a 150px */
-.role-workspace-client .role-workspace-hero.client-welcome-hero,
+/* CABECERAS / BANNERS DEL CLIENTE */
+.role-workspace-client .role-workspace-hero,
 .role-workspace-client .client-welcome-hero,
-.role-workspace-client .client-welcome-hero.has-custom-background {
+.role-workspace-client .client-reserve-hero {
   box-sizing: border-box !important;
-  width: 100% !important;
-  height: 150px !important;
-  min-height: 150px !important;
-  max-height: 150px !important;
+  height: 120px !important;
+  min-height: 120px !important;
+  max-height: 120px !important;
   margin-top: 0 !important;
-  margin-bottom: 14px !important;
-  padding: 12px 16px !important;
+  margin-bottom: 18px !important;
+  padding: 12px 14px !important;
   overflow: hidden !important;
-  border-radius: 16px !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  background-size: cover !important;
-  background-position: center !important;
+  border-radius: 12px !important;
+}
+
+/* El banner con imagen debe comportarse como el de "PEDIDO" */
+.role-workspace-client .role-workspace-hero.has-custom-background,
+.role-workspace-client .client-welcome-hero.has-custom-background,
+.role-workspace-client .client-reserve-hero.has-custom-background {
+  background-position: center center !important;
   background-repeat: no-repeat !important;
+  background-size: cover !important;
 }
 
-/* Fondo de la foto: sin el degradado beige que estaba tapando la imagen */
-.role-workspace-client .role-workspace-hero.client-welcome-hero.has-custom-background::before,
-.role-workspace-client .client-welcome-hero.has-custom-background::before {
-  content: "" !important;
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 0 !important;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(92, 45, 20, .72) 0%,
-      rgba(92, 45, 20, .42) 48%,
-      rgba(92, 45, 20, .18) 100%
-    ) !important;
+/* Evita que el degradado anterior tape demasiado la fotografía */
+.role-workspace-client .role-workspace-hero.has-custom-background::before,
+.role-workspace-client .client-welcome-hero.has-custom-background::before,
+.role-workspace-client .client-reserve-hero.has-custom-background::before {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.48) 0%,
+    rgba(15, 23, 42, 0.24) 42%,
+    rgba(15, 23, 42, 0.04) 72%,
+    rgba(15, 23, 42, 0) 100%
+  ) !important;
 }
 
-/* Contenido encima de la imagen */
-.role-workspace-client .role-workspace-hero.client-welcome-hero.has-custom-background > *,
-.role-workspace-client .client-welcome-hero.has-custom-background > * {
-  position: relative !important;
-  z-index: 2 !important;
+/* Texto blanco como en la tarjeta corta de PEDIDO */
+.role-workspace-client .role-workspace-hero.has-custom-background .admin-kicker,
+.role-workspace-client .role-workspace-hero.has-custom-background h1,
+.role-workspace-client .role-workspace-hero.has-custom-background p,
+.role-workspace-client .role-workspace-hero.has-custom-background .workspace-profile-name,
+.role-workspace-client .client-welcome-hero.has-custom-background .admin-kicker,
+.role-workspace-client .client-welcome-hero.has-custom-background h1,
+.role-workspace-client .client-welcome-hero.has-custom-background p,
+.role-workspace-client .client-welcome-hero.has-custom-background .workspace-profile-name,
+.role-workspace-client .client-reserve-hero.has-custom-background .admin-kicker,
+.role-workspace-client .client-reserve-hero.has-custom-background h1,
+.role-workspace-client .client-reserve-hero.has-custom-background p,
+.role-workspace-client .client-reserve-hero.has-custom-background .workspace-profile-name {
+  color: #fff !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;
 }
 
-/* Bloque izquierdo */
-.role-workspace-client .client-welcome-hero > div:first-child {
-  max-width: 62% !important;
+/* Mantener el contenido compacto dentro de los 120px */
+.role-workspace-client .role-workspace-hero > div:first-child,
+.role-workspace-client .client-welcome-hero > div:first-child,
+.role-workspace-client .client-reserve-hero > div:first-child {
   min-width: 0 !important;
 }
 
-/* "BIENVENIDA" */
+.role-workspace-client .role-workspace-hero h1,
+.role-workspace-client .client-welcome-hero h1,
+.role-workspace-client .client-reserve-hero h1 {
+  margin: 0 !important;
+  font-size: 20px !important;
+  line-height: 1.08 !important;
+}
+
+.role-workspace-client .role-workspace-hero .admin-kicker,
 .role-workspace-client .client-welcome-hero .admin-kicker,
-.role-workspace-client .client-welcome-hero.has-custom-background .admin-kicker {
-  margin: 0 0 3px !important;
+.role-workspace-client .client-reserve-hero .admin-kicker {
+  margin-bottom: 4px !important;
   font-size: 11px !important;
   line-height: 1 !important;
-  color: #fff !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,.35) !important;
 }
 
-/* Título Budines Macaré */
-.role-workspace-client .client-welcome-hero h1,
-.role-workspace-client .client-welcome-hero.has-custom-background h1 {
-  margin: 0 !important;
+/* En una cabecera tan baja no necesitamos el párrafo largo */
+.role-workspace-client .role-workspace-hero p:not(.admin-kicker),
+.role-workspace-client .client-welcome-hero p:not(.admin-kicker),
+.role-workspace-client .client-reserve-hero p:not(.admin-kicker) {
+  display: none !important;
+}
+
+/* PERFIL / AVATAR A LA DERECHA */
+.role-workspace-client .role-workspace-hero .workspace-profile-panel,
+.role-workspace-client .client-welcome-hero .workspace-profile-panel,
+.role-workspace-client .client-reserve-hero .workspace-profile-panel {
+  min-width: 0 !important;
+  gap: 8px !important;
+}
+
+.role-workspace-client .role-workspace-hero .role-workspace-icon,
+.role-workspace-client .client-welcome-hero .role-workspace-icon,
+.role-workspace-client .client-reserve-hero .role-workspace-icon {
+  width: 56px !important;
+  height: 56px !important;
+  flex: 0 0 56px !important;
   font-size: 28px !important;
-  line-height: .98 !important;
-  letter-spacing: -0.5px !important;
-  color: #fff !important;
-  text-shadow: 0 2px 5px rgba(0,0,0,.4) !important;
 }
 
-/* Nombre del cliente */
-.role-workspace-client .client-welcome-hero .workspace-profile-name,
-.role-workspace-client .client-welcome-hero.has-custom-background .workspace-profile-name {
-  max-width: 145px !important;
-  font-size: 13px !important;
-  line-height: 1.1 !important;
-  color: #fff !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,.35) !important;
+/* TARJETAS DE PRODUCTOS EN "HACER PEDIDO"
+   Se fuerza una altura compacta para que no se estiren
+   por el contenido del selector de cantidad. */
+.client-products-panel .client-products-order-grid {
+  align-items: flex-start !important;
+}
+
+.client-products-panel .client-product-order-card {
+  box-sizing: border-box !important;
+  flex: 0 0 176px !important;
+  height: 112px !important;
+  min-height: 112px !important;
+  max-height: 112px !important;
+  align-self: flex-start !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
+  padding: 10px 12px !important;
 }
 
-/* Oculta texto secundario que no entra en el banner compacto */
-.role-workspace-client .client-welcome-hero p:not(.admin-kicker) {
-  margin: 0 !important;
-  max-width: 100% !important;
+.client-products-panel .client-product-order-card.has-product-image {
+  height: 112px !important;
+  min-height: 112px !important;
+  max-height: 112px !important;
+  padding-left: 105px !important;
 }
 
-/* Avatar compacto */
-.role-workspace-client .client-welcome-hero .role-workspace-icon {
-  width: 68px !important;
-  height: 68px !important;
-  min-width: 68px !important;
-  min-height: 68px !important;
-  border-radius: 12px !important;
-  font-size: 32px !important;
-  flex: 0 0 68px !important;
+.client-products-panel .client-product-order-card .client-product-main {
+  min-height: 0 !important;
 }
 
-/* ------------------------------------------------------------
-   3) EN PANTALLAS CHICAS: MISMAS PROPORCIONES COMPACTAS
-   ------------------------------------------------------------ */
+.client-products-panel .client-product-order-card .client-product-quantity {
+  flex-shrink: 0 !important;
+  margin-top: auto !important;
+}
 
+/* En móvil las tarjetas quedan todavía más compactas */
 @media (max-width: 760px) {
-
-  .client-products-order-grid {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-    overflow: visible !important;
-    padding: 0 !important;
-  }
-
-  .client-product-order-card,
-  .client-product-order-card.has-product-image {
-    width: 100% !important;
-    height: 125px !important;
-    min-height: 125px !important;
-    max-height: 125px !important;
-    flex: 0 0 125px !important;
-    padding: 8px 10px 8px 105px !important;
-    border-radius: 14px !important;
-    overflow: hidden !important;
-    background-size: 82px 82px, cover !important;
-    background-position: 10px center, center center !important;
-    background-repeat: no-repeat, no-repeat !important;
-  }
-
-  .client-product-order-card .client-product-main {
-    justify-content: center !important;
-    gap: 2px !important;
-  }
-
-  .client-product-order-card .client-product-main strong,
-  .client-product-order-card strong {
-    font-size: 16px !important;
-    line-height: 1.1 !important;
-  }
-
-  .client-product-order-card .client-product-price {
-    font-size: 13px !important;
-    margin-top: 3px !important;
-  }
-
-  .client-product-order-card .client-product-quantity {
-    width: 105px !important;
-    min-width: 105px !important;
-    height: 32px !important;
-    min-height: 32px !important;
-    max-height: 32px !important;
-    flex-basis: 32px !important;
-    margin-top: 5px !important;
-  }
-
-  .client-product-order-card .client-product-quantity button {
-    height: 32px !important;
-    min-height: 32px !important;
-    max-height: 32px !important;
-    font-size: 18px !important;
-  }
-
-  .role-workspace-client .role-workspace-hero.client-welcome-hero,
+  .role-workspace-client .role-workspace-hero,
   .role-workspace-client .client-welcome-hero,
-  .role-workspace-client .client-welcome-hero.has-custom-background {
+  .role-workspace-client .client-reserve-hero {
+    height: 120px !important;
+    min-height: 120px !important;
+    max-height: 120px !important;
+    padding: 12px !important;
+  }
+
+  .client-products-panel .client-product-order-card,
+  .client-products-panel .client-product-order-card.has-product-image {
     width: 100% !important;
-    height: 150px !important;
-    min-height: 150px !important;
-    max-height: 150px !important;
-    padding: 10px 14px !important;
-    margin-bottom: 12px !important;
-    border-radius: 14px !important;
+    height: 110px !important;
+    min-height: 110px !important;
+    max-height: 110px !important;
+    padding: 8px 10px 8px 105px !important;
   }
 
-  .role-workspace-client .client-welcome-hero > div:first-child {
-    max-width: 64% !important;
-  }
-
-  .role-workspace-client .client-welcome-hero .admin-kicker {
-    font-size: 10px !important;
-    margin-bottom: 3px !important;
-  }
-
-  .role-workspace-client .client-welcome-hero h1 {
-    font-size: 27px !important;
-    line-height: .96 !important;
-  }
-
-  .role-workspace-client .client-welcome-hero .workspace-profile-name {
-    max-width: 125px !important;
-    font-size: 12px !important;
-  }
-
-  .role-workspace-client .client-welcome-hero .role-workspace-icon {
-    width: 64px !important;
-    height: 64px !important;
-    min-width: 64px !important;
-    min-height: 64px !important;
-    flex-basis: 64px !important;
-    font-size: 30px !important;
+  .client-products-panel .client-product-order-card .client-product-quantity {
+    width: 104px !important;
+    min-height: 32px !important;
   }
 }
 
-/* ------------------------------------------------------------
-   4) BANNER DEL HOME/CARRUSEL: SI TAMBIÉN ES EL QUE SE MUESTRA
-   ------------------------------------------------------------ */
-
-.client-home-banner-strip {
-  min-height: 150px !important;
-  height: 150px !important;
-  max-height: 150px !important;
-  overflow: hidden !important;
-}
-
-.client-home-banner-strip > .client-home-banner {
-  height: 150px !important;
-  max-height: 150px !important;
-  background-size: cover !important;
-  background-position: center !important;
-}
