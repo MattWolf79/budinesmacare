@@ -15823,7 +15823,7 @@ body .role-workspace-client .admin-sidebar.has-sidebar-background {
 .role-workspace-client .client-welcome-hero .client-welcome-name,
 .settings-preview-hero .client-welcome-name {
   font-size: 1.18em;
-  font-weight: 950;
+  font-weight: 500;
   line-height: 0.98;
 }
 
