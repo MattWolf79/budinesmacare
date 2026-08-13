@@ -10070,8 +10070,7 @@ body .role-workspace-client .admin-sidebar.has-sidebar-background {
 }
 
 .client-product-order-card.has-product-image {
-  min-height: 95px !important;
-  height: 95px !important;
+  min-height: 95px;
 }
 
 .client-product-order-card strong {
@@ -10157,13 +10156,13 @@ body .role-workspace-client .admin-sidebar.has-sidebar-background {
     scroll-snap-type: none;
   }
 
-  .client-product-order-card {
+.client-product-order-card {
 
-    min-height: 110px !important;
+    min-height: 0 !important;
 
-    display: block !important;
+    height: auto !important;
 
-    padding: 12px 12px 12px 105px !important;
+    padding: 8px 12px 8px 105px !important;
 
     border-radius: 14px !important;
 
@@ -23502,8 +23501,10 @@ body ::selection {
     display: grid !important;
     grid-template-columns: 90px 1fr !important;
     grid-template-rows: auto auto auto !important;
+
     min-height: 105px !important;
     padding: 10px !important;
+
     border-radius: 16px !important;
 
     background-color: color-mix(
@@ -23513,7 +23514,6 @@ body ::selection {
     ) !important;
 
     border: 1px solid rgba(var(--app-accent-rgb), .25) !important;
-
 
     box-shadow:
       0 6px 18px rgba(var(--app-text-rgb), .08) !important;
@@ -23576,16 +23576,18 @@ body ::selection {
         white
       ) !important;
 }
-  .client-product-main {
-    grid-column: 2;
-    grid-row: 1;
+.client-product-main {
 
-    display: flex !important;
-    flex-direction: column;
-    justify-content: center;
+    display:flex !important;
 
-    gap: 4px;
-  }
+    flex-direction:column !important;
+
+    justify-content:flex-start !important;
+
+    align-items:flex-start !important;
+
+    gap:2px !important;
+}
 
   .client-product-main strong {
     margin: 0 !important;
@@ -23958,4 +23960,862 @@ body ::selection {
       justify-content:center !important;
   }
 
+}
+/* =========================================================
+   CORRECCION FINAL - CARDS DE HACER PEDIDO
+   =========================================================
+   La card de pedido debe conservar la misma altura visual
+   que la card normal de Inicio. El selector de cantidad
+   entra dentro de la card y no debe hacerla crecer.
+*/
+
+/* ESCRITORIO / TABLET */
+@media (min-width: 761px) {
+  .client-products-panel .client-product-order-card {
+    box-sizing: border-box !important;
+    min-height: 112px !important;
+    height: 112px !important;
+    max-height: 112px !important;
+    padding: 13px 14px 12px 16px !important;
+    overflow: hidden !important;
+  }
+
+  .client-products-panel .client-product-order-card.has-product-image {
+    min-height: 95px !important;
+    height: 95px !important;
+    max-height: 95px !important;
+  }
+
+  .client-products-panel .client-product-order-card .client-product-main {
+    min-height: 0 !important;
+  }
+
+  .client-products-panel .client-product-order-card .client-product-quantity {
+    flex-shrink: 0 !important;
+    margin-top: auto !important;
+  }
+}
+
+/* CELULAR */
+@media (max-width: 760px) {
+  .client-products-panel .client-product-order-card {
+    box-sizing: border-box !important;
+    min-height: 110px !important;
+    height: 110px !important;
+    max-height: 110px !important;
+    overflow: hidden !important;
+  }
+
+  .client-products-panel .client-product-order-card.has-product-image {
+    min-height: 95px !important;
+    height: 95px !important;
+    max-height: 95px !important;
+  }
+
+  .client-products-panel .client-product-order-card .client-product-quantity {
+    flex-shrink: 0 !important;
+  }
+}
+
+
+/* ============================================================
+   CORRECCIÓN DEFINITIVA - HACER PEDIDO + BANNER BIENVENIDA
+   Estas reglas están al FINAL para ganar a las reglas anteriores.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1) CARDS DE PRODUCTOS EN "HACER PEDIDO"
+   ------------------------------------------------------------ */
+
+/* Evita que la grilla o la card crezcan por el contenido */
+.client-products-order-grid {
+  align-items: start !important;
+}
+
+.client-product-order-card {
+  box-sizing: border-box !important;
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+  overflow: hidden !important;
+  flex: 0 0 150px !important;
+  padding: 10px 12px 10px 115px !important;
+  border-radius: 16px !important;
+  position: relative !important;
+}
+
+/* La imagen del budín queda compacta y no define la altura de la card */
+.client-product-order-card.has-product-image {
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+  background-size: 95px 95px, cover !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-position: 10px center, center center !important;
+  padding-left: 115px !important;
+}
+
+/* Contenido interno: no permitir que fuerce la card */
+.client-product-order-card .client-product-main {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  gap: 3px !important;
+  overflow: hidden !important;
+}
+
+/* Nombre */
+.client-product-order-card .client-product-main strong,
+.client-product-order-card strong {
+  margin: 0 !important;
+  font-size: 17px !important;
+  line-height: 1.15 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Precio */
+.client-product-order-card .client-product-price {
+  margin: 3px 0 0 !important;
+  font-size: 14px !important;
+  line-height: 1.15 !important;
+}
+
+/* Selector de cantidad */
+.client-product-order-card .client-product-quantity {
+  width: 110px !important;
+  min-width: 110px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  margin: 7px 0 0 !important;
+  flex: 0 0 34px !important;
+  overflow: hidden !important;
+}
+
+.client-product-order-card .client-product-quantity button {
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  font-size: 19px !important;
+}
+
+.client-product-order-card .client-product-quantity span {
+  font-size: 14px !important;
+}
+
+/* ------------------------------------------------------------
+   2) BANNER DE BIENVENIDA
+   ------------------------------------------------------------ */
+
+/* El hero completo pasa de ~220px a 150px */
+.role-workspace-client .role-workspace-hero.client-welcome-hero,
+.role-workspace-client .client-welcome-hero,
+.role-workspace-client .client-welcome-hero.has-custom-background {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+  margin-top: 0 !important;
+  margin-bottom: 14px !important;
+  padding: 12px 16px !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Fondo de la foto: sin el degradado beige que estaba tapando la imagen */
+.role-workspace-client .role-workspace-hero.client-welcome-hero.has-custom-background::before,
+.role-workspace-client .client-welcome-hero.has-custom-background::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(92, 45, 20, .72) 0%,
+      rgba(92, 45, 20, .42) 48%,
+      rgba(92, 45, 20, .18) 100%
+    ) !important;
+}
+
+/* Contenido encima de la imagen */
+.role-workspace-client .role-workspace-hero.client-welcome-hero.has-custom-background > *,
+.role-workspace-client .client-welcome-hero.has-custom-background > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Bloque izquierdo */
+.role-workspace-client .client-welcome-hero > div:first-child {
+  max-width: 62% !important;
+  min-width: 0 !important;
+}
+
+/* "BIENVENIDA" */
+.role-workspace-client .client-welcome-hero .admin-kicker,
+.role-workspace-client .client-welcome-hero.has-custom-background .admin-kicker {
+  margin: 0 0 3px !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.35) !important;
+}
+
+/* Título Budines Macaré */
+.role-workspace-client .client-welcome-hero h1,
+.role-workspace-client .client-welcome-hero.has-custom-background h1 {
+  margin: 0 !important;
+  font-size: 28px !important;
+  line-height: .98 !important;
+  letter-spacing: -0.5px !important;
+  color: #fff !important;
+  text-shadow: 0 2px 5px rgba(0,0,0,.4) !important;
+}
+
+/* Nombre del cliente */
+.role-workspace-client .client-welcome-hero .workspace-profile-name,
+.role-workspace-client .client-welcome-hero.has-custom-background .workspace-profile-name {
+  max-width: 145px !important;
+  font-size: 13px !important;
+  line-height: 1.1 !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.35) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Oculta texto secundario que no entra en el banner compacto */
+.role-workspace-client .client-welcome-hero p:not(.admin-kicker) {
+  margin: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Avatar compacto */
+.role-workspace-client .client-welcome-hero .role-workspace-icon {
+  width: 68px !important;
+  height: 68px !important;
+  min-width: 68px !important;
+  min-height: 68px !important;
+  border-radius: 12px !important;
+  font-size: 32px !important;
+  flex: 0 0 68px !important;
+}
+
+/* ------------------------------------------------------------
+   3) EN PANTALLAS CHICAS: MISMAS PROPORCIONES COMPACTAS
+   ------------------------------------------------------------ */
+
+@media (max-width: 760px) {
+
+  .client-products-order-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .client-product-order-card,
+  .client-product-order-card.has-product-image {
+    width: 100% !important;
+    height: 125px !important;
+    min-height: 125px !important;
+    max-height: 125px !important;
+    flex: 0 0 125px !important;
+    padding: 8px 10px 8px 105px !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    background-size: 82px 82px, cover !important;
+    background-position: 10px center, center center !important;
+    background-repeat: no-repeat, no-repeat !important;
+  }
+
+  .client-product-order-card .client-product-main {
+    justify-content: center !important;
+    gap: 2px !important;
+  }
+
+  .client-product-order-card .client-product-main strong,
+  .client-product-order-card strong {
+    font-size: 16px !important;
+    line-height: 1.1 !important;
+  }
+
+  .client-product-order-card .client-product-price {
+    font-size: 13px !important;
+    margin-top: 3px !important;
+  }
+
+  .client-product-order-card .client-product-quantity {
+    width: 105px !important;
+    min-width: 105px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    flex-basis: 32px !important;
+    margin-top: 5px !important;
+  }
+
+  .client-product-order-card .client-product-quantity button {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    font-size: 18px !important;
+  }
+
+  .role-workspace-client .role-workspace-hero.client-welcome-hero,
+  .role-workspace-client .client-welcome-hero,
+  .role-workspace-client .client-welcome-hero.has-custom-background {
+    width: 100% !important;
+    height: 150px !important;
+    min-height: 150px !important;
+    max-height: 150px !important;
+    padding: 10px 14px !important;
+    margin-bottom: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .role-workspace-client .client-welcome-hero > div:first-child {
+    max-width: 64% !important;
+  }
+
+  .role-workspace-client .client-welcome-hero .admin-kicker {
+    font-size: 10px !important;
+    margin-bottom: 3px !important;
+  }
+
+  .role-workspace-client .client-welcome-hero h1 {
+    font-size: 27px !important;
+    line-height: .96 !important;
+  }
+
+  .role-workspace-client .client-welcome-hero .workspace-profile-name {
+    max-width: 125px !important;
+    font-size: 12px !important;
+  }
+
+  .role-workspace-client .client-welcome-hero .role-workspace-icon {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+    min-height: 64px !important;
+    flex-basis: 64px !important;
+    font-size: 30px !important;
+  }
+}
+
+/* ------------------------------------------------------------
+   4) BANNER DEL HOME/CARRUSEL: SI TAMBIÉN ES EL QUE SE MUESTRA
+   ------------------------------------------------------------ */
+
+.client-home-banner-strip {
+  min-height: 150px !important;
+  height: 150px !important;
+  max-height: 150px !important;
+  overflow: hidden !important;
+}
+
+.client-home-banner-strip > .client-home-banner {
+  height: 150px !important;
+  max-height: 150px !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+
+/* ============================================================
+   AJUSTE FINAL - CARD HACER PEDIDO COMO LAS CARDS DE INICIO
+   La foto debe ocupar solamente el sector izquierdo.
+   El texto + precio + contador quedan en el sector derecho.
+   ============================================================ */
+
+.client-product-order-card {
+  box-sizing: border-box !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+
+  width: 100% !important;
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+
+  padding: 12px 14px 12px 120px !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+
+  /* La primera capa es el fondo/overlay.
+     La segunda capa es la foto del producto.
+     La foto queda pequeña a la izquierda. */
+  background-size: 100% 100%, 96px 96px !important;
+  background-position: center center, 10px center !important;
+  background-repeat: no-repeat, no-repeat !important;
+}
+
+.client-product-order-card.has-product-image {
+  width: 100% !important;
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+
+  padding: 12px 14px 12px 120px !important;
+
+  background-size: 100% 100%, 96px 96px !important;
+  background-position: center center, 10px center !important;
+  background-repeat: no-repeat, no-repeat !important;
+}
+
+/* Si existe una sola capa de imagen, el selector anterior
+   no debe dejarla estirada sobre toda la card. */
+.client-product-order-card.has-product-image::before {
+  pointer-events: none !important;
+}
+
+/* Contenido de la derecha */
+.client-product-order-card .client-product-main {
+  position: relative !important;
+  z-index: 3 !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  gap: 2px !important;
+
+  overflow: hidden !important;
+}
+
+/* Nombre */
+.client-product-order-card .client-product-main strong,
+.client-product-order-card strong {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+
+  margin: 0 0 2px !important;
+
+  font-size: 17px !important;
+  line-height: 1.12 !important;
+  font-weight: 850 !important;
+
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Precio */
+.client-product-order-card .client-product-price {
+  position: relative !important;
+  z-index: 3 !important;
+
+  margin: 0 0 6px !important;
+
+  font-size: 14px !important;
+  line-height: 1.15 !important;
+  font-weight: 800 !important;
+}
+
+/* Contador */
+.client-product-order-card .client-product-quantity {
+  position: relative !important;
+  z-index: 4 !important;
+
+  width: 110px !important;
+  min-width: 110px !important;
+  max-width: 110px !important;
+
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+
+  margin: 0 !important;
+  flex: 0 0 34px !important;
+
+  display: grid !important;
+  grid-template-columns: 30px minmax(24px, 1fr) 30px !important;
+  align-items: center !important;
+
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+
+.client-product-order-card .client-product-quantity button {
+  width: 100% !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  font-size: 19px !important;
+}
+
+.client-product-order-card .client-product-quantity span {
+  text-align: center !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+}
+
+/* ============================================================
+   CELULAR
+   ============================================================ */
+
+@media (max-width: 760px) {
+
+  .client-products-order-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .client-product-order-card,
+  .client-product-order-card.has-product-image {
+    width: 100% !important;
+
+    height: 125px !important;
+    min-height: 125px !important;
+    max-height: 125px !important;
+    flex: 0 0 125px !important;
+
+    padding: 9px 10px 9px 105px !important;
+
+    border-radius: 14px !important;
+    overflow: hidden !important;
+
+    /* fondo completo + foto de producto pequeña */
+    background-size: 100% 100%, 82px 82px !important;
+    background-position: center center, 10px center !important;
+    background-repeat: no-repeat, no-repeat !important;
+  }
+
+  .client-product-order-card .client-product-main {
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    gap: 2px !important;
+  }
+
+  .client-product-order-card .client-product-main strong,
+  .client-product-order-card strong {
+    font-size: 16px !important;
+    line-height: 1.1 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .client-product-order-card .client-product-price {
+    font-size: 13px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .client-product-order-card .client-product-quantity {
+    width: 105px !important;
+    min-width: 105px !important;
+    max-width: 105px !important;
+
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    flex-basis: 32px !important;
+
+    grid-template-columns: 29px minmax(24px, 1fr) 29px !important;
+  }
+
+  .client-product-order-card .client-product-quantity button {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    font-size: 18px !important;
+  }
+
+  .client-product-order-card .client-product-quantity span {
+    font-size: 14px !important;
+  }
+}
+
+
+/* ============================================================
+   CORRECCIÓN FINAL - PC / DESKTOP
+   CARDS DE "HACER PEDIDO" CON EL MISMO ESTILO VERTICAL
+   QUE LAS CARDS DE PRODUCTOS DE INICIO.
+
+   IMPORTANTE:
+   - SOLO afecta min-width: 761px.
+   - NO modifica las reglas responsive existentes de celular.
+   - La foto queda ARRIBA.
+   - Nombre + precio quedan ABAJO.
+   - En lugar de "Ver producto", queda el contador.
+   ============================================================ */
+
+@media (min-width: 761px) {
+
+  /* La fila de pedidos se convierte en una grilla de cards verticales */
+  .client-products-order-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+    width: 100% !important;
+    overflow: visible !important;
+    padding: 2px 3px 8px !important;
+    align-items: stretch !important;
+  }
+
+  /*
+   * Card vertical:
+   * imagen arriba + información abajo.
+   */
+  .client-product-order-card,
+  .client-product-order-card.has-product-image {
+    box-sizing: border-box !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-end !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    height: 330px !important;
+    min-height: 330px !important;
+    max-height: 330px !important;
+
+    padding: 190px 12px 12px !important;
+
+    border-radius: 14px !important;
+    overflow: hidden !important;
+
+    /*
+     * PRIMERA CAPA = FOTO DEL PRODUCTO.
+     * SEGUNDA CAPA = FONDO DE LA CARD.
+     *
+     * Esto es importante: en el CSS original el orden es
+     * producto primero y fondo después.
+     */
+    background-size: 100% 190px, cover !important;
+    background-position: center top, center center !important;
+    background-repeat: no-repeat, no-repeat !important;
+
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .08) !important;
+
+    scroll-snap-align: none !important;
+  }
+
+  /*
+   * El área de texto ocupa la parte inferior de la card.
+   * Le damos un fondo sólido para que la foto no se mezcle
+   * con el nombre/precio.
+   */
+  .client-product-order-card .client-product-main {
+    position: relative !important;
+    z-index: 5 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 116px !important;
+    height: auto !important;
+
+    padding: 7px 2px 0 !important;
+
+    gap: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /*
+   * Nombre del budín
+   */
+  .client-product-order-card .client-product-main strong,
+  .client-product-order-card strong {
+    position: relative !important;
+    z-index: 6 !important;
+
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+
+    margin: 0 0 7px !important;
+
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    font-weight: 850 !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /*
+   * Precio
+   */
+  .client-product-order-card .client-product-price {
+    position: relative !important;
+    z-index: 6 !important;
+
+    display: block !important;
+    width: 100% !important;
+
+    margin: 0 0 10px !important;
+
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+    font-weight: 850 !important;
+  }
+
+  /*
+   * CONTADOR
+   * Ocupa el lugar que en las cards de Inicio tiene
+   * el botón "Ver producto".
+   */
+  .client-product-order-card .client-product-quantity {
+    position: relative !important;
+    z-index: 7 !important;
+
+    display: grid !important;
+    grid-template-columns: 34px minmax(30px, 1fr) 34px !important;
+    align-items: center !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+
+    margin: auto 0 0 !important;
+    flex: 0 0 38px !important;
+
+    border-radius: 999px !important;
+    overflow: hidden !important;
+
+    background: #f1f2f6 !important;
+    border: 1px solid rgba(15, 23, 42, .08) !important;
+  }
+
+  .client-product-order-card .client-product-quantity button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 100% !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    border: 0 !important;
+    background: transparent !important;
+
+    font-size: 21px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+
+  .client-product-order-card .client-product-quantity span {
+    display: block !important;
+
+    width: 100% !important;
+
+    text-align: center !important;
+
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+
+  /*
+   * Evita que pseudo-elementos o overlays antiguos
+   * vuelvan a pintar la foto sobre toda la card.
+   */
+  .client-product-order-card.has-product-image::before {
+    pointer-events: none !important;
+  }
+
+  /*
+   * El fondo de la zona inferior debe permanecer limpio.
+   * No eliminamos la imagen: la primera capa sigue arriba.
+   */
+  .client-product-order-card .client-product-main::before {
+    content: "" !important;
+    position: absolute !important;
+    z-index: -1 !important;
+
+    left: -2px !important;
+    right: -2px !important;
+    top: -8px !important;
+    bottom: -12px !important;
+
+    border-radius: 0 0 12px 12px !important;
+    background: inherit !important;
+    background-size: auto !important;
+  }
+
+  /*
+   * En resoluciones PC más angostas, mantenemos 3 cards
+   * pero reducimos un poco la imagen para que todo entre.
+   */
+  @media (min-width: 761px) and (max-width: 1050px) {
+
+    .client-products-order-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+    }
+
+    .client-product-order-card,
+    .client-product-order-card.has-product-image {
+      height: 300px !important;
+      min-height: 300px !important;
+      max-height: 300px !important;
+
+      padding-top: 165px !important;
+
+      background-size: 100% 165px, cover !important;
+      background-position: center top, center center !important;
+    }
+
+    .client-product-order-card .client-product-main {
+      min-height: 110px !important;
+    }
+
+    .client-product-order-card .client-product-main strong,
+    .client-product-order-card strong {
+      font-size: 15px !important;
+    }
+
+    .client-product-order-card .client-product-price {
+      font-size: 13px !important;
+      margin-bottom: 8px !important;
+    }
+  }
 }

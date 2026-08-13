@@ -24017,3 +24017,857 @@ body ::selection {
   }
 }
 
+
+/* ============================================================
+   CORRECCIÓN DEFINITIVA - HACER PEDIDO + BANNER BIENVENIDA
+   Estas reglas están al FINAL para ganar a las reglas anteriores.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1) CARDS DE PRODUCTOS EN "HACER PEDIDO"
+   ------------------------------------------------------------ */
+
+/* Evita que la grilla o la card crezcan por el contenido */
+.client-products-order-grid {
+  align-items: start !important;
+}
+
+.client-product-order-card {
+  box-sizing: border-box !important;
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+  overflow: hidden !important;
+  flex: 0 0 150px !important;
+  padding: 10px 12px 10px 115px !important;
+  border-radius: 16px !important;
+  position: relative !important;
+}
+
+/* La imagen del budín queda compacta y no define la altura de la card */
+.client-product-order-card.has-product-image {
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+  background-size: 95px 95px, cover !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-position: 10px center, center center !important;
+  padding-left: 115px !important;
+}
+
+/* Contenido interno: no permitir que fuerce la card */
+.client-product-order-card .client-product-main {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  gap: 3px !important;
+  overflow: hidden !important;
+}
+
+/* Nombre */
+.client-product-order-card .client-product-main strong,
+.client-product-order-card strong {
+  margin: 0 !important;
+  font-size: 17px !important;
+  line-height: 1.15 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Precio */
+.client-product-order-card .client-product-price {
+  margin: 3px 0 0 !important;
+  font-size: 14px !important;
+  line-height: 1.15 !important;
+}
+
+/* Selector de cantidad */
+.client-product-order-card .client-product-quantity {
+  width: 110px !important;
+  min-width: 110px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  margin: 7px 0 0 !important;
+  flex: 0 0 34px !important;
+  overflow: hidden !important;
+}
+
+.client-product-order-card .client-product-quantity button {
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+  font-size: 19px !important;
+}
+
+.client-product-order-card .client-product-quantity span {
+  font-size: 14px !important;
+}
+
+/* ------------------------------------------------------------
+   2) BANNER DE BIENVENIDA
+   ------------------------------------------------------------ */
+
+/* El hero completo pasa de ~220px a 150px */
+.role-workspace-client .role-workspace-hero.client-welcome-hero,
+.role-workspace-client .client-welcome-hero,
+.role-workspace-client .client-welcome-hero.has-custom-background {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+  margin-top: 0 !important;
+  margin-bottom: 14px !important;
+  padding: 12px 16px !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Fondo de la foto: sin el degradado beige que estaba tapando la imagen */
+.role-workspace-client .role-workspace-hero.client-welcome-hero.has-custom-background::before,
+.role-workspace-client .client-welcome-hero.has-custom-background::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(92, 45, 20, .72) 0%,
+      rgba(92, 45, 20, .42) 48%,
+      rgba(92, 45, 20, .18) 100%
+    ) !important;
+}
+
+/* Contenido encima de la imagen */
+.role-workspace-client .role-workspace-hero.client-welcome-hero.has-custom-background > *,
+.role-workspace-client .client-welcome-hero.has-custom-background > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Bloque izquierdo */
+.role-workspace-client .client-welcome-hero > div:first-child {
+  max-width: 62% !important;
+  min-width: 0 !important;
+}
+
+/* "BIENVENIDA" */
+.role-workspace-client .client-welcome-hero .admin-kicker,
+.role-workspace-client .client-welcome-hero.has-custom-background .admin-kicker {
+  margin: 0 0 3px !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.35) !important;
+}
+
+/* Título Budines Macaré */
+.role-workspace-client .client-welcome-hero h1,
+.role-workspace-client .client-welcome-hero.has-custom-background h1 {
+  margin: 0 !important;
+  font-size: 28px !important;
+  line-height: .98 !important;
+  letter-spacing: -0.5px !important;
+  color: #fff !important;
+  text-shadow: 0 2px 5px rgba(0,0,0,.4) !important;
+}
+
+/* Nombre del cliente */
+.role-workspace-client .client-welcome-hero .workspace-profile-name,
+.role-workspace-client .client-welcome-hero.has-custom-background .workspace-profile-name {
+  max-width: 145px !important;
+  font-size: 13px !important;
+  line-height: 1.1 !important;
+  color: #fff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.35) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Oculta texto secundario que no entra en el banner compacto */
+.role-workspace-client .client-welcome-hero p:not(.admin-kicker) {
+  margin: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Avatar compacto */
+.role-workspace-client .client-welcome-hero .role-workspace-icon {
+  width: 68px !important;
+  height: 68px !important;
+  min-width: 68px !important;
+  min-height: 68px !important;
+  border-radius: 12px !important;
+  font-size: 32px !important;
+  flex: 0 0 68px !important;
+}
+
+/* ------------------------------------------------------------
+   3) EN PANTALLAS CHICAS: MISMAS PROPORCIONES COMPACTAS
+   ------------------------------------------------------------ */
+
+@media (max-width: 760px) {
+
+  .client-products-order-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .client-product-order-card,
+  .client-product-order-card.has-product-image {
+    width: 100% !important;
+    height: 125px !important;
+    min-height: 125px !important;
+    max-height: 125px !important;
+    flex: 0 0 125px !important;
+    padding: 8px 10px 8px 105px !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    background-size: 82px 82px, cover !important;
+    background-position: 10px center, center center !important;
+    background-repeat: no-repeat, no-repeat !important;
+  }
+
+  .client-product-order-card .client-product-main {
+    justify-content: center !important;
+    gap: 2px !important;
+  }
+
+  .client-product-order-card .client-product-main strong,
+  .client-product-order-card strong {
+    font-size: 16px !important;
+    line-height: 1.1 !important;
+  }
+
+  .client-product-order-card .client-product-price {
+    font-size: 13px !important;
+    margin-top: 3px !important;
+  }
+
+  .client-product-order-card .client-product-quantity {
+    width: 105px !important;
+    min-width: 105px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    flex-basis: 32px !important;
+    margin-top: 5px !important;
+  }
+
+  .client-product-order-card .client-product-quantity button {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    font-size: 18px !important;
+  }
+
+  .role-workspace-client .role-workspace-hero.client-welcome-hero,
+  .role-workspace-client .client-welcome-hero,
+  .role-workspace-client .client-welcome-hero.has-custom-background {
+    width: 100% !important;
+    height: 150px !important;
+    min-height: 150px !important;
+    max-height: 150px !important;
+    padding: 10px 14px !important;
+    margin-bottom: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .role-workspace-client .client-welcome-hero > div:first-child {
+    max-width: 64% !important;
+  }
+
+  .role-workspace-client .client-welcome-hero .admin-kicker {
+    font-size: 10px !important;
+    margin-bottom: 3px !important;
+  }
+
+  .role-workspace-client .client-welcome-hero h1 {
+    font-size: 27px !important;
+    line-height: .96 !important;
+  }
+
+  .role-workspace-client .client-welcome-hero .workspace-profile-name {
+    max-width: 125px !important;
+    font-size: 12px !important;
+  }
+
+  .role-workspace-client .client-welcome-hero .role-workspace-icon {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 64px !important;
+    min-height: 64px !important;
+    flex-basis: 64px !important;
+    font-size: 30px !important;
+  }
+}
+
+/* ------------------------------------------------------------
+   4) BANNER DEL HOME/CARRUSEL: SI TAMBIÉN ES EL QUE SE MUESTRA
+   ------------------------------------------------------------ */
+
+.client-home-banner-strip {
+  min-height: 150px !important;
+  height: 150px !important;
+  max-height: 150px !important;
+  overflow: hidden !important;
+}
+
+.client-home-banner-strip > .client-home-banner {
+  height: 150px !important;
+  max-height: 150px !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+
+/* ============================================================
+   AJUSTE FINAL - CARD HACER PEDIDO COMO LAS CARDS DE INICIO
+   La foto debe ocupar solamente el sector izquierdo.
+   El texto + precio + contador quedan en el sector derecho.
+   ============================================================ */
+
+.client-product-order-card {
+  box-sizing: border-box !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+
+  width: 100% !important;
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+
+  padding: 12px 14px 12px 120px !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+
+  /* La primera capa es el fondo/overlay.
+     La segunda capa es la foto del producto.
+     La foto queda pequeña a la izquierda. */
+  background-size: 100% 100%, 96px 96px !important;
+  background-position: center center, 10px center !important;
+  background-repeat: no-repeat, no-repeat !important;
+}
+
+.client-product-order-card.has-product-image {
+  width: 100% !important;
+  height: 150px !important;
+  min-height: 150px !important;
+  max-height: 150px !important;
+
+  padding: 12px 14px 12px 120px !important;
+
+  background-size: 100% 100%, 96px 96px !important;
+  background-position: center center, 10px center !important;
+  background-repeat: no-repeat, no-repeat !important;
+}
+
+/* Si existe una sola capa de imagen, el selector anterior
+   no debe dejarla estirada sobre toda la card. */
+.client-product-order-card.has-product-image::before {
+  pointer-events: none !important;
+}
+
+/* Contenido de la derecha */
+.client-product-order-card .client-product-main {
+  position: relative !important;
+  z-index: 3 !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  gap: 2px !important;
+
+  overflow: hidden !important;
+}
+
+/* Nombre */
+.client-product-order-card .client-product-main strong,
+.client-product-order-card strong {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+
+  margin: 0 0 2px !important;
+
+  font-size: 17px !important;
+  line-height: 1.12 !important;
+  font-weight: 850 !important;
+
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Precio */
+.client-product-order-card .client-product-price {
+  position: relative !important;
+  z-index: 3 !important;
+
+  margin: 0 0 6px !important;
+
+  font-size: 14px !important;
+  line-height: 1.15 !important;
+  font-weight: 800 !important;
+}
+
+/* Contador */
+.client-product-order-card .client-product-quantity {
+  position: relative !important;
+  z-index: 4 !important;
+
+  width: 110px !important;
+  min-width: 110px !important;
+  max-width: 110px !important;
+
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+
+  margin: 0 !important;
+  flex: 0 0 34px !important;
+
+  display: grid !important;
+  grid-template-columns: 30px minmax(24px, 1fr) 30px !important;
+  align-items: center !important;
+
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+
+.client-product-order-card .client-product-quantity button {
+  width: 100% !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  max-height: 34px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  font-size: 19px !important;
+}
+
+.client-product-order-card .client-product-quantity span {
+  text-align: center !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+}
+
+/* ============================================================
+   CELULAR
+   ============================================================ */
+
+@media (max-width: 760px) {
+
+  .client-products-order-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .client-product-order-card,
+  .client-product-order-card.has-product-image {
+    width: 100% !important;
+
+    height: 125px !important;
+    min-height: 125px !important;
+    max-height: 125px !important;
+    flex: 0 0 125px !important;
+
+    padding: 9px 10px 9px 105px !important;
+
+    border-radius: 14px !important;
+    overflow: hidden !important;
+
+    /* fondo completo + foto de producto pequeña */
+    background-size: 100% 100%, 82px 82px !important;
+    background-position: center center, 10px center !important;
+    background-repeat: no-repeat, no-repeat !important;
+  }
+
+  .client-product-order-card .client-product-main {
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    gap: 2px !important;
+  }
+
+  .client-product-order-card .client-product-main strong,
+  .client-product-order-card strong {
+    font-size: 16px !important;
+    line-height: 1.1 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .client-product-order-card .client-product-price {
+    font-size: 13px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .client-product-order-card .client-product-quantity {
+    width: 105px !important;
+    min-width: 105px !important;
+    max-width: 105px !important;
+
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    flex-basis: 32px !important;
+
+    grid-template-columns: 29px minmax(24px, 1fr) 29px !important;
+  }
+
+  .client-product-order-card .client-product-quantity button {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    font-size: 18px !important;
+  }
+
+  .client-product-order-card .client-product-quantity span {
+    font-size: 14px !important;
+  }
+}
+
+
+/* ============================================================
+   CORRECCIÓN FINAL - HACER PEDIDO EN PC
+   FOTO SOLO EN LA MITAD SUPERIOR + CONTENIDO ABAJO
+   ============================================================
+   - Mantiene el ancho compacto de las cards.
+   - Card PC: 245px de alto.
+   - Foto: 120px de alto, TODO el ancho.
+   - Texto, precio y contador: 125px inferiores.
+   - No se superponen.
+   - Responsive max-width:760px queda intacto.
+   ============================================================ */
+
+@media (min-width: 761px) {
+
+  .client-products-order-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(180px, 260px)) !important;
+    justify-content: start !important;
+    align-items: start !important;
+    gap: 14px !important;
+    width: 100% !important;
+    overflow: visible !important;
+    padding: 2px 3px 8px !important;
+  }
+
+  /* CARD */
+  .client-product-order-card,
+  .client-product-order-card.has-product-image {
+    box-sizing: border-box !important;
+
+    display: block !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 260px !important;
+
+    height: 245px !important;
+    min-height: 245px !important;
+    max-height: 245px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    position: relative !important;
+    overflow: hidden !important;
+
+    border-radius: 14px !important;
+
+    /*
+     * La imagen llena el ancho de la card.
+     * El contenido inferior la tapa desde los 120px.
+     */
+    background-size: cover !important;
+    background-position: center top !important;
+    background-repeat: no-repeat !important;
+
+    background-color: #fff8ea !important;
+
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08) !important;
+    scroll-snap-align: none !important;
+  }
+
+  /*
+   * EL CONTENIDO COMIENZA EXACTAMENTE DESPUÉS DE LA FOTO.
+   *
+   * No usamos padding-top para posicionarlo porque eso estaba
+   provocando que el contenido se recortara.
+   */
+  .client-product-order-card .client-product-main {
+    box-sizing: border-box !important;
+
+    position: relative !important;
+    z-index: 20 !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+
+    width: 100% !important;
+
+    height: 125px !important;
+    min-height: 125px !important;
+    max-height: 125px !important;
+
+    margin: 120px 0 0 !important;
+    padding: 8px 12px 8px !important;
+
+    gap: 0 !important;
+
+    background: #fff8ea !important;
+
+    overflow: visible !important;
+  }
+
+  /* Ninguna capa adicional sobre el contenido */
+  .client-product-order-card.has-product-image::before,
+  .client-product-order-card.has-product-image::after,
+  .client-product-order-card .client-product-main::before,
+  .client-product-order-card .client-product-main::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* CATEGORÍA, si existe */
+  .client-product-order-card .client-product-type {
+    display: inline-flex !important;
+
+    width: fit-content !important;
+    max-width: 100% !important;
+
+    margin: 0 0 3px !important;
+    padding: 2px 7px !important;
+
+    border-radius: 999px !important;
+
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    font-weight: 800 !important;
+
+    color: #ffffff !important;
+    background: #999999 !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* NOMBRE */
+  .client-product-order-card .client-product-main strong,
+  .client-product-order-card strong {
+    display: block !important;
+
+    position: relative !important;
+    z-index: 21 !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    margin: 0 0 5px !important;
+    padding: 0 !important;
+
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    font-weight: 850 !important;
+
+    color: #6e2f18 !important;
+    text-shadow: none !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* PRECIO */
+  .client-product-order-card .client-product-price {
+    display: block !important;
+
+    position: relative !important;
+    z-index: 21 !important;
+
+    width: 100% !important;
+
+    margin: 0 0 9px !important;
+    padding: 0 !important;
+
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+    font-weight: 850 !important;
+
+    color: #6e2f18 !important;
+    text-shadow: none !important;
+
+    text-align: left !important;
+  }
+
+  /* CONTADOR */
+  .client-product-order-card .client-product-quantity {
+    position: relative !important;
+    z-index: 22 !important;
+
+    display: grid !important;
+
+    grid-template-columns: 30px minmax(28px, 1fr) 30px !important;
+    align-items: center !important;
+
+    width: 112px !important;
+    min-width: 112px !important;
+    max-width: 112px !important;
+
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    flex: 0 0 34px !important;
+
+    border-radius: 999px !important;
+    overflow: hidden !important;
+
+    background: #f1f2f6 !important;
+    border: 1px solid rgba(15, 23, 42, .08) !important;
+
+    box-shadow: none !important;
+  }
+
+  .client-product-order-card .client-product-quantity button {
+    display: inline-flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 100% !important;
+
+    height: 34px !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: 0 !important;
+
+    background: transparent !important;
+
+    color: #111827 !important;
+
+    font-size: 19px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+
+  .client-product-order-card .client-product-quantity span {
+    display: block !important;
+
+    width: 100% !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    text-align: center !important;
+
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+
+    color: #020617 !important;
+  }
+
+  /* ----------------------------------------------------------
+     NOTEBOOK / PC MÁS ANGOSTA
+     ---------------------------------------------------------- */
+
+  @media (min-width: 761px) and (max-width: 1050px) {
+
+    .client-products-order-grid {
+      grid-template-columns: repeat(3, minmax(155px, 210px)) !important;
+      gap: 10px !important;
+    }
+
+    .client-product-order-card,
+    .client-product-order-card.has-product-image {
+      max-width: 210px !important;
+
+      height: 225px !important;
+      min-height: 225px !important;
+      max-height: 225px !important;
+    }
+
+    .client-product-order-card .client-product-main {
+      height: 117px !important;
+      min-height: 117px !important;
+      max-height: 117px !important;
+
+      margin-top: 108px !important;
+
+      padding: 6px 10px 7px !important;
+    }
+
+    .client-product-order-card .client-product-main strong,
+    .client-product-order-card strong {
+      font-size: 15px !important;
+    }
+
+    .client-product-order-card .client-product-price {
+      font-size: 13px !important;
+      margin-bottom: 7px !important;
+    }
+
+    .client-product-order-card .client-product-quantity {
+      width: 104px !important;
+      min-width: 104px !important;
+      max-width: 104px !important;
+
+      height: 32px !important;
+      min-height: 32px !important;
+      max-height: 32px !important;
+
+      flex-basis: 32px !important;
+    }
+
+    .client-product-order-card .client-product-quantity button {
+      height: 32px !important;
+      min-height: 32px !important;
+      max-height: 32px !important;
+
+      font-size: 18px !important;
+    }
+  }
+}
+
