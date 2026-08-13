@@ -19751,28 +19751,39 @@ body .role-workspace-client .admin-sidebar.has-sidebar-background {
 
 .clients-list-card {
   display: flex;
-  border: 1px solid rgba(var(--app-accent-rgb), 0.34);
+  flex-direction: column;
+
   gap: 16px;
-  padding: 22px;
+
   border: 1px solid rgba(148, 163, 184, 0.24);
   color: var(--app-text);
+
   background:
-    linear-gradient(135deg, rgba(var(--app-primary-rgb), 0.16) 0%, rgba(255, 255, 255, 0.96) 58%, var(--app-surface) 100%);
-  box-shadow: 0 8px 18px rgba(var(--app-text-rgb), 0.1);
+    linear-gradient(
+      135deg,
+      rgba(var(--app-primary-rgb), 0.16) 0%,
+      rgba(255, 255, 255, 0.96) 58%,
+      var(--app-surface) 100%
+    );
+
   box-shadow: 0 16px 32px rgba(15, 23, 42, 0.05);
+
   max-width: 100%;
-.clients-delete-button:hover:not(:disabled) {
-  border-color: rgba(var(--app-accent-rgb), 0.58);
-  background:
-    linear-gradient(135deg, rgba(var(--app-primary-rgb), 0.22) 0%, #fff 56%, var(--app-surface-strong) 100%);
-}
   min-width: 0;
+
+  padding: 22px;
+
   box-sizing: border-box;
 }
+
+
+
 
 .clients-search {
   display: flex;
   align-items: center;
+  width: 100% !important;
+  max-width: 100% !important;
   gap: 10px;
   padding: 12px 16px;
   border: 1px solid rgba(148, 163, 184, 0.32);
@@ -19820,8 +19831,10 @@ body .clients-panel .clients-delete-button:hover:not(:disabled) {
   padding: 0;
   display: flex;
   flex-direction: column;
+  width: 100% !important;
   gap: 12px;
 }
+
 
 .clients-row {
   display: flex;
