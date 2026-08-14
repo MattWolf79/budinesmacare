@@ -4,16 +4,22 @@ import { supabase } from "../api/supabaseClient";
 import { obtenerConfiguracionApp } from "../api/configuracionApp";
 import Navbar from "../components/Navbar";
 import AdminSidebar from "../components/AdminSidebar";
-import AgendaGrid, { invalidarCacheSucursales } from "../components/AgendaGrid";
+import { invalidarCacheSucursales } from "../components/AgendaGrid";
 import AdminPanel from "../components/AdminPanel";
-import AdminSettingsPanel from "../components/AdminSettingsPanel";
-import BranchesPanel from "../components/BranchesPanel";
-import BundlesPanel from "../components/BundlesPanel";
-import ClientsPanel from "../components/ClientsPanel";
+import ClientsPage from "./admin/ClientsPage";
+import BranchesPage from "./admin/BranchesPage";
+import BundlesPage from "./admin/BundlesPage";
+import SettingsPage from "./admin/SettingsPage";
+import EmployeesPage from "./admin/EmployeesPage";
+import ServicesPage from "./admin/ServicesPage";
 import NewBookingPanel from "../components/NewBookingPanel";
-import EmployeeAvailabilityPanel from "../components/EmployeeAvailabilityPanel";
-import PanelPedidosAdmin from "../components/PanelPedidosAdmin";
 import { WorkspaceProfileIdentity } from "../components/WorkspaceHero";
+
+import AgendaPage from './admin/AgendaPage';
+import PedidosPage from './admin/PedidosPage';
+import PendientesPage from './admin/PendientesPage';
+import CerrarAtencionPage from './admin/CerrarAtencionPage';
+import DisponibilidadPage from './admin/DisponibilidadPage';
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
@@ -231,30 +237,125 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
         <Box className="dashboard-content">
           {activeView === 'agenda' && !esModoPedido && (
             <div className="agenda-responsive-shell">
-              <AgendaGrid key="agenda" user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={(options) => { setNewBookingInitial(options); setIsNewBookingOpen(true); }} />
+              <AgendaPage
+  key="agenda"
+  user={user}
+  refreshKey={adminDataVersion}
+  promotions={enabledPromotions}
+  adminProfileSummary={adminProfileSummary}
+  companySlug={companySlug}
+  companyContext={companyContext}
+  onRequestNewBooking={(options) => {
+    setNewBookingInitial(options);
+    setIsNewBookingOpen(true);
+  }}
+/>
             </div>
           )}
           {activeView === 'agenda' && esModoPedido && (
-            <PanelPedidosAdmin key={`pedidos-${adminDataVersion}`} user={user} companySlug={companySlug} adminProfileSummary={adminProfileSummary} />
+            <PedidosPage
+  key={`pedidos-${adminDataVersion}`}
+  user={user}
+  companySlug={companySlug}
+  adminProfileSummary={adminProfileSummary}
+/>
           )}
           {activeView === 'close-attention' && preciosHabilitados && (
             <div className="agenda-responsive-shell close-attention-responsive-shell">
-              <AgendaGrid key="close-attention" closeAttentionPage user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onCloseAttentionPageClose={() => changeView('agenda')} onBookingsChanged={notifyAdminDataChanged} />
+              <CerrarAtencionPage
+  key="close-attention"
+  user={user}
+  refreshKey={adminDataVersion}
+  promotions={enabledPromotions}
+  adminProfileSummary={adminProfileSummary}
+  companySlug={companySlug}
+  companyContext={companyContext}
+  onCloseAttentionPageClose={() => changeView('agenda')}
+  onBookingsChanged={notifyAdminDataChanged}
+/>
             </div>
           )}
           {activeView === 'pending' && !esModoPedido && (
             <div className="agenda-responsive-shell">
-              <AgendaGrid key="pending" pendingView user={user} refreshKey={adminDataVersion} promotions={enabledPromotions} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />
+              <PendientesPage
+  key="pending"
+  user={user}
+  refreshKey={adminDataVersion}
+  promotions={enabledPromotions}
+  adminProfileSummary={adminProfileSummary}
+  companySlug={companySlug}
+  companyContext={companyContext}
+/>
             </div>
           )}
-          {activeView === 'clients' && <ClientsPanel user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-          {activeView === 'employees' && <AdminPanel view="employees" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-          {activeView === 'services' && <AdminPanel view="services" user={user} onDataChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-          {activeView === 'availability' && !esModoPedido && <EmployeeAvailabilityPanel user={user} mode="admin" onAvailabilityChanged={notifyAdminDataChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-          {activeView === 'sucursales' && sucursalesHabilitadas && <BranchesPanel user={user} onDataChanged={notifyBranchesChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} />}
-          {activeView === 'bundles' && bundlesHabilitados && <BundlesPanel user={user} onDataChanged={notifyBranchesChanged} adminProfileSummary={adminProfileSummary} companySlug={companySlug} packsHabilitados={packsHabilitados} promosHabilitadas={promocionesHabilitadas} />}
-          {activeView === 'settings' && <AdminSettingsPanel user={user} adminProfileSummary={adminProfileSummary} companySlug={companySlug} companyContext={companyContext} onCompanyContextRefresh={onCompanyContextRefresh} />}
-        </Box>
+          {activeView === 'clients' && (
+  <ClientsPage
+    user={user}
+    onDataChanged={notifyAdminDataChanged}
+    adminProfileSummary={adminProfileSummary}
+    companySlug={companySlug}
+    companyContext={companyContext}
+  />
+)}
+{activeView === 'employees' && (
+  <EmployeesPage
+    user={user}
+    onDataChanged={notifyAdminDataChanged}
+    adminProfileSummary={adminProfileSummary}
+    companySlug={companySlug}
+    companyContext={companyContext}
+  />
+)}
+{activeView === 'services' && (
+  <ServicesPage
+    user={user}
+    onDataChanged={notifyAdminDataChanged}
+    adminProfileSummary={adminProfileSummary}
+    companySlug={companySlug}
+    companyContext={companyContext}
+  />
+)}
+          {activeView === 'availability' && !esModoPedido && <DisponibilidadPage
+  user={user}
+  mode="admin"
+  onAvailabilityChanged={notifyAdminDataChanged}
+  adminProfileSummary={adminProfileSummary}
+  companySlug={companySlug}
+  companyContext={companyContext}
+/>
+}
+          {activeView === 'sucursales' && sucursalesHabilitadas && (
+  <BranchesPage
+    user={user}
+    onDataChanged={notifyBranchesChanged}
+    adminProfileSummary={adminProfileSummary}
+    companySlug={companySlug}
+    companyContext={companyContext}
+  />
+)}
+          {activeView === 'bundles' && bundlesHabilitados && (
+  <BundlesPage
+    user={user}
+    onDataChanged={notifyBranchesChanged}
+    adminProfileSummary={adminProfileSummary}
+    companySlug={companySlug}
+    packsHabilitados={packsHabilitados}
+    promosHabilitadas={promocionesHabilitadas}
+  />
+)}
+
+{activeView === 'settings' && (
+  <SettingsPage
+    user={user}
+    adminProfileSummary={adminProfileSummary}
+    companySlug={companySlug}
+    companyContext={companyContext}
+    onCompanyContextRefresh={onCompanyContextRefresh}
+  />
+)}
+
+
+          </Box>
       </div>
 
       {isNewBookingOpen && (

@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
-import EmployeeDashboard from './EmployeeDashboard';
-import ClientDashboard from './ClientDashboard';
-import ClientProfilePanel from './ClientProfilePanel';
-import ClientsPanel from './ClientsPanel';
-import AdminPanel from './AdminPanel';
+import EmployeeHomePage from '../pages/employee/EmployeeHomePage';
+import EmployeeClientsPage from '../pages/employee/EmployeeClientsPage';
+import EmployeeProductsPage from '../pages/employee/EmployeeProductsPage';
+
+import HomePage from '../pages/client/HomePage';
+import ProfilePage from '../pages/client/ProfilePage';
 import Navbar from './Navbar';
 import AdminSidebar from './AdminSidebar';
 import NewBookingPanel from './NewBookingPanel';
 import { WorkspaceHero, WorkspaceProfileIdentity, UserPhoto } from './WorkspaceHero';
 import { supabase } from '../api/supabaseClient';
 import { obtenerConfiguracionApp } from '../api/configuracionApp';
+
+
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
@@ -367,11 +370,17 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
               identity={<WorkspaceProfileIdentity user={user} roleLabel={profile.label} photoFallback={profile.icon} />}
             />
             {employeeActiveView === 'clients' ? (
-              <ClientsPanel user={user} companySlug={companySlug} companyContext={companyContext} hideHeading />
+              <EmployeeClientsPage user={user} companySlug={companySlug} companyContext={companyContext} hideHeading />
             ) : employeeActiveView === 'products' ? (
-              <AdminPanel view="services" user={user} onDataChanged={() => {}} companySlug={companySlug} companyContext={companyContext} />
+              <EmployeeProductsPage
+  user={user}
+  onDataChanged={() => {}}
+  companySlug={companySlug}
+  companyContext={companyContext}
+/>
+
             ) : (
-              <EmployeeDashboard user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={empleadosPuedenReservar ? openEmployeeNewBooking : undefined} />
+              <EmployeeHomePage user={user} activeView={employeeActiveView} companySlug={companySlug} companyContext={companyContext} onRequestNewBooking={empleadosPuedenReservar ? openEmployeeNewBooking : undefined} />
             )}
           </div>
         </div>
@@ -444,9 +453,9 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
               {clientActiveView === 'home' && businessHoursText && <p className="client-business-hours-text">{businessHoursText}</p>}
             </WorkspaceHero>
             {clientActiveView === 'perfil' ? (
-              <ClientProfilePanel user={user} companySlug={companySlug} />
+              <ProfilePage user={user} companySlug={companySlug} />
             ) : (
-              <ClientDashboard
+              <HomePage
                 user={user}
                 activeView={clientActiveView}
                 navItems={navegacionCliente.items}
