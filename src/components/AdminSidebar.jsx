@@ -2,10 +2,11 @@ export default function AdminSidebar({
   groups = [],
   activeView,
   onViewChange,
+  rutaActual = '',
   open = false,
   onClose,
   backgroundImageSrc
-}) {
+}){
   return (
     <>
       <div
@@ -32,7 +33,11 @@ export default function AdminSidebar({
                   key={item.id}
                   type="button"
                   className={`admin-sidebar-item ${activeView === item.id ? 'is-active' : ''}`}
-                  onClick={() => onViewChange(item.id)}
+                  onClick={() => {
+  if (onViewChange) {
+    onViewChange(item.id);
+  }
+}}
                 >
                   <span className="admin-sidebar-item-icon" aria-hidden="true">{item.icon}</span>
                   <span className="admin-sidebar-item-label">{item.label}</span>

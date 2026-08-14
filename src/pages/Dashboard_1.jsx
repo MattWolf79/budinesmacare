@@ -15,13 +15,11 @@ import ServicesPage from "./admin/ServicesPage";
 import NewBookingPanel from "../components/NewBookingPanel";
 import { WorkspaceProfileIdentity } from "../components/WorkspaceHero";
 
-
 import AgendaPage from './admin/AgendaPage';
 import PedidosPage from './admin/PedidosPage';
 import PendientesPage from './admin/PendientesPage';
 import CerrarAtencionPage from './admin/CerrarAtencionPage';
 import DisponibilidadPage from './admin/DisponibilidadPage';
-import { rutasAdministrador } from '../routes/rutasAplicacion';
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
@@ -200,22 +198,72 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     ];
   }, [sucursalesHabilitadas, bundlesHabilitados, esModoPedido, preciosHabilitados]);
 
-  const mapaRutasAdministrador = {
-  agenda: rutasAdministrador.agenda,
-  clients: rutasAdministrador.clientes,
-  employees: rutasAdministrador.empleados,
-  services: rutasAdministrador.servicios,
-  settings: rutasAdministrador.configuracion,
-  sucursales: rutasAdministrador.sucursales,
-  bundles: rutasAdministrador.bundles,
-  pending: rutasAdministrador.pendientes,
-  'close-attention': rutasAdministrador.cerrarAtencion,
-  availability: rutasAdministrador.disponibilidad
-};
-
   const adminProfileSummary = (
     <WorkspaceProfileIdentity user={user} roleLabel="Administrador" />
   );
+
+  const vistasAdministrador = {
+  clients: (
+    <ClientesPage
+      user={user}
+      onDataChanged={notifyAdminDataChanged}
+      adminProfileSummary={adminProfileSummary}
+      companySlug={companySlug}
+      companyContext={companyContext}
+    />
+  ),
+
+  employees: (
+    <EmpleadosPage
+      user={user}
+      onDataChanged={notifyAdminDataChanged}
+      adminProfileSummary={adminProfileSummary}
+      companySlug={companySlug}
+      companyContext={companyContext}
+    />
+  ),
+
+  services: (
+    <ServiciosPage
+      user={user}
+      onDataChanged={notifyAdminDataChanged}
+      adminProfileSummary={adminProfileSummary}
+      companySlug={companySlug}
+      companyContext={companyContext}
+    />
+  ),
+
+  sucursales: (
+    <SucursalesPage
+      user={user}
+      onDataChanged={notifyBranchesChanged}
+      adminProfileSummary={adminProfileSummary}
+      companySlug={companySlug}
+      companyContext={companyContext}
+    />
+  ),
+
+  bundles: (
+    <BundlesPage
+      user={user}
+      onDataChanged={notifyBranchesChanged}
+      adminProfileSummary={adminProfileSummary}
+      companySlug={companySlug}
+      packsHabilitados={packsHabilitados}
+      promosHabilitadas={promocionesHabilitadas}
+    />
+  ),
+
+  settings: (
+    <ConfiguracionPage
+      user={user}
+      adminProfileSummary={adminProfileSummary}
+      companySlug={companySlug}
+      companyContext={companyContext}
+      onCompanyContextRefresh={onCompanyContextRefresh}
+    />
+  )
+};
 
   return (
     <Container maxWidth={false} disableGutters className="dashboard-shell has-admin-sidebar">
@@ -304,7 +352,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
             </div>
           )}
           {activeView === 'clients' && (
-  <ClientsPage
+  <ClientesPage
     user={user}
     onDataChanged={notifyAdminDataChanged}
     adminProfileSummary={adminProfileSummary}

@@ -1,5 +1,9 @@
-import { Outlet } from "react-router-dom";
+import { Outlet } from 'react-router-dom';
 
 export default function EmployeeLayout() {
-  return <Outlet />;
+  return (
+    <div className="layout-empleado">
+      <Outlet />
+    </div>
+  );
 }
