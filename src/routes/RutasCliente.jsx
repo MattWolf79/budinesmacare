@@ -12,10 +12,6 @@ import ReservaPage from '../pages/client/ReservaPage';
 import MisTurnosPage from '../pages/client/MisTurnosPage';
 import ProfilePage from '../pages/client/ProfilePage';
 
-import {
-  obtenerRutasCliente
-} from './rutasAplicacion';
-
 function PaginaCliente({
   activeView,
   Page,
@@ -47,10 +43,14 @@ function PaginaCliente({
 export default function RutasCliente(
   props
 ) {
-  const rutas =
-    obtenerRutasCliente(
-      props.companySlug
-    );
+  /*
+   * Este router está montado por App.jsx en:
+   *
+   * /:companySlug/sacarturno/*
+   *
+   * Por eso las rutas de abajo son relativas
+   * al portal sacarturno.
+   */
 
   return (
     <Routes>
@@ -62,7 +62,7 @@ export default function RutasCliente(
         }
       >
         <Route
-          path={rutas.inicio}
+          index
           element={
             <PaginaCliente
               {...props}
@@ -73,7 +73,18 @@ export default function RutasCliente(
         />
 
         <Route
-          path={rutas.reserva}
+          path="inicio"
+          element={
+            <PaginaCliente
+              {...props}
+              activeView="home"
+              Page={HomePage}
+            />
+          }
+        />
+
+        <Route
+          path="reserva"
           element={
             <PaginaCliente
               {...props}
@@ -84,7 +95,7 @@ export default function RutasCliente(
         />
 
         <Route
-          path={rutas.misTurnos}
+          path="mis-turnos"
           element={
             <PaginaCliente
               {...props}
@@ -95,7 +106,7 @@ export default function RutasCliente(
         />
 
         <Route
-          path={rutas.perfil}
+          path="perfil"
           element={
             <PaginaCliente
               {...props}
@@ -109,7 +120,7 @@ export default function RutasCliente(
           path="*"
           element={
             <Navigate
-              to={rutas.inicio}
+              to="inicio"
               replace
             />
           }

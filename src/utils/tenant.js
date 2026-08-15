@@ -1,5 +1,6 @@
-export const platformAdminPath = 'plataforma';
+export const defaultCompanySlug = 'esteticatopbody';
 
+export const platformAdminPath = 'plataforma';
 export const clientPortalPath = 'sacarturno';
 export const adminPortalPath = 'admin';
 export const employeePortalPath = 'empleado';
@@ -21,79 +22,48 @@ const getPathSegments = (
         !ignoredPathSegments.has(segment)
     );
 
-/*
- * ============================================================
- * NORMALIZACIÓN
- * ============================================================
- *
- * El slug de una empresa debe representar solamente el
- * identificador de la empresa.
- *
- * Ejemplos:
- *
- * esteticatopbody
- * /esteticatopbody
- * esteticatopbody/
- * /esteticatopbody/
- *
- * Todos terminan normalizados como:
- *
- * esteticatopbody
- */
-
 export const normalizeCompanySlug = (
   value
 ) =>
   String(value || '')
     .trim()
     .toLowerCase()
-    .replace(/^\/+|\/+$/g, '')
     .replace(/[^a-z0-9-]/g, '');
-
-/*
- * ============================================================
- * SLUG DE EMPRESA
- * ============================================================
- */
 
 export const getCompanySlugFromLocation = (
   locationValue = window.location
 ) => {
   const [
     firstSegment = ''
-  ] = getPathSegments(
-    locationValue
-  );
-
-  const slug =
-    normalizeCompanySlug(
-      firstSegment
+  ] =
+    getPathSegments(
+      locationValue
     );
 
   if (
-    !slug ||
-    slug === platformAdminPath
+    normalizeCompanySlug(
+      firstSegment
+    ) === platformAdminPath
   ) {
     return null;
   }
 
-  return slug;
+  return (
+    normalizeCompanySlug(
+      firstSegment
+    ) || null
+  );
 };
-
-/*
- * ============================================================
- * ADMINISTRADOR DE PLATAFORMA
- * ============================================================
- */
 
 export const isPlatformAdminLocation = (
   locationValue = window.location
 ) => {
   const [
     firstSegment = ''
-  ] = getPathSegments(
-    locationValue
-  );
+  ] =
+    getPathSegments(
+      locationValue
+    );
 
   return (
     normalizeCompanySlug(
@@ -102,77 +72,48 @@ export const isPlatformAdminLocation = (
   );
 };
 
-/*
- * ============================================================
- * PORTAL DE LA EMPRESA
- * ============================================================
- *
- * Ejemplos:
- *
- * /esteticatopbody
- *       -> root
- *
- * /esteticatopbody/admin
- *       -> admin
- *
- * /esteticatopbody/sacarturno
- *       -> client
- *
- * /esteticatopbody/empleado
- *       -> employee
- *
- * Las rutas posteriores al portal no cambian esta detección:
- *
- * /esteticatopbody/admin/agenda
- * /esteticatopbody/admin/clientes
- * /esteticatopbody/admin/configuracion
- *
- * Todas siguen perteneciendo al portal:
- *
- * admin
- */
-
 export const getCompanyPortalFromLocation = (
   locationValue = window.location
 ) => {
   const [
     firstSegment = '',
     secondSegment = ''
-  ] = getPathSegments(
-    locationValue
-  );
-
-  const companySlug =
-    normalizeCompanySlug(
-      firstSegment
+  ] =
+    getPathSegments(
+      locationValue
     );
 
   if (
-    !companySlug ||
-    companySlug === platformAdminPath
+    !firstSegment ||
+    normalizeCompanySlug(
+      firstSegment
+    ) === platformAdminPath
   ) {
     return null;
   }
 
-  const portal =
+  const normalizedPortal =
     normalizeCompanySlug(
       secondSegment
     );
 
   if (
-    portal === clientPortalPath
+    normalizedPortal ===
+    clientPortalPath
   ) {
     return 'client';
   }
 
   if (
-    portal === adminPortalPath
+    normalizedPortal ===
+    adminPortalPath
   ) {
     return 'admin';
   }
 
   if (
-    portal === employeePortalPath
+    normalizedPortal ===
+    employeePortalPath
   ) {
     return 'employee';
   }
@@ -180,86 +121,25 @@ export const getCompanyPortalFromLocation = (
   return 'root';
 };
 
-/*
- * ============================================================
- * RUTA BASE DE EMPRESA
- * ============================================================
- */
-
 export const getCompanyPath = (
-  companySlug
-) => {
-  const slug =
-    normalizeCompanySlug(
-      companySlug
-    );
-
-  if (!slug) {
-    return null;
-  }
-
-  return `/${slug}`;
-};
-
-/*
- * ============================================================
- * PORTAL CLIENTE
- * ============================================================
- */
+  slug = defaultCompanySlug
+) =>
+  `/${
+    normalizeCompanySlug(slug) ||
+    defaultCompanySlug
+  }`;
 
 export const getClientPortalPath = (
-  companySlug
-) => {
-  const base =
-    getCompanyPath(
-      companySlug
-    );
-
-  if (!base) {
-    return null;
-  }
-
-  return `${base}/${clientPortalPath}`;
-};
-
-/*
- * ============================================================
- * PORTAL ADMINISTRADOR
- * ============================================================
- */
+  slug = defaultCompanySlug
+) =>
+  `${getCompanyPath(slug)}/${clientPortalPath}`;
 
 export const getAdminPortalPath = (
-  companySlug
-) => {
-  const base =
-    getCompanyPath(
-      companySlug
-    );
-
-  if (!base) {
-    return null;
-  }
-
-  return `${base}/${adminPortalPath}`;
-};
-
-/*
- * ============================================================
- * PORTAL EMPLEADO
- * ============================================================
- */
+  slug = defaultCompanySlug
+) =>
+  `${getCompanyPath(slug)}/${adminPortalPath}`;
 
 export const getEmployeePortalPath = (
-  companySlug
-) => {
-  const base =
-    getCompanyPath(
-      companySlug
-    );
-
-  if (!base) {
-    return null;
-  }
-
-  return `${base}/${employeePortalPath}`;
-};
+  slug = defaultCompanySlug
+) =>
+  `${getCompanyPath(slug)}/${employeePortalPath}`;

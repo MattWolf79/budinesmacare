@@ -17,7 +17,7 @@ import CerrarAtencionPage from '../pages/admin/CerrarAtencionPage';
 import DisponibilidadPage from '../pages/admin/DisponibilidadPage';
 
 import {
-  obtenerRutasAdministrador
+  rutasAdministrador
 } from './rutasAplicacion';
 
 export default function RutasAdministrador({
@@ -40,8 +40,6 @@ export default function RutasAdministrador({
   onCloseAttentionPageClose,
   onCompanyContextRefresh
 }) {
-  const rutas = obtenerRutasAdministrador(companySlug);
-
   const propsBase = {
     user,
     companySlug,
@@ -49,14 +47,39 @@ export default function RutasAdministrador({
     adminProfileSummary
   };
 
+  /*
+   * IMPORTANTE:
+   *
+   * Este componente está montado dentro de:
+   *
+   * /:companySlug/*
+   *
+   * y el Dashboard navega usando las URLs completas
+   * generadas por rutasAplicacion.js.
+   *
+   * Por eso las rutas declaradas acá DEBEN ser relativas:
+   *
+   * agenda
+   * clientes
+   * empleados
+   * etc.
+   *
+   * NO usar acá:
+   *
+   * /esteticatopbody/admin/agenda
+   *
+   * porque eso genera conflicto con el router padre.
+   */
+
   return (
     <Routes>
-      {/* =========================================================
-          AGENDA / PEDIDOS
-         ========================================================= */}
+
+      {/* =========================
+          AGENDA
+          ========================= */}
 
       <Route
-        path={rutas.agenda}
+        path={rutasAdministrador.agenda}
         element={
           esModoPedido ? (
             <PedidosPage
@@ -76,15 +99,12 @@ export default function RutasAdministrador({
         }
       />
 
-      {/* =========================================================
+      {/* =========================
           PEDIDOS
-
-          En modo pedido se muestra PedidosPage.
-          En modo turnos, se redirige a Agenda.
-         ========================================================= */}
+          ========================= */}
 
       <Route
-        path={rutas.pedidos}
+        path={rutasAdministrador.pedidos}
         element={
           esModoPedido ? (
             <PedidosPage
@@ -93,61 +113,67 @@ export default function RutasAdministrador({
             />
           ) : (
             <Navigate
-              to={rutas.agenda}
+              to="../agenda"
               replace
             />
           )
         }
       />
 
-      {/* =========================================================
+      {/* =========================
           CLIENTES
-         ========================================================= */}
+          ========================= */}
 
       <Route
-        path={rutas.clientes}
+        path={rutasAdministrador.clientes}
         element={
           <ClientesPage
             {...propsBase}
-            onDataChanged={onDataChanged}
+            onDataChanged={
+              onDataChanged
+            }
           />
         }
       />
 
-      {/* =========================================================
+      {/* =========================
           EMPLEADOS
-         ========================================================= */}
+          ========================= */}
 
       <Route
-        path={rutas.empleados}
+        path={rutasAdministrador.empleados}
         element={
           <EmpleadosPage
             {...propsBase}
-            onDataChanged={onDataChanged}
+            onDataChanged={
+              onDataChanged
+            }
           />
         }
       />
 
-      {/* =========================================================
+      {/* =========================
           SERVICIOS / PRODUCTOS
-         ========================================================= */}
+          ========================= */}
 
       <Route
-        path={rutas.servicios}
+        path={rutasAdministrador.servicios}
         element={
           <ServiciosPage
             {...propsBase}
-            onDataChanged={onDataChanged}
+            onDataChanged={
+              onDataChanged
+            }
           />
         }
       />
 
-      {/* =========================================================
+      {/* =========================
           SUCURSALES
-         ========================================================= */}
+          ========================= */}
 
       <Route
-        path={rutas.sucursales}
+        path={rutasAdministrador.sucursales}
         element={
           sucursalesHabilitadas ? (
             <SucursalesPage
@@ -158,19 +184,19 @@ export default function RutasAdministrador({
             />
           ) : (
             <Navigate
-              to={rutas.agenda}
+              to="../agenda"
               replace
             />
           )
         }
       />
 
-      {/* =========================================================
-          PACKS Y PROMOCIONES
-         ========================================================= */}
+      {/* =========================
+          PACKS / PROMOS
+          ========================= */}
 
       <Route
-        path={rutas.bundles}
+        path={rutasAdministrador.bundles}
         element={
           bundlesHabilitados ? (
             <PacksPage
@@ -187,19 +213,19 @@ export default function RutasAdministrador({
             />
           ) : (
             <Navigate
-              to={rutas.agenda}
+              to="../agenda"
               replace
             />
           )
         }
       />
 
-      {/* =========================================================
+      {/* =========================
           CONFIGURACIÓN
-         ========================================================= */}
+          ========================= */}
 
       <Route
-        path={rutas.configuracion}
+        path={rutasAdministrador.configuracion}
         element={
           <ConfiguracionPage
             {...propsBase}
@@ -210,12 +236,12 @@ export default function RutasAdministrador({
         }
       />
 
-      {/* =========================================================
-          PENDIENTES DE ASIGNAR
-         ========================================================= */}
+      {/* =========================
+          PENDIENTES
+          ========================= */}
 
       <Route
-        path={rutas.pendientes}
+        path={rutasAdministrador.pendientes}
         element={
           !esModoPedido ? (
             <PendientesPage
@@ -225,19 +251,21 @@ export default function RutasAdministrador({
             />
           ) : (
             <Navigate
-              to={rutas.agenda}
+              to="../agenda"
               replace
             />
           )
         }
       />
 
-      {/* =========================================================
-          CERRAR ATENCIÓN / CERRAR PEDIDO
-         ========================================================= */}
+      {/* =========================
+          CERRAR ATENCIÓN
+          ========================= */}
 
       <Route
-        path={rutas.cerrarAtencion}
+        path={
+          rutasAdministrador.cerrarAtencion
+        }
         element={
           preciosHabilitados ? (
             <CerrarAtencionPage
@@ -253,19 +281,21 @@ export default function RutasAdministrador({
             />
           ) : (
             <Navigate
-              to={rutas.agenda}
+              to="../agenda"
               replace
             />
           )
         }
       />
 
-      {/* =========================================================
+      {/* =========================
           DISPONIBILIDAD
-         ========================================================= */}
+          ========================= */}
 
       <Route
-        path={rutas.disponibilidad}
+        path={
+          rutasAdministrador.disponibilidad
+        }
         element={
           !esModoPedido ? (
             <DisponibilidadPage
@@ -277,29 +307,27 @@ export default function RutasAdministrador({
             />
           ) : (
             <Navigate
-              to={rutas.agenda}
+              to="../agenda"
               replace
             />
           )
         }
       />
 
-      {/* =========================================================
-          RUTA DESCONOCIDA
-
-          Cualquier URL administrativa no reconocida vuelve
-          a la agenda.
-         ========================================================= */}
+      {/* =========================
+          FALLBACK
+          ========================= */}
 
       <Route
         path="*"
         element={
           <Navigate
-            to={rutas.agenda}
+            to="agenda"
             replace
           />
         }
       />
+
     </Routes>
   );
 }

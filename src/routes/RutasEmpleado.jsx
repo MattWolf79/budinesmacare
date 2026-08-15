@@ -11,10 +11,9 @@ import EmployeeHomePage from '../pages/employee/EmployeeHomePage';
 import EmployeeClientsPage from '../pages/employee/EmployeeClientsPage';
 import EmployeeProductsPage from '../pages/employee/EmployeeProductsPage';
 import DisponibilidadPage from '../pages/employee/DisponibilidadPage';
-import PerfilEmpleadoPage from '../pages/employee/PerfilEmpleadoPage';
 
 import {
-  obtenerRutasEmpleado
+  rutasEmpleado
 } from './rutasAplicacion';
 
 function PaginaEmpleado({
@@ -60,13 +59,9 @@ function ProductosEmpleadoPage(
 export default function RutasEmpleado(
   props
 ) {
-  const rutas =
-    obtenerRutasEmpleado(
-      props.companySlug
-    );
-
   return (
     <Routes>
+
       <Route
         element={
           <EmployeeLayout
@@ -74,8 +69,13 @@ export default function RutasEmpleado(
           />
         }
       >
+
+        {/* =========================
+            INICIO
+            ========================= */}
+
         <Route
-          path={rutas.inicio}
+          index
           element={
             <PaginaEmpleado
               {...props}
@@ -84,8 +84,12 @@ export default function RutasEmpleado(
           }
         />
 
+        {/* =========================
+            AGENDA
+            ========================= */}
+
         <Route
-          path={rutas.agenda}
+          path={rutasEmpleado.agenda}
           element={
             <PaginaEmpleado
               {...props}
@@ -94,8 +98,12 @@ export default function RutasEmpleado(
           }
         />
 
+        {/* =========================
+            CLIENTES
+            ========================= */}
+
         <Route
-          path={rutas.clientes}
+          path={rutasEmpleado.clientes}
           element={
             <ClientesEmpleadoPage
               {...props}
@@ -103,8 +111,12 @@ export default function RutasEmpleado(
           }
         />
 
+        {/* =========================
+            PRODUCTOS
+            ========================= */}
+
         <Route
-          path={rutas.productos}
+          path={rutasEmpleado.productos}
           element={
             <ProductosEmpleadoPage
               {...props}
@@ -112,8 +124,14 @@ export default function RutasEmpleado(
           }
         />
 
+        {/* =========================
+            DISPONIBILIDAD
+            ========================= */}
+
         <Route
-          path={rutas.disponibilidad}
+          path={
+            rutasEmpleado.disponibilidad
+          }
           element={
             <DisponibilidadPage
               {...props}
@@ -121,8 +139,12 @@ export default function RutasEmpleado(
           }
         />
 
+        {/* =========================
+            PERFIL
+            ========================= */}
+
         <Route
-          path={rutas.perfil}
+          path={rutasEmpleado.perfil}
           element={
             <PaginaEmpleado
               {...props}
@@ -131,8 +153,14 @@ export default function RutasEmpleado(
           }
         />
 
+        {/* =========================
+            CERRAR ATENCIÓN
+            ========================= */}
+
         <Route
-          path={rutas.cerrarAtencion}
+          path={
+            rutasEmpleado.cerrarAtencion
+          }
           element={
             <PaginaEmpleado
               {...props}
@@ -141,8 +169,14 @@ export default function RutasEmpleado(
           }
         />
 
+        {/* =========================
+            NUEVA RESERVA
+            ========================= */}
+
         <Route
-          path={rutas.nuevaReserva}
+          path={
+            rutasEmpleado.nuevaReserva
+          }
           element={
             <PaginaEmpleado
               {...props}
@@ -151,8 +185,14 @@ export default function RutasEmpleado(
           }
         />
 
+        {/* =========================
+            NUEVO PEDIDO
+            ========================= */}
+
         <Route
-          path={rutas.nuevoPedido}
+          path={
+            rutasEmpleado.nuevoPedido
+          }
           element={
             <PaginaEmpleado
               {...props}
@@ -160,17 +200,23 @@ export default function RutasEmpleado(
             />
           }
         />
+
+        {/* =========================
+            FALLBACK
+            ========================= */}
 
         <Route
           path="*"
           element={
             <Navigate
-              to={rutas.agenda}
+              to="agenda"
               replace
             />
           }
         />
+
       </Route>
+
     </Routes>
   );
 }

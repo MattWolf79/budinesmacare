@@ -5,10 +5,17 @@ import {
   useState
 } from 'react';
 
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams
+} from 'react-router-dom';
+
 import { supabase } from './api/supabaseClient';
 
-// Reemplaza window.alert por el modal <AppAlertHost>
-// todas las llamadas alert() usan el componente.
 import {
   showAppAlert as alert
 } from './utils/appAlert';
@@ -26,10 +33,10 @@ import {
 } from './utils/appearance';
 
 import {
+  defaultCompanySlug,
   getClientPortalPath,
-  getCompanyPortalFromLocation,
-  getCompanySlugFromLocation,
-  isPlatformAdminLocation
+  getAdminPortalPath,
+  getEmployeePortalPath
 } from './utils/tenant';
 
 const validProfiles = [
@@ -65,14 +72,11 @@ const inactivityLimitMs =
 const inactivityMessage =
   'Pasaron mas de 5 min sin operar, volver a intentar.';
 
-// Las sesiones internas (admin/empleado/cliente por DNI)
-// se guardan en localStorage para compartirlas entre pestañas.
-// Así, cuando el link "Ir al Turno" del mail abre una pestaña
-// nueva, reutiliza la sesión ya iniciada en otra pestaña.
-// El corte por inactividad (5 min) sigue vigente porque también
-// se apoya en esta misma persistencia.
-
-// eslint-disable-next-line no-redeclare
+/*
+ * IMPORTANTE:
+ * Estas sesiones se guardan en localStorage porque
+ * deben sobrevivir al cambio de pestaña.
+ */
 const sessionStorage =
   window.localStorage;
 
@@ -185,10 +189,10 @@ const separarNombreClienteGoogle = (
     .filter(Boolean);
 
   return {
-    nombre: partes[0] || '',
-    apellido: partes
-      .slice(1)
-      .join(' ')
+    nombre:
+      partes[0] || '',
+    apellido:
+      partes.slice(1).join(' ')
   };
 };
 
@@ -325,7 +329,7 @@ const getStoredProfile = () => {
     : 'client';
 };
 
-const hasAuthCallbackParams = () => {
+const getAuthCallbackParams = () => {
   const searchParams =
     new URLSearchParams(
       window.location.search || ''
@@ -338,93 +342,131 @@ const hasAuthCallbackParams = () => {
       ).replace(/^#/, '')
     );
 
-  return (
-    searchParams.has('code') ||
-    searchParams.has('error') ||
-    hashParams.has(
-      'access_token'
-    ) ||
-    hashParams.has('error')
-  );
+  return {
+    code:
+      searchParams.get('code') ||
+      null,
+
+    error:
+      searchParams.get('error') ||
+      hashParams.get('error') ||
+      null,
+
+    hasAccessToken:
+      hashParams.has(
+        'access_token'
+      ),
+
+    hasCallback:
+      searchParams.has('code') ||
+      searchParams.has('error') ||
+      hashParams.has(
+        'access_token'
+      ) ||
+      hashParams.has('error')
+  };
 };
 
-/*
- * Recupera el slug que guardamos antes de enviar
- * al usuario a Google.
- *
- * Si Google/Supabase devuelve:
- *
- *   http://localhost:5173/
- *
- * podemos reconstruir:
- *
- *   http://localhost:5173/miempresa/sacarturno
- *
- * conservando además ?code=... o el hash OAuth.
- */
-const recoverOAuthCompanySlug = () => {
-  const currentSlug =
-    getCompanySlugFromLocation();
+function CompanyApp() {
+  const {
+    companySlug: routeCompanySlug
+  } = useParams();
 
-  if (currentSlug) {
-    return currentSlug;
-  }
+  const location =
+    useLocation();
 
-  const storedSlug =
-    sessionStorage.getItem(
-      oauthCompanySlugStorageKey
+  const navigate =
+    useNavigate();
+
+  const companySlug =
+    String(
+      routeCompanySlug || ''
+    )
+      .trim()
+      .toLowerCase();
+
+  const pathname =
+    location.pathname;
+
+  /*
+   * IMPORTANTE:
+   *
+   * Estas detecciones se hacen sobre la ruta
+   * completa, pero siempre respetando que el
+   * primer segmento es el tenant.
+   *
+   * Ejemplo:
+   *
+   * /esteticatopbody/sacarturno
+   * /esteticatopbody/admin
+   * /esteticatopbody/empleado
+   *
+   * No se utilizan rutas relativas para navegar.
+   */
+  const companyBasePath =
+    `/${companySlug}`;
+
+  const normalizedPath =
+    pathname.replace(
+      /\/+$/,
+      ''
     );
 
-  if (!storedSlug) {
-    return null;
-  }
-
-  return String(
-    storedSlug
-  )
-    .trim()
-    .toLowerCase();
-};
-
-export default function App() {
-  const isPlatformAdminRoute =
-    isPlatformAdminLocation();
-
-  const companyPortal =
-    getCompanyPortalFromLocation();
-
   const isClientPortal =
-    companyPortal === 'client';
+    normalizedPath ===
+      `${companyBasePath}/sacarturno` ||
+    normalizedPath.startsWith(
+      `${companyBasePath}/sacarturno/`
+    );
 
   const isAdminPortal =
-    companyPortal === 'admin';
+    normalizedPath ===
+      `${companyBasePath}/admin` ||
+    normalizedPath.startsWith(
+      `${companyBasePath}/admin/`
+    );
 
   const isEmployeePortal =
-    companyPortal === 'employee';
+    normalizedPath ===
+      `${companyBasePath}/empleado` ||
+    normalizedPath.startsWith(
+      `${companyBasePath}/empleado/`
+    );
 
   const isInternalPortal =
     isAdminPortal ||
     isEmployeePortal;
 
   /*
-   * IMPORTANTE:
-   * usamos el slug de la URL normalmente,
-   * pero si OAuth volvió a "/",
-   * recuperamos el slug temporal guardado
-   * antes de ir a Google.
+   * La ruta /admin SIN tenant pertenece
+   * exclusivamente al administrador de plataforma.
+   *
+   * CompanyApp nunca debe recibir esa ruta.
    */
-  const companySlug =
-    getCompanySlugFromLocation() ||
-    recoverOAuthCompanySlug();
 
   const routeAllowedProfiles =
-    isClientPortal
-      ? ['client']
-      : isAdminPortal
-        ? ['admin']
-        : isEmployeePortal
-          ? ['employee']
-          : validProfiles;
+    useMemo(
+      () => {
+        if (isClientPortal) {
+          return ['client'];
+        }
+
+        if (isAdminPortal) {
+          return ['admin'];
+        }
+
+        if (isEmployeePortal) {
+          return ['employee'];
+        }
+
+        return validProfiles;
+      },
+      [
+        isClientPortal,
+        isAdminPortal,
+        isEmployeePortal
+      ]
+    );
 
   const [
     companyContext,
@@ -479,22 +521,48 @@ export default function App() {
     setSessionExpiredMessage
   ] = useState('');
 
-  const baseAvailableProfiles =
-    internalSession
-      ? getAvailableProfiles(
-          internalSession.role
-        )
-      : getAvailableProfiles(
-          authProfile?.role ||
-            accessProfile
-        );
+  /*
+   * Guardamos siempre la última empresa visitada.
+   */
+  useEffect(() => {
+    if (!companySlug) {
+      return;
+    }
+
+    sessionStorage.setItem(
+      oauthCompanySlugStorageKey,
+      companySlug
+    );
+  }, [
+    companySlug
+  ]);
 
   const availableProfiles =
-    baseAvailableProfiles.filter(
-      (profile) =>
-        routeAllowedProfiles.includes(
-          profile
-        )
+    useMemo(
+      () => {
+        const baseAvailableProfiles =
+          internalSession
+            ? getAvailableProfiles(
+                internalSession.role
+              )
+            : getAvailableProfiles(
+                authProfile?.role ||
+                  accessProfile
+              );
+
+        return baseAvailableProfiles.filter(
+          (profile) =>
+            routeAllowedProfiles.includes(
+              profile
+            )
+        );
+      },
+      [
+        internalSession?.role,
+        authProfile?.role,
+        accessProfile,
+        routeAllowedProfiles
+      ]
     );
 
   const canChangeProfile =
@@ -506,103 +574,6 @@ export default function App() {
   const landingEnabled =
     companyContext?.landing
       ?.habilitada === true;
-
-  /*
-   * NUEVO:
-   *
-   * Si OAuth vuelve a "/",
-   * reconstruimos la URL de la empresa
-   * antes de procesar normalmente la aplicación.
-   *
-   * Conservamos ?code=... y el hash OAuth.
-   */
-  useEffect(() => {
-    const currentUrlSlug =
-      getCompanySlugFromLocation();
-
-    if (currentUrlSlug) {
-      return;
-    }
-
-    const storedSlug =
-      sessionStorage.getItem(
-        oauthCompanySlugStorageKey
-      );
-
-    if (!storedSlug) {
-      return;
-    }
-
-    const normalizedSlug =
-      String(storedSlug)
-        .trim()
-        .toLowerCase();
-
-    if (!normalizedSlug) {
-      sessionStorage.removeItem(
-        oauthCompanySlugStorageKey
-      );
-
-      return;
-    }
-
-    const callbackExists =
-      hasAuthCallbackParams();
-
-    /*
-     * Solo hacemos esta recuperación
-     * cuando realmente estamos en la raíz.
-     */
-    const pathname =
-      window.location.pathname;
-
-    const isRootPath =
-      pathname === '/' ||
-      pathname === '/index.html';
-
-    if (!isRootPath) {
-      return;
-    }
-
-    const targetPath =
-      getClientPortalPath(
-        normalizedSlug
-      );
-
-    if (!targetPath) {
-      sessionStorage.removeItem(
-        oauthCompanySlugStorageKey
-      );
-
-      return;
-    }
-
-    const search =
-      window.location.search || '';
-
-    const hash =
-      window.location.hash || '';
-
-    const targetUrl =
-      `${targetPath}${search}${hash}`;
-
-    /*
-     * Eliminamos la marca antes de navegar.
-     * Si la navegación funciona, no queda
-     * un slug OAuth viejo para futuras visitas.
-     */
-    sessionStorage.removeItem(
-      oauthCompanySlugStorageKey
-    );
-
-    /*
-     * replace evita agregar una entrada
-     * incorrecta "/" al historial.
-     */
-    window.location.replace(
-      targetUrl
-    );
-  }, []);
 
   useEffect(() => {
     const cachedForSlug =
@@ -634,26 +605,144 @@ export default function App() {
     companySlug
   ]);
 
+  /*
+   * Si entramos solamente al tenant:
+   *
+   * /esteticatopbody
+   *
+   * vamos a:
+   *
+   * /esteticatopbody/sacarturno
+   */
   useEffect(() => {
     if (
-      companyPortal === 'root' &&
-      companySlug &&
-      !companyContextLoading &&
-      companyContext?.active &&
-      !landingEnabled
+      !companySlug ||
+      companyContextLoading ||
+      !companyContext?.active ||
+      landingEnabled
     ) {
-      window.location.replace(
+      return;
+    }
+
+    const tenantRoot =
+      `/${companySlug}`;
+
+    if (
+      normalizedPath === tenantRoot
+    ) {
+      navigate(
         getClientPortalPath(
           companySlug
-        )
+        ),
+        {
+          replace: true
+        }
       );
     }
   }, [
-    companyPortal,
     companySlug,
     companyContextLoading,
     companyContext,
-    landingEnabled
+    landingEnabled,
+    normalizedPath,
+    navigate
+  ]);
+
+  /*
+   * Protección contra URLs duplicadas.
+   *
+   * Si por una navegación anterior quedó algo
+   * como:
+   *
+   * /empresa/sacarturno/sacarturno
+   *
+   * lo llevamos nuevamente a:
+   *
+   * /empresa/sacarturno
+   *
+   * Lo mismo para admin y empleado.
+   */
+  useEffect(() => {
+    if (!companySlug) {
+      return;
+    }
+
+    const duplicateClientPrefix =
+      `/${companySlug}/sacarturno/sacarturno`;
+
+    const duplicateAdminPrefix =
+      `/${companySlug}/admin/admin`;
+
+    const duplicateEmployeePrefix =
+      `/${companySlug}/empleado/empleado`;
+
+    if (
+      normalizedPath.startsWith(
+        duplicateClientPrefix
+      )
+    ) {
+      const rest =
+        normalizedPath.slice(
+          duplicateClientPrefix.length
+        );
+
+      navigate(
+        `${getClientPortalPath(
+          companySlug
+        )}${rest}`,
+        {
+          replace: true
+        }
+      );
+
+      return;
+    }
+
+    if (
+      normalizedPath.startsWith(
+        duplicateAdminPrefix
+      )
+    ) {
+      const rest =
+        normalizedPath.slice(
+          duplicateAdminPrefix.length
+        );
+
+      navigate(
+        `${getAdminPortalPath(
+          companySlug
+        )}${rest}`,
+        {
+          replace: true
+        }
+      );
+
+      return;
+    }
+
+    if (
+      normalizedPath.startsWith(
+        duplicateEmployeePrefix
+      )
+    ) {
+      const rest =
+        normalizedPath.slice(
+          duplicateEmployeePrefix.length
+        );
+
+      navigate(
+        `${getEmployeePortalPath(
+          companySlug
+        )}${rest}`,
+        {
+          replace: true
+        }
+      );
+    }
+  }, [
+    companySlug,
+    normalizedPath,
+    navigate
   ]);
 
   useEffect(() => {
@@ -669,7 +758,8 @@ export default function App() {
         if (!companySlug) {
           setCompanyContext({
             active: false,
-            status: 'missing_slug',
+            status:
+              'missing_slug',
             slug: null
           });
 
@@ -693,8 +783,15 @@ export default function App() {
         let {
           data,
           error
-        } = await loadContextAttempt();
+        } =
+          await loadContextAttempt();
 
+        /*
+         * Solo hacemos UN reintento.
+         *
+         * Esto evita volver al loop de consultas
+         * que teníamos anteriormente.
+         */
         if (
           active &&
           (
@@ -755,7 +852,9 @@ export default function App() {
         );
       }
     };
-  }, [companySlug]);
+  }, [
+    companySlug
+  ]);
 
   const refreshCompanyContext =
     useCallback(
@@ -767,13 +866,14 @@ export default function App() {
         const {
           data,
           error
-        } = await supabase.rpc(
-          'get_company_public_context',
-          {
-            slug_value:
-              companySlug
-          }
-        );
+        } =
+          await supabase.rpc(
+            'get_company_public_context',
+            {
+              slug_value:
+                companySlug
+            }
+          );
 
         if (
           !error &&
@@ -784,8 +884,9 @@ export default function App() {
           );
         }
       },
-      [companySlug]
-    );
+      [
+        companySlug
+      ]);
 
   const selectAccessProfile = (
     profile
@@ -997,11 +1098,12 @@ export default function App() {
       }
 
       const nextSession = {
-        id: `00000000-0000-4000-8000-${
-          role === 'admin'
-            ? '000000000002'
-            : '000000000003'
-        }`,
+        id:
+          `00000000-0000-4000-8000-${
+            role === 'admin'
+              ? '000000000002'
+              : '000000000003'
+          }`,
         sessionToken:
           'local-dev-session',
         role,
@@ -1017,7 +1119,8 @@ export default function App() {
           role === 'admin'
             ? 'Admin'
             : 'Empleado',
-        lastName: 'Local',
+        lastName:
+          'Local',
         photoUrl: null,
         employeeId:
           role === 'employee'
@@ -1066,9 +1169,7 @@ export default function App() {
     clearAccessProfile();
     clearInternalSession();
 
-    setLocalClientSession(
-      null
-    );
+    setLocalClientSession(null);
 
     sessionStorage.removeItem(
       lastActivityStorageKey
@@ -1123,7 +1224,9 @@ export default function App() {
 
         return data;
       },
-      [companyContextId]
+      [
+        companyContextId
+      ]
     );
 
   const applyAuthSession =
@@ -1162,9 +1265,17 @@ export default function App() {
             getStoredProfile()
         );
       },
-      [loadAuthProfile]
+      [
+        loadAuthProfile
+      ]
     );
 
+  /*
+   * Inicialización de Supabase Auth.
+   *
+   * exchangeCodeForSession recibe solamente
+   * el código OAuth.
+   */
   useEffect(() => {
     let active = true;
 
@@ -1173,18 +1284,39 @@ export default function App() {
         setAuthLoading(true);
 
         try {
-          if (
-            hasAuthCallbackParams()
-          ) {
+          const callback =
+            getAuthCallbackParams();
+
+          if (callback.code) {
             await supabase.auth.exchangeCodeForSession(
-              window.location.href
+              callback.code
             );
 
             window.history.replaceState(
               {},
               document.title,
-              window.location.pathname +
-                window.location.hash
+              window.location.pathname
+            );
+          } else if (
+            callback.hasAccessToken
+          ) {
+            window.history.replaceState(
+              {},
+              document.title,
+              window.location.pathname
+            );
+          } else if (
+            callback.error
+          ) {
+            console.warn(
+              'Google OAuth devolvió un error:',
+              callback.error
+            );
+
+            window.history.replaceState(
+              {},
+              document.title,
+              window.location.pathname
             );
           }
 
@@ -1220,10 +1352,10 @@ export default function App() {
       data: listener
     } =
       supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          if (session) {
+        (_event, nextSession) => {
+          if (nextSession) {
             applyAuthSession(
-              session
+              nextSession
             ).finally(() =>
               setAuthLoading(
                 false
@@ -1298,9 +1430,13 @@ export default function App() {
     };
   }, [
     applyAuthSession,
-    companySlug
+    companySlug,
+    routeAllowedProfiles
   ]);
 
+  /*
+   * Expiración por inactividad.
+   */
   useEffect(() => {
     if (
       !session &&
@@ -1458,7 +1594,8 @@ export default function App() {
         sessionToken:
           internalSession.sessionToken,
         email:
-          internalSession.email || '',
+          internalSession.email ||
+          '',
         role:
           internalSession.role,
         employeeId:
@@ -1479,7 +1616,9 @@ export default function App() {
           true
       };
     },
-    [internalSession]
+    [
+      internalSession
+    ]
   );
 
   const authenticatedUser =
@@ -1491,24 +1630,30 @@ export default function App() {
 
         return {
           ...session.user,
+
           email:
             authProfile?.email ||
             session.user.email,
+
           role:
             authProfile?.role ||
             accessProfile,
+
           displayName:
             authProfile?.display_name ||
             getAuthDisplayName(
               session.user
             ),
+
           photoUrl:
             getAuthPhotoUrl(
               session.user
             ),
+
           employeeId:
             authProfile?.employee_id ||
             null,
+
           isInternal: false
         };
       },
@@ -1519,6 +1664,10 @@ export default function App() {
       ]
     );
 
+  /*
+   * Sincronización del cliente Google
+   * con la tabla de clientes.
+   */
   useEffect(() => {
     if (
       !session?.user ||
@@ -1571,22 +1720,28 @@ export default function App() {
             {
               first_name_value:
                 nombre || null,
+
               last_name_value:
                 apellido || null,
+
               display_name_value:
                 getAuthDisplayName(
                   session.user
                 ) || null,
+
               email_value:
                 emailCliente,
+
               phone_value:
                 obtenerTelefonoClienteGoogle(
                   session.user
                 ) || null,
+
               photo_url_value:
                 getAuthPhotoUrl(
                   session.user
                 ),
+
               company_slug_value:
                 companySlug
             }
@@ -1623,68 +1778,14 @@ export default function App() {
     companyContext?.active
   ]);
 
-  if (isPlatformAdminRoute) {
-    return <PlatformAdmin />;
-  }
-
   if (
-    companyPortal === 'root' &&
-    companySlug
+    companySlug === 'admin'
   ) {
-    if (companyContextLoading) {
-      return (
-        <main className="login-page">
-          <section className="login-card">
-            <p className="login-copy">
-              Cargando empresa...
-            </p>
-          </section>
-        </main>
-      );
-    }
-
-    if (!companyContext?.active) {
-      return (
-        <main className="login-page">
-          <section className="login-card">
-            <p className="login-kicker">
-              Empresa no disponible
-            </p>
-
-            <h1 className="login-brand-heading">
-              QuieroTurnoApp
-            </h1>
-
-            <p className="login-copy">
-              Ingresá con la URL de tu empresa para acceder a clientes, empleados o administración.
-            </p>
-          </section>
-        </main>
-      );
-    }
-
-    if (!landingEnabled) {
-      return (
-        <main className="login-page">
-          <section className="login-card">
-            <p className="login-copy">
-              Redirigiendo...
-            </p>
-          </section>
-        </main>
-      );
-    }
-
-    return (
-      <LandingPage
-        companySlug={
-          companySlug
-        }
-        companyContext={
-          companyContext
-        }
-      />
-    );
+    /*
+     * Esta protección evita que /admin sea
+     * interpretado como tenant "admin".
+     */
+    return <PlatformAdmin />;
   }
 
   if (
@@ -1715,10 +1816,40 @@ export default function App() {
           </h1>
 
           <p className="login-copy">
-            Ingresá con la URL de tu empresa para acceder a clientes, empleados o administración.
+            Ingresá con la URL de tu empresa
+            para acceder a clientes,
+            empleados o administración.
           </p>
         </section>
       </main>
+    );
+  }
+
+  if (
+    !isClientPortal &&
+    !isAdminPortal &&
+    !isEmployeePortal
+  ) {
+    if (!landingEnabled) {
+      return (
+        <Navigate
+          to={getClientPortalPath(
+            companySlug
+          )}
+          replace
+        />
+      );
+    }
+
+    return (
+      <LandingPage
+        companySlug={
+          companySlug
+        }
+        companyContext={
+          companyContext
+        }
+      />
     );
   }
 
@@ -1780,7 +1911,8 @@ export default function App() {
 
   if (
     isInternalPortal &&
-    !internalSessionAllowed
+    !internalSessionAllowed &&
+    !session
   ) {
     return loginView;
   }
@@ -1895,7 +2027,7 @@ export default function App() {
     return (
       <RoleAccess
         user={
-          session.user
+          session?.user
         }
         onSelectProfile={
           selectAccessProfile
@@ -1979,5 +2111,217 @@ export default function App() {
         />
       )}
     </RoleAccess>
+  );
+}
+
+/*
+ * Callback OAuth.
+ *
+ * Si Google vuelve a "/":
+ *
+ * /
+ *
+ * lo llevamos al último tenant utilizado.
+ */
+function OAuthCallbackRoute() {
+  const navigate =
+    useNavigate();
+
+  useEffect(() => {
+    const callback =
+      getAuthCallbackParams();
+
+    const storedSlug =
+      String(
+        sessionStorage.getItem(
+          oauthCompanySlugStorageKey
+        ) ||
+          defaultCompanySlug
+      )
+        .trim()
+        .toLowerCase();
+
+    const targetPath =
+      getClientPortalPath(
+        storedSlug
+      );
+
+    if (
+      callback.hasCallback
+    ) {
+      navigate(
+        `${targetPath}${window.location.search}${window.location.hash}`,
+        {
+          replace: true
+        }
+      );
+
+      return;
+    }
+
+    navigate(
+      targetPath,
+      {
+        replace: true
+      }
+    );
+  }, [
+    navigate
+  ]);
+
+  return (
+    <main className="login-page">
+      <section className="login-card">
+        <p className="login-copy">
+          Procesando inicio de sesión...
+        </p>
+      </section>
+    </main>
+  );
+}
+
+/*
+ * Rutas cortas / legacy.
+ *
+ * Estas rutas NO deben entrar a CompanyApp.
+ *
+ * /sacarturno
+ *    -> /esteticatopbody/sacarturno
+ *
+ * /empleado
+ *    -> /esteticatopbody/empleado
+ *
+ * /admin
+ *    -> PlatformAdmin
+ *
+ * Esto evita que React interprete "sacarturno"
+ * o "empleado" como companySlug.
+ */
+function LegacyClientRoute() {
+  return (
+    <Navigate
+      to={getClientPortalPath(
+        defaultCompanySlug
+      )}
+      replace
+    />
+  );
+}
+
+function LegacyEmployeeRoute() {
+  return (
+    <Navigate
+      to={getEmployeePortalPath(
+        defaultCompanySlug
+      )}
+      replace
+    />
+  );
+}
+
+function RootRoutes() {
+  return (
+    <Routes>
+      {/* OAuth / raíz */}
+      <Route
+        path="/"
+        element={
+          <OAuthCallbackRoute />
+        }
+      />
+
+      {/* URLs cortas antiguas */}
+      <Route
+        path="/sacarturno/*"
+        element={
+          <LegacyClientRoute />
+        }
+      />
+
+      <Route
+        path="/empleado/*"
+        element={
+          <LegacyEmployeeRoute />
+        }
+      />
+
+      {/* Administrador de plataforma */}
+      <Route
+        path="/admin/*"
+        element={
+          <PlatformAdmin />
+        }
+      />
+
+      /*
+       * IMPORTANTE:
+       * Cada portal del tenant tiene ahora su propio
+       * contexto de React Router.
+       *
+       * Esto evita que rutas como "agenda", "clientes",
+       * etc. se concatenen nuevamente sobre la URL actual.
+       */
+
+      {/* Portal administrador */}
+      <Route
+        path="/:companySlug/admin/*"
+        element={
+          <CompanyApp />
+        }
+      />
+
+      {/* Portal empleado */}
+      <Route
+        path="/:companySlug/empleado/*"
+        element={
+          <CompanyApp />
+        }
+      />
+
+      {/* Portal cliente */}
+      <Route
+        path="/:companySlug/sacarturno/*"
+        element={
+          <CompanyApp />
+        }
+      />
+
+      {/* Entrada directa al tenant */}
+      <Route
+        path="/:companySlug"
+        element={
+          <CompanyApp />
+        }
+      />
+
+      {/* Otras rutas del tenant */}
+      <Route
+        path="/:companySlug/*"
+        element={
+          <CompanyApp />
+        }
+      />
+
+      {/* Ruta desconocida */}
+      <Route
+        path="*"
+        element={
+          <Navigate
+            to="/"
+            replace
+          />
+        }
+      />
+    </Routes>
+  );
+}
+export default function App() {
+  /*
+   * NO BrowserRouter acá.
+   *
+   * main.jsx ya contiene el BrowserRouter.
+   */
+  return (
+    <RootRoutes />
   );
 }
