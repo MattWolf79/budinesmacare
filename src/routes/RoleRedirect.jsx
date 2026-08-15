@@ -10,7 +10,7 @@ export default function RoleRedirect({
   user,
   companySlug
 }) {
-  if (!user) {
+  if (!user || !companySlug) {
     return (
       <Navigate
         to="/"
@@ -19,43 +19,42 @@ export default function RoleRedirect({
     );
   }
 
+  let targetPath = null;
+
   switch (user.role) {
     case 'admin':
-      return (
-        <Navigate
-          to={getAdminPortalPath(
-            companySlug
-          )}
-          replace
-        />
-      );
+      targetPath =
+        getAdminPortalPath(companySlug);
+      break;
 
     case 'employee':
-      return (
-        <Navigate
-          to={getEmployeePortalPath(
-            companySlug
-          )}
-          replace
-        />
-      );
+      targetPath =
+        getEmployeePortalPath(companySlug);
+      break;
 
     case 'client':
-      return (
-        <Navigate
-          to={getClientPortalPath(
-            companySlug
-          )}
-          replace
-        />
-      );
+      targetPath =
+        getClientPortalPath(companySlug);
+      break;
 
     default:
-      return (
-        <Navigate
-          to="/"
-          replace
-        />
-      );
+      targetPath = `/${companySlug}`;
+      break;
   }
+
+  if (!targetPath) {
+    return (
+      <Navigate
+        to={`/${companySlug}`}
+        replace
+      />
+    );
+  }
+
+  return (
+    <Navigate
+      to={targetPath}
+      replace
+    />
+  );
 }

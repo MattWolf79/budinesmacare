@@ -160,7 +160,7 @@ export default function App() {
         ? ['employee']
       : validProfiles;
 
-  const [companySlug] = useState(getCompanySlugFromLocation);
+  const companySlug = getCompanySlugFromLocation();
   const [companyContext, setCompanyContext] = useState(null);
   const [companyContextLoading, setCompanyContextLoading] = useState(true);
   const [session, setSession] = useState(null);

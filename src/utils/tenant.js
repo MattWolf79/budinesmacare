@@ -1,53 +1,178 @@
-export const defaultCompanySlug = 'esteticatopbody';
 export const platformAdminPath = 'plataforma';
+
 export const clientPortalPath = 'sacarturno';
 export const adminPortalPath = 'admin';
 export const employeePortalPath = 'empleado';
 
-const ignoredPathSegments = new Set(['', 'index.html']);
+const ignoredPathSegments = new Set([
+  '',
+  'index.html'
+]);
 
-const getPathSegments = (locationValue = window.location) => String(locationValue.pathname || '')
-  .split('/')
-  .filter((segment) => !ignoredPathSegments.has(segment));
+const getPathSegments = (
+  locationValue = window.location
+) =>
+  String(
+    locationValue.pathname || ''
+  )
+    .split('/')
+    .filter(
+      (segment) =>
+        !ignoredPathSegments.has(segment)
+    );
 
-export const normalizeCompanySlug = (value) => String(value || '')
-  .trim()
-  .toLowerCase()
-  .replace(/[^a-z0-9-]/g, '');
+export const normalizeCompanySlug = (
+  value
+) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '');
 
-export const getCompanySlugFromLocation = (locationValue = window.location) => {
-  const [firstSegment = ''] = getPathSegments(locationValue);
+export const getCompanySlugFromLocation = (
+  locationValue = window.location
+) => {
+  const [
+    firstSegment = ''
+  ] = getPathSegments(
+    locationValue
+  );
 
-  if (normalizeCompanySlug(firstSegment) === platformAdminPath) {
+  const slug =
+    normalizeCompanySlug(
+      firstSegment
+    );
+
+  if (
+    !slug ||
+    slug === platformAdminPath
+  ) {
     return null;
   }
 
-  return normalizeCompanySlug(firstSegment) || null;
+  return slug;
 };
 
-export const isPlatformAdminLocation = (locationValue = window.location) => {
-  const [firstSegment = ''] = getPathSegments(locationValue);
+export const isPlatformAdminLocation = (
+  locationValue = window.location
+) => {
+  const [
+    firstSegment = ''
+  ] = getPathSegments(
+    locationValue
+  );
 
-  return normalizeCompanySlug(firstSegment) === platformAdminPath;
+  return (
+    normalizeCompanySlug(
+      firstSegment
+    ) === platformAdminPath
+  );
 };
 
-export const getCompanyPortalFromLocation = (locationValue = window.location) => {
-  const [firstSegment = '', secondSegment = ''] = getPathSegments(locationValue);
+export const getCompanyPortalFromLocation = (
+  locationValue = window.location
+) => {
+  const [
+    firstSegment = '',
+    secondSegment = ''
+  ] = getPathSegments(
+    locationValue
+  );
 
-  if (!firstSegment || normalizeCompanySlug(firstSegment) === platformAdminPath) {
+  const companySlug =
+    normalizeCompanySlug(
+      firstSegment
+    );
+
+  if (
+    !companySlug ||
+    companySlug === platformAdminPath
+  ) {
     return null;
   }
 
-  const normalizedPortal = normalizeCompanySlug(secondSegment);
+  const portal =
+    normalizeCompanySlug(
+      secondSegment
+    );
 
-  if (normalizedPortal === clientPortalPath) return 'client';
-  if (normalizedPortal === adminPortalPath) return 'admin';
-  if (normalizedPortal === employeePortalPath) return 'employee';
+  if (
+    portal === clientPortalPath
+  ) {
+    return 'client';
+  }
+
+  if (
+    portal === adminPortalPath
+  ) {
+    return 'admin';
+  }
+
+  if (
+    portal === employeePortalPath
+  ) {
+    return 'employee';
+  }
 
   return 'root';
 };
 
-export const getCompanyPath = (slug = defaultCompanySlug) => `/${normalizeCompanySlug(slug) || defaultCompanySlug}`;
-export const getClientPortalPath = (slug = defaultCompanySlug) => `${getCompanyPath(slug)}/${clientPortalPath}`;
-export const getAdminPortalPath = (slug = defaultCompanySlug) => `${getCompanyPath(slug)}/${adminPortalPath}`;
-export const getEmployeePortalPath = (slug = defaultCompanySlug) => `${getCompanyPath(slug)}/${employeePortalPath}`;
+export const getCompanyPath = (
+  companySlug
+) => {
+  const slug =
+    normalizeCompanySlug(
+      companySlug
+    );
+
+  if (!slug) {
+    return null;
+  }
+
+  return `/${slug}`;
+};
+
+export const getClientPortalPath = (
+  companySlug
+) => {
+  const base =
+    getCompanyPath(
+      companySlug
+    );
+
+  if (!base) {
+    return null;
+  }
+
+  return `${base}/${clientPortalPath}`;
+};
+
+export const getAdminPortalPath = (
+  companySlug
+) => {
+  const base =
+    getCompanyPath(
+      companySlug
+    );
+
+  if (!base) {
+    return null;
+  }
+
+  return `${base}/${adminPortalPath}`;
+};
+
+export const getEmployeePortalPath = (
+  companySlug
+) => {
+  const base =
+    getCompanyPath(
+      companySlug
+    );
+
+  if (!base) {
+    return null;
+  }
+
+  return `${base}/${employeePortalPath}`;
+};

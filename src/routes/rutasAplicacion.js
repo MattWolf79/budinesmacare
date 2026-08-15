@@ -1,7 +1,7 @@
 export const rutasAdministrador = {
   agenda: 'agenda',
   empleados: 'empleados',
-  clientes: 'clientes',
+  clientes: 'clientes', 
   servicios: 'servicios',
   sucursales: 'sucursales',
   bundles: 'bundles',
