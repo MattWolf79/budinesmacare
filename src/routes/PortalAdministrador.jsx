@@ -1,10 +1,10 @@
 import AdminLayout from '../layouts/AdminLayout';
 import RutasAdministrador from './RutasAdministrador';
 
-export default function PortalAdministrador() {
+export default function PortalAdministrador(props) {
   return (
     <AdminLayout>
-      <RutasAdministrador />
+      <RutasAdministrador {...props} />
     </AdminLayout>
   );
 }

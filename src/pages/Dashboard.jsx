@@ -141,7 +141,7 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   const companyName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
   const navbarLogoSrc = companyContext?.client_logo_data_url || turnosAppLogo;
   const navbarLogoAlt = companyContext?.client_logo_data_url ? `${companyName} - Administrador` : undefined;
-  const navigate = useNavigate();
+
   
   useEffect(() => {
     const applyHashView = () => {
@@ -232,10 +232,7 @@ const actualizarHashVista = (view) => {
   );
   if (mapaRutasAdministrador[view]) {
 
-  console.log(
-    'Navigate futuro:',
-    mapaRutasAdministrador[view]
-  );
+  
 
 }
 };
@@ -256,10 +253,7 @@ const actualizarHashVista = (view) => {
   actualizarHashVista(view);
   if (mapaRutasAdministrador[view]) {
 
-  console.log(
-    'Ruta preparada:',
-    mapaRutasAdministrador[view]
-  );
+  
 
 }
   setActiveView(view);
@@ -323,7 +317,7 @@ const actualizarHashVista = (view) => {
   const adminProfileSummary = (
     <WorkspaceProfileIdentity user={user} roleLabel="Administrador" />
   );
-
+  const usarPortalAdministrador = false;
   return (
     <Container maxWidth={false} disableGutters className="dashboard-shell has-admin-sidebar">
       <Navbar

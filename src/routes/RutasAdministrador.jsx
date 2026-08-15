@@ -12,37 +12,40 @@ import PendientesPage from '../pages/admin/PendientesPage';
 import CerrarAtencionPage from '../pages/admin/CerrarAtencionPage';
 import DisponibilidadPage from '../pages/admin/DisponibilidadPage';
 
-export default function RutasAdministrador() {
+export default function RutasAdministrador(props) {
   return (
     <Routes>
 
       <Route path="/" element={<AgendaPage />} />
       <Route path="/agenda" element={<AgendaPage />} />
 
-      <Route path="/clientes" element={<ClientesPage />} />
+      <Route
+  path="/clientes"
+  element={<ClientesPage {...props} />}
+/>
 
-      <Route path="/empleados" element={<EmpleadosPage />} />
+      <Route path="/empleados" element={<EmpleadosPage {...props} />} />
 
-      <Route path="/servicios" element={<ServiciosPage />} />
+      <Route path="/servicios" element={<ServiciosPage {...props}/>} />
 
-      <Route path="/sucursales" element={<SucursalesPage />} />
+      <Route path="/sucursales" element={<SucursalesPage {...props} />} />
 
-      <Route path="/bundles" element={<BundlesPage />} />
+      <Route path="/bundles" element={<BundlesPage {...props} />} />
 
-      <Route path="/configuracion" element={<ConfiguracionPage />} />
+      <Route path="/configuracion" element={<ConfiguracionPage  {...props}/>} />
 
-      <Route path="/pedidos" element={<PedidosPage />} />
+      <Route path="/pedidos" element={<PedidosPage {...props}/>} />
 
-      <Route path="/pendientes" element={<PendientesPage />} />
+      <Route path="/pendientes" element={<PendientesPage {...props} />} />
 
       <Route
         path="/cerrar-atencion"
-        element={<CerrarAtencionPage />}
+        element={<CerrarAtencionPage {...props}/>}
       />
 
       <Route
         path="/disponibilidad"
-        element={<DisponibilidadPage />}
+        element={<DisponibilidadPage {...props} />}
       />
 
     </Routes>
