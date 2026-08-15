@@ -1,36 +1,103 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Container, Box } from '@mui/material';
+import {
+  useEffect,
+  useMemo,
+  useState
+} from 'react';
 
-import { obtenerConfiguracionApp } from '../api/configuracionApp';
+import {
+  useLocation,
+  useNavigate
+} from 'react-router-dom';
+
+import {
+  Container,
+  Box
+} from '@mui/material';
+
+import {
+  obtenerConfiguracionApp
+} from '../api/configuracionApp';
+
 import Navbar from '../components/Navbar';
+
 import AdminSidebar from '../components/AdminSidebar';
+
 import NewBookingPanel from '../components/NewBookingPanel';
-import { invalidarCacheSucursales } from '../components/AgendaGrid';
-import { WorkspaceProfileIdentity } from '../components/WorkspaceHero';
 
-import RutasAdministrador from '../routes/RutasAdministrador';
-import AdminLayout from '../layouts/AdminLayout';
-import { obtenerRutasAdministrador } from '../routes/rutasAplicacion';
+import {
+  invalidarCacheSucursales
+} from '../components/AgendaGrid';
 
-const turnosAppLogo = '/logo-quieroturnoapp.png';
+import {
+  WorkspaceProfileIdentity
+} from '../components/WorkspaceHero';
 
-const obtenerVistaAdministrador = (pathname) => {
-  const path = String(pathname || '').toLowerCase();
+import RutasAdministrador
+  from '../routes/RutasAdministrador';
 
-  if (path.endsWith('/clientes')) return 'clientes';
-  if (path.endsWith('/empleados')) return 'empleados';
-  if (path.endsWith('/servicios')) return 'servicios';
-  if (path.endsWith('/sucursales')) return 'sucursales';
-  if (path.endsWith('/configuracion')) return 'configuracion';
-  if (path.endsWith('/bundles')) return 'bundles';
-  if (path.endsWith('/pedidos')) return 'agenda';
-  if (path.endsWith('/pendientes')) return 'pendientes';
-  if (path.endsWith('/cerrar-atencion')) return 'cerrarAtencion';
-  if (path.endsWith('/disponibilidad')) return 'disponibilidad';
+import AdminLayout
+  from '../layouts/AdminLayout';
+
+import {
+  obtenerRutasAdministrador
+} from '../routes/rutasAplicacion';
+
+
+const turnosAppLogo =
+  '/logo-quieroturnoapp.png';
+
+
+const obtenerVistaAdministrador = (
+  pathname
+) => {
+  const path =
+    String(pathname || '')
+      .toLowerCase()
+      .replace(/\/+$/, '');
+
+  if (path.endsWith('/clientes')) {
+    return 'clientes';
+  }
+
+  if (path.endsWith('/empleados')) {
+    return 'empleados';
+  }
+
+  if (path.endsWith('/servicios')) {
+    return 'servicios';
+  }
+
+  if (path.endsWith('/sucursales')) {
+    return 'sucursales';
+  }
+
+  if (path.endsWith('/configuracion')) {
+    return 'configuracion';
+  }
+
+  if (path.endsWith('/bundles')) {
+    return 'bundles';
+  }
+
+  if (path.endsWith('/pedidos')) {
+    return 'agenda';
+  }
+
+  if (path.endsWith('/pendientes')) {
+    return 'pendientes';
+  }
+
+  if (path.endsWith('/cerrar-atencion')) {
+    return 'cerrarAtencion';
+  }
+
+  if (path.endsWith('/disponibilidad')) {
+    return 'disponibilidad';
+  }
 
   return 'agenda';
 };
+
 
 export default function Dashboard({
   user,
@@ -42,336 +109,624 @@ export default function Dashboard({
   companyContext,
   onCompanyContextRefresh
 }) {
-  const location = useLocation();
-  const navigate = useNavigate();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isNewBookingOpen, setIsNewBookingOpen] = useState(false);
-  const [newBookingInitial, setNewBookingInitial] = useState(null);
-  const [adminDataVersion, setAdminDataVersion] = useState(0);
-  const [promotions, setPromotions] = useState([]);
+  const location =
+    useLocation();
+
+  const navigate =
+    useNavigate();
+
+
+  const [
+    sidebarOpen,
+    setSidebarOpen
+  ] = useState(false);
+
+
+  const [
+    isNewBookingOpen,
+    setIsNewBookingOpen
+  ] = useState(false);
+
+
+  const [
+    newBookingInitial,
+    setNewBookingInitial
+  ] = useState(null);
+
+
+  const [
+    adminDataVersion,
+    setAdminDataVersion
+  ] = useState(0);
+
+
+  const [
+    promotions,
+    setPromotions
+  ] = useState([]);
+
 
   const configuracionOperativa =
-    companyContext?.configuracion_operativa || {};
+    companyContext?.configuracion_operativa ||
+    {};
+
 
   const esModoPedido =
-    configuracionOperativa.modo_operacion === 'pedido' ||
-    configuracionOperativa.usa_agenda === false;
+    configuracionOperativa.modo_operacion ===
+      'pedido' ||
+    configuracionOperativa.usa_agenda ===
+      false;
+
 
   const preciosHabilitados =
-    configuracionOperativa.precios_habilitados !== false;
+    configuracionOperativa.precios_habilitados !==
+    false;
+
 
   const promocionesHabilitadas =
-    configuracionOperativa.promociones_habilitadas !== false;
+    configuracionOperativa.promociones_habilitadas !==
+    false;
+
 
   const sucursalesHabilitadas =
-    configuracionOperativa.sucursales_habilitadas === true;
+    configuracionOperativa.sucursales_habilitadas ===
+    true;
+
 
   const packsHabilitados =
-    configuracionOperativa.packs_habilitados === true;
+    configuracionOperativa.packs_habilitados ===
+    true;
+
 
   const bundlesHabilitados =
-    packsHabilitados || promocionesHabilitadas;
+    packsHabilitados ||
+    promocionesHabilitadas;
+
 
   const companyName =
     companyContext?.company_name ||
     companyContext?.name ||
     'QuieroTurnoApp';
 
+
   const navbarLogoSrc =
     companyContext?.client_logo_data_url ||
     turnosAppLogo;
 
-  const navbarLogoAlt = companyContext?.client_logo_data_url
-    ? `${companyName} - Administrador`
-    : undefined;
+
+  const navbarLogoAlt =
+    companyContext?.client_logo_data_url
+      ? `${companyName} - Administrador`
+      : undefined;
+
 
   /*
-   * La vista activa se determina exclusivamente
-   * desde la URL actual.
+   * La vista activa SIEMPRE sale
+   * de la URL actual.
    */
-  const activeView = obtenerVistaAdministrador(
-    location.pathname
-  );
+  const activeView =
+    obtenerVistaAdministrador(
+      location.pathname
+    );
+
 
   /*
-   * Todas las rutas administrativas se generan
-   * a partir del slug de la empresa.
-   *
-   * Ejemplo:
-   * /esteticatopbody/admin/agenda
-   * /esteticatopbody/admin/clientes
-   * /esteticatopbody/admin/empleados
+   * Generamos una sola vez las URLs
+   * mientras no cambie la empresa.
    */
-  const rutas = useMemo(
-    () => obtenerRutasAdministrador(companySlug),
-    [companySlug]
-  );
+  const rutas =
+    useMemo(
+      () =>
+        obtenerRutasAdministrador(
+          companySlug
+        ),
+      [
+        companySlug
+      ]
+    );
+
 
   /*
-   * Carga de promociones/configuración.
+   * Cargar promociones.
    *
-   * No refrescamos companyContext al montar el Dashboard.
-   * Esto evita loops de renderizado.
+   * IMPORTANTE:
+   * no actualizamos companyContext acá.
    */
   useEffect(() => {
+
     let activo = true;
 
-    const cargarConfiguracion = async () => {
-      const { data, error } =
-        await obtenerConfiguracionApp(companySlug);
 
-      if (!activo || error) {
-        return;
-      }
+    const cargarConfiguracion =
+      async () => {
 
-      setPromotions(
-        Array.isArray(data?.promotions)
-          ? data.promotions
-          : []
-      );
-    };
+        const {
+          data,
+          error
+        } =
+          await obtenerConfiguracionApp(
+            companySlug
+          );
+
+
+        if (
+          !activo ||
+          error
+        ) {
+          return;
+        }
+
+
+        setPromotions(
+          Array.isArray(
+            data?.promotions
+          )
+            ? data.promotions
+            : []
+        );
+      };
+
 
     cargarConfiguracion();
+
 
     return () => {
       activo = false;
     };
-  }, [companySlug]);
+
+  }, [
+    companySlug
+  ]);
+
 
   /*
-   * Promociones habilitadas para utilizar
-   * dentro del administrador.
+   * Promociones disponibles.
    */
-  const enabledPromotions = useMemo(
-    () =>
-      promocionesHabilitadas
-        ? promotions
-            .map((promotion, index) => ({
-              ...promotion,
-              promotionIndex: index,
-              bookingLabel: [
-                promotion?.title ||
-                  `Banner ${index + 1}`,
-                promotion?.description,
-                promotion?.value
-              ]
-                .filter(Boolean)
-                .join(' · ')
-            }))
-            .filter(
-              (promotion) =>
-                promotion?.enabled !== false &&
+  const enabledPromotions =
+    useMemo(
+      () =>
+        promocionesHabilitadas
+          ? promotions
+              .map(
                 (
-                  preciosHabilitados
-                    ? (
-                        promotion?.title ||
-                        promotion?.description ||
-                        promotion?.value ||
-                        promotion?.imageDataUrl
-                      )
-                    : promotion?.imageDataUrl
-                )
-            )
-        : [],
-    [
-      promocionesHabilitadas,
-      preciosHabilitados,
-      promotions
-    ]
-  );
+                  promotion,
+                  index
+                ) => ({
+                  ...promotion,
 
-  /*
-   * Notifica cambios generales en los datos
-   * utilizados por las páginas administrativas.
-   */
-  const notifyAdminDataChanged = () => {
-    setAdminDataVersion(
-      (current) => current + 1
+                  promotionIndex:
+                    index,
+
+                  bookingLabel: [
+                    promotion?.title ||
+                      `Banner ${index + 1}`,
+
+                    promotion?.description,
+
+                    promotion?.value
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                })
+              )
+              .filter(
+                (
+                  promotion
+                ) =>
+                  promotion?.enabled !==
+                    false &&
+                  (
+                    preciosHabilitados
+                      ? (
+                          promotion?.title ||
+                          promotion?.description ||
+                          promotion?.value ||
+                          promotion?.imageDataUrl
+                        )
+                      : promotion?.imageDataUrl
+                  )
+              )
+          : [],
+      [
+        promocionesHabilitadas,
+        preciosHabilitados,
+        promotions
+      ]
     );
-  };
+
 
   /*
-   * Notifica específicamente cambios de sucursales.
+   * Notificación general
+   * de cambios administrativos.
    */
-  const notifyBranchesChanged = () => {
-    invalidarCacheSucursales();
+  const notifyAdminDataChanged =
+    () => {
 
-    setAdminDataVersion(
-      (current) => current + 1
-    );
+      setAdminDataVersion(
+        current =>
+          current + 1
+      );
+    };
 
-    onCompanyContextRefresh?.();
-  };
 
   /*
-   * Navegación administrativa mediante React Router.
+   * Notificación de cambios
+   * de sucursales.
+   */
+  const notifyBranchesChanged =
+    () => {
+
+      invalidarCacheSucursales();
+
+
+      setAdminDataVersion(
+        current =>
+          current + 1
+      );
+
+
+      onCompanyContextRefresh?.();
+    };
+
+
+  /*
+   * Navegación administrativa.
    *
    * IMPORTANTE:
-   * No utilizamos window.location.
-   * No utilizamos window.history.
-   * No utilizamos enlaces manuales.
+   *
+   * NO usar:
+   *
+   * window.location
+   * window.history
+   *
+   * porque provocaría recargas
+   * y puede volver a generar loops.
    */
-  const navegarA = (view) => {
-    /*
-     * Nueva reserva/pedido no es una ruta.
-     * Abre el panel correspondiente.
-     */
-    if (view === 'new-booking') {
-      setNewBookingInitial(null);
-      setIsNewBookingOpen(true);
-      setSidebarOpen(false);
-      return;
-    }
+  const navegarA =
+    (view) => {
 
-    const ruta = {
-      agenda: rutas.agenda,
-      clientes: rutas.clientes,
-      empleados: rutas.empleados,
-      servicios: rutas.servicios,
-      sucursales: rutas.sucursales,
-      bundles: rutas.bundles,
-      configuracion: rutas.configuracion,
-      pedidos: rutas.pedidos,
-      pendientes: rutas.pendientes,
-      cerrarAtencion: rutas.cerrarAtencion,
-      disponibilidad: rutas.disponibilidad
-    }[view];
+      /*
+       * Nueva reserva / pedido
+       * abre un panel, no una URL.
+       */
+      if (
+        view ===
+        'new-booking'
+      ) {
 
-    if (!ruta) {
-      return;
-    }
+        setNewBookingInitial(
+          null
+        );
 
-    if (view === 'agenda') {
-      setAdminDataVersion(
-        (current) => current + 1
+        setIsNewBookingOpen(
+          true
+        );
+
+        setSidebarOpen(
+          false
+        );
+
+        return;
+      }
+
+
+      const ruta =
+        {
+          agenda:
+            rutas.agenda,
+
+          clientes:
+            rutas.clientes,
+
+          empleados:
+            rutas.empleados,
+
+          servicios:
+            rutas.servicios,
+
+          sucursales:
+            rutas.sucursales,
+
+          bundles:
+            rutas.bundles,
+
+          configuracion:
+            rutas.configuracion,
+
+          pedidos:
+            rutas.pedidos,
+
+          pendientes:
+            rutas.pendientes,
+
+          cerrarAtencion:
+            rutas.cerrarAtencion,
+
+          disponibilidad:
+            rutas.disponibilidad
+
+        }[view];
+
+
+      if (!ruta) {
+        return;
+      }
+
+
+      if (
+        view ===
+        'agenda'
+      ) {
+
+        setAdminDataVersion(
+          current =>
+            current + 1
+        );
+      }
+
+
+      setSidebarOpen(
+        false
       );
-    }
 
-    setSidebarOpen(false);
 
-    navigate(ruta);
-  };
+      /*
+       * ÚNICA navegación.
+       */
+      if (
+        location.pathname !==
+        ruta
+      ) {
+
+        navigate(
+          ruta
+        );
+      }
+    };
+
 
   /*
    * Menú administrativo.
    */
-  const adminNavGroups = useMemo(() => {
-    const gestion = esModoPedido
-      ? [
-          {
-            id: 'new-booking',
-            label: 'Nuevo pedido',
-            icon: '➕'
-          },
-          {
-            id: 'agenda',
-            label: 'Pedidos',
-            icon: '📋'
-          },
-          ...(preciosHabilitados
+  const adminNavGroups =
+    useMemo(
+      () => {
+
+        const gestion =
+          esModoPedido
             ? [
+
                 {
-                  id: 'cerrarAtencion',
-                  label: 'Cerrar pedido',
-                  icon: '💳'
+                  id:
+                    'new-booking',
+
+                  label:
+                    'Nuevo pedido',
+
+                  icon:
+                    '➕'
+                },
+
+                {
+                  id:
+                    'agenda',
+
+                  label:
+                    'Pedidos',
+
+                  icon:
+                    '📋'
+                },
+
+                ...(preciosHabilitados
+                  ? [
+                      {
+                        id:
+                          'cerrarAtencion',
+
+                        label:
+                          'Cerrar pedido',
+
+                        icon:
+                          '💳'
+                      }
+                    ]
+                  : []),
+
+                {
+                  id:
+                    'clientes',
+
+                  label:
+                    'Clientes',
+
+                  icon:
+                    '🙋'
+                },
+
+                {
+                  id:
+                    'empleados',
+
+                  label:
+                    'Empleados',
+
+                  icon:
+                    '👥'
                 }
+
               ]
-            : []),
+
+            : [
+
+                {
+                  id:
+                    'new-booking',
+
+                  label:
+                    'Nueva reserva',
+
+                  icon:
+                    '➕'
+                },
+
+                {
+                  id:
+                    'agenda',
+
+                  label:
+                    'Calendario',
+
+                  icon:
+                    '📅'
+                },
+
+                {
+                  id:
+                    'cerrarAtencion',
+
+                  label:
+                    'Cerrar atención',
+
+                  icon:
+                    '💳'
+                },
+
+                {
+                  id:
+                    'pendientes',
+
+                  label:
+                    'Pendientes de asignar',
+
+                  icon:
+                    '📌'
+                },
+
+                {
+                  id:
+                    'clientes',
+
+                  label:
+                    'Clientes',
+
+                  icon:
+                    '🙋'
+                },
+
+                {
+                  id:
+                    'empleados',
+
+                  label:
+                    'Empleados',
+
+                  icon:
+                    '👥'
+                },
+
+                {
+                  id:
+                    'disponibilidad',
+
+                  label:
+                    'Disponibilidad',
+
+                  icon:
+                    '🕒'
+                }
+
+              ];
+
+
+        if (
+          sucursalesHabilitadas
+        ) {
+
+          gestion.push({
+            id:
+              'sucursales',
+
+            label:
+              'Sucursales',
+
+            icon:
+              '🏢'
+          });
+        }
+
+
+        if (
+          bundlesHabilitados
+        ) {
+
+          gestion.push({
+            id:
+              'bundles',
+
+            label:
+              'Packs y promos',
+
+            icon:
+              '🎁'
+          });
+        }
+
+
+        return [
           {
-            id: 'clientes',
-            label: 'Clientes',
-            icon: '🙋'
+            label:
+              'GESTIÓN',
+
+            items:
+              gestion
           },
+
           {
-            id: 'empleados',
-            label: 'Empleados',
-            icon: '👥'
-          }
-        ]
-      : [
-          {
-            id: 'new-booking',
-            label: 'Nueva reserva',
-            icon: '➕'
-          },
-          {
-            id: 'agenda',
-            label: 'Calendario',
-            icon: '📅'
-          },
-          {
-            id: 'cerrarAtencion',
-            label: 'Cerrar atención',
-            icon: '💳'
-          },
-          {
-            id: 'pendientes',
-            label: 'Pendientes de asignar',
-            icon: '📌'
-          },
-          {
-            id: 'clientes',
-            label: 'Clientes',
-            icon: '🙋'
-          },
-          {
-            id: 'empleados',
-            label: 'Empleados',
-            icon: '👥'
-          },
-          {
-            id: 'disponibilidad',
-            label: 'Disponibilidad',
-            icon: '🕒'
+            label:
+              'CONFIGURACIÓN',
+
+            items: [
+
+              {
+                id:
+                  'servicios',
+
+                label:
+                  esModoPedido
+                    ? 'Productos'
+                    : 'Servicios',
+
+                icon:
+                  '✨'
+              },
+
+              {
+                id:
+                  'configuracion',
+
+                label:
+                  'Configuración del negocio',
+
+                icon:
+                  '⚙'
+              }
+
+            ]
           }
         ];
 
-    if (sucursalesHabilitadas) {
-      gestion.push({
-        id: 'sucursales',
-        label: 'Sucursales',
-        icon: '🏢'
-      });
-    }
-
-    if (bundlesHabilitados) {
-      gestion.push({
-        id: 'bundles',
-        label: 'Packs y promos',
-        icon: '🎁'
-      });
-    }
-
-    return [
-      {
-        label: 'GESTIÓN',
-        items: gestion
       },
-      {
-        label: 'CONFIGURACIÓN',
-        items: [
-          {
-            id: 'servicios',
-            label: esModoPedido
-              ? 'Productos'
-              : 'Servicios',
-            icon: '✨'
-          },
-          {
-            id: 'configuracion',
-            label: 'Configuración del negocio',
-            icon: '⚙'
-          }
-        ]
-      }
-    ];
-  }, [
-    sucursalesHabilitadas,
-    bundlesHabilitados,
-    esModoPedido,
-    preciosHabilitados
-  ]);
+
+      [
+        sucursalesHabilitadas,
+        bundlesHabilitados,
+        esModoPedido,
+        preciosHabilitados
+      ]
+    );
+
 
   const adminProfileSummary = (
     <WorkspaceProfileIdentity
@@ -380,129 +735,283 @@ export default function Dashboard({
     />
   );
 
+
   return (
+
     <AdminLayout>
+
       <Container
         maxWidth={false}
         disableGutters
-        className="dashboard-shell has-admin-sidebar"
+        className="
+          dashboard-shell
+          has-admin-sidebar
+        "
       >
+
         <Navbar
           user={user}
-          activeView={activeView}
-          accessProfile={accessProfile}
-          onViewChange={navegarA}
-          onChangeProfile={onChangeProfile}
-          onLogout={onLogout}
-          showAdminNavigation={false}
-          showMenuToggle={accessProfile === 'admin'}
+
+          activeView={
+            activeView
+          }
+
+          accessProfile={
+            accessProfile
+          }
+
+          onViewChange={
+            navegarA
+          }
+
+          onChangeProfile={
+            onChangeProfile
+          }
+
+          onLogout={
+            onLogout
+          }
+
+          showAdminNavigation={
+            false
+          }
+
+          showMenuToggle={
+            accessProfile ===
+            'admin'
+          }
+
           onMenuToggle={() =>
             setSidebarOpen(
-              (current) => !current
+              current =>
+                !current
             )
           }
+
           showProfileBadge
-          canChangeProfile={canChangeProfile}
-          logoSrc={navbarLogoSrc}
-          logoAlt={navbarLogoAlt}
-          companyName={companyName}
+
+          canChangeProfile={
+            canChangeProfile
+          }
+
+          logoSrc={
+            navbarLogoSrc
+          }
+
+          logoAlt={
+            navbarLogoAlt
+          }
+
+          companyName={
+            companyName
+          }
         />
 
-        <div className="dashboard-body">
-          {accessProfile === 'admin' && (
+
+        <div
+          className="
+            dashboard-body
+          "
+        >
+
+          {accessProfile ===
+            'admin' && (
+
             <AdminSidebar
-              groups={adminNavGroups}
-              activeView={activeView}
-              onViewChange={navegarA}
-              open={sidebarOpen}
-              onClose={() =>
-                setSidebarOpen(false)
+
+              groups={
+                adminNavGroups
               }
-              companyName={companyName}
-              logoSrc={navbarLogoSrc}
+
+              activeView={
+                activeView
+              }
+
+              onViewChange={
+                navegarA
+              }
+
+              open={
+                sidebarOpen
+              }
+
+              onClose={() =>
+                setSidebarOpen(
+                  false
+                )
+              }
+
+              companyName={
+                companyName
+              }
+
+              logoSrc={
+                navbarLogoSrc
+              }
+
             />
+
           )}
 
-          <Box className="dashboard-content">
+
+          <Box
+            className="
+              dashboard-content
+            "
+          >
+
             <RutasAdministrador
-              companySlug={companySlug}
-              user={user}
-              companyContext={companyContext}
+
+              companySlug={
+                companySlug
+              }
+
+              user={
+                user
+              }
+
+              companyContext={
+                companyContext
+              }
+
               adminProfileSummary={
                 adminProfileSummary
               }
-              refreshKey={adminDataVersion}
-              promotions={enabledPromotions}
-              esModoPedido={esModoPedido}
+
+              refreshKey={
+                adminDataVersion
+              }
+
+              promotions={
+                enabledPromotions
+              }
+
+              esModoPedido={
+                esModoPedido
+              }
+
               preciosHabilitados={
                 preciosHabilitados
               }
+
               sucursalesHabilitadas={
                 sucursalesHabilitadas
               }
+
               bundlesHabilitados={
                 bundlesHabilitados
               }
+
               packsHabilitados={
                 packsHabilitados
               }
+
               promocionesHabilitadas={
                 promocionesHabilitadas
               }
+
               onRequestNewBooking={(
                 options = null
               ) => {
-                setNewBookingInitial(options);
-                setIsNewBookingOpen(true);
+
+                setNewBookingInitial(
+                  options
+                );
+
+                setIsNewBookingOpen(
+                  true
+                );
               }}
+
               onDataChanged={
                 notifyAdminDataChanged
               }
+
               onBranchesChanged={
                 notifyBranchesChanged
               }
+
               onBookingsChanged={
                 notifyAdminDataChanged
               }
+
               onCloseAttentionPageClose={() =>
-                navegarA('agenda')
+                navegarA(
+                  'agenda'
+                )
               }
+
               onCompanyContextRefresh={
                 onCompanyContextRefresh
               }
+
             />
+
           </Box>
+
         </div>
 
+
         {isNewBookingOpen && (
+
           <NewBookingPanel
-            user={user}
-            companySlug={companySlug}
-            companyContext={companyContext}
+
+            user={
+              user
+            }
+
+            companySlug={
+              companySlug
+            }
+
+            companyContext={
+              companyContext
+            }
+
             initialDate={
-              newBookingInitial?.date || null
+              newBookingInitial?.date ||
+              null
             }
+
             initialStartTime={
-              newBookingInitial?.startTime || null
+              newBookingInitial?.startTime ||
+              null
             }
+
             branchId={
-              newBookingInitial?.branchId || null
+              newBookingInitial?.branchId ||
+              null
             }
+
             onClose={() =>
-              setIsNewBookingOpen(false)
+              setIsNewBookingOpen(
+                false
+              )
             }
+
             onBookingCreated={() => {
+
               setAdminDataVersion(
-                (current) => current + 1
+                current =>
+                  current + 1
               );
 
-              setIsNewBookingOpen(false);
+              setIsNewBookingOpen(
+                false
+              );
 
-              navegarA('agenda');
+              navegarA(
+                'agenda'
+              );
             }}
+
           />
+
         )}
+
       </Container>
+
     </AdminLayout>
+
   );
 }

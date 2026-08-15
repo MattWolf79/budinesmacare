@@ -4,74 +4,102 @@ import {
   Routes
 } from 'react-router-dom';
 
-import AgendaPage from '../pages/admin/AgendaPage';
-import ClientesPage from '../pages/admin/ClientesPage';
-import EmpleadosPage from '../pages/admin/EmpleadosPage';
-import ServiciosPage from '../pages/admin/ServiciosPage';
-import SucursalesPage from '../pages/admin/SucursalesPage';
-import PacksPage from '../pages/admin/PacksPage';
-import ConfiguracionPage from '../pages/admin/ConfiguracionPage';
-import PedidosPage from '../pages/admin/PedidosPage';
-import PendientesPage from '../pages/admin/PendientesPage';
-import CerrarAtencionPage from '../pages/admin/CerrarAtencionPage';
-import DisponibilidadPage from '../pages/admin/DisponibilidadPage';
+
+import AgendaPage
+  from '../pages/admin/AgendaPage';
+
+import ClientesPage
+  from '../pages/admin/ClientesPage';
+
+import EmpleadosPage
+  from '../pages/admin/EmpleadosPage';
+
+import ServiciosPage
+  from '../pages/admin/ServiciosPage';
+
+import SucursalesPage
+  from '../pages/admin/SucursalesPage';
+
+import PacksPage
+  from '../pages/admin/PacksPage';
+
+import ConfiguracionPage
+  from '../pages/admin/ConfiguracionPage';
+
+import PedidosPage
+  from '../pages/admin/PedidosPage';
+
+import PendientesPage
+  from '../pages/admin/PendientesPage';
+
+import CerrarAtencionPage
+  from '../pages/admin/CerrarAtencionPage';
+
+import DisponibilidadPage
+  from '../pages/admin/DisponibilidadPage';
+
 
 import {
   rutasAdministrador
 } from './rutasAplicacion';
 
+
 export default function RutasAdministrador({
+
   companySlug,
+
   user,
+
   companyContext,
+
   adminProfileSummary,
+
   refreshKey,
+
   promotions,
+
   esModoPedido,
+
   preciosHabilitados,
+
   sucursalesHabilitadas,
+
   bundlesHabilitados,
+
   packsHabilitados,
+
   promocionesHabilitadas,
+
   onRequestNewBooking,
+
   onDataChanged,
+
   onBranchesChanged,
+
   onBookingsChanged,
+
   onCloseAttentionPageClose,
+
   onCompanyContextRefresh
+
 }) {
+
+
   const propsBase = {
+
     user,
+
     companySlug,
+
     companyContext,
+
     adminProfileSummary
+
   };
 
-  /*
-   * IMPORTANTE:
-   *
-   * Este componente está montado dentro de:
-   *
-   * /:companySlug/*
-   *
-   * y el Dashboard navega usando las URLs completas
-   * generadas por rutasAplicacion.js.
-   *
-   * Por eso las rutas declaradas acá DEBEN ser relativas:
-   *
-   * agenda
-   * clientes
-   * empleados
-   * etc.
-   *
-   * NO usar acá:
-   *
-   * /esteticatopbody/admin/agenda
-   *
-   * porque eso genera conflicto con el router padre.
-   */
 
   return (
+
     <Routes>
 
       {/* =========================
@@ -79,184 +107,275 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.agenda}
+        path={
+          rutasAdministrador.agenda
+        }
         element={
+
           esModoPedido ? (
+
             <PedidosPage
               {...propsBase}
-              refreshKey={refreshKey}
+              refreshKey={
+                refreshKey
+              }
             />
+
           ) : (
+
             <AgendaPage
               {...propsBase}
-              refreshKey={refreshKey}
-              promotions={promotions}
+
+              refreshKey={
+                refreshKey
+              }
+
+              promotions={
+                promotions
+              }
+
               onRequestNewBooking={
                 onRequestNewBooking
               }
             />
+
           )
+
         }
       />
+
 
       {/* =========================
           PEDIDOS
           ========================= */}
 
       <Route
-        path={rutasAdministrador.pedidos}
+        path={
+          rutasAdministrador.pedidos
+        }
         element={
+
           esModoPedido ? (
+
             <PedidosPage
               {...propsBase}
-              refreshKey={refreshKey}
+
+              refreshKey={
+                refreshKey
+              }
             />
+
           ) : (
+
             <Navigate
               to="../agenda"
               replace
             />
+
           )
+
         }
       />
+
 
       {/* =========================
           CLIENTES
           ========================= */}
 
       <Route
-        path={rutasAdministrador.clientes}
+        path={
+          rutasAdministrador.clientes
+        }
         element={
+
           <ClientesPage
             {...propsBase}
+
             onDataChanged={
               onDataChanged
             }
           />
+
         }
       />
+
 
       {/* =========================
           EMPLEADOS
           ========================= */}
 
       <Route
-        path={rutasAdministrador.empleados}
+        path={
+          rutasAdministrador.empleados
+        }
         element={
+
           <EmpleadosPage
             {...propsBase}
+
             onDataChanged={
               onDataChanged
             }
           />
+
         }
       />
+
 
       {/* =========================
           SERVICIOS / PRODUCTOS
           ========================= */}
 
       <Route
-        path={rutasAdministrador.servicios}
+        path={
+          rutasAdministrador.servicios
+        }
         element={
+
           <ServiciosPage
             {...propsBase}
+
             onDataChanged={
               onDataChanged
             }
           />
+
         }
       />
+
 
       {/* =========================
           SUCURSALES
           ========================= */}
 
       <Route
-        path={rutasAdministrador.sucursales}
+        path={
+          rutasAdministrador.sucursales
+        }
         element={
+
           sucursalesHabilitadas ? (
+
             <SucursalesPage
               {...propsBase}
+
               onDataChanged={
                 onBranchesChanged
               }
             />
+
           ) : (
+
             <Navigate
               to="../agenda"
               replace
             />
+
           )
+
         }
       />
+
 
       {/* =========================
           PACKS / PROMOS
           ========================= */}
 
       <Route
-        path={rutasAdministrador.bundles}
+        path={
+          rutasAdministrador.bundles
+        }
         element={
+
           bundlesHabilitados ? (
+
             <PacksPage
               {...propsBase}
+
               onDataChanged={
                 onBranchesChanged
               }
+
               packsHabilitados={
                 packsHabilitados
               }
+
               promosHabilitadas={
                 promocionesHabilitadas
               }
             />
+
           ) : (
+
             <Navigate
               to="../agenda"
               replace
             />
+
           )
+
         }
       />
+
 
       {/* =========================
           CONFIGURACIÓN
           ========================= */}
 
       <Route
-        path={rutasAdministrador.configuracion}
+        path={
+          rutasAdministrador.configuracion
+        }
         element={
+
           <ConfiguracionPage
             {...propsBase}
+
             onCompanyContextRefresh={
               onCompanyContextRefresh
             }
           />
+
         }
       />
+
 
       {/* =========================
           PENDIENTES
           ========================= */}
 
       <Route
-        path={rutasAdministrador.pendientes}
+        path={
+          rutasAdministrador.pendientes
+        }
         element={
+
           !esModoPedido ? (
+
             <PendientesPage
               {...propsBase}
-              refreshKey={refreshKey}
-              promotions={promotions}
+
+              refreshKey={
+                refreshKey
+              }
+
+              promotions={
+                promotions
+              }
             />
+
           ) : (
+
             <Navigate
               to="../agenda"
               replace
             />
+
           )
+
         }
       />
+
 
       {/* =========================
           CERRAR ATENCIÓN
@@ -267,26 +386,41 @@ export default function RutasAdministrador({
           rutasAdministrador.cerrarAtencion
         }
         element={
+
           preciosHabilitados ? (
+
             <CerrarAtencionPage
               {...propsBase}
-              refreshKey={refreshKey}
-              promotions={promotions}
+
+              refreshKey={
+                refreshKey
+              }
+
+              promotions={
+                promotions
+              }
+
               onCloseAttentionPageClose={
                 onCloseAttentionPageClose
               }
+
               onBookingsChanged={
                 onBookingsChanged
               }
             />
+
           ) : (
+
             <Navigate
               to="../agenda"
               replace
             />
+
           )
+
         }
       />
+
 
       {/* =========================
           DISPONIBILIDAD
@@ -297,22 +431,31 @@ export default function RutasAdministrador({
           rutasAdministrador.disponibilidad
         }
         element={
+
           !esModoPedido ? (
+
             <DisponibilidadPage
               {...propsBase}
+
               mode="admin"
+
               onAvailabilityChanged={
                 onDataChanged
               }
             />
+
           ) : (
+
             <Navigate
               to="../agenda"
               replace
             />
+
           )
+
         }
       />
+
 
       {/* =========================
           FALLBACK
@@ -321,13 +464,16 @@ export default function RutasAdministrador({
       <Route
         path="*"
         element={
+
           <Navigate
             to="agenda"
             replace
           />
+
         }
       />
 
     </Routes>
+
   );
 }
