@@ -65,28 +65,35 @@ begin
   end if;
 
   return query
-  select
-    bookings.id,
-    bookings.company_id,
-    bookings.user_id,
-    bookings.client_account_id,
-    bookings.user_email,
-    bookings.customer_name,
-    bookings.service,
-    bookings.employee_id,
-    bookings.booking_description,
-    bookings.start_at,
-    bookings.end_at,
-    bookings.status,
-    bookings.created_at,
-    bookings.branch_id,
-    bookings.booking_group_id,
-    bookings.group_id
-  from public.bookings
-  where bookings.company_id = target_company_id
-    and bookings.start_at::date <= closure_cutoff
-    and lower(trim(coalesce(bookings.status, ''))) not in ('completed', 'closed', 'cancelled', 'canceled', 'cancelado', 'cancelada')
-  order by bookings.start_at;
+select
+  bookings.id,
+  bookings.company_id,
+  bookings.user_id,
+  bookings.client_account_id,
+  bookings.user_email,
+  bookings.customer_name,
+  bookings.service,
+  bookings.employee_id,
+  bookings.booking_description,
+  bookings.start_at,
+  bookings.end_at,
+  bookings.status,
+  bookings.created_at,
+  bookings.branch_id,
+  bookings.booking_group_id,
+  bookings.booking_group_id
+from public.bookings
+where bookings.company_id = target_company_id
+  and bookings.start_at::date <= closure_cutoff
+  and lower(trim(coalesce(bookings.status, ''))) not in (
+    'completed',
+    'closed',
+    'cancelled',
+    'canceled',
+    'cancelado',
+    'cancelada'
+  )
+order by bookings.start_at;
 end;
 $$;
 

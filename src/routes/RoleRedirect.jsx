@@ -1,21 +1,61 @@
-export default function RoleRedirect({ user }) {
+import { Navigate } from 'react-router-dom';
 
+import {
+  getAdminPortalPath,
+  getClientPortalPath,
+  getEmployeePortalPath
+} from '../utils/tenant';
+
+export default function RoleRedirect({
+  user,
+  companySlug
+}) {
   if (!user) {
-    return "/";
+    return (
+      <Navigate
+        to="/"
+        replace
+      />
+    );
   }
 
   switch (user.role) {
+    case 'admin':
+      return (
+        <Navigate
+          to={getAdminPortalPath(
+            companySlug
+          )}
+          replace
+        />
+      );
 
-    case "admin":
-      return "/admin";
+    case 'employee':
+      return (
+        <Navigate
+          to={getEmployeePortalPath(
+            companySlug
+          )}
+          replace
+        />
+      );
 
-    case "employee":
-      return "/employee";
-
-    case "client":
-      return "/client";
+    case 'client':
+      return (
+        <Navigate
+          to={getClientPortalPath(
+            companySlug
+          )}
+          replace
+        />
+      );
 
     default:
-      return "/";
+      return (
+        <Navigate
+          to="/"
+          replace
+        />
+      );
   }
 }

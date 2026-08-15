@@ -1,5 +1,5 @@
-import Dashboard from '../Dashboard';
+import AgendaPage from './AgendaPage';
 
 export default function AdminPage(props) {
-  return <Dashboard {...props} />;
+  return <AgendaPage {...props} />;
 }
