@@ -1,8 +1,9 @@
-import PortalCliente from '../routes/PortalCliente';
-import PortalEmpleado from '../routes/PortalEmpleado';
+import RutasCliente from '../routes/RutasCliente';
+import RutasEmpleado from '../routes/RutasEmpleado';
 import { UserPhoto } from './WorkspaceHero';
 
-const turnosAppLogo = '/logo-quieroturnoapp.png';
+const turnosAppLogo =
+  '/logo-quieroturnoapp.png';
 
 const profileOptions = {
   client: {
@@ -129,15 +130,15 @@ export default function RoleAccess({
   companyContext
 }) {
   /*
-   * El administrador ya tiene su propio flujo
-   * dentro de Dashboard + RutasAdministrador.
+   * Cliente y Empleado tienen ahora
+   * sus propios routers y layouts.
    *
-   * Cliente y Empleado ahora tienen sus propios
-   * portales y routers.
+   * No necesitamos una capa intermedia
+   * PortalCliente / PortalEmpleado.
    */
   if (selectedProfile === 'client') {
     return (
-      <PortalCliente
+      <RutasCliente
         user={user}
         onChangeProfile={
           onChangeProfile
@@ -154,7 +155,7 @@ export default function RoleAccess({
 
   if (selectedProfile === 'employee') {
     return (
-      <PortalEmpleado
+      <RutasEmpleado
         user={user}
         onChangeProfile={
           onChangeProfile
@@ -170,15 +171,18 @@ export default function RoleAccess({
   }
 
   /*
-   * children se mantiene para no romper
-   * el flujo existente del Administrador.
+   * El Administrador continúa entrando
+   * mediante Dashboard.
+   *
+   * children contiene el Dashboard
+   * cuando corresponde.
    */
   if (children) {
     return children;
   }
 
   if (selectedProfile === 'admin') {
-    return children || null;
+    return null;
   }
 
   return (

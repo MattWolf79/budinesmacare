@@ -75,7 +75,7 @@ export default function RutasEmpleado(
         }
       >
         <Route
-          index
+          path={rutas.inicio}
           element={
             <PaginaEmpleado
               {...props}
@@ -85,7 +85,7 @@ export default function RutasEmpleado(
         />
 
         <Route
-          path="agenda"
+          path={rutas.agenda}
           element={
             <PaginaEmpleado
               {...props}
@@ -95,7 +95,7 @@ export default function RutasEmpleado(
         />
 
         <Route
-          path="clientes"
+          path={rutas.clientes}
           element={
             <ClientesEmpleadoPage
               {...props}
@@ -104,7 +104,7 @@ export default function RutasEmpleado(
         />
 
         <Route
-          path="productos"
+          path={rutas.productos}
           element={
             <ProductosEmpleadoPage
               {...props}
@@ -113,7 +113,7 @@ export default function RutasEmpleado(
         />
 
         <Route
-          path="disponibilidad"
+          path={rutas.disponibilidad}
           element={
             <DisponibilidadPage
               {...props}
@@ -122,7 +122,7 @@ export default function RutasEmpleado(
         />
 
         <Route
-          path="perfil"
+          path={rutas.perfil}
           element={
             <PaginaEmpleado
               {...props}
@@ -132,7 +132,7 @@ export default function RutasEmpleado(
         />
 
         <Route
-          path="cerrar-atencion"
+          path={rutas.cerrarAtencion}
           element={
             <PaginaEmpleado
               {...props}
@@ -142,7 +142,7 @@ export default function RutasEmpleado(
         />
 
         <Route
-          path="nueva-reserva"
+          path={rutas.nuevaReserva}
           element={
             <PaginaEmpleado
               {...props}
@@ -152,7 +152,7 @@ export default function RutasEmpleado(
         />
 
         <Route
-          path="nuevo-pedido"
+          path={rutas.nuevoPedido}
           element={
             <PaginaEmpleado
               {...props}

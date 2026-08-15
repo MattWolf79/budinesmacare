@@ -1,7 +1,7 @@
 export const rutasAdministrador = {
   agenda: 'agenda',
   empleados: 'empleados',
-  clientes: 'clientes', 
+  clientes: 'clientes',
   servicios: 'servicios',
   sucursales: 'sucursales',
   bundles: 'bundles',
@@ -31,18 +31,19 @@ export const rutasEmpleado = {
   nuevoPedido: 'nuevo-pedido'
 };
 
-const normalizarSlug =
-  (companySlug) =>
-    String(
-      companySlug || ''
-    )
-      .trim()
-      .toLowerCase();
+/*
+ * ============================================================
+ * UTILIDADES
+ * ============================================================
+ */
 
-const crearRutasConBase = (
-  base,
-  rutas
-) =>
+const normalizarSlug = (companySlug) =>
+  String(companySlug || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+|\/+$/g, '');
+
+const crearRutasConBase = (base, rutas) =>
   Object.fromEntries(
     Object.entries(rutas).map(
       ([clave, ruta]) => [
@@ -54,50 +55,68 @@ const crearRutasConBase = (
     )
   );
 
-export const obtenerRutasAdministrador =
-  (companySlug) => {
-    const slug =
-      normalizarSlug(
-        companySlug
-      );
+/*
+ * ============================================================
+ * RUTAS ADMINISTRADOR
+ * ============================================================
+ *
+ * Ejemplo:
+ *
+ * companySlug = "esteticatopbody"
+ *
+ * resultado:
+ *
+ * /esteticatopbody/admin
+ * /esteticatopbody/admin/agenda
+ * /esteticatopbody/admin/clientes
+ * /esteticatopbody/admin/empleados
+ * ...
+ *
+ * Estas funciones construyen URLs completas.
+ * La navegación sigue siendo responsabilidad de React Router.
+ */
 
-    const base =
-      `/${slug}/admin`;
+export const obtenerRutasAdministrador = (companySlug) => {
+  const slug = normalizarSlug(companySlug);
 
-    return crearRutasConBase(
-      base,
-      rutasAdministrador
-    );
-  };
+  const base = `/${slug}/admin`;
 
-export const obtenerRutasCliente =
-  (companySlug) => {
-    const slug =
-      normalizarSlug(
-        companySlug
-      );
+  return crearRutasConBase(
+    base,
+    rutasAdministrador
+  );
+};
 
-    const base =
-      `/${slug}/sacarturno`;
+/*
+ * ============================================================
+ * RUTAS CLIENTE
+ * ============================================================
+ */
 
-    return crearRutasConBase(
-      base,
-      rutasCliente
-    );
-  };
+export const obtenerRutasCliente = (companySlug) => {
+  const slug = normalizarSlug(companySlug);
 
-export const obtenerRutasEmpleado =
-  (companySlug) => {
-    const slug =
-      normalizarSlug(
-        companySlug
-      );
+  const base = `/${slug}/sacarturno`;
 
-    const base =
-      `/${slug}/empleado`;
+  return crearRutasConBase(
+    base,
+    rutasCliente
+  );
+};
 
-    return crearRutasConBase(
-      base,
-      rutasEmpleado
-    );
-  };
+/*
+ * ============================================================
+ * RUTAS EMPLEADO
+ * ============================================================
+ */
+
+export const obtenerRutasEmpleado = (companySlug) => {
+  const slug = normalizarSlug(companySlug);
+
+  const base = `/${slug}/empleado`;
+
+  return crearRutasConBase(
+    base,
+    rutasEmpleado
+  );
+};

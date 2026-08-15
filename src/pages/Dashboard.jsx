@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Container, Box } from '@mui/material';
+
 import { obtenerConfiguracionApp } from '../api/configuracionApp';
 import Navbar from '../components/Navbar';
 import AdminSidebar from '../components/AdminSidebar';
 import NewBookingPanel from '../components/NewBookingPanel';
 import { invalidarCacheSucursales } from '../components/AgendaGrid';
 import { WorkspaceProfileIdentity } from '../components/WorkspaceHero';
+
 import RutasAdministrador from '../routes/RutasAdministrador';
 import AdminLayout from '../layouts/AdminLayout';
 import { obtenerRutasAdministrador } from '../routes/rutasAplicacion';
@@ -84,8 +86,23 @@ export default function Dashboard({
     ? `${companyName} - Administrador`
     : undefined;
 
-  const activeView = obtenerVistaAdministrador(location.pathname);
+  /*
+   * La vista activa se determina exclusivamente
+   * desde la URL actual.
+   */
+  const activeView = obtenerVistaAdministrador(
+    location.pathname
+  );
 
+  /*
+   * Todas las rutas administrativas se generan
+   * a partir del slug de la empresa.
+   *
+   * Ejemplo:
+   * /esteticatopbody/admin/agenda
+   * /esteticatopbody/admin/clientes
+   * /esteticatopbody/admin/empleados
+   */
   const rutas = useMemo(
     () => obtenerRutasAdministrador(companySlug),
     [companySlug]
@@ -94,9 +111,8 @@ export default function Dashboard({
   /*
    * Carga de promociones/configuración.
    *
-   * IMPORTANTE:
    * No refrescamos companyContext al montar el Dashboard.
-   * Eso evita el loop que teníamos anteriormente.
+   * Esto evita loops de renderizado.
    */
   useEffect(() => {
     let activo = true;
@@ -105,7 +121,9 @@ export default function Dashboard({
       const { data, error } =
         await obtenerConfiguracionApp(companySlug);
 
-      if (!activo || error) return;
+      if (!activo || error) {
+        return;
+      }
 
       setPromotions(
         Array.isArray(data?.promotions)
@@ -121,6 +139,10 @@ export default function Dashboard({
     };
   }, [companySlug]);
 
+  /*
+   * Promociones habilitadas para utilizar
+   * dentro del administrador.
+   */
   const enabledPromotions = useMemo(
     () =>
       promocionesHabilitadas
@@ -159,12 +181,19 @@ export default function Dashboard({
     ]
   );
 
+  /*
+   * Notifica cambios generales en los datos
+   * utilizados por las páginas administrativas.
+   */
   const notifyAdminDataChanged = () => {
     setAdminDataVersion(
       (current) => current + 1
     );
   };
 
+  /*
+   * Notifica específicamente cambios de sucursales.
+   */
   const notifyBranchesChanged = () => {
     invalidarCacheSucursales();
 
@@ -176,10 +205,18 @@ export default function Dashboard({
   };
 
   /*
-   * Toda la navegación administrativa pasa ahora por
-   * react-router-dom.
+   * Navegación administrativa mediante React Router.
+   *
+   * IMPORTANTE:
+   * No utilizamos window.location.
+   * No utilizamos window.history.
+   * No utilizamos enlaces manuales.
    */
   const navegarA = (view) => {
+    /*
+     * Nueva reserva/pedido no es una ruta.
+     * Abre el panel correspondiente.
+     */
     if (view === 'new-booking') {
       setNewBookingInitial(null);
       setIsNewBookingOpen(true);
@@ -201,7 +238,9 @@ export default function Dashboard({
       disponibilidad: rutas.disponibilidad
     }[view];
 
-    if (!ruta) return;
+    if (!ruta) {
+      return;
+    }
 
     if (view === 'agenda') {
       setAdminDataVersion(
@@ -210,9 +249,13 @@ export default function Dashboard({
     }
 
     setSidebarOpen(false);
+
     navigate(ruta);
   };
 
+  /*
+   * Menú administrativo.
+   */
   const adminNavGroups = useMemo(() => {
     const gestion = esModoPedido
       ? [

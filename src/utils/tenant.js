@@ -21,13 +21,40 @@ const getPathSegments = (
         !ignoredPathSegments.has(segment)
     );
 
+/*
+ * ============================================================
+ * NORMALIZACIÓN
+ * ============================================================
+ *
+ * El slug de una empresa debe representar solamente el
+ * identificador de la empresa.
+ *
+ * Ejemplos:
+ *
+ * esteticatopbody
+ * /esteticatopbody
+ * esteticatopbody/
+ * /esteticatopbody/
+ *
+ * Todos terminan normalizados como:
+ *
+ * esteticatopbody
+ */
+
 export const normalizeCompanySlug = (
   value
 ) =>
   String(value || '')
     .trim()
     .toLowerCase()
+    .replace(/^\/+|\/+$/g, '')
     .replace(/[^a-z0-9-]/g, '');
+
+/*
+ * ============================================================
+ * SLUG DE EMPRESA
+ * ============================================================
+ */
 
 export const getCompanySlugFromLocation = (
   locationValue = window.location
@@ -53,6 +80,12 @@ export const getCompanySlugFromLocation = (
   return slug;
 };
 
+/*
+ * ============================================================
+ * ADMINISTRADOR DE PLATAFORMA
+ * ============================================================
+ */
+
 export const isPlatformAdminLocation = (
   locationValue = window.location
 ) => {
@@ -68,6 +101,36 @@ export const isPlatformAdminLocation = (
     ) === platformAdminPath
   );
 };
+
+/*
+ * ============================================================
+ * PORTAL DE LA EMPRESA
+ * ============================================================
+ *
+ * Ejemplos:
+ *
+ * /esteticatopbody
+ *       -> root
+ *
+ * /esteticatopbody/admin
+ *       -> admin
+ *
+ * /esteticatopbody/sacarturno
+ *       -> client
+ *
+ * /esteticatopbody/empleado
+ *       -> employee
+ *
+ * Las rutas posteriores al portal no cambian esta detección:
+ *
+ * /esteticatopbody/admin/agenda
+ * /esteticatopbody/admin/clientes
+ * /esteticatopbody/admin/configuracion
+ *
+ * Todas siguen perteneciendo al portal:
+ *
+ * admin
+ */
 
 export const getCompanyPortalFromLocation = (
   locationValue = window.location
@@ -117,6 +180,12 @@ export const getCompanyPortalFromLocation = (
   return 'root';
 };
 
+/*
+ * ============================================================
+ * RUTA BASE DE EMPRESA
+ * ============================================================
+ */
+
 export const getCompanyPath = (
   companySlug
 ) => {
@@ -131,6 +200,12 @@ export const getCompanyPath = (
 
   return `/${slug}`;
 };
+
+/*
+ * ============================================================
+ * PORTAL CLIENTE
+ * ============================================================
+ */
 
 export const getClientPortalPath = (
   companySlug
@@ -147,6 +222,12 @@ export const getClientPortalPath = (
   return `${base}/${clientPortalPath}`;
 };
 
+/*
+ * ============================================================
+ * PORTAL ADMINISTRADOR
+ * ============================================================
+ */
+
 export const getAdminPortalPath = (
   companySlug
 ) => {
@@ -161,6 +242,12 @@ export const getAdminPortalPath = (
 
   return `${base}/${adminPortalPath}`;
 };
+
+/*
+ * ============================================================
+ * PORTAL EMPLEADO
+ * ============================================================
+ */
 
 export const getEmployeePortalPath = (
   companySlug

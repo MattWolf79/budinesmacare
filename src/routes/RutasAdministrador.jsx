@@ -40,8 +40,7 @@ export default function RutasAdministrador({
   onCloseAttentionPageClose,
   onCompanyContextRefresh
 }) {
-  const rutas =
-    obtenerRutasAdministrador(companySlug);
+  const rutas = obtenerRutasAdministrador(companySlug);
 
   const propsBase = {
     user,
@@ -52,6 +51,10 @@ export default function RutasAdministrador({
 
   return (
     <Routes>
+      {/* =========================================================
+          AGENDA / PEDIDOS
+         ========================================================= */}
+
       <Route
         path={rutas.agenda}
         element={
@@ -73,6 +76,13 @@ export default function RutasAdministrador({
         }
       />
 
+      {/* =========================================================
+          PEDIDOS
+
+          En modo pedido se muestra PedidosPage.
+          En modo turnos, se redirige a Agenda.
+         ========================================================= */}
+
       <Route
         path={rutas.pedidos}
         element={
@@ -90,6 +100,10 @@ export default function RutasAdministrador({
         }
       />
 
+      {/* =========================================================
+          CLIENTES
+         ========================================================= */}
+
       <Route
         path={rutas.clientes}
         element={
@@ -99,6 +113,10 @@ export default function RutasAdministrador({
           />
         }
       />
+
+      {/* =========================================================
+          EMPLEADOS
+         ========================================================= */}
 
       <Route
         path={rutas.empleados}
@@ -110,6 +128,10 @@ export default function RutasAdministrador({
         }
       />
 
+      {/* =========================================================
+          SERVICIOS / PRODUCTOS
+         ========================================================= */}
+
       <Route
         path={rutas.servicios}
         element={
@@ -119,6 +141,10 @@ export default function RutasAdministrador({
           />
         }
       />
+
+      {/* =========================================================
+          SUCURSALES
+         ========================================================= */}
 
       <Route
         path={rutas.sucursales}
@@ -138,6 +164,10 @@ export default function RutasAdministrador({
           )
         }
       />
+
+      {/* =========================================================
+          PACKS Y PROMOCIONES
+         ========================================================= */}
 
       <Route
         path={rutas.bundles}
@@ -164,6 +194,10 @@ export default function RutasAdministrador({
         }
       />
 
+      {/* =========================================================
+          CONFIGURACIÓN
+         ========================================================= */}
+
       <Route
         path={rutas.configuracion}
         element={
@@ -175,6 +209,10 @@ export default function RutasAdministrador({
           />
         }
       />
+
+      {/* =========================================================
+          PENDIENTES DE ASIGNAR
+         ========================================================= */}
 
       <Route
         path={rutas.pendientes}
@@ -193,6 +231,10 @@ export default function RutasAdministrador({
           )
         }
       />
+
+      {/* =========================================================
+          CERRAR ATENCIÓN / CERRAR PEDIDO
+         ========================================================= */}
 
       <Route
         path={rutas.cerrarAtencion}
@@ -218,6 +260,10 @@ export default function RutasAdministrador({
         }
       />
 
+      {/* =========================================================
+          DISPONIBILIDAD
+         ========================================================= */}
+
       <Route
         path={rutas.disponibilidad}
         element={
@@ -237,6 +283,13 @@ export default function RutasAdministrador({
           )
         }
       />
+
+      {/* =========================================================
+          RUTA DESCONOCIDA
+
+          Cualquier URL administrativa no reconocida vuelve
+          a la agenda.
+         ========================================================= */}
 
       <Route
         path="*"

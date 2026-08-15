@@ -1,7 +1,7 @@
 import {
+  Navigate,
   Route,
   Routes,
-  Navigate,
   useOutletContext
 } from 'react-router-dom';
 
@@ -62,7 +62,7 @@ export default function RutasCliente(
         }
       >
         <Route
-          index
+          path={rutas.inicio}
           element={
             <PaginaCliente
               {...props}
@@ -73,18 +73,7 @@ export default function RutasCliente(
         />
 
         <Route
-          path="inicio"
-          element={
-            <PaginaCliente
-              {...props}
-              activeView="home"
-              Page={HomePage}
-            />
-          }
-        />
-
-        <Route
-          path="reserva"
+          path={rutas.reserva}
           element={
             <PaginaCliente
               {...props}
@@ -95,7 +84,7 @@ export default function RutasCliente(
         />
 
         <Route
-          path="mis-turnos"
+          path={rutas.misTurnos}
           element={
             <PaginaCliente
               {...props}
@@ -106,7 +95,7 @@ export default function RutasCliente(
         />
 
         <Route
-          path="perfil"
+          path={rutas.perfil}
           element={
             <PaginaCliente
               {...props}
