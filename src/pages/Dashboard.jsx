@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { Container, Box } from "@mui/material";
 import { supabase } from "../api/supabaseClient";
 import { obtenerConfiguracionApp } from "../api/configuracionApp";
@@ -25,15 +26,75 @@ import { rutasAdministrador } from '../routes/rutasAplicacion';
 
 const turnosAppLogo = '/logo-quieroturnoapp.png';
 
-const getAdminViewFromHash = () => {
+const getAdminViewFromLocation = () => {
+
   const hash = window.location.hash.replace(/^#/, '');
 
-  if (hash === 'admin-agenda') return 'agenda';
-  if (hash === 'admin-close-attention') return 'close-attention';
-  if (hash === 'assign-booking' || hash === 'admin-pending') return 'pending';
-  if (hash === 'admin-employees') return 'employees';
-  if (hash === 'admin-branches') return 'sucursales';
-  if (hash === 'admin-bundles') return 'bundles';
+  const pathname =
+    window.location.pathname.toLowerCase();
+
+  if (pathname.endsWith('/clientes'))
+    return 'clients';
+
+  if (pathname.endsWith('/empleados'))
+    return 'employees';
+
+  if (pathname.endsWith('/servicios'))
+    return 'services';
+
+  if (pathname.endsWith('/sucursales'))
+    return 'sucursales';
+
+  if (pathname.endsWith('/configuracion'))
+    return 'settings';
+
+  if (pathname.endsWith('/bundles'))
+    return 'bundles';
+
+  if (pathname.endsWith('/pedidos'))
+    return 'agenda';
+
+  if (pathname.endsWith('/pendientes'))
+    return 'pending';
+
+  if (pathname.endsWith('/cerrar-atencion'))
+    return 'close-attention';
+
+  if (pathname.endsWith('/disponibilidad'))
+    return 'availability';
+
+  if (hash === 'admin-agenda')
+    return 'agenda';
+
+  if (hash === 'admin-close-attention')
+    return 'close-attention';
+
+  if (
+    hash === 'assign-booking' ||
+    hash === 'admin-pending'
+  )
+    return 'pending';
+
+  if (hash === 'admin-employees')
+    return 'employees';
+
+  if (hash === 'admin-branches')
+    return 'sucursales';
+
+  if (hash === 'admin-bundles')
+    return 'bundles';
+
+  if (hash === 'admin-clients')
+    return 'clients';
+
+  if (hash === 'admin-services')
+    return 'services';
+
+  if (hash === 'admin-settings')
+    return 'settings';
+
+  if (hash === 'admin-availability')
+    return 'availability';
 
   return 'agenda';
 };
@@ -64,7 +125,7 @@ function AdminBottomNav({ activeView, onViewChange }) {
 
 export default function Dashboard({ user, accessProfile, onChangeProfile, onLogout, canChangeProfile = false, companySlug, companyContext, onCompanyContextRefresh }) {
 
-  const [activeView, setActiveView] = useState(getAdminViewFromHash);
+  const [activeView, setActiveView] = useState(getAdminViewFromLocation);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isNewBookingOpen, setIsNewBookingOpen] = useState(false);
   const [newBookingInitial, setNewBookingInitial] = useState(null);
@@ -80,10 +141,11 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
   const companyName = companyContext?.company_name || companyContext?.name || 'QuieroTurnoApp';
   const navbarLogoSrc = companyContext?.client_logo_data_url || turnosAppLogo;
   const navbarLogoAlt = companyContext?.client_logo_data_url ? `${companyName} - Administrador` : undefined;
-
+  const navigate = useNavigate();
+  
   useEffect(() => {
     const applyHashView = () => {
-      setActiveView(getAdminViewFromHash());
+      setActiveView(getAdminViewFromLocation());
       setAdminDataVersion((current) => current + 1);
     };
 
@@ -144,22 +206,67 @@ export default function Dashboard({ user, accessProfile, onChangeProfile, onLogo
     setAdminDataVersion((current) => current + 1);
     onCompanyContextRefresh?.();
   };
+const actualizarHashVista = (view) => {
 
-  const changeView = (view) => {
-    if (view === 'new-booking') {
-      setNewBookingInitial(null);
-      setIsNewBookingOpen(true);
-      setSidebarOpen(false);
-      return;
-    }
-
-    if (view === 'agenda') {
-      setAdminDataVersion((current) => current + 1);
-    }
-
-    setActiveView(view);
-    setSidebarOpen(false);
+  const mapa = {
+    agenda: '#admin-agenda',
+    'close-attention': '#admin-close-attention',
+    pending: '#admin-pending',
+    employees: '#admin-employees',
+    sucursales: '#admin-branches',
+    bundles: '#admin-bundles',
+    clients: '#admin-clients',
+    services: '#admin-services',
+    settings: '#admin-settings',
+    availability: '#admin-availability'
   };
+
+  const nuevoHash = mapa[view];
+
+  if (!nuevoHash) return;
+
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${nuevoHash}`
+  );
+  if (mapaRutasAdministrador[view]) {
+
+  console.log(
+    'Navigate futuro:',
+    mapaRutasAdministrador[view]
+  );
+
+}
+};
+
+ const changeView = (view) => {
+
+  if (view === 'new-booking') {
+    setNewBookingInitial(null);
+    setIsNewBookingOpen(true);
+    setSidebarOpen(false);
+    return;
+  }
+
+  if (view === 'agenda') {
+    setAdminDataVersion((current) => current + 1);
+  }
+
+  actualizarHashVista(view);
+  if (mapaRutasAdministrador[view]) {
+
+  console.log(
+    'Ruta preparada:',
+    mapaRutasAdministrador[view]
+  );
+
+}
+  setActiveView(view);
+  setSidebarOpen(false);
+
+
+};
 
   const adminNavGroups = useMemo(() => {
     const gestion = esModoPedido

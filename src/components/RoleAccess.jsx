@@ -184,7 +184,59 @@ const getRoleViewFromHash = (selectedProfile) => {
   if (selectedProfile === 'client' && hash === 'client-mis-turnos') return 'mis-turnos';
   if (selectedProfile === 'client' && hash === 'client-perfil') return 'perfil';
 
+  if (selectedProfile === 'client' && hash === 'client-home') return 'home';
+if (selectedProfile === 'employee' && hash === 'employee-summary') return 'summary';
+if (selectedProfile === 'employee' && hash === 'employee-clients') return 'clients';
+if (selectedProfile === 'employee' && hash === 'employee-products') return 'products';
+if (selectedProfile === 'employee' && hash === 'employee-profile') return 'profile';
+if (selectedProfile === 'employee' && hash === 'employee-availability') return 'availability';
+if (selectedProfile === 'employee' && hash === 'employee-close-attention') return 'close-attention';
+if (selectedProfile === 'employee' && hash === 'employee-new-booking') return 'new-booking';
   return null;
+};
+
+const actualizarHashCliente = (view) => {
+
+  const mapa = {
+    home: '#client-home',
+    reserve: '#client-reserve',
+    'mis-turnos': '#client-mis-turnos',
+    perfil: '#client-perfil'
+  };
+
+  const nuevoHash = mapa[view];
+
+  if (!nuevoHash) return;
+
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${nuevoHash}`
+  );
+};
+
+const actualizarHashEmpleado = (view) => {
+
+  const mapa = {
+    summary: '#employee-summary',
+    agenda: '#employee-agenda',
+    clients: '#employee-clients',
+    products: '#employee-products',
+    availability: '#employee-availability',
+    profile: '#employee-profile',
+    'new-booking': '#employee-new-booking',
+    'close-attention': '#employee-close-attention'
+  };
+
+  const nuevoHash = mapa[view];
+
+  if (!nuevoHash) return;
+
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${nuevoHash}`
+  );
 };
 
 function ProfileCard({ profileId, selectedProfile, onSelectProfile, user }) {
@@ -299,21 +351,28 @@ function RoleWorkspace({ selectedProfile, user, onChangeProfile, onLogout, canCh
   }, [companySlug]);
 
   const changeClientView = (view) => {
-    setClientActiveView(view);
-    setSelectedPromotion(null);
-    setSidebarOpen(false);
-  };
 
-  const changeEmployeeView = (view) => {
-    if (view === 'new-booking') {
-      setNewBookingInitial(null);
-      setIsNewBookingOpen(true);
-      setSidebarOpen(false);
-      return;
-    }
-    setEmployeeActiveView(view);
+  actualizarHashCliente(view);
+
+  setClientActiveView(view);
+  setSelectedPromotion(null);
+  setSidebarOpen(false);
+};
+
+ const changeEmployeeView = (view) => {
+
+  actualizarHashEmpleado(view);
+
+  if (view === 'new-booking') {
+    setNewBookingInitial(null);
+    setIsNewBookingOpen(true);
     setSidebarOpen(false);
-  };
+    return;
+  }
+
+  setEmployeeActiveView(view);
+  setSidebarOpen(false);
+};
 
   const openEmployeeNewBooking = (options = null) => {
     setNewBookingInitial(options);
