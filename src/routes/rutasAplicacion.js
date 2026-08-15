@@ -20,30 +20,84 @@ export const rutasCliente = {
 };
 
 export const rutasEmpleado = {
+  inicio: '',
   agenda: 'agenda',
   clientes: 'clientes',
   productos: 'productos',
   disponibilidad: 'disponibilidad',
-  perfil: 'perfil'
+  perfil: 'perfil',
+  cerrarAtencion: 'cerrar-atencion',
+  nuevaReserva: 'nueva-reserva',
+  nuevoPedido: 'nuevo-pedido'
 };
 
-export const obtenerRutasAdministrador = (
-  companySlug
-) => {
-  const slug = String(
-    companySlug || ''
-  )
-    .trim()
-    .toLowerCase();
+const normalizarSlug =
+  (companySlug) =>
+    String(
+      companySlug || ''
+    )
+      .trim()
+      .toLowerCase();
 
-  const base = `/${slug}/admin`;
-
-  return Object.fromEntries(
-    Object.entries(rutasAdministrador).map(
+const crearRutasConBase = (
+  base,
+  rutas
+) =>
+  Object.fromEntries(
+    Object.entries(rutas).map(
       ([clave, ruta]) => [
         clave,
-        `${base}/${ruta}`
+        ruta
+          ? `${base}/${ruta}`
+          : base
       ]
     )
   );
-};
+
+export const obtenerRutasAdministrador =
+  (companySlug) => {
+    const slug =
+      normalizarSlug(
+        companySlug
+      );
+
+    const base =
+      `/${slug}/admin`;
+
+    return crearRutasConBase(
+      base,
+      rutasAdministrador
+    );
+  };
+
+export const obtenerRutasCliente =
+  (companySlug) => {
+    const slug =
+      normalizarSlug(
+        companySlug
+      );
+
+    const base =
+      `/${slug}/sacarturno`;
+
+    return crearRutasConBase(
+      base,
+      rutasCliente
+    );
+  };
+
+export const obtenerRutasEmpleado =
+  (companySlug) => {
+    const slug =
+      normalizarSlug(
+        companySlug
+      );
+
+    const base =
+      `/${slug}/empleado`;
+
+    return crearRutasConBase(
+      base,
+      rutasEmpleado
+    );
+  };
