@@ -1,5 +1,3 @@
-import RutasCliente from '../routes/RutasCliente';
-import RutasEmpleado from '../routes/RutasEmpleado';
 import { UserPhoto } from './WorkspaceHero';
 
 const turnosAppLogo =
@@ -117,74 +115,22 @@ function ProfileCard({
 }
 
 export default function RoleAccess({
-  children,
   user,
   selectedProfile,
   onSelectProfile,
-  onChangeProfile,
   availableProfiles = profileList,
   canChangeProfile =
     availableProfiles.length > 1,
-  onLogout,
-  companySlug,
-  companyContext
+  onLogout
 }) {
   /*
-   * Cliente y Empleado tienen ahora
-   * sus propios routers y layouts.
+   * Este componente ya no monta routers.
    *
-   * No necesitamos una capa intermedia
-   * PortalCliente / PortalEmpleado.
+   * La navegación de cada perfil pertenece al router principal
+   * y a RutasCliente / RutasEmpleado / Dashboard.
+   * RoleAccess solamente permite elegir el perfil cuando todavía
+   * no existe uno seleccionado.
    */
-  if (selectedProfile === 'client') {
-    return (
-      <RutasCliente
-        user={user}
-        onChangeProfile={
-          onChangeProfile
-        }
-        canChangeProfile={
-          canChangeProfile
-        }
-        onLogout={onLogout}
-        companySlug={companySlug}
-        companyContext={companyContext}
-      />
-    );
-  }
-
-  if (selectedProfile === 'employee') {
-    return (
-      <RutasEmpleado
-        user={user}
-        onChangeProfile={
-          onChangeProfile
-        }
-        canChangeProfile={
-          canChangeProfile
-        }
-        onLogout={onLogout}
-        companySlug={companySlug}
-        companyContext={companyContext}
-      />
-    );
-  }
-
-  /*
-   * El Administrador continúa entrando
-   * mediante Dashboard.
-   *
-   * children contiene el Dashboard
-   * cuando corresponde.
-   */
-  if (children) {
-    return children;
-  }
-
-  if (selectedProfile === 'admin') {
-    return null;
-  }
-
   return (
     <main className="profile-select-page">
       <section className="profile-select-panel">

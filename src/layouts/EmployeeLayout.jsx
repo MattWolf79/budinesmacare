@@ -27,301 +27,491 @@ import {
   obtenerRutasEmpleado
 } from '../routes/rutasAplicacion';
 
+
 const turnosAppLogo =
   '/logo-quieroturnoapp.png';
 
-const obtenerVistaEmpleado =
-  (pathname) => {
-    const path =
-      String(pathname || '')
-        .toLowerCase();
 
-    if (
-      path.endsWith(
-        '/clientes'
-      )
-    ) {
-      return 'clients';
-    }
+/*
+ * ============================================================
+ * VISTA ACTIVA SEGÚN LA URL
+ * ============================================================
+ */
 
-    if (
-      path.endsWith(
-        '/productos'
-      )
-    ) {
-      return 'products';
-    }
+const obtenerVistaEmpleado = (
+  pathname
+) => {
 
-    if (
-      path.endsWith(
-        '/disponibilidad'
-      )
-    ) {
-      return 'availability';
-    }
+  const path =
+    String(pathname || '')
+      .toLowerCase()
+      .replace(/\/+$/, '');
 
-    if (
-      path.endsWith(
-        '/perfil'
-      )
-    ) {
-      return 'profile';
-    }
 
-    if (
-      path.endsWith(
-        '/cerrar-atencion'
-      )
-    ) {
-      return 'close-attention';
-    }
+  if (
+    path.endsWith('/clientes')
+  ) {
+    return 'clients';
+  }
 
-    if (
-      path.endsWith(
-        '/nueva-reserva'
-      ) ||
-      path.endsWith(
-        '/nuevo-pedido'
-      )
-    ) {
-      return 'new-booking';
-    }
 
-    if (
-      path.endsWith(
-        '/agenda'
-      )
-    ) {
-      return 'agenda';
-    }
+  if (
+    path.endsWith('/productos')
+  ) {
+    return 'products';
+  }
 
-    return 'summary';
-  };
+
+  if (
+    path.endsWith('/disponibilidad')
+  ) {
+    return 'availability';
+  }
+
+
+  if (
+    path.endsWith('/perfil')
+  ) {
+    return 'profile';
+  }
+
+
+  if (
+    path.endsWith('/cerrar-atencion')
+  ) {
+    return 'close-attention';
+  }
+
+
+  if (
+    path.endsWith('/nueva-reserva') ||
+    path.endsWith('/nuevo-pedido')
+  ) {
+    return 'new-booking';
+  }
+
+
+  if (
+    path.endsWith('/agenda')
+  ) {
+    return 'agenda';
+  }
+
+
+  return 'summary';
+};
+
+
+/*
+ * ============================================================
+ * TEXTOS DEL HERO
+ * ============================================================
+ */
 
 const employeeHeroCopy = {
+
   summary: {
     eyebrow:
       'Acceso interno',
+
     title:
       'Mi espacio',
+
     description:
       'Un vistazo a tu día, próximos turnos y disponibilidad.'
   },
 
+
   agenda: {
     eyebrow:
       'Acceso interno',
+
     title:
       'Mi agenda laboral',
+
     description:
       'Un panel enfocado en los turnos asignados.'
   },
 
+
   'close-attention': {
     eyebrow:
       'Cobro',
+
     title:
       'Cerrar atención',
+
     description:
       'Liquidá turnos atendidos, cargá medios de pago y generá el comprobante.'
   },
 
+
   'new-booking': {
     eyebrow:
       'Reserva',
+
     title:
       'Nueva reserva',
+
     description:
       'Creá un turno para un cliente.'
   },
 
+
   clients: {
     eyebrow:
       'Clientes',
+
     title:
       'Gestión de clientes',
+
     description:
       'Administrá y organizá tu base de clientes.'
   },
 
+
   products: {
     eyebrow:
       'Catálogo',
+
     title:
       'Productos',
+
     description:
       'Consultá productos y tipos de producto configurados.'
   },
 
+
   profile: {
     eyebrow:
       'Mi perfil',
+
     title:
       'Mi perfil',
+
     description:
       'Revisá y actualizá tus datos personales.'
   },
 
+
   availability: {
     eyebrow:
       'Agenda disponible',
+
     title:
       'Disponibilidad',
+
     description:
       'Configurá los días y horarios en los que atendés.'
   }
+
 };
 
-const crearNavegacionEmpleado =
-  ({
-    esModoPedido,
+
+/*
+ * ============================================================
+ * MENÚ DEL EMPLEADO
+ * ============================================================
+ */
+
+const crearNavegacionEmpleado = ({
+  esModoPedido,
+  empleadosPuedenReservar
+}) => {
+
+  const base =
+    esModoPedido
+      ? [
+
+          {
+            id:
+              'summary',
+
+            label:
+              'Resumen',
+
+            mobileLabel:
+              'Resumen',
+
+            icon:
+              '▦'
+          },
+
+          {
+            id:
+              'agenda',
+
+            label:
+              'Pedidos',
+
+            mobileLabel:
+              'Pedidos',
+
+            icon:
+              '📋'
+          },
+
+          {
+            id:
+              'close-attention',
+
+            label:
+              'Cerrar pedido',
+
+            mobileLabel:
+              'Cerrar',
+
+            icon:
+              '💳'
+          },
+
+          {
+            id:
+              'clients',
+
+            label:
+              'Clientes',
+
+            mobileLabel:
+              'Clientes',
+
+            icon:
+              '🙋'
+          },
+
+          {
+            id:
+              'products',
+
+            label:
+              'Productos',
+
+            mobileLabel:
+              'Productos',
+
+            icon:
+              '✨'
+          },
+
+          {
+            id:
+              'profile',
+
+            label:
+              'Mi perfil',
+
+            mobileLabel:
+              'Perfil',
+
+            icon:
+              '👤'
+          }
+
+        ]
+
+      : [
+
+          {
+            id:
+              'summary',
+
+            label:
+              'Resumen',
+
+            mobileLabel:
+              'Resumen',
+
+            icon:
+              '▦'
+          },
+
+          {
+            id:
+              'agenda',
+
+            label:
+              'Agenda',
+
+            mobileLabel:
+              'Agenda',
+
+            icon:
+              '📅'
+          },
+
+          {
+            id:
+              'close-attention',
+
+            label:
+              'Cerrar atención',
+
+            mobileLabel:
+              'Cerrar',
+
+            icon:
+              '💳'
+          },
+
+          {
+            id:
+              'clients',
+
+            label:
+              'Clientes',
+
+            mobileLabel:
+              'Clientes',
+
+            icon:
+              '🙋'
+          },
+
+          {
+            id:
+              'profile',
+
+            label:
+              'Mi perfil',
+
+            mobileLabel:
+              'Perfil',
+
+            icon:
+              '👤'
+          },
+
+          {
+            id:
+              'availability',
+
+            label:
+              'Disponibilidad',
+
+            mobileLabel:
+              'Horario',
+
+            icon:
+              '🕒'
+          }
+
+        ];
+
+
+  const conNuevaAccion =
     empleadosPuedenReservar
-  }) => {
-    const base =
-      esModoPedido
-        ? [
-            {
-              id: 'summary',
-              label: 'Resumen',
-              mobileLabel: 'Resumen',
-              icon: '▦'
-            },
-            {
-              id: 'agenda',
-              label: 'Pedidos',
-              mobileLabel: 'Pedidos',
-              icon: '📋'
-            },
-            {
-              id: 'close-attention',
-              label: 'Cerrar pedido',
-              mobileLabel: 'Cerrar',
-              icon: '💳'
-            },
-            {
-              id: 'clients',
-              label: 'Clientes',
-              mobileLabel: 'Clientes',
-              icon: '🙋'
-            },
-            {
-              id: 'products',
-              label: 'Productos',
-              mobileLabel: 'Productos',
-              icon: '✨'
-            },
-            {
-              id: 'profile',
-              label: 'Mi perfil',
-              mobileLabel: 'Perfil',
-              icon: '👤'
-            }
-          ]
-        : [
-            {
-              id: 'summary',
-              label: 'Resumen',
-              mobileLabel: 'Resumen',
-              icon: '▦'
-            },
-            {
-              id: 'agenda',
-              label: 'Agenda',
-              mobileLabel: 'Agenda',
-              icon: '📅'
-            },
-            {
-              id: 'close-attention',
-              label: 'Cerrar atención',
-              mobileLabel: 'Cerrar',
-              icon: '💳'
-            },
-            {
-              id: 'clients',
-              label: 'Clientes',
-              mobileLabel: 'Clientes',
-              icon: '🙋'
-            },
-            {
-              id: 'profile',
-              label: 'Mi perfil',
-              mobileLabel: 'Perfil',
-              icon: '👤'
-            },
-            {
-              id: 'availability',
-              label: 'Disponibilidad',
-              mobileLabel: 'Horario',
-              icon: '🕒'
-            }
-          ];
 
-    const conNuevaAccion =
-      empleadosPuedenReservar
-        ? [
-            base[0],
-            {
-              id: 'new-booking',
+      ? [
+
+          base[0],
+
+          {
+            id:
+              'new-booking',
+
+            label:
+              esModoPedido
+                ? 'Nuevo pedido'
+                : 'Nueva reserva',
+
+            mobileLabel:
+              esModoPedido
+                ? 'Pedido'
+                : 'Reservar',
+
+            icon:
+              '➕'
+          },
+
+          ...base.slice(1)
+
+        ]
+
+      : base;
+
+
+  return {
+
+    items:
+      conNuevaAccion,
+
+
+    gruposSidebar: [
+
+      {
+        label:
+          'MI ESPACIO',
+
+        items:
+          conNuevaAccion.map(
+            (item) => ({
+
+              id:
+                item.id,
+
               label:
-                esModoPedido
-                  ? 'Nuevo pedido'
-                  : 'Nueva reserva',
-              mobileLabel:
-                esModoPedido
-                  ? 'Pedido'
-                  : 'Reservar',
-              icon: '➕'
-            },
-            ...base.slice(1)
-          ]
-        : base;
+                item.label,
 
-    return {
-      items:
-        conNuevaAccion,
+              icon:
+                item.icon
 
-      gruposSidebar: [
-        {
-          label: 'MI ESPACIO',
-          items:
-            conNuevaAccion.map(
-              (item) => ({
-                id: item.id,
-                label: item.label,
-                icon: item.icon
-              })
-            )
-        }
-      ]
-    };
+            })
+          )
+      }
+
+    ]
+
   };
+};
+
+
+/*
+ * ============================================================
+ * LAYOUT EMPLEADO
+ * ============================================================
+ */
 
 export default function EmployeeLayout({
+
   user,
+
   onChangeProfile,
+
   canChangeProfile,
+
   onLogout,
+
   companySlug,
+
   companyContext
+
 }) {
+
   const location =
     useLocation();
+
 
   const navigate =
     useNavigate();
 
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false);
+
+  const [
+    sidebarOpen,
+    setSidebarOpen
+  ] = useState(false);
+
 
   const [
     isNewBookingOpen,
     setIsNewBookingOpen
   ] = useState(false);
 
+
   const [
     newBookingInitial,
     setNewBookingInitial
   ] = useState(null);
+
 
   const [
     companyName,
@@ -332,15 +522,18 @@ export default function EmployeeLayout({
       'QuieroTurnoApp'
   );
 
+
   const [
     welcomeBackground,
     setWelcomeBackground
   ] = useState(null);
 
-  const activeView =
-    obtenerVistaEmpleado(
-      location.pathname
-    );
+
+  /*
+   * ==========================================================
+   * RUTAS
+   * ==========================================================
+   */
 
   const rutas =
     useMemo(
@@ -348,13 +541,35 @@ export default function EmployeeLayout({
         obtenerRutasEmpleado(
           companySlug
         ),
-      [companySlug]
+      [
+        companySlug
+      ]
     );
+
+
+  /*
+   * ==========================================================
+   * VISTA ACTUAL
+   * ==========================================================
+   */
+
+  const activeView =
+    obtenerVistaEmpleado(
+      location.pathname
+    );
+
+
+  /*
+   * ==========================================================
+   * CONFIGURACIÓN OPERATIVA
+   * ==========================================================
+   */
 
   const configuracionOperativa =
     companyContext
       ?.configuracion_operativa ||
     {};
+
 
   const esModoPedido =
     configuracionOperativa.modo_operacion ===
@@ -362,9 +577,17 @@ export default function EmployeeLayout({
     configuracionOperativa.usa_agenda ===
       false;
 
+
   const empleadosPuedenReservar =
     configuracionOperativa.empleados_pueden_reservar !==
     false;
+
+
+  /*
+   * ==========================================================
+   * NAVEGACIÓN
+   * ==========================================================
+   */
 
   const navegacion =
     useMemo(
@@ -379,25 +602,85 @@ export default function EmployeeLayout({
       ]
     );
 
+
+  /*
+   * ==========================================================
+   * MAPA ÚNICO DE NAVEGACIÓN
+   * ==========================================================
+   *
+   * Cada opción del menú apunta a UNA ruta.
+   *
+   * No usamos window.location.
+   * No usamos window.history.
+   */
+
+  const rutasPorVista =
+    useMemo(
+      () => ({
+
+        summary:
+          rutas.inicio,
+
+        agenda:
+          rutas.agenda,
+
+        clients:
+          rutas.clientes,
+
+        products:
+          rutas.productos,
+
+        availability:
+          rutas.disponibilidad,
+
+        profile:
+          rutas.perfil,
+
+        'close-attention':
+          rutas.cerrarAtencion,
+
+        'new-booking':
+          esModoPedido
+            ? rutas.nuevoPedido
+            : rutas.nuevaReserva
+
+      }),
+      [
+        rutas,
+        esModoPedido
+      ]
+    );
+
+
+  /*
+   * ==========================================================
+   * HERO
+   * ==========================================================
+   */
+
   const heroCopy =
     employeeHeroCopy[
       activeView
     ] ||
     employeeHeroCopy.summary;
 
+
   const workspaceLogoSrc =
     companyContext?.client_logo_data_url ||
     turnosAppLogo;
+
 
   const workspaceLogoAlt =
     companyContext?.client_logo_data_url
       ? `${companyName} - Empleado`
       : undefined;
 
+
   const welcomeBackgroundUrl =
     welcomeBackground?.dataUrl ||
     welcomeBackground?.publicUrl ||
     '';
+
 
   const welcomeBackgroundStyle =
     welcomeBackgroundUrl
@@ -407,11 +690,21 @@ export default function EmployeeLayout({
         }
       : undefined;
 
+
+  /*
+   * ==========================================================
+   * CONFIGURACIÓN DE EMPRESA
+   * ==========================================================
+   */
+
   useEffect(() => {
+
     let activo = true;
+
 
     const cargarConfiguracion =
       async () => {
+
         const {
           data,
           error
@@ -420,9 +713,14 @@ export default function EmployeeLayout({
             companySlug
           );
 
-        if (!activo || error) {
+
+        if (
+          !activo ||
+          error
+        ) {
           return;
         }
+
 
         setCompanyName(
           String(
@@ -433,86 +731,127 @@ export default function EmployeeLayout({
             'QuieroTurnoApp'
         );
 
+
         if (
           data?.welcome_background_data_url ||
           data?.welcome_background_public_url
         ) {
+
           setWelcomeBackground({
+
             dataUrl:
               data.welcome_background_data_url ||
               '',
+
             publicUrl:
               data.welcome_background_public_url ||
               ''
+
           });
+
         } else {
-          setWelcomeBackground(null);
+
+          setWelcomeBackground(
+            null
+          );
+
         }
+
       };
 
+
     cargarConfiguracion();
+
 
     const actualizarConfiguracion =
       () => {
         cargarConfiguracion();
       };
 
+
     window.addEventListener(
       'turnos-app-configuration-saved',
       actualizarConfiguracion
     );
 
+
     return () => {
+
       activo = false;
+
 
       window.removeEventListener(
         'turnos-app-configuration-saved',
         actualizarConfiguracion
       );
+
     };
+
   }, [
     companySlug,
     companyContext?.company_name
   ]);
 
+
   /*
-   * Si entramos directamente a:
-   *
-   * /empleado/nueva-reserva
-   * /empleado/nuevo-pedido
-   *
-   * abrimos el panel.
+   * ==========================================================
+   * DETECCIÓN DE NUEVA RESERVA / PEDIDO
+   * ==========================================================
    */
+
   useEffect(() => {
+
     const esNuevaReserva =
       location.pathname.endsWith(
         '/nueva-reserva'
       );
+
 
     const esNuevoPedido =
       location.pathname.endsWith(
         '/nuevo-pedido'
       );
 
-    if (
-      esNuevaReserva ||
-      esNuevoPedido
-    ) {
-      if (
-        !empleadosPuedenReservar
-      ) {
-        navigate(
-          rutas.agenda,
-          { replace: true }
-        );
-        return;
-      }
 
-      setIsNewBookingOpen(true);
+    const esNuevaOperacion =
+      esNuevaReserva ||
+      esNuevoPedido;
+
+
+    if (
+      !esNuevaOperacion
+    ) {
+
+      setIsNewBookingOpen(
+        false
+      );
+
       return;
+
     }
 
-    setIsNewBookingOpen(false);
+
+    if (
+      !empleadosPuedenReservar
+    ) {
+
+      navigate(
+        rutas.agenda,
+        {
+          replace:
+            true
+        }
+      );
+
+      return;
+
+    }
+
+
+    setIsNewBookingOpen(
+      true
+    );
+
   }, [
     location.pathname,
     empleadosPuedenReservar,
@@ -520,277 +859,429 @@ export default function EmployeeLayout({
     rutas.agenda
   ]);
 
+
+  /*
+   * ==========================================================
+   * NAVEGAR DESDE EL MENÚ
+   * ==========================================================
+   */
+
   const navegarA =
     (view) => {
-      setSidebarOpen(false);
+
+      setSidebarOpen(
+        false
+      );
+
+
+      const ruta =
+        rutasPorVista[
+          view
+        ];
+
 
       if (
-        view === 'summary'
+        !ruta
       ) {
-        navigate(
-          rutas.inicio
-        );
         return;
       }
 
+
+      /*
+       * Si ya estamos en esa ruta,
+       * no hacemos nada.
+       */
       if (
-        view === 'agenda'
+        location.pathname ===
+        ruta
       ) {
-        navigate(
-          rutas.agenda
-        );
         return;
       }
 
-      if (
-        view === 'clients'
-      ) {
-        navigate(
-          rutas.clientes
-        );
-        return;
-      }
 
-      if (
-        view === 'products'
-      ) {
-        navigate(
-          rutas.productos
-        );
-        return;
-      }
+      navigate(
+        ruta
+      );
 
-      if (
-        view === 'availability'
-      ) {
-        navigate(
-          rutas.disponibilidad
-        );
-        return;
-      }
-
-      if (
-        view === 'profile'
-      ) {
-        navigate(
-          rutas.perfil
-        );
-        return;
-      }
-
-      if (
-        view === 'close-attention'
-      ) {
-        navigate(
-          rutas.cerrarAtencion
-        );
-        return;
-      }
-
-      if (
-        view === 'new-booking'
-      ) {
-        setNewBookingInitial(null);
-
-        navigate(
-          esModoPedido
-            ? rutas.nuevoPedido
-            : rutas.nuevaReserva
-        );
-
-        return;
-      }
     };
+
+
+  /*
+   * ==========================================================
+   * ABRIR NUEVA RESERVA / PEDIDO
+   * ==========================================================
+   */
 
   const abrirNuevaReserva =
     (options = null) => {
+
       if (
         !empleadosPuedenReservar
       ) {
         return;
       }
 
+
       setNewBookingInitial(
         options
       );
 
-      navigate(
+
+      const ruta =
         esModoPedido
           ? rutas.nuevoPedido
-          : rutas.nuevaReserva
-      );
+          : rutas.nuevaReserva;
+
+
+      if (
+        location.pathname !==
+        ruta
+      ) {
+
+        navigate(
+          ruta
+        );
+
+      } else {
+
+        setIsNewBookingOpen(
+          true
+        );
+
+      }
+
     };
+
+
+  /*
+   * ==========================================================
+   * CERRAR NUEVA RESERVA / PEDIDO
+   * ==========================================================
+   */
 
   const cerrarNuevaReserva =
     () => {
+
       setNewBookingInitial(
         null
       );
+
 
       setIsNewBookingOpen(
         false
       );
 
-      navigate(
-        rutas.agenda,
-        {
-          replace: true
-        }
-      );
+
+      if (
+        location.pathname !==
+        rutas.agenda
+      ) {
+
+        navigate(
+          rutas.agenda,
+          {
+            replace:
+              true
+          }
+        );
+
+      }
+
     };
+
+
+  /*
+   * ==========================================================
+   * HERO DINÁMICO
+   * ==========================================================
+   */
 
   const heroTitle =
     esModoPedido &&
     activeView === 'agenda'
+
       ? 'Pedidos'
+
       : esModoPedido &&
           activeView ===
             'close-attention'
+
         ? 'Cerrar pedido'
+
         : esModoPedido &&
             activeView ===
               'new-booking'
+
           ? 'Nuevo pedido'
+
           : heroCopy.title;
+
 
   const heroDescription =
     esModoPedido &&
     activeView === 'agenda'
+
       ? 'Listado cronológico de pedidos por día.'
+
       : esModoPedido &&
           activeView ===
             'close-attention'
+
         ? 'Cerrá pedidos entregados, cargá medios de pago y generá el comprobante.'
+
         : esModoPedido &&
             activeView ===
               'new-booking'
+
           ? 'Creá un pedido para un cliente.'
+
           : heroCopy.description;
 
+
+  /*
+   * ==========================================================
+   * RENDER
+   * ==========================================================
+   */
+
   return (
-    <main className="role-workspace role-workspace-employee has-role-sidebar">
+
+    <main
+      className="
+        role-workspace
+        role-workspace-employee
+        has-role-sidebar
+      "
+    >
+
       <Navbar
-        user={user}
-        activeView={activeView}
+
+        user={
+          user
+        }
+
+        activeView={
+          activeView
+        }
+
         accessProfile="employee"
-        onViewChange={navegarA}
+
+        onViewChange={
+          navegarA
+        }
+
         onChangeProfile={
           onChangeProfile
         }
-        onLogout={onLogout}
-        showNavigation={false}
+
+        onLogout={
+          onLogout
+        }
+
+        showNavigation={
+          false
+        }
+
         showMenuToggle
+
         onMenuToggle={() =>
           setSidebarOpen(
-            (current) => !current
+            current =>
+              !current
           )
         }
+
         canChangeProfile={
           canChangeProfile
         }
-        logoSrc={workspaceLogoSrc}
-        logoAlt={workspaceLogoAlt}
-        companyName={companyName}
+
+        logoSrc={
+          workspaceLogoSrc
+        }
+
+        logoAlt={
+          workspaceLogoAlt
+        }
+
+        companyName={
+          companyName
+        }
+
       />
 
-      <div className="role-workspace-body">
+
+      <div
+        className="
+          role-workspace-body
+        "
+      >
+
         <AdminSidebar
+
           groups={
             navegacion.gruposSidebar
           }
-          activeView={activeView}
-          onViewChange={navegarA}
-          open={sidebarOpen}
-          onClose={() =>
-            setSidebarOpen(false)
+
+          activeView={
+            activeView
           }
-          companyName={companyName}
-          logoSrc={workspaceLogoSrc}
+
+          onViewChange={
+            navegarA
+          }
+
+          open={
+            sidebarOpen
+          }
+
+          onClose={() =>
+            setSidebarOpen(
+              false
+            )
+          }
+
+          companyName={
+            companyName
+          }
+
+          logoSrc={
+            workspaceLogoSrc
+          }
+
         />
 
-        <div className="role-workspace-content">
+
+        <div
+          className="
+            role-workspace-content
+          "
+        >
+
           <WorkspaceHero
+
             className={
               welcomeBackgroundUrl
                 ? 'employee-welcome-hero has-custom-background'
                 : ''
             }
+
             style={
               welcomeBackgroundUrl
                 ? welcomeBackgroundStyle
                 : undefined
             }
+
             eyebrow={
               heroCopy.eyebrow
             }
+
             title={
               heroTitle
             }
+
             description={
               heroDescription
             }
+
             identity={
+
               <WorkspaceProfileIdentity
-                user={user}
+
+                user={
+                  user
+                }
+
                 roleLabel="Empleado"
+
                 photoFallback="🧑‍💼"
+
               />
+
             }
+
           />
 
+
           <Outlet
+
             context={{
               onRequestNewBooking:
                 abrirNuevaReserva
             }}
+
           />
+
         </div>
+
       </div>
 
+
       {isNewBookingOpen && (
+
         <NewBookingPanel
-          user={user}
-          companySlug={companySlug}
+
+          user={
+            user
+          }
+
+          companySlug={
+            companySlug
+          }
+
           companyContext={
             companyContext
           }
+
           initialDate={
             newBookingInitial?.date ||
             null
           }
+
           initialStartTime={
-            newBookingInitial
-              ?.startTime ||
+            newBookingInitial?.startTime ||
             null
           }
+
           branchId={
             newBookingInitial?.branchId ||
             null
           }
+
           onClose={
             cerrarNuevaReserva
           }
+
           onBookingCreated={() => {
+
             window.dispatchEvent(
               new Event(
                 'turnos-app-configuration-saved'
               )
             );
 
+
             setNewBookingInitial(
               null
             );
+
 
             setIsNewBookingOpen(
               false
             );
 
+
             navigate(
               rutas.agenda
             );
+
           }}
+
         />
+
       )}
+
     </main>
+
   );
+
 }

@@ -1803,10 +1803,6 @@ function CompanyApp() {
     );
   }
 
-  console.log('companySlug', companySlug);
-console.log('pathname', pathname);
-console.log('companyContext', companyContext);
-
   if (!companyContext?.active) {
     return (
       <main className="login-page">
@@ -1979,9 +1975,7 @@ console.log('companyContext', companyContext);
       );
     }
   }
-  console.log('accessProfile =>', accessProfile);
-console.log('availableProfiles =>', availableProfiles);
-console.log('authProfile =>', authProfile);
+
   if (!accessProfile) {
     return (
       <RoleAccess
@@ -1997,33 +1991,30 @@ console.log('authProfile =>', authProfile);
   }
 
   if (accessProfile === 'client') {
-  return (
-    <RutasCliente
-      user={authenticatedUser}
-      onChangeProfile={clearAccessProfile}
-      canChangeProfile={canChangeProfile}
-      onLogout={logout}
-      companySlug={companySlug}
-      companyContext={companyContext}
-    />
-  );
-}
+    return (
+      <RutasCliente
+        user={authenticatedUser}
+        onChangeProfile={clearAccessProfile}
+        canChangeProfile={canChangeProfile}
+        onLogout={logout}
+        companySlug={companySlug}
+        companyContext={companyContext}
+      />
+    );
+  }
 
   if (accessProfile === 'employee') {
-  return (
-    <RoleAccess
-      user={authenticatedUser}
-      selectedProfile="employee"
-      onSelectProfile={selectAccessProfile}
-      onChangeProfile={clearAccessProfile}
-      availableProfiles={availableProfiles}
-      canChangeProfile={canChangeProfile}
-      onLogout={logout}
-      companySlug={companySlug}
-      companyContext={companyContext}
-    />
-  );
-}
+    return (
+      <RutasEmpleado
+        user={authenticatedUser}
+        onChangeProfile={clearAccessProfile}
+        canChangeProfile={canChangeProfile}
+        onLogout={logout}
+        companySlug={companySlug}
+        companyContext={companyContext}
+      />
+    );
+  }
 
   if (accessProfile === 'admin') {
     return (
@@ -2039,9 +2030,6 @@ console.log('authProfile =>', authProfile);
       />
     );
   }
-  console.log('accessProfile', accessProfile);
-console.log('authProfile', authProfile);
-console.log('session', session);
 
   return (
     <RoleAccess
