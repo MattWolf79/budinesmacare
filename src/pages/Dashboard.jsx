@@ -6,8 +6,8 @@ import {
 
 import {
   matchPath,
-  useLocation,
-  useNavigate
+  Navigate,
+  useLocation
 } from 'react-router-dom';
 
 import {
@@ -52,21 +52,27 @@ const turnosAppLogo =
 
 
 export default function Dashboard({
+
   user,
+
   accessProfile,
+
   onChangeProfile,
+
   onLogout,
+
   canChangeProfile = false,
+
   companySlug,
+
   companyContext,
+
   onCompanyContextRefresh
+
 }) {
 
   const location =
     useLocation();
-
-  const navigate =
-    useNavigate();
 
 
   const [
@@ -97,6 +103,28 @@ export default function Dashboard({
     promotions,
     setPromotions
   ] = useState([]);
+
+
+  /*
+   * Redirección declarativa.
+   *
+   * Dashboard NO utiliza navigate().
+   *
+   * Esta variable solamente se utiliza para
+   * operaciones que terminan y necesitan
+   * llevar al usuario a otra página:
+   *
+   * - creación de reserva/pedido
+   * - cierre de atención
+   *
+   * La navegación real la realiza React Router
+   * mediante <Navigate />.
+   */
+
+  const [
+    redirectPath,
+    setRedirectPath
+  ] = useState(null);
 
 
   /*
@@ -162,11 +190,11 @@ export default function Dashboard({
 
 
   /*
-   * Generamos las rutas administrativas
-   * una sola vez por empresa.
+   * Rutas administrativas.
    *
-   * Estas rutas son las que utiliza
-   * React Router realmente.
+   * Estas rutas son la única fuente
+   * utilizada por los componentes de
+   * navegación administrativa.
    */
 
   const rutas =
@@ -182,17 +210,18 @@ export default function Dashboard({
 
 
   /*
-   * Vista activa del menú.
+   * Vista activa.
    *
-   * IMPORTANTE:
+   * Esto NO navega.
    *
-   * Ya no analizamos manualmente
-   * location.pathname con endsWith().
+   * Solamente determina qué opción debe
+   * mostrarse activa cuando estamos dentro
+   * del Dashboard administrativo.
    *
-   * Usamos matchPath de React Router.
+   * La navegación real la hacen:
    *
-   * Esto hace que la URL sea la fuente
-   * real de la navegación.
+   * - AdminSidebar -> NavLink
+   * - React Router
    */
 
   const activeView =
@@ -208,11 +237,13 @@ export default function Dashboard({
             {
               path:
                 rutas.clientes,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
           return 'clientes';
         }
 
@@ -222,11 +253,13 @@ export default function Dashboard({
             {
               path:
                 rutas.empleados,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
           return 'empleados';
         }
 
@@ -236,11 +269,13 @@ export default function Dashboard({
             {
               path:
                 rutas.servicios,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
           return 'servicios';
         }
 
@@ -250,11 +285,13 @@ export default function Dashboard({
             {
               path:
                 rutas.sucursales,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
           return 'sucursales';
         }
 
@@ -264,11 +301,13 @@ export default function Dashboard({
             {
               path:
                 rutas.configuracion,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
           return 'configuracion';
         }
 
@@ -278,18 +317,20 @@ export default function Dashboard({
             {
               path:
                 rutas.bundles,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
           return 'bundles';
         }
 
 
         /*
-         * Pedidos utiliza la misma opción
-         * visual "agenda".
+         * En modo pedido la página de pedidos
+         * ocupa visualmente la opción "agenda".
          */
 
         if (
@@ -297,11 +338,29 @@ export default function Dashboard({
             {
               path:
                 rutas.pedidos,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
+          return 'agenda';
+        }
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.agenda,
+              end:
+                true
+            },
+            pathname
+          )
+        ) {
+
           return 'agenda';
         }
 
@@ -311,11 +370,13 @@ export default function Dashboard({
             {
               path:
                 rutas.pendientes,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
           return 'pendientes';
         }
 
@@ -325,11 +386,13 @@ export default function Dashboard({
             {
               path:
                 rutas.cerrarAtencion,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
           return 'cerrarAtencion';
         }
 
@@ -339,19 +402,16 @@ export default function Dashboard({
             {
               path:
                 rutas.disponibilidad,
-              end: true
+              end:
+                true
             },
             pathname
           )
         ) {
+
           return 'disponibilidad';
         }
 
-
-        /*
-         * Agenda es el estado visual
-         * predeterminado.
-         */
 
         return 'agenda';
 
@@ -364,12 +424,38 @@ export default function Dashboard({
 
 
   /*
+   * Limpia la redirección declarativa
+   * cuando React Router ya llegó a
+   * la URL solicitada.
+   */
+
+  useEffect(() => {
+
+    if (
+      redirectPath &&
+      location.pathname ===
+        redirectPath
+    ) {
+
+      setRedirectPath(
+        null
+      );
+    }
+
+  }, [
+    redirectPath,
+    location.pathname
+  ]);
+
+
+  /*
    * Cargar promociones.
    */
 
   useEffect(() => {
 
-    let activo = true;
+    let activo =
+      true;
 
 
     const cargarConfiguracion =
@@ -388,6 +474,7 @@ export default function Dashboard({
           !activo ||
           error
         ) {
+
           return;
         }
 
@@ -399,6 +486,7 @@ export default function Dashboard({
             ? data.promotions
             : []
         );
+
       };
 
 
@@ -406,7 +494,10 @@ export default function Dashboard({
 
 
     return () => {
-      activo = false;
+
+      activo =
+        false;
+
     };
 
   }, [
@@ -422,47 +513,57 @@ export default function Dashboard({
     useMemo(
       () =>
         promocionesHabilitadas
+
           ? promotions
               .map(
                 (
                   promotion,
                   index
                 ) => ({
+
                   ...promotion,
 
                   promotionIndex:
                     index,
 
                   bookingLabel: [
+
                     promotion?.title ||
                       `Banner ${index + 1}`,
 
                     promotion?.description,
 
                     promotion?.value
+
                   ]
                     .filter(Boolean)
                     .join(' · ')
+
                 })
               )
+
               .filter(
-                (
-                  promotion
-                ) =>
+                promotion =>
+
                   promotion?.enabled !==
                     false &&
+
                   (
                     preciosHabilitados
+
                       ? (
                           promotion?.title ||
                           promotion?.description ||
                           promotion?.value ||
                           promotion?.imageDataUrl
                         )
+
                       : promotion?.imageDataUrl
                   )
               )
+
           : [],
+
       [
         promocionesHabilitadas,
         preciosHabilitados,
@@ -482,6 +583,7 @@ export default function Dashboard({
         current =>
           current + 1
       );
+
     };
 
 
@@ -502,130 +604,20 @@ export default function Dashboard({
 
 
       onCompanyContextRefresh?.();
-    };
 
-
-  /*
-   * Navegación administrativa.
-   *
-   * Toda navegación pasa por navigate().
-   *
-   * Nunca usamos window.location.
-   * Nunca usamos window.history.
-   */
-
-  const navegarA =
-    (view) => {
-
-      /*
-       * Nuevo turno / pedido:
-       * abre panel, no cambia URL.
-       */
-
-      if (
-        view ===
-        'new-booking'
-      ) {
-
-        setNewBookingInitial(
-          null
-        );
-
-        setIsNewBookingOpen(
-          true
-        );
-
-        setSidebarOpen(
-          false
-        );
-
-        return;
-      }
-
-
-      const ruta =
-        {
-          agenda:
-            rutas.agenda,
-
-          clientes:
-            rutas.clientes,
-
-          empleados:
-            rutas.empleados,
-
-          servicios:
-            rutas.servicios,
-
-          sucursales:
-            rutas.sucursales,
-
-          bundles:
-            rutas.bundles,
-
-          configuracion:
-            rutas.configuracion,
-
-          pedidos:
-            rutas.pedidos,
-
-          pendientes:
-            rutas.pendientes,
-
-          cerrarAtencion:
-            rutas.cerrarAtencion,
-
-          disponibilidad:
-            rutas.disponibilidad
-
-        }[view];
-
-
-      if (!ruta) {
-        return;
-      }
-
-
-      /*
-       * Al volver a agenda queremos que
-       * los componentes puedan refrescar.
-       */
-
-      if (
-        view ===
-        'agenda'
-      ) {
-
-        setAdminDataVersion(
-          current =>
-            current + 1
-        );
-      }
-
-
-      setSidebarOpen(
-        false
-      );
-
-
-      /*
-       * Evitamos navegación innecesaria.
-       */
-
-      if (
-        location.pathname !==
-        ruta
-      ) {
-
-        navigate(
-          ruta
-        );
-      }
     };
 
 
   /*
    * Menú administrativo.
+   *
+   * Las páginas tienen path.
+   *
+   * AdminSidebar utiliza NavLink
+   * directamente para esos elementos.
+   *
+   * El único elemento sin path es
+   * new-booking, porque abre un panel.
    */
 
   const adminNavGroups =
@@ -634,6 +626,7 @@ export default function Dashboard({
 
         const gestion =
           esModoPedido
+
             ? [
 
                 {
@@ -645,6 +638,7 @@ export default function Dashboard({
 
                   icon:
                     '➕'
+
                 },
 
                 {
@@ -655,12 +649,19 @@ export default function Dashboard({
                     'Pedidos',
 
                   icon:
-                    '📋'
+                    '📋',
+
+                  path:
+                    rutas.agenda
+
                 },
 
                 ...(preciosHabilitados
+
                   ? [
+
                       {
+
                         id:
                           'cerrarAtencion',
 
@@ -668,12 +669,19 @@ export default function Dashboard({
                           'Cerrar pedido',
 
                         icon:
-                          '💳'
+                          '💳',
+
+                        path:
+                          rutas.cerrarAtencion
+
                       }
+
                     ]
+
                   : []),
 
                 {
+
                   id:
                     'clientes',
 
@@ -681,10 +689,15 @@ export default function Dashboard({
                     'Clientes',
 
                   icon:
-                    '🙋'
+                    '🙋',
+
+                  path:
+                    rutas.clientes
+
                 },
 
                 {
+
                   id:
                     'empleados',
 
@@ -692,7 +705,11 @@ export default function Dashboard({
                     'Empleados',
 
                   icon:
-                    '👥'
+                    '👥',
+
+                  path:
+                    rutas.empleados
+
                 }
 
               ]
@@ -700,6 +717,7 @@ export default function Dashboard({
             : [
 
                 {
+
                   id:
                     'new-booking',
 
@@ -708,9 +726,11 @@ export default function Dashboard({
 
                   icon:
                     '➕'
+
                 },
 
                 {
+
                   id:
                     'agenda',
 
@@ -718,10 +738,15 @@ export default function Dashboard({
                     'Calendario',
 
                   icon:
-                    '📅'
+                    '📅',
+
+                  path:
+                    rutas.agenda
+
                 },
 
                 {
+
                   id:
                     'cerrarAtencion',
 
@@ -729,10 +754,15 @@ export default function Dashboard({
                     'Cerrar atención',
 
                   icon:
-                    '💳'
+                    '💳',
+
+                  path:
+                    rutas.cerrarAtencion
+
                 },
 
                 {
+
                   id:
                     'pendientes',
 
@@ -740,10 +770,15 @@ export default function Dashboard({
                     'Pendientes de asignar',
 
                   icon:
-                    '📌'
+                    '📌',
+
+                  path:
+                    rutas.pendientes
+
                 },
 
                 {
+
                   id:
                     'clientes',
 
@@ -751,10 +786,15 @@ export default function Dashboard({
                     'Clientes',
 
                   icon:
-                    '🙋'
+                    '🙋',
+
+                  path:
+                    rutas.clientes
+
                 },
 
                 {
+
                   id:
                     'empleados',
 
@@ -762,10 +802,15 @@ export default function Dashboard({
                     'Empleados',
 
                   icon:
-                    '👥'
+                    '👥',
+
+                  path:
+                    rutas.empleados
+
                 },
 
                 {
+
                   id:
                     'disponibilidad',
 
@@ -773,7 +818,11 @@ export default function Dashboard({
                     'Disponibilidad',
 
                   icon:
-                    '🕒'
+                    '🕒',
+
+                  path:
+                    rutas.disponibilidad
+
                 }
 
               ];
@@ -784,6 +833,7 @@ export default function Dashboard({
         ) {
 
           gestion.push({
+
             id:
               'sucursales',
 
@@ -791,8 +841,13 @@ export default function Dashboard({
               'Sucursales',
 
             icon:
-              '🏢'
+              '🏢',
+
+            path:
+              rutas.sucursales
+
           });
+
         }
 
 
@@ -801,6 +856,7 @@ export default function Dashboard({
         ) {
 
           gestion.push({
+
             id:
               'bundles',
 
@@ -808,27 +864,37 @@ export default function Dashboard({
               'Packs y promos',
 
             icon:
-              '🎁'
+              '🎁',
+
+            path:
+              rutas.bundles
+
           });
+
         }
 
 
         return [
+
           {
+
             label:
               'GESTIÓN',
 
             items:
               gestion
+
           },
 
           {
+
             label:
               'CONFIGURACIÓN',
 
             items: [
 
               {
+
                 id:
                   'servicios',
 
@@ -838,10 +904,15 @@ export default function Dashboard({
                     : 'Servicios',
 
                 icon:
-                  '✨'
+                  '✨',
+
+                path:
+                  rutas.servicios
+
               },
 
               {
+
                 id:
                   'configuracion',
 
@@ -849,30 +920,87 @@ export default function Dashboard({
                   'Configuración del negocio',
 
                 icon:
-                  '⚙'
+                  '⚙',
+
+                path:
+                  rutas.configuracion
+
               }
 
             ]
+
           }
+
         ];
 
       },
 
       [
+
         sucursalesHabilitadas,
+
         bundlesHabilitados,
+
         esModoPedido,
-        preciosHabilitados
+
+        preciosHabilitados,
+
+        rutas
+
       ]
+
     );
 
 
   const adminProfileSummary = (
+
     <WorkspaceProfileIdentity
-      user={user}
-      roleLabel="Administrador"
+
+      user={
+        user
+      }
+
+      roleLabel="
+        Administrador
+      "
+
     />
+
   );
+
+
+  /*
+   * Navegación declarativa.
+   *
+   * Dashboard no utiliza navigate().
+   *
+   * Si una operación terminó y necesita
+   * llevar al usuario a Agenda, se establece
+   * redirectPath y el <Navigate /> de abajo
+   * realiza la navegación.
+   */
+
+  if (
+    redirectPath &&
+    location.pathname !==
+      redirectPath
+  ) {
+
+    return (
+
+      <Navigate
+
+        to={
+          redirectPath
+        }
+
+        replace
+
+      />
+
+    );
+
+  }
 
 
   return (
@@ -880,12 +1008,16 @@ export default function Dashboard({
     <AdminLayout>
 
       <Container
+
         maxWidth={false}
+
         disableGutters
+
         className="
           dashboard-shell
           has-admin-sidebar
         "
+
       >
 
         <Navbar
@@ -902,8 +1034,20 @@ export default function Dashboard({
             accessProfile
           }
 
-          onViewChange={
-            navegarA
+          /*
+           * La navegación administrativa
+           * pertenece a AdminSidebar.
+           *
+           * Navbar queda únicamente con
+           * funciones de sesión/perfil.
+           */
+
+          showNavigation={
+            false
+          }
+
+          showAdminNavigation={
+            false
           }
 
           onChangeProfile={
@@ -912,10 +1056,6 @@ export default function Dashboard({
 
           onLogout={
             onLogout
-          }
-
-          showAdminNavigation={
-            false
           }
 
           showMenuToggle={
@@ -929,8 +1069,6 @@ export default function Dashboard({
                 !current
             )
           }
-
-          showProfileBadge
 
           canChangeProfile={
             canChangeProfile
@@ -970,9 +1108,45 @@ export default function Dashboard({
                 activeView
               }
 
-              onViewChange={
-                navegarA
-              }
+              /*
+               * Este callback solamente maneja
+               * acciones que NO son rutas.
+               *
+               * Actualmente:
+               * new-booking.
+               *
+               * Los demás elementos son NavLink
+               * y no pasan por este callback.
+               */
+
+              onViewChange={(
+                view
+              ) => {
+
+                if (
+                  view !==
+                  'new-booking'
+                ) {
+
+                  return;
+                }
+
+
+                setNewBookingInitial(
+                  null
+                );
+
+
+                setIsNewBookingOpen(
+                  true
+                );
+
+
+                setSidebarOpen(
+                  false
+                );
+
+              }}
 
               open={
                 sidebarOpen
@@ -1061,6 +1235,7 @@ export default function Dashboard({
                   options
                 );
 
+
                 setIsNewBookingOpen(
                   true
                 );
@@ -1079,11 +1254,27 @@ export default function Dashboard({
                 notifyAdminDataChanged
               }
 
-              onCloseAttentionPageClose={() =>
-                navegarA(
-                  'agenda'
-                )
-              }
+              /*
+               * Cerrar atención termina una
+               * operación y vuelve a Agenda.
+               *
+               * Sigue siendo navegación
+               * declarativa.
+               */
+
+              onCloseAttentionPageClose={() => {
+
+                setAdminDataVersion(
+                  current =>
+                    current + 1
+                );
+
+
+                setRedirectPath(
+                  rutas.agenda
+                );
+
+              }}
 
               onCompanyContextRefresh={
                 onCompanyContextRefresh
@@ -1140,12 +1331,14 @@ export default function Dashboard({
                   current + 1
               );
 
+
               setIsNewBookingOpen(
                 false
               );
 
-              navegarA(
-                'agenda'
+
+              setRedirectPath(
+                rutas.agenda
               );
 
             }}
@@ -1155,6 +1348,9 @@ export default function Dashboard({
         )}
 
       </Container>
+
     </AdminLayout>
+
   );
+
 }

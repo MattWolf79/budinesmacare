@@ -43,6 +43,7 @@ import {
 
 
 export default function RutasAdministrador({
+
   companySlug,
 
   user,
@@ -82,26 +83,46 @@ export default function RutasAdministrador({
 }) {
 
   const propsBase = {
+
     user,
+
     companySlug,
+
     companyContext,
+
     adminProfileSummary
+
   };
 
 
   /*
    * IMPORTANTE
    *
-   * Este componente es el único responsable
-   * de decidir qué página administrativa se
-   * muestra según la URL actual.
+   * RutasAdministrador vive dentro del
+   * Dashboard administrativo.
    *
-   * Dashboard NO necesita renderizar manualmente
-   * ClientesPage, AgendaPage, etc.
+   * Por eso las rutas de <Route> deben ser
+   * RELATIVAS.
+   *
+   * Las URLs completas son responsabilidad
+   * de obtenerRutasAdministrador(), que usan
+   * Navbar y AdminSidebar para los NavLink.
+   *
+   * Ejemplo:
+   *
+   * AdminSidebar:
+   * /empresa/admin/clientes
+   *
+   * RutasAdministrador:
+   * clientes
+   *
+   * Esto permite que React Router resuelva
+   * correctamente la página.
    */
 
 
   return (
+
     <Routes>
 
       {/* =========================
@@ -109,24 +130,49 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.agenda}
+
+        path={
+          rutasAdministrador.agenda
+        }
+
         element={
+
           esModoPedido ? (
+
             <PedidosPage
+
               {...propsBase}
-              refreshKey={refreshKey}
+
+              refreshKey={
+                refreshKey
+              }
+
             />
+
           ) : (
+
             <AgendaPage
+
               {...propsBase}
-              refreshKey={refreshKey}
-              promotions={promotions}
+
+              refreshKey={
+                refreshKey
+              }
+
+              promotions={
+                promotions
+              }
+
               onRequestNewBooking={
                 onRequestNewBooking
               }
+
             />
+
           )
+
         }
+
       />
 
 
@@ -135,20 +181,41 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.pedidos}
-        element={
-          esModoPedido ? (
-            <PedidosPage
-              {...propsBase}
-              refreshKey={refreshKey}
-            />
-          ) : (
-            <Navigate
-              to={rutasAdministrador.agenda}
-              replace
-            />
-          )
+
+        path={
+          rutasAdministrador.pedidos
         }
+
+        element={
+
+          esModoPedido ? (
+
+            <PedidosPage
+
+              {...propsBase}
+
+              refreshKey={
+                refreshKey
+              }
+
+            />
+
+          ) : (
+
+            <Navigate
+
+              to={
+                rutasAdministrador.agenda
+              }
+
+              replace
+
+            />
+
+          )
+
+        }
+
       />
 
 
@@ -157,15 +224,25 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.clientes}
+
+        path={
+          rutasAdministrador.clientes
+        }
+
         element={
+
           <ClientesPage
+
             {...propsBase}
+
             onDataChanged={
               onDataChanged
             }
+
           />
+
         }
+
       />
 
 
@@ -174,15 +251,25 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.empleados}
+
+        path={
+          rutasAdministrador.empleados
+        }
+
         element={
+
           <EmpleadosPage
+
             {...propsBase}
+
             onDataChanged={
               onDataChanged
             }
+
           />
+
         }
+
       />
 
 
@@ -191,15 +278,25 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.servicios}
+
+        path={
+          rutasAdministrador.servicios
+        }
+
         element={
+
           <ServiciosPage
+
             {...propsBase}
+
             onDataChanged={
               onDataChanged
             }
+
           />
+
         }
+
       />
 
 
@@ -208,22 +305,41 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.sucursales}
+
+        path={
+          rutasAdministrador.sucursales
+        }
+
         element={
+
           sucursalesHabilitadas ? (
+
             <SucursalesPage
+
               {...propsBase}
+
               onDataChanged={
                 onBranchesChanged
               }
+
             />
+
           ) : (
+
             <Navigate
-              to={rutasAdministrador.agenda}
+
+              to={
+                rutasAdministrador.agenda
+              }
+
               replace
+
             />
+
           )
+
         }
+
       />
 
 
@@ -232,10 +348,17 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.bundles}
+
+        path={
+          rutasAdministrador.bundles
+        }
+
         element={
+
           bundlesHabilitados ? (
+
             <PacksPage
+
               {...propsBase}
 
               onDataChanged={
@@ -249,14 +372,25 @@ export default function RutasAdministrador({
               promosHabilitadas={
                 promocionesHabilitadas
               }
+
             />
+
           ) : (
+
             <Navigate
-              to={rutasAdministrador.agenda}
+
+              to={
+                rutasAdministrador.agenda
+              }
+
               replace
+
             />
+
           )
+
         }
+
       />
 
 
@@ -265,16 +399,25 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.configuracion}
+
+        path={
+          rutasAdministrador.configuracion
+        }
+
         element={
+
           <ConfiguracionPage
+
             {...propsBase}
 
             onCompanyContextRefresh={
               onCompanyContextRefresh
             }
+
           />
+
         }
+
       />
 
 
@@ -283,10 +426,17 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.pendientes}
+
+        path={
+          rutasAdministrador.pendientes
+        }
+
         element={
+
           !esModoPedido ? (
+
             <PendientesPage
+
               {...propsBase}
 
               refreshKey={
@@ -296,14 +446,25 @@ export default function RutasAdministrador({
               promotions={
                 promotions
               }
+
             />
+
           ) : (
+
             <Navigate
-              to={rutasAdministrador.agenda}
+
+              to={
+                rutasAdministrador.agenda
+              }
+
               replace
+
             />
+
           )
+
         }
+
       />
 
 
@@ -312,10 +473,17 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.cerrarAtencion}
+
+        path={
+          rutasAdministrador.cerrarAtencion
+        }
+
         element={
+
           preciosHabilitados ? (
+
             <CerrarAtencionPage
+
               {...propsBase}
 
               refreshKey={
@@ -333,14 +501,25 @@ export default function RutasAdministrador({
               onBookingsChanged={
                 onBookingsChanged
               }
+
             />
+
           ) : (
+
             <Navigate
-              to={rutasAdministrador.agenda}
+
+              to={
+                rutasAdministrador.agenda
+              }
+
               replace
+
             />
+
           )
+
         }
+
       />
 
 
@@ -349,10 +528,17 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={rutasAdministrador.disponibilidad}
+
+        path={
+          rutasAdministrador.disponibilidad
+        }
+
         element={
+
           !esModoPedido ? (
+
             <DisponibilidadPage
+
               {...propsBase}
 
               mode="admin"
@@ -360,14 +546,25 @@ export default function RutasAdministrador({
               onAvailabilityChanged={
                 onDataChanged
               }
+
             />
+
           ) : (
+
             <Navigate
-              to={rutasAdministrador.agenda}
+
+              to={
+                rutasAdministrador.agenda
+              }
+
               replace
+
             />
+
           )
+
         }
+
       />
 
 
@@ -376,15 +573,27 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
+
         path="*"
+
         element={
+
           <Navigate
-            to={rutasAdministrador.agenda}
+
+            to={
+              rutasAdministrador.agenda
+            }
+
             replace
+
           />
+
         }
+
       />
 
     </Routes>
+
   );
+
 }

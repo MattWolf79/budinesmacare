@@ -1295,7 +1295,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     const employeeResult = await supabase.rpc('delete_admin_employee', {
       employee_id_value: employee.id,
       account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
     });
 
     if (employeeResult.error) {
@@ -1315,7 +1316,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     const { data, error } = await supabase.rpc('reset_admin_employee_password', {
       employee_id_value: employee.id,
       account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
     }).single();
 
     if (error) {
@@ -1631,7 +1633,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     const serviceResult = await supabase.rpc('delete_admin_service', {
       service_id_value: service.id,
       account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
     });
 
     if (serviceResult.error) {
@@ -1651,7 +1654,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
       request_id_value: request.id,
       employee_id_value: null,
       account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
     });
 
     if (error) {
@@ -1674,7 +1678,8 @@ export default function AdminPanel({ view, user, onDataChanged, adminProfileSumm
     const { error } = await supabase.rpc('reject_internal_registration', {
       request_id_value: request.id,
       account_id_value: internalAdminAccountId,
-      session_token_value: internalSessionToken
+      session_token_value: internalSessionToken,
+      company_slug_value: companySlug
     });
 
     if (error) {

@@ -155,9 +155,9 @@ const addDays = (date, days) => {
 };
 
 const getWeekKey = (weekStart) => weekStart.toISOString().slice(0, 10);
-const getActivityHistoryModeStorageKey = (employeeId) => `turnos.employee.activity.mode.${employeeId || 'unknown'}`;
-const getActivityHistoryWeekStorageKey = (employeeId) => `turnos.employee.activity.week.${employeeId || 'unknown'}`;
-const getPaymentHistoryWeekStorageKey = (employeeId) => `turnos.employee.payment.week.${employeeId || 'unknown'}`;
+const getActivityHistoryModeStorageKey = (employeeId, companySlug) => `turnos.employee.activity.mode.${companySlug || 'company'}.${employeeId || 'unknown'}`;
+const getActivityHistoryWeekStorageKey = (employeeId, companySlug) => `turnos.employee.activity.week.${companySlug || 'company'}.${employeeId || 'unknown'}`;
+const getPaymentHistoryWeekStorageKey = (employeeId, companySlug) => `turnos.employee.payment.week.${companySlug || 'company'}.${employeeId || 'unknown'}`;
 
 const isDateInRange = (value, start, end) => {
   const date = parseDate(value);
@@ -362,7 +362,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
         setEmployeeServices(data?.employeeServices || []);
         setAvailability(data?.availability || []);
-        if (!preciosHabilitados) {
+        const loadedPricesEnabled = configResult.data?.configuracion_operativa?.precios_habilitados !== false;
+        if (!loadedPricesEnabled) {
           setClosedBookingAmounts({});
         } else if (Array.isArray(data?.bookingClosureItems) && Array.isArray(data?.bookingClosures)) {
           setClosedBookingAmounts(buildClosedBookingAmounts(employeeBookings, data.bookingClosureItems, data.bookingClosures));
@@ -372,17 +373,12 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
         return;
       }
 
-      const availabilityRequest = user?.isInternal
-        ? supabase.rpc('list_internal_employee_availability', {
-            account_id_value: user.id,
-            session_token_value: user.sessionToken
-          })
-        : supabase
-            .from('employee_availability')
-            .select('*')
-            .eq('employee_id', employeeId)
-            .order('weekday', { ascending: true })
-            .order('start_time', { ascending: true });
+      const availabilityRequest = supabase
+        .from('employee_availability')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .order('weekday', { ascending: true })
+        .order('start_time', { ascending: true });
 
       const [employeeResult, bookingsResult, servicesResult, employeeServicesResult, availabilityResult, configResult] = await Promise.all([
         supabase.from('employees').select('*').eq('id', employeeId).is('deleted_at', null).maybeSingle(),
@@ -418,7 +414,8 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
       setEmployeeServices(employeeServicesResult.data || []);
       setPromotions(Array.isArray(configResult.data?.promotions) ? configResult.data.promotions : []);
       setAvailability(availabilityResult.data || []);
-      if (preciosHabilitados) {
+      const loadedPricesEnabled = configResult.data?.configuracion_operativa?.precios_habilitados !== false;
+      if (loadedPricesEnabled) {
         await loadClosedBookingAmounts(bookingsResult.data || []);
       } else {
         setClosedBookingAmounts({});
@@ -790,9 +787,9 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
   useEffect(() => {
     if (!employeeId) return;
 
-    const storedMode = sessionStorage.getItem(getActivityHistoryModeStorageKey(employeeId));
-    const storedWeekKey = sessionStorage.getItem(getActivityHistoryWeekStorageKey(employeeId));
-    const storedPaymentWeekKey = sessionStorage.getItem(getPaymentHistoryWeekStorageKey(employeeId));
+    const storedMode = sessionStorage.getItem(getActivityHistoryModeStorageKey(employeeId, companySlug));
+    const storedWeekKey = sessionStorage.getItem(getActivityHistoryWeekStorageKey(employeeId, companySlug));
+    const storedPaymentWeekKey = sessionStorage.getItem(getPaymentHistoryWeekStorageKey(employeeId, companySlug));
 
     if (storedMode === 'week' || storedMode === 'all') {
       setActivityHistoryMode(storedMode);
@@ -805,22 +802,22 @@ export default function EmployeeDashboard({ user, activeView = 'summary', compan
     if (storedPaymentWeekKey) {
       setSelectedPaymentWeekKey(storedPaymentWeekKey);
     }
-  }, [employeeId]);
+  }, [employeeId, companySlug]);
 
   useEffect(() => {
     if (!employeeId) return;
-    sessionStorage.setItem(getActivityHistoryModeStorageKey(employeeId), activityHistoryMode);
-  }, [employeeId, activityHistoryMode]);
+    sessionStorage.setItem(getActivityHistoryModeStorageKey(employeeId, companySlug), activityHistoryMode);
+  }, [employeeId, companySlug, activityHistoryMode]);
 
   useEffect(() => {
     if (!employeeId || !selectedActivityWeekKey) return;
-    sessionStorage.setItem(getActivityHistoryWeekStorageKey(employeeId), selectedActivityWeekKey);
-  }, [employeeId, selectedActivityWeekKey]);
+    sessionStorage.setItem(getActivityHistoryWeekStorageKey(employeeId, companySlug), selectedActivityWeekKey);
+  }, [employeeId, companySlug, selectedActivityWeekKey]);
 
   useEffect(() => {
     if (!employeeId || !selectedPaymentWeekKey) return;
-    sessionStorage.setItem(getPaymentHistoryWeekStorageKey(employeeId), selectedPaymentWeekKey);
-  }, [employeeId, selectedPaymentWeekKey]);
+    sessionStorage.setItem(getPaymentHistoryWeekStorageKey(employeeId, companySlug), selectedPaymentWeekKey);
+  }, [employeeId, companySlug, selectedPaymentWeekKey]);
 
   const goToPreviousActivityWeek = () => {
     if (!canGoToPreviousActivityWeek) return;

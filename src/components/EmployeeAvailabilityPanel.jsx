@@ -147,9 +147,9 @@ export default function EmployeeAvailabilityPanel({
   const showBranchSelector = sucursalesHabilitadas && branches.length > 0;
   const getBranchName = (branchIdValue) =>
     branches.find((branch) => String(branch.id) === String(branchIdValue))?.name || 'Sucursal';
-  const availabilityFilterStorageKey = `turnos.availability.weekday.${isAdminMode ? 'admin' : employeeId || user?.id || 'employee'}`;
-  const employeeFilterStorageKey = `turnos.availability.employee.${companySlug || user?.id || 'admin'}`;
-  const branchFilterStorageKey = `turnos.availability.branch.${companySlug || user?.id || 'company'}`;
+  const availabilityFilterStorageKey = `turnos.availability.weekday.${companySlug || 'company'}.${isAdminMode ? 'admin' : employeeId || user?.id || 'employee'}`;
+  const employeeFilterStorageKey = `turnos.availability.employee.${companySlug || 'company'}`;
+  const branchFilterStorageKey = `turnos.availability.branch.${companySlug || 'company'}`;
   const [employees, setEmployees] = useState(adminEmployees);
   const [availability, setAvailability] = useState([]);
   const [form, setForm] = useState(() => ({
@@ -180,6 +180,28 @@ export default function EmployeeAvailabilityPanel({
   const [isAvailabilityFormOpen, setIsAvailabilityFormOpen] = useState(false);
   const [isEmployeeFilterOpen, setIsEmployeeFilterOpen] = useState(false);
   const [isBranchFilterOpen, setIsBranchFilterOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const savedWeekday = window.sessionStorage.getItem(availabilityFilterStorageKey);
+    setSelectedWeekdayFilter(isValidWeekdayFilter(savedWeekday) ? savedWeekday : 'all');
+
+    if (isAdminMode) {
+      setSelectedEmployeeFilter(window.sessionStorage.getItem(employeeFilterStorageKey) || 'all');
+    } else {
+      setSelectedEmployeeFilter('all');
+    }
+
+    const savedBranch = window.sessionStorage.getItem(branchFilterStorageKey) || 'all';
+    setSelectedBranchFilter(showBranchSelector ? savedBranch : 'all');
+  }, [
+    availabilityFilterStorageKey,
+    branchFilterStorageKey,
+    employeeFilterStorageKey,
+    isAdminMode,
+    showBranchSelector
+  ]);
 
   const selectedEmployeeId = isAdminMode
     ? (selectedEmployeeFilter === 'all' ? '' : selectedEmployeeFilter)
@@ -308,7 +330,15 @@ export default function EmployeeAvailabilityPanel({
   }, [employeeFilterStorageKey, employees, isAdminMode, selectedEmployeeFilter]);
 
   useEffect(() => {
-    if (!showBranchSelector || selectedBranchFilter === 'all') return;
+    if (!showBranchSelector) {
+      if (selectedBranchFilter !== 'all') {
+        setSelectedBranchFilter('all');
+        window.sessionStorage.setItem(branchFilterStorageKey, 'all');
+      }
+      return;
+    }
+
+    if (selectedBranchFilter === 'all') return;
     if (branches.some((branch) => String(branch.id) === String(selectedBranchFilter))) return;
 
     setSelectedBranchFilter('all');
