@@ -5,9 +5,9 @@ import {
 } from 'react';
 
 import {
+  matchPath,
   Outlet,
-  useLocation,
-  useNavigate
+  useLocation
 } from 'react-router-dom';
 
 import Navbar from '../components/Navbar';
@@ -34,67 +34,164 @@ const turnosAppLogo =
 
 /*
  * ============================================================
- * VISTA ACTIVA SEGÚN LA URL
+ * VISTA ACTIVA SEGÚN LA RUTA
  * ============================================================
  */
 
 const obtenerVistaEmpleado = (
-  pathname
+  pathname,
+  rutas
 ) => {
 
-  const path =
-    String(pathname || '')
-      .toLowerCase()
-      .replace(/\/+$/, '');
-
-
   if (
-    path.endsWith('/clientes')
+    matchPath(
+      {
+        path:
+          rutas.clientes,
+        end:
+          true
+      },
+      pathname
+    )
   ) {
+
     return 'clients';
   }
 
 
   if (
-    path.endsWith('/productos')
+    matchPath(
+      {
+        path:
+          rutas.productos,
+        end:
+          true
+      },
+      pathname
+    )
   ) {
+
     return 'products';
   }
 
 
   if (
-    path.endsWith('/disponibilidad')
+    matchPath(
+      {
+        path:
+          rutas.disponibilidad,
+        end:
+          true
+      },
+      pathname
+    )
   ) {
+
     return 'availability';
   }
 
 
   if (
-    path.endsWith('/perfil')
+    matchPath(
+      {
+        path:
+          rutas.perfil,
+        end:
+          true
+      },
+      pathname
+    )
   ) {
+
     return 'profile';
   }
 
 
   if (
-    path.endsWith('/cerrar-atencion')
+    matchPath(
+      {
+        path:
+          rutas.cerrarAtencion,
+        end:
+          true
+      },
+      pathname
+    )
   ) {
+
     return 'close-attention';
   }
 
 
+  /*
+   * Nueva reserva / nuevo pedido.
+   *
+   * Estas rutas siguen existiendo como rutas
+   * válidas, pero normalmente la apertura desde
+   * el menú se hace como popup sobre la vista
+   * actual.
+   */
+
   if (
-    path.endsWith('/nueva-reserva') ||
-    path.endsWith('/nuevo-pedido')
+    matchPath(
+      {
+        path:
+          rutas.nuevaReserva,
+        end:
+          true
+      },
+      pathname
+    ) ||
+    matchPath(
+      {
+        path:
+          rutas.nuevoPedido,
+        end:
+          true
+      },
+      pathname
+    )
   ) {
+
     return 'new-booking';
   }
 
 
   if (
-    path.endsWith('/agenda')
+    matchPath(
+      {
+        path:
+          rutas.agenda,
+        end:
+          true
+      },
+      pathname
+    )
   ) {
+
     return 'agenda';
+  }
+
+
+  /*
+   * Inicio:
+   *
+   * /:companySlug/empleado
+   */
+
+  if (
+    matchPath(
+      {
+        path:
+          rutas.inicio,
+        end:
+          true
+      },
+      pathname
+    )
+  ) {
+
+    return 'summary';
   }
 
 
@@ -216,11 +313,13 @@ const employeeHeroCopy = {
 
 const crearNavegacionEmpleado = ({
   esModoPedido,
-  empleadosPuedenReservar
+  empleadosPuedenReservar,
+  rutas
 }) => {
 
   const base =
     esModoPedido
+
       ? [
 
           {
@@ -234,7 +333,10 @@ const crearNavegacionEmpleado = ({
               'Resumen',
 
             icon:
-              '▦'
+              '▦',
+
+            path:
+              rutas.inicio
           },
 
           {
@@ -248,7 +350,10 @@ const crearNavegacionEmpleado = ({
               'Pedidos',
 
             icon:
-              '📋'
+              '📋',
+
+            path:
+              rutas.agenda
           },
 
           {
@@ -262,7 +367,10 @@ const crearNavegacionEmpleado = ({
               'Cerrar',
 
             icon:
-              '💳'
+              '💳',
+
+            path:
+              rutas.cerrarAtencion
           },
 
           {
@@ -276,7 +384,10 @@ const crearNavegacionEmpleado = ({
               'Clientes',
 
             icon:
-              '🙋'
+              '🙋',
+
+            path:
+              rutas.clientes
           },
 
           {
@@ -290,7 +401,10 @@ const crearNavegacionEmpleado = ({
               'Productos',
 
             icon:
-              '✨'
+              '✨',
+
+            path:
+              rutas.productos
           },
 
           {
@@ -304,7 +418,10 @@ const crearNavegacionEmpleado = ({
               'Perfil',
 
             icon:
-              '👤'
+              '👤',
+
+            path:
+              rutas.perfil
           }
 
         ]
@@ -322,7 +439,10 @@ const crearNavegacionEmpleado = ({
               'Resumen',
 
             icon:
-              '▦'
+              '▦',
+
+            path:
+              rutas.inicio
           },
 
           {
@@ -336,7 +456,10 @@ const crearNavegacionEmpleado = ({
               'Agenda',
 
             icon:
-              '📅'
+              '📅',
+
+            path:
+              rutas.agenda
           },
 
           {
@@ -350,7 +473,10 @@ const crearNavegacionEmpleado = ({
               'Cerrar',
 
             icon:
-              '💳'
+              '💳',
+
+            path:
+              rutas.cerrarAtencion
           },
 
           {
@@ -364,7 +490,10 @@ const crearNavegacionEmpleado = ({
               'Clientes',
 
             icon:
-              '🙋'
+              '🙋',
+
+            path:
+              rutas.clientes
           },
 
           {
@@ -378,7 +507,10 @@ const crearNavegacionEmpleado = ({
               'Perfil',
 
             icon:
-              '👤'
+              '👤',
+
+            path:
+              rutas.perfil
           },
 
           {
@@ -392,11 +524,24 @@ const crearNavegacionEmpleado = ({
               'Horario',
 
             icon:
-              '🕒'
+              '🕒',
+
+            path:
+              rutas.disponibilidad
           }
 
         ];
 
+
+  /*
+   * Nueva reserva / pedido es una ACCIÓN.
+   *
+   * No le ponemos path.
+   *
+   * De esta forma AdminSidebar no navega
+   * cuando se pulsa y EmployeeLayout abre
+   * el popup sobre la página actual.
+   */
 
   const conNuevaAccion =
     empleadosPuedenReservar
@@ -406,6 +551,7 @@ const crearNavegacionEmpleado = ({
           base[0],
 
           {
+
             id:
               'new-booking',
 
@@ -421,6 +567,7 @@ const crearNavegacionEmpleado = ({
 
             icon:
               '➕'
+
           },
 
           ...base.slice(1)
@@ -439,12 +586,13 @@ const crearNavegacionEmpleado = ({
     gruposSidebar: [
 
       {
+
         label:
           'MI ESPACIO',
 
         items:
           conNuevaAccion.map(
-            (item) => ({
+            item => ({
 
               id:
                 item.id,
@@ -453,10 +601,25 @@ const crearNavegacionEmpleado = ({
                 item.label,
 
               icon:
-                item.icon
+                item.icon,
+
+              /*
+               * IMPORTANTE:
+               *
+               * Las rutas del Sidebar del empleado
+               * son rutas de empleado, no de admin.
+               */
+
+              ...(item.path
+                ? {
+                    path:
+                      item.path
+                  }
+                : {})
 
             })
           )
+
       }
 
     ]
@@ -489,10 +652,6 @@ export default function EmployeeLayout({
 
   const location =
     useLocation();
-
-
-  const navigate =
-    useNavigate();
 
 
   const [
@@ -554,8 +713,16 @@ export default function EmployeeLayout({
    */
 
   const activeView =
-    obtenerVistaEmpleado(
-      location.pathname
+    useMemo(
+      () =>
+        obtenerVistaEmpleado(
+          location.pathname,
+          rutas
+        ),
+      [
+        location.pathname,
+        rutas
+      ]
     );
 
 
@@ -593,61 +760,18 @@ export default function EmployeeLayout({
     useMemo(
       () =>
         crearNavegacionEmpleado({
+
           esModoPedido,
-          empleadosPuedenReservar
+
+          empleadosPuedenReservar,
+
+          rutas
+
         }),
       [
         esModoPedido,
-        empleadosPuedenReservar
-      ]
-    );
-
-
-  /*
-   * ==========================================================
-   * MAPA ÚNICO DE NAVEGACIÓN
-   * ==========================================================
-   *
-   * Cada opción del menú apunta a UNA ruta.
-   *
-   * No usamos window.location.
-   * No usamos window.history.
-   */
-
-  const rutasPorVista =
-    useMemo(
-      () => ({
-
-        summary:
-          rutas.inicio,
-
-        agenda:
-          rutas.agenda,
-
-        clients:
-          rutas.clientes,
-
-        products:
-          rutas.productos,
-
-        availability:
-          rutas.disponibilidad,
-
-        profile:
-          rutas.perfil,
-
-        'close-attention':
-          rutas.cerrarAtencion,
-
-        'new-booking':
-          esModoPedido
-            ? rutas.nuevoPedido
-            : rutas.nuevaReserva
-
-      }),
-      [
-        rutas,
-        esModoPedido
+        empleadosPuedenReservar,
+        rutas
       ]
     );
 
@@ -699,7 +823,8 @@ export default function EmployeeLayout({
 
   useEffect(() => {
 
-    let activo = true;
+    let activo =
+      true;
 
 
     const cargarConfiguracion =
@@ -718,23 +843,32 @@ export default function EmployeeLayout({
           !activo ||
           error
         ) {
+
           return;
+
         }
 
 
         setCompanyName(
+
           String(
+
             data?.company_name ||
               companyContext?.company_name ||
               'QuieroTurnoApp'
+
           ).trim() ||
+
             'QuieroTurnoApp'
+
         );
 
 
         if (
+
           data?.welcome_background_data_url ||
           data?.welcome_background_public_url
+
         ) {
 
           setWelcomeBackground({
@@ -765,7 +899,9 @@ export default function EmployeeLayout({
 
     const actualizarConfiguracion =
       () => {
+
         cargarConfiguracion();
+
       };
 
 
@@ -777,7 +913,8 @@ export default function EmployeeLayout({
 
     return () => {
 
-      activo = false;
+      activo =
+        false;
 
 
       window.removeEventListener(
@@ -797,113 +934,18 @@ export default function EmployeeLayout({
    * ==========================================================
    * DETECCIÓN DE NUEVA RESERVA / PEDIDO
    * ==========================================================
+   *
+   * IMPORTANTE:
+   *
+   * Ya NO utilizamos la URL para abrir el popup.
+   *
+   * La apertura se controla mediante
+   * isNewBookingOpen.
+   *
+   * Esto permite que el popup aparezca
+   * sobre Clientes, Agenda, Perfil, etc.
+   * sin cambiar la página de fondo.
    */
-
-  useEffect(() => {
-
-    const esNuevaReserva =
-      location.pathname.endsWith(
-        '/nueva-reserva'
-      );
-
-
-    const esNuevoPedido =
-      location.pathname.endsWith(
-        '/nuevo-pedido'
-      );
-
-
-    const esNuevaOperacion =
-      esNuevaReserva ||
-      esNuevoPedido;
-
-
-    if (
-      !esNuevaOperacion
-    ) {
-
-      setIsNewBookingOpen(
-        false
-      );
-
-      return;
-
-    }
-
-
-    if (
-      !empleadosPuedenReservar
-    ) {
-
-      navigate(
-        rutas.agenda,
-        {
-          replace:
-            true
-        }
-      );
-
-      return;
-
-    }
-
-
-    setIsNewBookingOpen(
-      true
-    );
-
-  }, [
-    location.pathname,
-    empleadosPuedenReservar,
-    navigate,
-    rutas.agenda
-  ]);
-
-
-  /*
-   * ==========================================================
-   * NAVEGAR DESDE EL MENÚ
-   * ==========================================================
-   */
-
-  const navegarA =
-    (view) => {
-
-      setSidebarOpen(
-        false
-      );
-
-
-      const ruta =
-        rutasPorVista[
-          view
-        ];
-
-
-      if (
-        !ruta
-      ) {
-        return;
-      }
-
-
-      /*
-       * Si ya estamos en esa ruta,
-       * no hacemos nada.
-       */
-      if (
-        location.pathname ===
-        ruta
-      ) {
-        return;
-      }
-
-
-      navigate(
-        ruta
-      );
-
-    };
 
 
   /*
@@ -918,7 +960,9 @@ export default function EmployeeLayout({
       if (
         !empleadosPuedenReservar
       ) {
+
         return;
+
       }
 
 
@@ -927,28 +971,21 @@ export default function EmployeeLayout({
       );
 
 
-      const ruta =
-        esModoPedido
-          ? rutas.nuevoPedido
-          : rutas.nuevaReserva;
+      /*
+       * NO hacemos navigate().
+       *
+       * El popup aparece encima de la vista
+       * actual, exactamente como en Admin.
+       */
+
+      setIsNewBookingOpen(
+        true
+      );
 
 
-      if (
-        location.pathname !==
-        ruta
-      ) {
-
-        navigate(
-          ruta
-        );
-
-      } else {
-
-        setIsNewBookingOpen(
-          true
-        );
-
-      }
+      setSidebarOpen(
+        false
+      );
 
     };
 
@@ -957,6 +994,18 @@ export default function EmployeeLayout({
    * ==========================================================
    * CERRAR NUEVA RESERVA / PEDIDO
    * ==========================================================
+   *
+   * Al cerrar:
+   *
+   * - limpiamos los datos iniciales
+   * - cerramos el popup
+   * - NO navegamos
+   *
+   * Por lo tanto, si estábamos en Clientes,
+   * volvemos a ver Clientes.
+   *
+   * Si estábamos en Agenda,
+   * volvemos a Agenda.
    */
 
   const cerrarNuevaReserva =
@@ -970,22 +1019,6 @@ export default function EmployeeLayout({
       setIsNewBookingOpen(
         false
       );
-
-
-      if (
-        location.pathname !==
-        rutas.agenda
-      ) {
-
-        navigate(
-          rutas.agenda,
-          {
-            replace:
-              true
-          }
-        );
-
-      }
 
     };
 
@@ -1008,13 +1041,7 @@ export default function EmployeeLayout({
 
         ? 'Cerrar pedido'
 
-        : esModoPedido &&
-            activeView ===
-              'new-booking'
-
-          ? 'Nuevo pedido'
-
-          : heroCopy.title;
+        : heroCopy.title;
 
 
   const heroDescription =
@@ -1029,13 +1056,7 @@ export default function EmployeeLayout({
 
         ? 'Cerrá pedidos entregados, cargá medios de pago y generá el comprobante.'
 
-        : esModoPedido &&
-            activeView ===
-              'new-booking'
-
-          ? 'Creá un pedido para un cliente.'
-
-          : heroCopy.description;
+        : heroCopy.description;
 
 
   /*
@@ -1066,9 +1087,17 @@ export default function EmployeeLayout({
 
         accessProfile="employee"
 
-        onViewChange={
-          navegarA
-        }
+        /*
+         * Las acciones normales ya no pasan por
+         * onViewChange.
+         *
+         * AdminSidebar utiliza NavLink.
+         *
+         * Lo dejamos disponible por compatibilidad
+         * con componentes que eventualmente lo utilicen.
+         */
+
+        onViewChange={() => {}}
 
         onChangeProfile={
           onChangeProfile
@@ -1126,9 +1155,27 @@ export default function EmployeeLayout({
             activeView
           }
 
-          onViewChange={
-            navegarA
-          }
+          /*
+           * Solamente se utiliza para las acciones
+           * sin path, principalmente new-booking.
+           *
+           * Las rutas normales son NavLink.
+           */
+
+          onViewChange={(
+            view
+          ) => {
+
+            if (
+              view ===
+              'new-booking'
+            ) {
+
+              abrirNuevaReserva();
+
+            }
+
+          }}
 
           open={
             sidebarOpen
@@ -1146,6 +1193,10 @@ export default function EmployeeLayout({
 
           logoSrc={
             workspaceLogoSrc
+          }
+
+          companySlug={
+            companySlug
           }
 
         />
@@ -1205,8 +1256,10 @@ export default function EmployeeLayout({
           <Outlet
 
             context={{
+
               onRequestNewBooking:
                 abrirNuevaReserva
+
             }}
 
           />
@@ -1267,11 +1320,6 @@ export default function EmployeeLayout({
 
             setIsNewBookingOpen(
               false
-            );
-
-
-            navigate(
-              rutas.agenda
             );
 
           }}

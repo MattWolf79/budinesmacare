@@ -2,10 +2,6 @@ import {
   NavLink
 } from 'react-router-dom';
 
-import {
-  obtenerRutasAdministrador
-} from '../routes/rutasAplicacion';
-
 
 export default function AdminSidebar({
 
@@ -25,95 +21,89 @@ export default function AdminSidebar({
 
   logoSrc,
 
-  companySlug
+  companySlug,
+
+  /*
+   * Permite que el layout que utiliza el Sidebar
+   * resuelva sus propias rutas.
+   *
+   * Ejemplo:
+   *
+   * Administrador:
+   *   obtenerRutasAdministrador()
+   *
+   * Empleado:
+   *   obtenerRutasEmpleado()
+   *
+   * El Sidebar no necesita conocer ninguna
+   * de esas estructuras.
+   */
+  getItemPath
 
 }) {
 
-  /*
-   * Las rutas administrativas se resuelven
-   * directamente dentro del Sidebar.
-   *
-   * De esta manera Dashboard ya no necesita
-   * traducir:
-   *
-   *   clientes -> rutas.clientes
-   *   empleados -> rutas.empleados
-   *   etc.
-   *
-   * El Sidebar solamente necesita conocer
-   * el companySlug y el id del elemento.
-   */
-
-  const rutas =
-    obtenerRutasAdministrador(
-      companySlug
-    );
-
 
   /*
-   * Obtiene la ruta real correspondiente
-   * a un elemento del menú.
+   * ============================================================
+   * OBTENER RUTA DEL ITEM
+   * ============================================================
    *
-   * Si el elemento ya trae path,
-   * lo respetamos.
+   * Prioridad:
    *
-   * Esto mantiene compatibilidad con
-   * componentes que eventualmente sigan
-   * enviando rutas explícitas.
+   * 1. getItemPath() si fue proporcionado por el layout.
+   * 2. item.path si el grupo ya trae una ruta explícita.
+   *
+   * No se construyen rutas administrativas acá.
    */
 
   const obtenerPathItem =
     (item) => {
+
+      /*
+       * El layout puede resolver la ruta
+       * según el tipo de portal.
+       */
+
+      if (
+        typeof getItemPath ===
+        'function'
+      ) {
+
+        const path =
+          getItemPath(
+            item
+          );
+
+
+        if (
+          path
+        ) {
+
+          return path;
+
+        }
+
+      }
+
+
+      /*
+       * Compatibilidad:
+       *
+       * Si el item ya trae path,
+       * lo respetamos.
+       */
 
       if (
         item?.path
       ) {
 
         return item.path;
+
       }
 
 
-      const paths = {
+      return null;
 
-        agenda:
-          rutas.agenda,
-
-        clientes:
-          rutas.clientes,
-
-        empleados:
-          rutas.empleados,
-
-        servicios:
-          rutas.servicios,
-
-        sucursales:
-          rutas.sucursales,
-
-        bundles:
-          rutas.bundles,
-
-        configuracion:
-          rutas.configuracion,
-
-        pedidos:
-          rutas.pedidos,
-
-        pendientes:
-          rutas.pendientes,
-
-        cerrarAtencion:
-          rutas.cerrarAtencion,
-
-        disponibilidad:
-          rutas.disponibilidad
-
-      };
-
-
-      return paths[
-        item?.id
-      ] || null;
     };
 
 
@@ -272,8 +262,9 @@ export default function AdminSidebar({
                   item => {
 
                     /*
-                     * Resolvemos la ruta
-                     * directamente acá.
+                     * ==================================================
+                     * RESOLVER RUTA
+                     * ==================================================
                      */
 
                     const itemPath =
@@ -283,14 +274,18 @@ export default function AdminSidebar({
 
 
                     /*
-                     * Los elementos sin ruta
-                     * son acciones.
+                     * ==================================================
+                     * ACCIONES SIN RUTA
+                     * ==================================================
                      *
                      * Actualmente:
                      *
                      *   new-booking
                      *
-                     * abre NewBookingPanel.
+                     * Estas opciones NO son navegación.
+                     *
+                     * Abren un panel u otra acción proporcionada
+                     * por el layout.
                      */
 
                     if (
@@ -368,14 +363,16 @@ export default function AdminSidebar({
                         </button>
 
                       );
+
                     }
 
 
                     /*
-                     * Navegación real.
+                     * ==================================================
+                     * NAVEGACIÓN REAL
+                     * ==================================================
                      *
-                     * React Router es ahora el responsable
-                     * de cambiar de página.
+                     * React Router se encarga de la navegación.
                      *
                      * No usamos:
                      *
@@ -384,7 +381,7 @@ export default function AdminSidebar({
                      *   window.history
                      *
                      * Tampoco llamamos onViewChange()
-                     * para navegación normal.
+                     * para una navegación normal.
                      */
 
                     return (
@@ -401,9 +398,7 @@ export default function AdminSidebar({
 
                         end
 
-                        className={({
-                          isActive
-                        }) =>
+                        className={({ isActive }) =>
 
                           `
 
