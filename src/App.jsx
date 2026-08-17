@@ -1803,9 +1803,6 @@ function CompanyApp() {
     );
   }
 
-  console.log('companySlug', companySlug);
-console.log('pathname', pathname);
-console.log('companyContext', companyContext);
 
   if (!companyContext?.active) {
     return (
@@ -1979,9 +1976,7 @@ console.log('companyContext', companyContext);
       );
     }
   }
-  console.log('accessProfile =>', accessProfile);
-console.log('availableProfiles =>', availableProfiles);
-console.log('authProfile =>', authProfile);
+
   if (!accessProfile) {
     return (
       <RoleAccess
@@ -2039,10 +2034,7 @@ console.log('authProfile =>', authProfile);
       />
     );
   }
-  console.log('accessProfile', accessProfile);
-console.log('authProfile', authProfile);
-console.log('session', session);
-
+ 
   return (
     <RoleAccess
       user={authenticatedUser}

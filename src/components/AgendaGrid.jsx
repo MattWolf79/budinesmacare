@@ -14,8 +14,18 @@ import { formatDisplayDate } from '../utils/dateFormat';
 
 const SLOT_MINUTES = 30;
 // Cache de sucursales a nivel módulo — cambia solo cuando admin modifica sucursales
-const branchRelationsCache = { slug: null, data: null };
-export const invalidarCacheSucursales = () => { branchRelationsCache.slug = null; branchRelationsCache.data = null; };
+const branchRelationsCache = {
+  slug: null,
+  data: null
+};
+
+const branchRelationsInFlight = new Map();
+
+export const invalidarCacheSucursales = () => {
+  branchRelationsCache.slug = null;
+  branchRelationsCache.data = null;
+  branchRelationsInFlight.clear();
+};
 // Rango visible de la grilla: 1 hora antes de la apertura y 1 hora después
 // del cierre del negocio (apertura 09:00 / cierre 18:00) => de 08:00 a 19:00.
 const START_HOUR = 8;
@@ -1508,6 +1518,10 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   const [closureSurcharges, setClosureSurcharges] = useState([]);
   const [closurePromotions, setClosurePromotions] = useState(promotions);
   const [closeAttentionBookings, setCloseAttentionBookings] = useState(null);
+  // Evita repetir la misma carga cuando React monta el componente dos veces en desarrollo
+  // (StrictMode) o cuando dos efectos disparan la misma carga en paralelo.
+  const fetchAllInFlightRef = useRef(null);
+  const closeAttentionInFlightRef = useRef(null);
 
   const [dragStart, setDragStart] = useState(null);
   const [dragEnd, setDragEnd] = useState(null);
@@ -1650,9 +1664,12 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   }, []);
 
   const fetchAll = async () => {
-    if (user?.isLocalInternal) {
-      const mockData = buildLocalMockAgendaData(employeeId);
-      return [
+    if (fetchAllInFlightRef.current) return fetchAllInFlightRef.current;
+
+    const request = (async () => {
+      if (user?.isLocalInternal) {
+        const mockData = buildLocalMockAgendaData(employeeId);
+        return [
         { data: mockData.bookings, error: null },
         { data: mockData.services, error: null },
         { data: mockData.employees, error: null },
@@ -1690,7 +1707,7 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
           company_slug_value: companySlug
         })
       : Promise.resolve({ data: null, error: null });
-    const closureInvoicesRequest = isAdminView || (isEmployeeView && user?.isInternal)
+    const closureInvoicesRequest = !closeAttentionPage && (isAdminView || (isEmployeeView && user?.isInternal))
       ? supabase.rpc('get_booking_closure_invoices', {
           account_id_value: user?.isInternal ? user.id : null,
           session_token_value: user?.isInternal ? user.sessionToken : null,
@@ -1699,38 +1716,58 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
       : Promise.resolve({ data: [], error: null });
     const usesInternalEmployeeData = isEmployeeView && user?.isInternal;
 
-    const branchRelationsRequest = showBranchSelector
+    const branchRelationsRequest = !closeAttentionPage && showBranchSelector
       ? (branchRelationsCache.slug === companySlug && branchRelationsCache.data
           ? Promise.resolve({ data: branchRelationsCache.data, error: null })
-          : supabase.rpc('get_branch_relations', { company_slug_value: companySlug })
-              .then((result) => {
-                if (!result.error && result.data) {
-                  branchRelationsCache.slug = companySlug;
-                  branchRelationsCache.data = result.data;
-                }
-                return result;
-              }))
+          : branchRelationsInFlight.has(companySlug)
+            ? branchRelationsInFlight.get(companySlug)
+            : (() => {
+                const request = supabase.rpc('get_branch_relations', { company_slug_value: companySlug })
+                  .then((result) => {
+                    if (!result.error && result.data) {
+                      branchRelationsCache.slug = companySlug;
+                      branchRelationsCache.data = result.data;
+                    }
+                    return result;
+                  })
+                  .finally(() => {
+                    branchRelationsInFlight.delete(companySlug);
+                  });
+                branchRelationsInFlight.set(companySlug, request);
+                return request;
+              })())
       : Promise.resolve({ data: { branchServices: [], employeeBranches: [] }, error: null });
 
-    return Promise.all([
-      isAdminView || usesInternalEmployeeData
-        ? Promise.resolve({ data: null, error: null })
-        : isClientView
-          ? applyCompanyFilter(supabase
-              .from('bookings')
-              .select('*')
-              .in('status', ['confirmed', 'reserved', 'pending_assignment', 'waitlist', 'completed', 'closed'])
-            )
-          : applyCompanyFilter(supabase.from('bookings').select('*')),
-      isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('services').select('*')),
-      isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('employees').select('*').is('deleted_at', null)),
-      usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('employee_availability').select('*')),
-      adminDataRequest,
-      internalEmployeeDataRequest,
-      bookingOptionsRequest,
-      closureInvoicesRequest,
-      branchRelationsRequest
-    ]);
+      return Promise.all([
+        isAdminView || usesInternalEmployeeData
+          ? Promise.resolve({ data: null, error: null })
+          : isClientView
+            ? applyCompanyFilter(supabase
+                .from('bookings')
+                .select('*')
+                .in('status', ['confirmed', 'reserved', 'pending_assignment', 'waitlist', 'completed', 'closed'])
+              )
+            : applyCompanyFilter(supabase.from('bookings').select('*')),
+        isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('services').select('*')),
+        isAdminView || usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('employees').select('*').is('deleted_at', null)),
+        usesInternalEmployeeData || isClientView ? Promise.resolve({ data: null, error: null }) : applyCompanyFilter(supabase.from('employee_availability').select('*')),
+        adminDataRequest,
+        internalEmployeeDataRequest,
+        bookingOptionsRequest,
+        closureInvoicesRequest,
+        branchRelationsRequest
+      ]);
+    })();
+
+    fetchAllInFlightRef.current = request;
+
+    try {
+      return await request;
+    } finally {
+      if (fetchAllInFlightRef.current === request) {
+        fetchAllInFlightRef.current = null;
+      }
+    }
   };
 
   const applyAll = ([{ data: bk }, { data: srv }, { data: emp }, availabilityResult = {}, adminDataResult = {}, internalEmployeeDataResult = {}, bookingOptionsResult = {}, closureInvoicesResult = {}, branchRelationsResult = {}]) => {
@@ -1914,60 +1951,47 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
 
   const openCloseAttention = async () => {
     if (!preciosHabilitados) return;
+    if (closeAttentionInFlightRef.current) return closeAttentionInFlightRef.current;
 
-    const { data } = await obtenerConfiguracionApp(companySlug, { forzar: true });
+    const request = (async () => {
+      const { data } = await obtenerConfiguracionApp(companySlug);
 
-    if (closeAttentionPage && esModoPedido) {
-      if (user?.isLocalInternal) {
+      // En la página de cerrar atención no necesitamos volver a pedir
+      // get_admin_panel_data por separado. fetchAll ya centraliza esa carga.
+      if (closeAttentionPage && esModoPedido) {
         await loadAll();
-      } else if (user?.isInternal) {
-        const shouldLoadAdminPayload = !Array.isArray(services) || services.length === 0 || !Array.isArray(employees) || employees.length === 0;
-        if (shouldLoadAdminPayload) {
-          const { data: adminPayload } = await supabase.rpc('get_admin_panel_data', {
-            account_id_value: user.id,
-            session_token_value: user.sessionToken,
-            request_status_value: null,
-            company_slug_value: companySlug
-          });
+      }
 
-          if (Array.isArray(adminPayload?.bookings)) setBookings(adminPayload.bookings);
-          if (Array.isArray(adminPayload?.services)) setServices(adminPayload.services);
-          if (Array.isArray(adminPayload?.employees)) setEmployees(adminPayload.employees);
-          if (Array.isArray(adminPayload?.employeeServices)) setEmployeeServices(adminPayload.employeeServices);
-          if (Array.isArray(adminPayload?.availability)) setEmployeeAvailability(adminPayload.availability);
-        }
-      } else {
-        const { data: bookingOptionsData } = await supabase.rpc('get_client_booking_options', {
-          company_slug_value: companySlug
+      setCloseAttentionBookings(null);
+      if (esModoPedido && user?.isInternal && !user?.isLocalInternal && user?.sessionToken) {
+        const { data: pendingClosureData, error: pendingClosureError } = await supabase.rpc('get_pending_closure_bookings', {
+          account_id_value: user.id,
+          session_token_value: user.sessionToken,
+          company_slug_value: companySlug,
+          cutoff_date_value: formatDateOnlyForDb(new Date())
         });
 
-        if (Array.isArray(bookingOptionsData?.bookings)) setBookings(bookingOptionsData.bookings);
-        if (Array.isArray(bookingOptionsData?.services)) setServices(bookingOptionsData.services);
-        if (Array.isArray(bookingOptionsData?.employees)) setEmployees(bookingOptionsData.employees);
-        if (Array.isArray(bookingOptionsData?.employeeServices)) setEmployeeServices(bookingOptionsData.employeeServices);
-        if (Array.isArray(bookingOptionsData?.employeeAvailability)) setEmployeeAvailability(bookingOptionsData.employeeAvailability);
+        if (!pendingClosureError && Array.isArray(pendingClosureData)) {
+          setCloseAttentionBookings(pendingClosureData);
+        }
+      }
+
+      setClosureDiscounts(descuentosHabilitados && Array.isArray(data?.discounts) ? data.discounts : []);
+      setClosureSurcharges(recargosHabilitados && Array.isArray(data?.surcharges) ? data.surcharges : []);
+      setClosurePromotions(promocionesHabilitadas && Array.isArray(data?.promotions) ? data.promotions : []);
+      setCloseAttentionInitialDate(formatDateOnlyForDb(new Date()));
+      setCloseAttentionOpen(true);
+    })();
+
+    closeAttentionInFlightRef.current = request;
+
+    try {
+      return await request;
+    } finally {
+      if (closeAttentionInFlightRef.current === request) {
+        closeAttentionInFlightRef.current = null;
       }
     }
-
-    setCloseAttentionBookings(null);
-    if (esModoPedido && user?.isInternal && !user?.isLocalInternal && user?.sessionToken) {
-      const { data: pendingClosureData, error: pendingClosureError } = await supabase.rpc('get_pending_closure_bookings', {
-        account_id_value: user.id,
-        session_token_value: user.sessionToken,
-        company_slug_value: companySlug,
-        cutoff_date_value: formatDateOnlyForDb(new Date())
-      });
-
-      if (!pendingClosureError && Array.isArray(pendingClosureData)) {
-        setCloseAttentionBookings(pendingClosureData);
-      }
-    }
-
-    setClosureDiscounts(descuentosHabilitados && Array.isArray(data?.discounts) ? data.discounts : []);
-    setClosureSurcharges(recargosHabilitados && Array.isArray(data?.surcharges) ? data.surcharges : []);
-    setClosurePromotions(promocionesHabilitadas && Array.isArray(data?.promotions) ? data.promotions : []);
-    setCloseAttentionInitialDate(formatDateOnlyForDb(new Date()));
-    setCloseAttentionOpen(true);
   };
 
   useEffect(() => {
@@ -1979,6 +2003,8 @@ export default function AgendaGrid({ user, refreshKey, accessProfile = 'admin', 
   useEffect(() => {
     let active = true;
 
+    // En modo pedido y en la página dedicada de cierre, openCloseAttention()
+    // ya ejecuta la carga única necesaria. Evitamos una segunda carga completa.
     if (closeAttentionPage && esModoPedido) {
       return () => {
         active = false;
