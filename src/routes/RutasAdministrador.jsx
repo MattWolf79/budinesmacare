@@ -4,7 +4,6 @@ import {
   Routes
 } from 'react-router-dom';
 
-
 import AgendaPage
   from '../pages/admin/AgendaPage';
 
@@ -38,14 +37,12 @@ import CerrarAtencionPage
 import DisponibilidadPage
   from '../pages/admin/DisponibilidadPage';
 
-
 import {
   rutasAdministrador
 } from './rutasAplicacion';
 
 
 export default function RutasAdministrador({
-
   companySlug,
 
   user,
@@ -84,22 +81,27 @@ export default function RutasAdministrador({
 
 }) {
 
-
   const propsBase = {
-
     user,
-
     companySlug,
-
     companyContext,
-
     adminProfileSummary
-
   };
 
 
-  return (
+  /*
+   * IMPORTANTE
+   *
+   * Este componente es el único responsable
+   * de decidir qué página administrativa se
+   * muestra según la URL actual.
+   *
+   * Dashboard NO necesita renderizar manualmente
+   * ClientesPage, AgendaPage, etc.
+   */
 
+
+  return (
     <Routes>
 
       {/* =========================
@@ -107,40 +109,23 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.agenda
-        }
+        path={rutasAdministrador.agenda}
         element={
-
           esModoPedido ? (
-
             <PedidosPage
               {...propsBase}
-              refreshKey={
-                refreshKey
-              }
+              refreshKey={refreshKey}
             />
-
           ) : (
-
             <AgendaPage
               {...propsBase}
-
-              refreshKey={
-                refreshKey
-              }
-
-              promotions={
-                promotions
-              }
-
+              refreshKey={refreshKey}
+              promotions={promotions}
               onRequestNewBooking={
                 onRequestNewBooking
               }
             />
-
           )
-
         }
       />
 
@@ -150,30 +135,19 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.pedidos
-        }
+        path={rutasAdministrador.pedidos}
         element={
-
           esModoPedido ? (
-
             <PedidosPage
               {...propsBase}
-
-              refreshKey={
-                refreshKey
-              }
+              refreshKey={refreshKey}
             />
-
           ) : (
-
             <Navigate
-              to="../agenda"
+              to={rutasAdministrador.agenda}
               replace
             />
-
           )
-
         }
       />
 
@@ -183,19 +157,14 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.clientes
-        }
+        path={rutasAdministrador.clientes}
         element={
-
           <ClientesPage
             {...propsBase}
-
             onDataChanged={
               onDataChanged
             }
           />
-
         }
       />
 
@@ -205,19 +174,14 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.empleados
-        }
+        path={rutasAdministrador.empleados}
         element={
-
           <EmpleadosPage
             {...propsBase}
-
             onDataChanged={
               onDataChanged
             }
           />
-
         }
       />
 
@@ -227,19 +191,14 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.servicios
-        }
+        path={rutasAdministrador.servicios}
         element={
-
           <ServiciosPage
             {...propsBase}
-
             onDataChanged={
               onDataChanged
             }
           />
-
         }
       />
 
@@ -249,30 +208,21 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.sucursales
-        }
+        path={rutasAdministrador.sucursales}
         element={
-
           sucursalesHabilitadas ? (
-
             <SucursalesPage
               {...propsBase}
-
               onDataChanged={
                 onBranchesChanged
               }
             />
-
           ) : (
-
             <Navigate
-              to="../agenda"
+              to={rutasAdministrador.agenda}
               replace
             />
-
           )
-
         }
       />
 
@@ -282,13 +232,9 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.bundles
-        }
+        path={rutasAdministrador.bundles}
         element={
-
           bundlesHabilitados ? (
-
             <PacksPage
               {...propsBase}
 
@@ -304,16 +250,12 @@ export default function RutasAdministrador({
                 promocionesHabilitadas
               }
             />
-
           ) : (
-
             <Navigate
-              to="../agenda"
+              to={rutasAdministrador.agenda}
               replace
             />
-
           )
-
         }
       />
 
@@ -323,11 +265,8 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.configuracion
-        }
+        path={rutasAdministrador.configuracion}
         element={
-
           <ConfiguracionPage
             {...propsBase}
 
@@ -335,7 +274,6 @@ export default function RutasAdministrador({
               onCompanyContextRefresh
             }
           />
-
         }
       />
 
@@ -345,13 +283,9 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.pendientes
-        }
+        path={rutasAdministrador.pendientes}
         element={
-
           !esModoPedido ? (
-
             <PendientesPage
               {...propsBase}
 
@@ -363,16 +297,12 @@ export default function RutasAdministrador({
                 promotions
               }
             />
-
           ) : (
-
             <Navigate
-              to="../agenda"
+              to={rutasAdministrador.agenda}
               replace
             />
-
           )
-
         }
       />
 
@@ -382,13 +312,9 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.cerrarAtencion
-        }
+        path={rutasAdministrador.cerrarAtencion}
         element={
-
           preciosHabilitados ? (
-
             <CerrarAtencionPage
               {...propsBase}
 
@@ -408,16 +334,12 @@ export default function RutasAdministrador({
                 onBookingsChanged
               }
             />
-
           ) : (
-
             <Navigate
-              to="../agenda"
+              to={rutasAdministrador.agenda}
               replace
             />
-
           )
-
         }
       />
 
@@ -427,13 +349,9 @@ export default function RutasAdministrador({
           ========================= */}
 
       <Route
-        path={
-          rutasAdministrador.disponibilidad
-        }
+        path={rutasAdministrador.disponibilidad}
         element={
-
           !esModoPedido ? (
-
             <DisponibilidadPage
               {...propsBase}
 
@@ -443,16 +361,12 @@ export default function RutasAdministrador({
                 onDataChanged
               }
             />
-
           ) : (
-
             <Navigate
-              to="../agenda"
+              to={rutasAdministrador.agenda}
               replace
             />
-
           )
-
         }
       />
 
@@ -464,16 +378,13 @@ export default function RutasAdministrador({
       <Route
         path="*"
         element={
-
           <Navigate
-            to="agenda"
+            to={rutasAdministrador.agenda}
             replace
           />
-
         }
       />
 
     </Routes>
-
   );
 }

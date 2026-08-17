@@ -5,6 +5,7 @@ import {
 } from 'react';
 
 import {
+  matchPath,
   useLocation,
   useNavigate
 } from 'react-router-dom';
@@ -18,11 +19,14 @@ import {
   obtenerConfiguracionApp
 } from '../api/configuracionApp';
 
-import Navbar from '../components/Navbar';
+import Navbar
+  from '../components/Navbar';
 
-import AdminSidebar from '../components/AdminSidebar';
+import AdminSidebar
+  from '../components/AdminSidebar';
 
-import NewBookingPanel from '../components/NewBookingPanel';
+import NewBookingPanel
+  from '../components/NewBookingPanel';
 
 import {
   invalidarCacheSucursales
@@ -45,58 +49,6 @@ import {
 
 const turnosAppLogo =
   '/logo-quieroturnoapp.png';
-
-
-const obtenerVistaAdministrador = (
-  pathname
-) => {
-  const path =
-    String(pathname || '')
-      .toLowerCase()
-      .replace(/\/+$/, '');
-
-  if (path.endsWith('/clientes')) {
-    return 'clientes';
-  }
-
-  if (path.endsWith('/empleados')) {
-    return 'empleados';
-  }
-
-  if (path.endsWith('/servicios')) {
-    return 'servicios';
-  }
-
-  if (path.endsWith('/sucursales')) {
-    return 'sucursales';
-  }
-
-  if (path.endsWith('/configuracion')) {
-    return 'configuracion';
-  }
-
-  if (path.endsWith('/bundles')) {
-    return 'bundles';
-  }
-
-  if (path.endsWith('/pedidos')) {
-    return 'agenda';
-  }
-
-  if (path.endsWith('/pendientes')) {
-    return 'pendientes';
-  }
-
-  if (path.endsWith('/cerrar-atencion')) {
-    return 'cerrarAtencion';
-  }
-
-  if (path.endsWith('/disponibilidad')) {
-    return 'disponibilidad';
-  }
-
-  return 'agenda';
-};
 
 
 export default function Dashboard({
@@ -147,6 +99,10 @@ export default function Dashboard({
   ] = useState([]);
 
 
+  /*
+   * Configuración operativa.
+   */
+
   const configuracionOperativa =
     companyContext?.configuracion_operativa ||
     {};
@@ -184,6 +140,10 @@ export default function Dashboard({
     promocionesHabilitadas;
 
 
+  /*
+   * Datos de empresa.
+   */
+
   const companyName =
     companyContext?.company_name ||
     companyContext?.name ||
@@ -202,19 +162,13 @@ export default function Dashboard({
 
 
   /*
-   * La vista activa SIEMPRE sale
-   * de la URL actual.
+   * Generamos las rutas administrativas
+   * una sola vez por empresa.
+   *
+   * Estas rutas son las que utiliza
+   * React Router realmente.
    */
-  const activeView =
-    obtenerVistaAdministrador(
-      location.pathname
-    );
 
-
-  /*
-   * Generamos una sola vez las URLs
-   * mientras no cambie la empresa.
-   */
   const rutas =
     useMemo(
       () =>
@@ -228,11 +182,191 @@ export default function Dashboard({
 
 
   /*
-   * Cargar promociones.
+   * Vista activa del menú.
    *
    * IMPORTANTE:
-   * no actualizamos companyContext acá.
+   *
+   * Ya no analizamos manualmente
+   * location.pathname con endsWith().
+   *
+   * Usamos matchPath de React Router.
+   *
+   * Esto hace que la URL sea la fuente
+   * real de la navegación.
    */
+
+  const activeView =
+    useMemo(
+      () => {
+
+        const pathname =
+          location.pathname;
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.clientes,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'clientes';
+        }
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.empleados,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'empleados';
+        }
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.servicios,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'servicios';
+        }
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.sucursales,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'sucursales';
+        }
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.configuracion,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'configuracion';
+        }
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.bundles,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'bundles';
+        }
+
+
+        /*
+         * Pedidos utiliza la misma opción
+         * visual "agenda".
+         */
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.pedidos,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'agenda';
+        }
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.pendientes,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'pendientes';
+        }
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.cerrarAtencion,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'cerrarAtencion';
+        }
+
+
+        if (
+          matchPath(
+            {
+              path:
+                rutas.disponibilidad,
+              end: true
+            },
+            pathname
+          )
+        ) {
+          return 'disponibilidad';
+        }
+
+
+        /*
+         * Agenda es el estado visual
+         * predeterminado.
+         */
+
+        return 'agenda';
+
+      },
+      [
+        location.pathname,
+        rutas
+      ]
+    );
+
+
+  /*
+   * Cargar promociones.
+   */
+
   useEffect(() => {
 
     let activo = true;
@@ -283,6 +417,7 @@ export default function Dashboard({
   /*
    * Promociones disponibles.
    */
+
   const enabledPromotions =
     useMemo(
       () =>
@@ -337,9 +472,9 @@ export default function Dashboard({
 
 
   /*
-   * Notificación general
-   * de cambios administrativos.
+   * Cambios administrativos.
    */
+
   const notifyAdminDataChanged =
     () => {
 
@@ -351,9 +486,9 @@ export default function Dashboard({
 
 
   /*
-   * Notificación de cambios
-   * de sucursales.
+   * Cambios de sucursales.
    */
+
   const notifyBranchesChanged =
     () => {
 
@@ -373,23 +508,20 @@ export default function Dashboard({
   /*
    * Navegación administrativa.
    *
-   * IMPORTANTE:
+   * Toda navegación pasa por navigate().
    *
-   * NO usar:
-   *
-   * window.location
-   * window.history
-   *
-   * porque provocaría recargas
-   * y puede volver a generar loops.
+   * Nunca usamos window.location.
+   * Nunca usamos window.history.
    */
+
   const navegarA =
     (view) => {
 
       /*
-       * Nueva reserva / pedido
-       * abre un panel, no una URL.
+       * Nuevo turno / pedido:
+       * abre panel, no cambia URL.
        */
+
       if (
         view ===
         'new-booking'
@@ -454,6 +586,11 @@ export default function Dashboard({
       }
 
 
+      /*
+       * Al volver a agenda queremos que
+       * los componentes puedan refrescar.
+       */
+
       if (
         view ===
         'agenda'
@@ -472,8 +609,9 @@ export default function Dashboard({
 
 
       /*
-       * ÚNICA navegación.
+       * Evitamos navegación innecesaria.
        */
+
       if (
         location.pathname !==
         ruta
@@ -489,6 +627,7 @@ export default function Dashboard({
   /*
    * Menú administrativo.
    */
+
   const adminNavGroups =
     useMemo(
       () => {
@@ -750,7 +889,10 @@ export default function Dashboard({
       >
 
         <Navbar
-          user={user}
+
+          user={
+            user
+          }
 
           activeView={
             activeView
@@ -805,6 +947,7 @@ export default function Dashboard({
           companyName={
             companyName
           }
+
         />
 
 
@@ -921,6 +1064,7 @@ export default function Dashboard({
                 setIsNewBookingOpen(
                   true
                 );
+
               }}
 
               onDataChanged={
@@ -1003,6 +1147,7 @@ export default function Dashboard({
               navegarA(
                 'agenda'
               );
+
             }}
 
           />
@@ -1010,8 +1155,6 @@ export default function Dashboard({
         )}
 
       </Container>
-
     </AdminLayout>
-
   );
 }
