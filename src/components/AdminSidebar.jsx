@@ -4,363 +4,160 @@ import {
 
 
 export default function AdminSidebar({
-
   groups = [],
-
   activeView,
-
   onViewChange,
-
   open = false,
-
   onClose,
-
-  backgroundImageSrc,
-
-  companyName,
-
-  logoSrc,
-
-  companySlug,
-
-  /*
-   * Permite que el layout que utiliza el Sidebar
-   * resuelva sus propias rutas.
-   *
-   * Ejemplo:
-   *
-   * Administrador:
-   *   obtenerRutasAdministrador()
-   *
-   * Empleado:
-   *   obtenerRutasEmpleado()
-   *
-   * El Sidebar no necesita conocer ninguna
-   * de esas estructuras.
-   */
-  getItemPath
-
+  backgroundImageSrc
 }) {
-
-
-  /*
-   * ============================================================
-   * OBTENER RUTA DEL ITEM
-   * ============================================================
-   *
-   * Prioridad:
-   *
-   * 1. getItemPath() si fue proporcionado por el layout.
-   * 2. item.path si el grupo ya trae una ruta explícita.
-   *
-   * No se construyen rutas administrativas acá.
-   */
-
-  const obtenerPathItem =
-    (item) => {
-
-      /*
-       * El layout puede resolver la ruta
-       * según el tipo de portal.
-       */
-
-      if (
-        typeof getItemPath ===
-        'function'
-      ) {
-
-        const path =
-          getItemPath(
-            item
-          );
-
-
-        if (
-          path
-        ) {
-
-          return path;
-
-        }
-
-      }
-
-
-      /*
-       * Compatibilidad:
-       *
-       * Si el item ya trae path,
-       * lo respetamos.
-       */
-
-      if (
-        item?.path
-      ) {
-
-        return item.path;
-
-      }
-
-
-      return null;
-
-    };
-
 
   return (
 
     <>
 
       <div
-
-        className={`
-          admin-sidebar-overlay
-          ${
-            open
-              ? 'is-open'
-              : ''
-          }
-        `}
-
+        className={`admin-sidebar-overlay ${
+          open
+            ? 'is-open'
+            : ''
+        }`}
         onClick={
           onClose
         }
-
         aria-hidden="true"
-
       />
 
 
       <aside
-
-        className={`
-
-          admin-sidebar
-
-          ${
-            backgroundImageSrc
-              ? 'has-sidebar-background'
-              : ''
-          }
-
-          ${
-            open
-              ? 'is-open'
-              : ''
-          }
-
-        `.trim()}
-
-        style={
-
+        className={`admin-sidebar ${
           backgroundImageSrc
-
+            ? 'has-sidebar-background'
+            : ''
+        } ${
+          open
+            ? 'is-open'
+            : ''
+        }`.trim()}
+        style={
+          backgroundImageSrc
             ? {
                 '--sidebar-background-image':
                   `url("${backgroundImageSrc}")`
               }
-
             : undefined
-
         }
-
-        aria-label="
-          Menú administrador
-        "
-
+        aria-label="Menú administrador"
       >
 
-        <div
-          className="
-            admin-sidebar-brand
-          "
-        >
+        <div className="admin-sidebar-brand">
 
-          <span
-            className="
-              admin-sidebar-brand-title
-            "
-          >
-
+          <span className="admin-sidebar-brand-title">
             MENÚ
-
           </span>
 
 
           <button
-
-            className="
-              admin-sidebar-close
-            "
-
+            className="admin-sidebar-close"
             type="button"
-
             onClick={
               onClose
             }
-
-            aria-label="
-              Cerrar menú
-            "
-
+            aria-label="Cerrar menú"
           >
-
             ✕
-
           </button>
 
         </div>
 
 
-        <nav
-          className="
-            admin-sidebar-nav
-          "
-        >
+        <nav className="admin-sidebar-nav">
 
           {groups.map(
-            group => (
+            (group) => (
 
               <div
-
                 key={
                   group.label ||
                   'main'
                 }
-
-                className="
-                  admin-sidebar-group
-                "
-
+                className="admin-sidebar-group"
               >
 
                 {group.label && (
 
-                  <span
-
-                    className="
-                      admin-sidebar-group-label
-                    "
-
-                  >
-
-                    {
-                      group.label
-                    }
-
+                  <span className="admin-sidebar-group-label">
+                    {group.label}
                   </span>
 
                 )}
 
 
-                {(Array.isArray(
-                  group.items
-                )
-                  ? group.items
-                  : []
-                ).map(
-                  item => {
+                {group.items.map(
+                  (item) => {
 
                     /*
-                     * ==================================================
-                     * RESOLVER RUTA
-                     * ==================================================
-                     */
-
-                    const itemPath =
-                      obtenerPathItem(
-                        item
-                      );
-
-
-                    /*
-                     * ==================================================
-                     * ACCIONES SIN RUTA
-                     * ==================================================
+                     * Los elementos con path son
+                     * verdaderas rutas de React Router.
                      *
-                     * Actualmente:
+                     * Ejemplo:
                      *
-                     *   new-booking
+                     * /empresa/admin/agenda
+                     * /empresa/admin/clientes
                      *
-                     * Estas opciones NO son navegación.
+                     * NavLink se encarga de:
                      *
-                     * Abren un panel u otra acción proporcionada
-                     * por el layout.
+                     * - navegar
+                     * - marcar la ruta activa
+                     * - conservar historial
+                     * - evitar navegación manual
                      */
 
                     if (
-                      !itemPath
+                      item.path
                     ) {
 
                       return (
 
-                        <button
-
+                        <NavLink
                           key={
                             item.id
                           }
-
-                          type="button"
-
-                          className={`
-
-                            admin-sidebar-item
-
-                            ${
-                              activeView ===
-                              item.id
-
+                          to={
+                            item.path
+                          }
+                          end
+                          className={({
+                            isActive
+                          }) =>
+                            `admin-sidebar-item ${
+                              isActive
                                 ? 'is-active'
-
                                 : ''
-                            }
-
-                          `}
-
-                          onClick={() => {
-
-                            onViewChange?.(
-                              item.id
-                            );
-
-                            onClose?.();
-
-                          }}
-
+                            }`
+                          }
+                          onClick={
+                            onClose
+                          }
                         >
 
                           <span
-
-                            className="
-                              admin-sidebar-item-icon
-                            "
-
+                            className="admin-sidebar-item-icon"
                             aria-hidden="true"
-
                           >
-
                             {
                               item.icon
                             }
-
                           </span>
 
 
-                          <span
-
-                            className="
-                              admin-sidebar-item-label
-                            "
-
-                          >
-
+                          <span className="admin-sidebar-item-label">
                             {
                               item.label
                             }
-
                           </span>
 
-                        </button>
+                        </NavLink>
 
                       );
 
@@ -368,100 +165,57 @@ export default function AdminSidebar({
 
 
                     /*
-                     * ==================================================
-                     * NAVEGACIÓN REAL
-                     * ==================================================
+                     * Los elementos sin path no son
+                     * navegación.
                      *
-                     * React Router se encarga de la navegación.
+                     * Actualmente:
                      *
-                     * No usamos:
+                     * - new-booking
                      *
-                     *   navigate()
-                     *   window.location
-                     *   window.history
-                     *
-                     * Tampoco llamamos onViewChange()
-                     * para una navegación normal.
+                     * Ese elemento abre un panel/modal,
+                     * por lo que sigue utilizando
+                     * onViewChange.
                      */
 
                     return (
 
-                      <NavLink
-
+                      <button
                         key={
                           item.id
                         }
+                        type="button"
+                        className={`admin-sidebar-item ${
+                          activeView ===
+                          item.id
+                            ? 'is-active'
+                            : ''
+                        }`}
+                        onClick={() => {
 
-                        to={
-                          itemPath
-                        }
-
-                        end
-
-                        className={({ isActive }) =>
-
-                          `
-
-                            admin-sidebar-item
-
-                            ${
-                              isActive
-                                ? 'is-active'
-                                : ''
-                            }
-
-                          `
-
-                        }
-
-                        style={{
-
-                          textDecoration:
-                            'none',
-
-                          color:
-                            'inherit'
+                          onViewChange?.(
+                            item.id
+                          );
 
                         }}
-
-                        onClick={
-                          onClose
-                        }
-
                       >
 
                         <span
-
-                          className="
-                            admin-sidebar-item-icon
-                          "
-
+                          className="admin-sidebar-item-icon"
                           aria-hidden="true"
-
                         >
-
                           {
                             item.icon
                           }
-
                         </span>
 
 
-                        <span
-
-                          className="
-                            admin-sidebar-item-label
-                          "
-
-                        >
-
+                        <span className="admin-sidebar-item-label">
                           {
                             item.label
                           }
-
                         </span>
 
-                      </NavLink>
+                      </button>
 
                     );
 

@@ -9653,23 +9653,50 @@ body .role-workspace-client .admin-sidebar.has-sidebar-background {
   font-weight: 700;
   text-align: left;
   cursor: pointer;
+
+  /* Protección para NavLink de React Router */
+  text-decoration: none !important;
 }
 
 .admin-sidebar-item:hover {
   background: #eef6f7;
+  text-decoration: none !important;
+}
+
+.admin-sidebar-item:focus,
+.admin-sidebar-item:active {
+  text-decoration: none !important;
 }
 
 .admin-sidebar-item.is-active {
   color: #0f5560;
   background: #d9f1f4;
+  text-decoration: none !important;
 }
 
+/*
+ * Protección adicional:
+ * AdminSidebar utiliza NavLink, que renderiza
+ * elementos <a>. Evitamos cualquier subrayado
+ * que pueda venir de estilos globales del sitio.
+ */
+.admin-sidebar a.admin-sidebar-item,
+.admin-sidebar a.admin-sidebar-item:hover,
+.admin-sidebar a.admin-sidebar-item:focus,
+.admin-sidebar a.admin-sidebar-item:active,
+.admin-sidebar a.admin-sidebar-item.is-active {
+  color: inherit;
+  text-decoration: none !important;
+}
+
+/*
+ * Icono del elemento del menú.
+ */
 .admin-sidebar-item-icon {
   width: 22px;
   font-size: 17px;
   text-align: center;
 }
-
 .role-workspace-employee.has-role-sidebar {
   padding: 0;
 }

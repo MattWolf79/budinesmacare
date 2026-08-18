@@ -122,14 +122,14 @@ function ProductosEmpleadoPage(
 
 /*
  * ============================================================
- * RUTAS DEL EMPLEADO
+ * ROUTER EMPLEADO
  * ============================================================
  *
- * Este router está montado dentro de:
+ * Este router se monta desde CompanyApp dentro de:
  *
  *   /:companySlug/empleado/*
  *
- * Por eso las rutas declaradas acá son RELATIVAS.
+ * Las rutas declaradas aquí son RELATIVAS.
  *
  * Ejemplo:
  *
@@ -137,12 +137,8 @@ function ProductosEmpleadoPage(
  *
  * termina siendo:
  *
- *   /miempresa/empleado/agenda
+ *   /empresa/empleado/agenda
  *
- * La generación de URLs completas queda a cargo
- * de obtenerRutasEmpleado(), que utilizan los
- * componentes que necesitan navegar desde fuera
- * de este árbol de rutas, como el Sidebar.
  * ============================================================
  */
 
@@ -152,29 +148,19 @@ export default function RutasEmpleado(
 
   /*
    * ==========================================================
-   * URL CANÓNICA DEL PORTAL EMPLEADO
+   * URL CANÓNICA DEL PORTAL
    * ==========================================================
    *
-   * Es importante NO utilizar:
+   * La utilizamos únicamente para el fallback final.
    *
-   *   <Navigate to="agenda" />
+   * De esta manera, si alguien entra a:
    *
-   * en el fallback.
+   *   /empresa/empleado/cualquier-cosa
    *
-   * "agenda" sería una navegación relativa y podría
-   * terminar generando:
-   *
-   *   /empleado/cualquiercosa/agenda
-   *   /empleado/cualquiercosa/agenda/agenda
-   *   /empleado/cualquiercosa/agenda/agenda/agenda
-   *
-   * etc.
-   *
-   * En cambio, obtenemos la URL completa del portal:
+   * volvemos directamente a:
    *
    *   /empresa/empleado
    *
-   * y siempre volvemos ahí.
    * ==========================================================
    */
 
@@ -192,7 +178,12 @@ export default function RutasEmpleado(
 
     <Routes>
 
+      {/* ==================================================
+          LAYOUT DEL EMPLEADO
+          ================================================== */}
+
       <Route
+
         element={
 
           <EmployeeLayout
@@ -200,6 +191,7 @@ export default function RutasEmpleado(
           />
 
         }
+
       >
 
         {/* ==================================================
@@ -423,26 +415,18 @@ export default function RutasEmpleado(
             FALLBACK
             ==================================================
             
-            IMPORTANTE:
-            
-            Si alguien entra a:
-            
-              /empresa/empleado/cualquiercosa
-            
-            NO debemos hacer:
-            
-              Navigate to="agenda"
-            
-            porque eso es relativo y produciría:
-            
-              /empresa/empleado/cualquiercosa/agenda
-            
-            y luego el mismo fallback volvería a ejecutarse.
-            
-            En cambio volvemos directamente a:
-            
+            Volvemos a la raíz canónica del empleado.
+
+            NO usamos:
+
+              <Navigate to="agenda" />
+
+            porque eso sería relativo.
+
+            Usamos la URL completa:
+
               /empresa/empleado
-            
+
             ================================================== */}
 
         <Route

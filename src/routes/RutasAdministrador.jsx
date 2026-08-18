@@ -5,6 +5,7 @@ import {
   useOutletContext
 } from 'react-router-dom';
 
+
 import Dashboard
   from '../pages/Dashboard';
 
@@ -41,6 +42,7 @@ import CerrarAtencionPage
 import DisponibilidadPage
   from '../pages/admin/DisponibilidadPage';
 
+
 import {
   rutasAdministrador
 } from './rutasAplicacion';
@@ -48,31 +50,28 @@ import {
 
 /*
  * ============================================================
- * CONTENIDO DEL ROUTER ADMINISTRADOR
+ * CONTENIDO DEL ADMINISTRADOR
  * ============================================================
+ *
+ * Dashboard funciona como layout.
+ *
+ * El Outlet de Dashboard recibe este contenido.
  *
  * IMPORTANTE:
  *
- * Este componente vive dentro de Dashboard.
+ * Las rutas son relativas al portal:
  *
- * Por eso las rutas de <Route> son RELATIVAS:
+ *   /empresa/admin
  *
- *   agenda
- *   clientes
- *   empleados
+ * Por lo tanto:
  *
- * y los redirects internos también son relativos:
+ *   path="agenda"
  *
- *   ../agenda
+ * termina siendo:
  *
- * No utilizamos las URLs completas generadas por
- * obtenerRutasAdministrador() dentro de los Navigate.
+ *   /empresa/admin/agenda
  *
- * Esto evita que una ruta inválida como:
- *
- *   /empresa/admin/agenda/cualquier-cosa
- *
- * pueda terminar concatenando "agenda" infinitamente.
+ * ============================================================
  */
 
 function RutasAdministradorContenido() {
@@ -100,8 +99,9 @@ function RutasAdministradorContenido() {
 
 
   /*
-   * Props compartidas por las páginas
-   * administrativas.
+   * ==========================================================
+   * PROPS COMUNES
+   * ==========================================================
    */
 
   const propsBase = {
@@ -118,18 +118,18 @@ function RutasAdministradorContenido() {
 
 
   /*
-   * ============================================================
+   * ==========================================================
    * ROUTES
-   * ============================================================
+   * ==========================================================
    */
 
   return (
 
     <Routes>
 
-      {/* =========================
+      {/* ==================================================
           AGENDA
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -178,9 +178,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           PEDIDOS
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -219,9 +219,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           CLIENTES
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -246,9 +246,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           EMPLEADOS
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -273,9 +273,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           SERVICIOS / PRODUCTOS
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -300,9 +300,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           SUCURSALES
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -341,9 +341,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           PACKS / PROMOS
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -390,9 +390,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           CONFIGURACIÓN
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -417,9 +417,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           PENDIENTES
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -462,9 +462,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           CERRAR ATENCIÓN
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -515,9 +515,9 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           DISPONIBILIDAD
-          ========================= */}
+          ================================================== */}
 
       <Route
 
@@ -558,25 +558,22 @@ function RutasAdministradorContenido() {
       />
 
 
-      {/* =========================
+      {/* ==================================================
           FALLBACK
-          =========================
+          ==================================================
           
-          Cualquier URL inválida dentro
-          del administrador vuelve a AGENDA.
+          Si se llega a una URL desconocida dentro
+          del administrador, volvemos a agenda.
           
           Ejemplo:
-          
-          /empresa/admin/agenda/xxx
-          
+
+            /empresa/admin/cualquier-cosa
+
           termina en:
-          
-          /empresa/admin/agenda
-          
-          y NO:
-          
-          /empresa/admin/agenda/agenda/...
-      */}
+
+            /empresa/admin/agenda
+
+          ================================================== */}
 
       <Route
 
@@ -608,10 +605,11 @@ function RutasAdministradorContenido() {
  * ROUTER PRINCIPAL DEL ADMINISTRADOR
  * ============================================================
  *
- * Dashboard funciona como layout.
+ * Dashboard es el layout.
  *
- * Las páginas administrativas se renderizan
- * mediante Outlet.
+ * Su Outlet recibe RutasAdministradorContenido.
+ *
+ * ============================================================
  */
 
 export default function RutasAdministrador(
@@ -625,9 +623,11 @@ export default function RutasAdministrador(
       <Route
 
         element={
+
           <Dashboard
             {...props}
           />
+
         }
 
       >
@@ -637,7 +637,9 @@ export default function RutasAdministrador(
           path="*"
 
           element={
+
             <RutasAdministradorContenido />
+
           }
 
         />

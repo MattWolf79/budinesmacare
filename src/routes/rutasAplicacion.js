@@ -5,6 +5,7 @@
  */
 
 export const rutasAdministrador = {
+
   agenda:
     'agenda',
 
@@ -37,6 +38,7 @@ export const rutasAdministrador = {
 
   disponibilidad:
     'disponibilidad'
+
 };
 
 
@@ -47,6 +49,7 @@ export const rutasAdministrador = {
  */
 
 export const rutasCliente = {
+
   inicio:
     'inicio',
 
@@ -58,6 +61,7 @@ export const rutasCliente = {
 
   perfil:
     'perfil'
+
 };
 
 
@@ -68,6 +72,13 @@ export const rutasCliente = {
  */
 
 export const rutasEmpleado = {
+
+  /*
+   * La raíz del empleado no tiene segmento adicional.
+   *
+   * /empresa/empleado
+   */
+
   inicio:
     '',
 
@@ -94,6 +105,7 @@ export const rutasEmpleado = {
 
   nuevoPedido:
     'nuevo-pedido'
+
 };
 
 
@@ -103,9 +115,25 @@ export const rutasEmpleado = {
  * ============================================================
  */
 
+
+/*
+ * Normaliza el slug de empresa.
+ *
+ * Ejemplos:
+ *
+ *   " Empresa "
+ *   "/Empresa/"
+ *   "EMPRESA"
+ *
+ * terminan como:
+ *
+ *   "empresa"
+ */
+
 const normalizarSlug = (
   companySlug
 ) =>
+
   String(
     companySlug || ''
   )
@@ -117,11 +145,18 @@ const normalizarSlug = (
     );
 
 
+/*
+ * Construye URLs completas a partir
+ * de una ruta base y un objeto de rutas.
+ */
+
 const crearRutasConBase = (
   base,
   rutas
 ) =>
+
   Object.fromEntries(
+
     Object.entries(
       rutas
     ).map(
@@ -138,6 +173,7 @@ const crearRutasConBase = (
 
       ]
     )
+
   );
 
 
@@ -146,16 +182,21 @@ const crearRutasConBase = (
  * RUTAS ADMINISTRADOR - URL COMPLETA
  * ============================================================
  *
- * Estas rutas se utilizan para navegar
- * mediante React Router.
+ * Estas rutas se utilizan cuando necesitamos
+ * navegar mediante una URL completa.
  *
- * Ejemplo:
+ * Ejemplos:
  *
- * /esteticatopbody/admin
- * /esteticatopbody/admin/agenda
- * /esteticatopbody/admin/clientes
- * /esteticatopbody/admin/empleados
+ *   /esteticatopbody/admin
+ *   /esteticatopbody/admin/agenda
+ *   /esteticatopbody/admin/clientes
  *
+ * IMPORTANTE:
+ *
+ * Dentro de <Route path="..."> utilizamos
+ * rutasAdministrador, no estas URLs completas.
+ *
+ * ============================================================
  */
 
 export const obtenerRutasAdministrador = (
@@ -176,6 +217,7 @@ export const obtenerRutasAdministrador = (
     base,
     rutasAdministrador
   );
+
 };
 
 
@@ -203,6 +245,7 @@ export const obtenerRutasCliente = (
     base,
     rutasCliente
   );
+
 };
 
 
@@ -230,4 +273,5 @@ export const obtenerRutasEmpleado = (
     base,
     rutasEmpleado
   );
+
 };
