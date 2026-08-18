@@ -47,9 +47,25 @@ const turnosAppLogo =
 
 
 /*
- * Layout del portal administrativo. El nombre Dashboard se conserva
- * temporalmente, pero las páginas ahora se montan con Outlet.
+ * ============================================================
+ * LAYOUT ADMINISTRATIVO
+ * ============================================================
+ *
+ * Dashboard es únicamente el layout del portal administrador.
+ *
+ * Las páginas se renderizan mediante <Outlet />.
+ *
+ * La navegación pertenece a React Router:
+ *
+ * - AdminSidebar -> NavLink
+ * - RutasAdministrador -> Route
+ * - Navigate -> redirecciones declarativas
+ *
+ * Dashboard conserva solamente el estado compartido
+ * y las funciones necesarias para las páginas hijas.
+ * ============================================================
  */
+
 export default function Dashboard({
 
   user,
@@ -74,11 +90,23 @@ export default function Dashboard({
     useLocation();
 
 
+  /*
+   * ==========================================================
+   * ESTADO DEL SIDEBAR
+   * ==========================================================
+   */
+
   const [
     sidebarOpen,
     setSidebarOpen
   ] = useState(false);
 
+
+  /*
+   * ==========================================================
+   * NUEVA RESERVA / PEDIDO
+   * ==========================================================
+   */
 
   const [
     isNewBookingOpen,
@@ -92,11 +120,23 @@ export default function Dashboard({
   ] = useState(null);
 
 
+  /*
+   * ==========================================================
+   * VERSIÓN DE DATOS ADMINISTRATIVOS
+   * ==========================================================
+   */
+
   const [
     adminDataVersion,
     setAdminDataVersion
   ] = useState(0);
 
+
+  /*
+   * ==========================================================
+   * PROMOCIONES
+   * ==========================================================
+   */
 
   const [
     promotions,
@@ -105,19 +145,15 @@ export default function Dashboard({
 
 
   /*
-   * Redirección declarativa.
+   * ==========================================================
+   * REDIRECCIÓN DECLARATIVA
+   * ==========================================================
    *
-   * Dashboard NO utiliza navigate().
+   * Se utiliza solamente cuando una operación finaliza
+   * y necesita llevar al administrador a otra ruta.
    *
-   * Esta variable solamente se utiliza para
-   * operaciones que terminan y necesitan
-   * llevar al usuario a otra página:
-   *
-   * - creación de reserva/pedido
-   * - cierre de atención
-   *
-   * La navegación real la realiza React Router
-   * mediante <Navigate />.
+   * La navegación real la realiza <Navigate />.
+   * ==========================================================
    */
 
   const [
@@ -127,7 +163,9 @@ export default function Dashboard({
 
 
   /*
-   * Configuración operativa.
+   * ==========================================================
+   * CONFIGURACIÓN OPERATIVA
+   * ==========================================================
    */
 
   const configuracionOperativa =
@@ -168,7 +206,9 @@ export default function Dashboard({
 
 
   /*
-   * Datos de empresa.
+   * ==========================================================
+   * DATOS DE EMPRESA
+   * ==========================================================
    */
 
   const companyName =
@@ -189,11 +229,22 @@ export default function Dashboard({
 
 
   /*
-   * Rutas administrativas.
+   * ==========================================================
+   * RUTAS ADMINISTRATIVAS
+   * ==========================================================
    *
-   * Estas rutas son la única fuente
-   * utilizada por los componentes de
-   * navegación administrativa.
+   * obtenerRutasAdministrador() devuelve URLs completas:
+   *
+   * /empresa/admin
+   * /empresa/admin/agenda
+   * /empresa/admin/clientes
+   *
+   * Se utilizan para:
+   *
+   * - NavLink
+   * - matchPath
+   * - Navigate
+   * ==========================================================
    */
 
   const rutas =
@@ -209,18 +260,15 @@ export default function Dashboard({
 
 
   /*
-   * Vista activa.
+   * ==========================================================
+   * VISTA ACTIVA
+   * ==========================================================
    *
    * Esto NO navega.
    *
-   * Solamente determina qué opción debe
-   * mostrarse activa cuando estamos dentro
-   * del Dashboard administrativo.
-   *
-   * La navegación real la hacen:
-   *
-   * - AdminSidebar -> NavLink
-   * - React Router
+   * Solamente determina qué elemento del Sidebar debe
+   * aparecer como activo según la URL actual.
+   * ==========================================================
    */
 
   const activeView =
@@ -244,6 +292,7 @@ export default function Dashboard({
         ) {
 
           return 'clientes';
+
         }
 
 
@@ -260,6 +309,7 @@ export default function Dashboard({
         ) {
 
           return 'empleados';
+
         }
 
 
@@ -276,6 +326,7 @@ export default function Dashboard({
         ) {
 
           return 'servicios';
+
         }
 
 
@@ -292,6 +343,7 @@ export default function Dashboard({
         ) {
 
           return 'sucursales';
+
         }
 
 
@@ -308,6 +360,7 @@ export default function Dashboard({
         ) {
 
           return 'configuracion';
+
         }
 
 
@@ -324,11 +377,12 @@ export default function Dashboard({
         ) {
 
           return 'bundles';
+
         }
 
 
         /*
-         * En modo pedido la página de pedidos
+         * En modo pedido, la pantalla de pedidos
          * ocupa visualmente la opción "agenda".
          */
 
@@ -345,6 +399,7 @@ export default function Dashboard({
         ) {
 
           return 'agenda';
+
         }
 
 
@@ -361,6 +416,7 @@ export default function Dashboard({
         ) {
 
           return 'agenda';
+
         }
 
 
@@ -377,6 +433,7 @@ export default function Dashboard({
         ) {
 
           return 'pendientes';
+
         }
 
 
@@ -393,6 +450,7 @@ export default function Dashboard({
         ) {
 
           return 'cerrarAtencion';
+
         }
 
 
@@ -409,6 +467,7 @@ export default function Dashboard({
         ) {
 
           return 'disponibilidad';
+
         }
 
 
@@ -423,9 +482,9 @@ export default function Dashboard({
 
 
   /*
-   * Limpia la redirección declarativa
-   * cuando React Router ya llegó a
-   * la URL solicitada.
+   * ==========================================================
+   * LIMPIAR REDIRECCIÓN
+   * ==========================================================
    */
 
   useEffect(() => {
@@ -439,6 +498,7 @@ export default function Dashboard({
       setRedirectPath(
         null
       );
+
     }
 
   }, [
@@ -448,7 +508,9 @@ export default function Dashboard({
 
 
   /*
-   * Cargar promociones.
+   * ==========================================================
+   * CARGAR CONFIGURACIÓN / PROMOCIONES
+   * ==========================================================
    */
 
   useEffect(() => {
@@ -475,6 +537,7 @@ export default function Dashboard({
         ) {
 
           return;
+
         }
 
 
@@ -505,7 +568,9 @@ export default function Dashboard({
 
 
   /*
-   * Promociones disponibles.
+   * ==========================================================
+   * PROMOCIONES DISPONIBLES
+   * ==========================================================
    */
 
   const enabledPromotions =
@@ -572,7 +637,9 @@ export default function Dashboard({
 
 
   /*
-   * Cambios administrativos.
+   * ==========================================================
+   * CAMBIOS ADMINISTRATIVOS
+   * ==========================================================
    */
 
   const notifyAdminDataChanged =
@@ -587,7 +654,9 @@ export default function Dashboard({
 
 
   /*
-   * Cambios de sucursales.
+   * ==========================================================
+   * CAMBIOS DE SUCURSALES
+   * ==========================================================
    */
 
   const notifyBranchesChanged =
@@ -608,15 +677,15 @@ export default function Dashboard({
 
 
   /*
-   * Menú administrativo.
+   * ==========================================================
+   * MENÚ ADMINISTRATIVO
+   * ==========================================================
    *
-   * Las páginas tienen path.
+   * Los elementos que tienen "path" son navegados por
+   * AdminSidebar mediante NavLink.
    *
-   * AdminSidebar utiliza NavLink
-   * directamente para esos elementos.
-   *
-   * El único elemento sin path es
-   * new-booking, porque abre un panel.
+   * "new-booking" no tiene path porque abre un panel.
+   * ==========================================================
    */
 
   const adminNavGroups =
@@ -951,6 +1020,12 @@ export default function Dashboard({
     );
 
 
+  /*
+   * ==========================================================
+   * IDENTIDAD DEL ADMINISTRADOR
+   * ==========================================================
+   */
+
   const adminProfileSummary = (
 
     <WorkspaceProfileIdentity
@@ -959,9 +1034,7 @@ export default function Dashboard({
         user
       }
 
-      roleLabel="
-        Administrador
-      "
+      roleLabel="Administrador"
 
     />
 
@@ -969,42 +1042,86 @@ export default function Dashboard({
 
 
   /*
-   * Navegación declarativa.
-   *
-   * Dashboard no utiliza navigate().
-   *
-   * Si una operación terminó y necesita
-   * llevar al usuario a Agenda, se establece
-   * redirectPath y el <Navigate /> de abajo
-   * realiza la navegación.
+   * ==========================================================
+   * CONTEXTO DEL OUTLET
+   * ==========================================================
    */
 
   const adminRouteContext = {
+
     companySlug,
+
     user,
+
     companyContext,
+
     adminProfileSummary,
-    refreshKey: adminDataVersion,
-    promotions: enabledPromotions,
+
+    refreshKey:
+      adminDataVersion,
+
+    promotions:
+      enabledPromotions,
+
     esModoPedido,
+
     preciosHabilitados,
+
     sucursalesHabilitadas,
+
     bundlesHabilitados,
+
     packsHabilitados,
+
     promocionesHabilitadas,
-    onRequestNewBooking: (options = null) => {
-      setNewBookingInitial(options);
-      setIsNewBookingOpen(true);
-    },
-    onDataChanged: notifyAdminDataChanged,
-    onBranchesChanged: notifyBranchesChanged,
-    onBookingsChanged: notifyAdminDataChanged,
-    onCloseAttentionPageClose: () => {
-      setAdminDataVersion((current) => current + 1);
-      setRedirectPath(rutas.agenda);
-    },
+
+    onRequestNewBooking:
+      (options = null) => {
+
+        setNewBookingInitial(
+          options
+        );
+
+        setIsNewBookingOpen(
+          true
+        );
+
+      },
+
+    onDataChanged:
+      notifyAdminDataChanged,
+
+    onBranchesChanged:
+      notifyBranchesChanged,
+
+    onBookingsChanged:
+      notifyAdminDataChanged,
+
+    onCloseAttentionPageClose:
+      () => {
+
+        setAdminDataVersion(
+          current =>
+            current + 1
+        );
+
+
+        setRedirectPath(
+          rutas.agenda
+        );
+
+      },
+
     onCompanyContextRefresh
+
   };
+
+
+  /*
+   * ==========================================================
+   * REDIRECCIÓN DECLARATIVA
+   * ==========================================================
+   */
 
   if (
     redirectPath &&
@@ -1028,6 +1145,12 @@ export default function Dashboard({
 
   }
 
+
+  /*
+   * ==========================================================
+   * RENDER
+   * ==========================================================
+   */
 
   return (
 
@@ -1059,14 +1182,6 @@ export default function Dashboard({
           accessProfile={
             accessProfile
           }
-
-          /*
-           * La navegación administrativa
-           * pertenece a AdminSidebar.
-           *
-           * Navbar queda únicamente con
-           * funciones de sesión/perfil.
-           */
 
           showNavigation={
             false
@@ -1134,17 +1249,6 @@ export default function Dashboard({
                 activeView
               }
 
-              /*
-               * Este callback solamente maneja
-               * acciones que NO son rutas.
-               *
-               * Actualmente:
-               * new-booking.
-               *
-               * Los demás elementos son NavLink
-               * y no pasan por este callback.
-               */
-
               onViewChange={(
                 view
               ) => {
@@ -1155,6 +1259,7 @@ export default function Dashboard({
                 ) {
 
                   return;
+
                 }
 
 
@@ -1203,7 +1308,11 @@ export default function Dashboard({
             "
           >
 
-            <Outlet context={adminRouteContext} />
+            <Outlet
+              context={
+                adminRouteContext
+              }
+            />
 
           </Box>
 

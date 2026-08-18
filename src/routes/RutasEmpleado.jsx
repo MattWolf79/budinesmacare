@@ -27,8 +27,8 @@ import DisponibilidadPage
 
 
 import {
-  obtenerRutasEmpleado,
-  rutasEmpleado
+  rutasEmpleado,
+  obtenerRutasEmpleado
 } from './rutasAplicacion';
 
 
@@ -124,16 +124,69 @@ function ProductosEmpleadoPage(
  * ============================================================
  * RUTAS DEL EMPLEADO
  * ============================================================
+ *
+ * Este router está montado dentro de:
+ *
+ *   /:companySlug/empleado/*
+ *
+ * Por eso las rutas declaradas acá son RELATIVAS.
+ *
+ * Ejemplo:
+ *
+ *   path="agenda"
+ *
+ * termina siendo:
+ *
+ *   /miempresa/empleado/agenda
+ *
+ * La generación de URLs completas queda a cargo
+ * de obtenerRutasEmpleado(), que utilizan los
+ * componentes que necesitan navegar desde fuera
+ * de este árbol de rutas, como el Sidebar.
+ * ============================================================
  */
 
 export default function RutasEmpleado(
   props
 ) {
 
-  const rutasCompletas =
+  /*
+   * ==========================================================
+   * URL CANÓNICA DEL PORTAL EMPLEADO
+   * ==========================================================
+   *
+   * Es importante NO utilizar:
+   *
+   *   <Navigate to="agenda" />
+   *
+   * en el fallback.
+   *
+   * "agenda" sería una navegación relativa y podría
+   * terminar generando:
+   *
+   *   /empleado/cualquiercosa/agenda
+   *   /empleado/cualquiercosa/agenda/agenda
+   *   /empleado/cualquiercosa/agenda/agenda/agenda
+   *
+   * etc.
+   *
+   * En cambio, obtenemos la URL completa del portal:
+   *
+   *   /empresa/empleado
+   *
+   * y siempre volvemos ahí.
+   * ==========================================================
+   */
+
+  const employeeRoutes =
     obtenerRutasEmpleado(
       props.companySlug
     );
+
+
+  const employeeRootPath =
+    employeeRoutes.inicio;
+
 
   return (
 
@@ -368,6 +421,28 @@ export default function RutasEmpleado(
 
         {/* ==================================================
             FALLBACK
+            ==================================================
+            
+            IMPORTANTE:
+            
+            Si alguien entra a:
+            
+              /empresa/empleado/cualquiercosa
+            
+            NO debemos hacer:
+            
+              Navigate to="agenda"
+            
+            porque eso es relativo y produciría:
+            
+              /empresa/empleado/cualquiercosa/agenda
+            
+            y luego el mismo fallback volvería a ejecutarse.
+            
+            En cambio volvemos directamente a:
+            
+              /empresa/empleado
+            
             ================================================== */}
 
         <Route
@@ -378,8 +453,8 @@ export default function RutasEmpleado(
 
             <Navigate
 
-            to={
-                rutasCompletas.agenda
+              to={
+                employeeRootPath
               }
 
               replace

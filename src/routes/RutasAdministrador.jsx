@@ -42,16 +42,44 @@ import DisponibilidadPage
   from '../pages/admin/DisponibilidadPage';
 
 import {
-  obtenerRutasAdministrador,
   rutasAdministrador
 } from './rutasAplicacion';
 
 
+/*
+ * ============================================================
+ * CONTENIDO DEL ROUTER ADMINISTRADOR
+ * ============================================================
+ *
+ * IMPORTANTE:
+ *
+ * Este componente vive dentro de Dashboard.
+ *
+ * Por eso las rutas de <Route> son RELATIVAS:
+ *
+ *   agenda
+ *   clientes
+ *   empleados
+ *
+ * y los redirects internos también son relativos:
+ *
+ *   ../agenda
+ *
+ * No utilizamos las URLs completas generadas por
+ * obtenerRutasAdministrador() dentro de los Navigate.
+ *
+ * Esto evita que una ruta inválida como:
+ *
+ *   /empresa/admin/agenda/cualquier-cosa
+ *
+ * pueda terminar concatenando "agenda" infinitamente.
+ */
+
 function RutasAdministradorContenido() {
 
   const {
-    companySlug,
     user,
+    companySlug,
     companyContext,
     adminProfileSummary,
     refreshKey,
@@ -70,10 +98,11 @@ function RutasAdministradorContenido() {
     onCompanyContextRefresh
   } = useOutletContext();
 
-  const rutasCompletas =
-    obtenerRutasAdministrador(
-      companySlug
-    );
+
+  /*
+   * Props compartidas por las páginas
+   * administrativas.
+   */
 
   const propsBase = {
 
@@ -89,31 +118,10 @@ function RutasAdministradorContenido() {
 
 
   /*
-   * IMPORTANTE
-   *
-   * Las páginas viven dentro del layout
-   * administrativo y reciben sus datos
-   * mediante Outlet context.
-   *
-   * Por eso las rutas de <Route> deben ser
-   * RELATIVAS.
-   *
-   * Las URLs completas son responsabilidad
-   * de obtenerRutasAdministrador(), que usan
-   * Navbar y AdminSidebar para los NavLink.
-   *
-   * Ejemplo:
-   *
-   * AdminSidebar:
-   * /empresa/admin/clientes
-   *
-   * RutasAdministrador:
-   * clientes
-   *
-   * Esto permite que React Router resuelva
-   * correctamente la página.
+   * ============================================================
+   * ROUTES
+   * ============================================================
    */
-
 
   return (
 
@@ -198,9 +206,7 @@ function RutasAdministradorContenido() {
 
             <Navigate
 
-              to={
-                rutasCompletas.agenda
-              }
+              to="../agenda"
 
               replace
 
@@ -322,9 +328,7 @@ function RutasAdministradorContenido() {
 
             <Navigate
 
-              to={
-                rutasCompletas.agenda
-              }
+              to="../agenda"
 
               replace
 
@@ -373,9 +377,7 @@ function RutasAdministradorContenido() {
 
             <Navigate
 
-              to={
-                rutasCompletas.agenda
-              }
+              to="../agenda"
 
               replace
 
@@ -447,9 +449,7 @@ function RutasAdministradorContenido() {
 
             <Navigate
 
-              to={
-                rutasCompletas.agenda
-              }
+              to="../agenda"
 
               replace
 
@@ -502,9 +502,7 @@ function RutasAdministradorContenido() {
 
             <Navigate
 
-              to={
-                rutasCompletas.agenda
-              }
+              to="../agenda"
 
               replace
 
@@ -547,9 +545,7 @@ function RutasAdministradorContenido() {
 
             <Navigate
 
-              to={
-                rutasCompletas.agenda
-              }
+              to="../agenda"
 
               replace
 
@@ -564,7 +560,23 @@ function RutasAdministradorContenido() {
 
       {/* =========================
           FALLBACK
-          ========================= */}
+          =========================
+          
+          Cualquier URL inválida dentro
+          del administrador vuelve a AGENDA.
+          
+          Ejemplo:
+          
+          /empresa/admin/agenda/xxx
+          
+          termina en:
+          
+          /empresa/admin/agenda
+          
+          y NO:
+          
+          /empresa/admin/agenda/agenda/...
+      */}
 
       <Route
 
@@ -574,9 +586,7 @@ function RutasAdministradorContenido() {
 
           <Navigate
 
-              to={
-                rutasCompletas.agenda
-              }
+            to="../agenda"
 
             replace
 
@@ -592,24 +602,50 @@ function RutasAdministradorContenido() {
 
 }
 
+
 /*
- * Punto de entrada del portal administrador.
- * Dashboard actúa como layout y las páginas reciben el estado compartido
- * mediante Outlet, no por una relación Dashboard -> router.
+ * ============================================================
+ * ROUTER PRINCIPAL DEL ADMINISTRADOR
+ * ============================================================
+ *
+ * Dashboard funciona como layout.
+ *
+ * Las páginas administrativas se renderizan
+ * mediante Outlet.
  */
+
 export default function RutasAdministrador(
   props
 ) {
+
   return (
+
     <Routes>
+
       <Route
-        element={<Dashboard {...props} />}
+
+        element={
+          <Dashboard
+            {...props}
+          />
+        }
+
       >
+
         <Route
+
           path="*"
-          element={<RutasAdministradorContenido />}
+
+          element={
+            <RutasAdministradorContenido />
+          }
+
         />
+
       </Route>
+
     </Routes>
+
   );
+
 }
