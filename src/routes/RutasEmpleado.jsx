@@ -27,6 +27,7 @@ import DisponibilidadPage
 
 
 import {
+  obtenerRutasEmpleado,
   rutasEmpleado
 } from './rutasAplicacion';
 
@@ -128,6 +129,11 @@ function ProductosEmpleadoPage(
 export default function RutasEmpleado(
   props
 ) {
+
+  const rutasCompletas =
+    obtenerRutasEmpleado(
+      props.companySlug
+    );
 
   return (
 
@@ -372,8 +378,8 @@ export default function RutasEmpleado(
 
             <Navigate
 
-              to={
-                rutasEmpleado.agenda
+            to={
+                rutasCompletas.agenda
               }
 
               replace

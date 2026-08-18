@@ -7,6 +7,7 @@ import {
 import {
   matchPath,
   Navigate,
+  Outlet,
   useLocation
 } from 'react-router-dom';
 
@@ -36,12 +37,6 @@ import {
   WorkspaceProfileIdentity
 } from '../components/WorkspaceHero';
 
-import RutasAdministrador
-  from '../routes/RutasAdministrador';
-
-import AdminLayout
-  from '../layouts/AdminLayout';
-
 import {
   obtenerRutasAdministrador
 } from '../routes/rutasAplicacion';
@@ -51,6 +46,10 @@ const turnosAppLogo =
   '/logo-quieroturnoapp.png';
 
 
+/*
+ * Layout del portal administrativo. El nombre Dashboard se conserva
+ * temporalmente, pero las páginas ahora se montan con Outlet.
+ */
 export default function Dashboard({
 
   user,
@@ -980,6 +979,33 @@ export default function Dashboard({
    * realiza la navegación.
    */
 
+  const adminRouteContext = {
+    companySlug,
+    user,
+    companyContext,
+    adminProfileSummary,
+    refreshKey: adminDataVersion,
+    promotions: enabledPromotions,
+    esModoPedido,
+    preciosHabilitados,
+    sucursalesHabilitadas,
+    bundlesHabilitados,
+    packsHabilitados,
+    promocionesHabilitadas,
+    onRequestNewBooking: (options = null) => {
+      setNewBookingInitial(options);
+      setIsNewBookingOpen(true);
+    },
+    onDataChanged: notifyAdminDataChanged,
+    onBranchesChanged: notifyBranchesChanged,
+    onBookingsChanged: notifyAdminDataChanged,
+    onCloseAttentionPageClose: () => {
+      setAdminDataVersion((current) => current + 1);
+      setRedirectPath(rutas.agenda);
+    },
+    onCompanyContextRefresh
+  };
+
   if (
     redirectPath &&
     location.pathname !==
@@ -1005,7 +1031,7 @@ export default function Dashboard({
 
   return (
 
-    <AdminLayout>
+    <>
 
       <Container
 
@@ -1177,110 +1203,7 @@ export default function Dashboard({
             "
           >
 
-            <RutasAdministrador
-
-              companySlug={
-                companySlug
-              }
-
-              user={
-                user
-              }
-
-              companyContext={
-                companyContext
-              }
-
-              adminProfileSummary={
-                adminProfileSummary
-              }
-
-              refreshKey={
-                adminDataVersion
-              }
-
-              promotions={
-                enabledPromotions
-              }
-
-              esModoPedido={
-                esModoPedido
-              }
-
-              preciosHabilitados={
-                preciosHabilitados
-              }
-
-              sucursalesHabilitadas={
-                sucursalesHabilitadas
-              }
-
-              bundlesHabilitados={
-                bundlesHabilitados
-              }
-
-              packsHabilitados={
-                packsHabilitados
-              }
-
-              promocionesHabilitadas={
-                promocionesHabilitadas
-              }
-
-              onRequestNewBooking={(
-                options = null
-              ) => {
-
-                setNewBookingInitial(
-                  options
-                );
-
-
-                setIsNewBookingOpen(
-                  true
-                );
-
-              }}
-
-              onDataChanged={
-                notifyAdminDataChanged
-              }
-
-              onBranchesChanged={
-                notifyBranchesChanged
-              }
-
-              onBookingsChanged={
-                notifyAdminDataChanged
-              }
-
-              /*
-               * Cerrar atención termina una
-               * operación y vuelve a Agenda.
-               *
-               * Sigue siendo navegación
-               * declarativa.
-               */
-
-              onCloseAttentionPageClose={() => {
-
-                setAdminDataVersion(
-                  current =>
-                    current + 1
-                );
-
-
-                setRedirectPath(
-                  rutas.agenda
-                );
-
-              }}
-
-              onCompanyContextRefresh={
-                onCompanyContextRefresh
-              }
-
-            />
+            <Outlet context={adminRouteContext} />
 
           </Box>
 
@@ -1349,7 +1272,7 @@ export default function Dashboard({
 
       </Container>
 
-    </AdminLayout>
+    </>
 
   );
 

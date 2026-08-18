@@ -18,13 +18,13 @@ import {
   showAppAlert as alert
 } from './utils/appAlert';
 
-import Dashboard from './pages/Dashboard';
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import PlatformAdmin from './components/PlatformAdmin';
 import RoleAccess from './components/RoleAccess';
 import RutasCliente from './routes/RutasCliente';
 import RutasEmpleado from './routes/RutasEmpleado';
+import RutasAdministrador from './routes/RutasAdministrador';
 
 import {
   applyAppearanceStyle,
@@ -903,6 +903,22 @@ function CompanyApp() {
       profileStorageKey,
       profile
     );
+
+    const portalPath =
+      profile === 'admin'
+        ? getAdminPortalPath(companySlug)
+        : profile === 'employee'
+          ? getEmployeePortalPath(companySlug)
+          : getClientPortalPath(companySlug);
+
+    if (
+      location.pathname !== portalPath
+    ) {
+      navigate(
+        portalPath,
+        { replace: true }
+      );
+    }
   };
 
   const clearAccessProfile =
@@ -941,7 +957,7 @@ function CompanyApp() {
       clearInternalSession();
     };
 
-  useEffect(() => {
+  /*
     if (
       !internalSession ||
       routeAllowedProfiles.includes(
@@ -955,17 +971,7 @@ function CompanyApp() {
       'Ingresá con el perfil correspondiente a esta URL.'
     );
 
-    clearInternalSession();
-
-    setAccessProfile(null);
-
-    sessionStorage.removeItem(
-      profileStorageKey
-    );
-  }, [
-    internalSession,
-    routeAllowedProfiles
-  ]);
+  */
 
   const startInternalSession = (
     account
@@ -1901,6 +1907,34 @@ function CompanyApp() {
       internalSession.role
     );
 
+  const activeProfile =
+    localClientSession
+      ? 'client'
+      : internalSession
+        ? internalSession.role
+        : accessProfile;
+
+  const activeProfilePortalPath =
+    activeProfile === 'admin'
+      ? getAdminPortalPath(companySlug)
+      : activeProfile === 'employee'
+        ? getEmployeePortalPath(companySlug)
+        : activeProfile === 'client'
+          ? getClientPortalPath(companySlug)
+          : null;
+
+  if (
+    activeProfilePortalPath &&
+    !routeAllowedProfiles.includes(activeProfile)
+  ) {
+    return (
+      <Navigate
+        to={activeProfilePortalPath}
+        replace
+      />
+    );
+  }
+
   if (
     isClientPortal &&
     !session &&
@@ -1927,6 +1961,11 @@ function CompanyApp() {
   }
 
   /*
+   * Una sesión existente no debe montar un router en una URL que
+   * pertenece a otro perfil. Esto cubre ingresos directos, historial
+   * del navegador y perfiles persistidos entre recargas.
+   */
+  /*
    * A partir de acá la navegación de cada portal queda
    * directamente en su router correspondiente.
    *
@@ -1950,7 +1989,7 @@ function CompanyApp() {
   if (internalSessionAllowed) {
     if (internalSession.role === 'admin') {
       return (
-        <Dashboard
+        <RutasAdministrador
           user={internalUser}
           accessProfile="admin"
           onChangeProfile={changeInternalAccess}
@@ -2005,24 +2044,21 @@ function CompanyApp() {
 }
 
   if (accessProfile === 'employee') {
-  return (
-    <RoleAccess
-      user={authenticatedUser}
-      selectedProfile="employee"
-      onSelectProfile={selectAccessProfile}
+    return (
+      <RutasEmpleado
+        user={authenticatedUser}
       onChangeProfile={clearAccessProfile}
-      availableProfiles={availableProfiles}
-      canChangeProfile={canChangeProfile}
-      onLogout={logout}
-      companySlug={companySlug}
-      companyContext={companyContext}
-    />
-  );
-}
+        canChangeProfile={canChangeProfile}
+        onLogout={logout}
+        companySlug={companySlug}
+        companyContext={companyContext}
+      />
+    );
+  }
 
   if (accessProfile === 'admin') {
     return (
-      <Dashboard
+      <RutasAdministrador
         user={authenticatedUser}
         accessProfile="admin"
         onChangeProfile={clearAccessProfile}

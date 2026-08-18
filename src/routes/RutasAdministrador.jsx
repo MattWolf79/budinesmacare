@@ -1,8 +1,12 @@
 import {
   Navigate,
   Route,
-  Routes
+  Routes,
+  useOutletContext
 } from 'react-router-dom';
+
+import Dashboard
+  from '../pages/Dashboard';
 
 import AgendaPage
   from '../pages/admin/AgendaPage';
@@ -38,49 +42,38 @@ import DisponibilidadPage
   from '../pages/admin/DisponibilidadPage';
 
 import {
+  obtenerRutasAdministrador,
   rutasAdministrador
 } from './rutasAplicacion';
 
 
-export default function RutasAdministrador({
+function RutasAdministradorContenido() {
 
-  companySlug,
+  const {
+    companySlug,
+    user,
+    companyContext,
+    adminProfileSummary,
+    refreshKey,
+    promotions,
+    esModoPedido,
+    preciosHabilitados,
+    sucursalesHabilitadas,
+    bundlesHabilitados,
+    packsHabilitados,
+    promocionesHabilitadas,
+    onRequestNewBooking,
+    onDataChanged,
+    onBranchesChanged,
+    onBookingsChanged,
+    onCloseAttentionPageClose,
+    onCompanyContextRefresh
+  } = useOutletContext();
 
-  user,
-
-  companyContext,
-
-  adminProfileSummary,
-
-  refreshKey,
-
-  promotions,
-
-  esModoPedido,
-
-  preciosHabilitados,
-
-  sucursalesHabilitadas,
-
-  bundlesHabilitados,
-
-  packsHabilitados,
-
-  promocionesHabilitadas,
-
-  onRequestNewBooking,
-
-  onDataChanged,
-
-  onBranchesChanged,
-
-  onBookingsChanged,
-
-  onCloseAttentionPageClose,
-
-  onCompanyContextRefresh
-
-}) {
+  const rutasCompletas =
+    obtenerRutasAdministrador(
+      companySlug
+    );
 
   const propsBase = {
 
@@ -98,8 +91,9 @@ export default function RutasAdministrador({
   /*
    * IMPORTANTE
    *
-   * RutasAdministrador vive dentro del
-   * Dashboard administrativo.
+   * Las páginas viven dentro del layout
+   * administrativo y reciben sus datos
+   * mediante Outlet context.
    *
    * Por eso las rutas de <Route> deben ser
    * RELATIVAS.
@@ -205,7 +199,7 @@ export default function RutasAdministrador({
             <Navigate
 
               to={
-                rutasAdministrador.agenda
+                rutasCompletas.agenda
               }
 
               replace
@@ -329,7 +323,7 @@ export default function RutasAdministrador({
             <Navigate
 
               to={
-                rutasAdministrador.agenda
+                rutasCompletas.agenda
               }
 
               replace
@@ -380,7 +374,7 @@ export default function RutasAdministrador({
             <Navigate
 
               to={
-                rutasAdministrador.agenda
+                rutasCompletas.agenda
               }
 
               replace
@@ -454,7 +448,7 @@ export default function RutasAdministrador({
             <Navigate
 
               to={
-                rutasAdministrador.agenda
+                rutasCompletas.agenda
               }
 
               replace
@@ -509,7 +503,7 @@ export default function RutasAdministrador({
             <Navigate
 
               to={
-                rutasAdministrador.agenda
+                rutasCompletas.agenda
               }
 
               replace
@@ -554,7 +548,7 @@ export default function RutasAdministrador({
             <Navigate
 
               to={
-                rutasAdministrador.agenda
+                rutasCompletas.agenda
               }
 
               replace
@@ -580,9 +574,9 @@ export default function RutasAdministrador({
 
           <Navigate
 
-            to={
-              rutasAdministrador.agenda
-            }
+              to={
+                rutasCompletas.agenda
+              }
 
             replace
 
@@ -596,4 +590,26 @@ export default function RutasAdministrador({
 
   );
 
+}
+
+/*
+ * Punto de entrada del portal administrador.
+ * Dashboard actúa como layout y las páginas reciben el estado compartido
+ * mediante Outlet, no por una relación Dashboard -> router.
+ */
+export default function RutasAdministrador(
+  props
+) {
+  return (
+    <Routes>
+      <Route
+        element={<Dashboard {...props} />}
+      >
+        <Route
+          path="*"
+          element={<RutasAdministradorContenido />}
+        />
+      </Route>
+    </Routes>
+  );
 }

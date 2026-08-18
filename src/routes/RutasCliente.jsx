@@ -25,6 +25,10 @@ import MisTurnosPage
 import ProfilePage
   from '../pages/client/ProfilePage';
 
+import {
+  obtenerRutasCliente
+} from './rutasAplicacion';
+
 
 /*
  * ============================================================
@@ -273,15 +277,18 @@ export default function RutasCliente(
         */}
 
         <Route
-  path="*"
-  element={
-    <PaginaCliente
-      {...props}
-      activeView="home"
-      Page={HomePage}
-    />
-  }
-/>
+          path="*"
+          element={
+            <Navigate
+              to={
+                obtenerRutasCliente(
+                  props.companySlug
+                ).inicio
+              }
+              replace
+            />
+          }
+        />
 
       </Route>
 
