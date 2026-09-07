@@ -46,10 +46,6 @@ const getBookingCardTitle = (booking, service) => (
   String(booking.booking_description || service?.name || 'Servicio').split('·')[0].trim() || 'Servicio'
 );
 
-const resolverModoPedido = (configuracionOperativa = {}) => (
-  configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false
-);
-
 const getFechaActual = () => {
   const ahora = new Date();
   return `${ahora.getFullYear()}-${pad(ahora.getMonth() + 1)}-${pad(ahora.getDate())}`;
@@ -190,7 +186,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     service: services.find((service) => Number(service.id) === Number(booking.service))
   })), [bookings, services]);
   const configuracionOperativa = appConfig?.configuracion_operativa || companyContext?.configuracion_operativa || {};
-  const esModoPedido = resolverModoPedido(configuracionOperativa);
+  const esModoPedido = true;
   const showAgenda = activeView === 'reserve' && !esModoPedido;
   const showFormularioPedido = activeView === 'reserve' && esModoPedido;
   const etiquetaReserva = esModoPedido ? 'Hacer pedido' : 'Reservar turno';
@@ -383,7 +379,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
     : false;
 
   useEffect(() => {
-    if (activeView !== 'mis-turnos') return;
+    if (activeView !== 'mis-pedidos') return;
     if (selectedBookingId) return;
     const first = activeBookings[0] || historyBookings[0];
     if (first) setSelectedBookingId(first.booking.id);
@@ -677,7 +673,7 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   };
 
   const isHome = activeView === 'home';
-  const isMisTurnos = activeView === 'mis-turnos';
+  const isMisTurnos = activeView === 'mis-pedidos';
 
   return (
     <section className="client-dashboard">

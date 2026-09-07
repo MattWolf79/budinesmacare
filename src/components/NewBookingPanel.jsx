@@ -226,7 +226,7 @@ export default function NewBookingPanel({
   rescheduleMode = false
 }) {
   const configuracionOperativa = companyContext?.configuracion_operativa || {};
-  const esModoPedido = configuracionOperativa.modo_operacion === 'pedido' || configuracionOperativa.usa_agenda === false;
+  const esModoPedido = true;
   const gridInterval = getGridInterval(configuracionOperativa.intervalo_grilla_minutos);
   const preciosHabilitados = configuracionOperativa.precios_habilitados !== false;
   const companyName = companyContext?.company_name || companyContext?.name || 'Nueva reserva';

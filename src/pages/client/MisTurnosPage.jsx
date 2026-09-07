@@ -4,7 +4,7 @@ export default function MisTurnosPage(props) {
   return (
     <ClientDashboard
       {...props}
-      activeView="mis-turnos"
+      activeView="mis-pedidos"
     />
   );
 }

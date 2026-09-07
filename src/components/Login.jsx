@@ -36,20 +36,12 @@ const accessOptions = [
       'Para reservar turnos y consultar reservas con Google o usuario propio.'
   },
   {
-    id: 'employee',
-    icon: '🧑‍💼',
-    title: 'Empleados',
-    badge: 'Acceso interno',
-    description:
-      'Para ingresar o registrarse con nombre y contraseña.'
-  },
-  {
     id: 'admin',
     icon: '🛠️',
     title: 'Administrador',
     badge: 'Acceso interno',
     description:
-      'Para ingresar o crear acceso administrativo al panel completo.'
+      'Para ingresar al panel de gestión de pedidos.'
   }
 ];
 
@@ -1185,7 +1177,7 @@ export default function Login({
   );
 
   const heroBenefits = [
-    'Seguimiento de tus turnos.',
+    'Seguimiento de tus pedidos.',
     'Recordatorios',
     'Seriedad',
     'Excelente atención'
@@ -1203,7 +1195,7 @@ export default function Login({
           </span>
 
           <h2 className="login-hero-title">
-            Todo listo para gestionar tus turnos,
+            Todo listo para gestionar tus pedidos,
             <span className="login-hero-title-accent">
               Entrá y continuá donde lo dejaste.
             </span>
@@ -1247,7 +1239,7 @@ export default function Login({
         </h1>
 
         <p className="login-form-subtitle">
-          Gestioná tus turnos con un solo click.
+          Gestioná tus pedidos con un solo click.
         </p>
 
         {showPoweredBy && (
@@ -1260,11 +1252,11 @@ export default function Login({
             </span>
 
             <a
-              href="https://quieroturnoapp.com.ar/"
+              href="https://budinesmacare.com.ar/"
               target="_blank"
               rel="noreferrer"
             >
-              https://quieroturnoapp.com.ar/
+              https://budinesmacare.com.ar/
             </a>
           </div>
         )}

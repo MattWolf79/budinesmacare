@@ -9,14 +9,8 @@ import {
 import Dashboard
   from '../pages/Dashboard';
 
-import AgendaPage
-  from '../pages/admin/AgendaPage';
-
 import ClientesPage
   from '../pages/admin/ClientesPage';
-
-import EmpleadosPage
-  from '../pages/admin/EmpleadosPage';
 
 import ServiciosPage
   from '../pages/admin/ServiciosPage';
@@ -33,14 +27,8 @@ import ConfiguracionPage
 import PedidosPage
   from '../pages/admin/PedidosPage';
 
-import PendientesPage
-  from '../pages/admin/PendientesPage';
-
 import CerrarAtencionPage
   from '../pages/admin/CerrarAtencionPage';
-
-import DisponibilidadPage
-  from '../pages/admin/DisponibilidadPage';
 
 
 import {
@@ -83,13 +71,11 @@ function RutasAdministradorContenido() {
     adminProfileSummary,
     refreshKey,
     promotions,
-    esModoPedido,
     preciosHabilitados,
     sucursalesHabilitadas,
     bundlesHabilitados,
     packsHabilitados,
     promocionesHabilitadas,
-    onRequestNewBooking,
     onDataChanged,
     onBranchesChanged,
     onBookingsChanged,
@@ -134,86 +120,15 @@ function RutasAdministradorContenido() {
       <Route
 
         path={
-          rutasAdministrador.agenda
-        }
-
-        element={
-
-          esModoPedido ? (
-
-            <PedidosPage
-
-              {...propsBase}
-
-              refreshKey={
-                refreshKey
-              }
-
-            />
-
-          ) : (
-
-            <AgendaPage
-
-              {...propsBase}
-
-              refreshKey={
-                refreshKey
-              }
-
-              promotions={
-                promotions
-              }
-
-              onRequestNewBooking={
-                onRequestNewBooking
-              }
-
-            />
-
-          )
-
-        }
-
-      />
-
-
-      {/* ==================================================
-          PEDIDOS
-          ================================================== */}
-
-      <Route
-
-        path={
           rutasAdministrador.pedidos
         }
 
         element={
 
-          esModoPedido ? (
-
-            <PedidosPage
-
-              {...propsBase}
-
-              refreshKey={
-                refreshKey
-              }
-
-            />
-
-          ) : (
-
-            <Navigate
-
-              to="../agenda"
-
-              replace
-
-            />
-
-          )
-
+          <PedidosPage
+            {...propsBase}
+            refreshKey={refreshKey}
+          />
         }
 
       />
@@ -232,33 +147,6 @@ function RutasAdministradorContenido() {
         element={
 
           <ClientesPage
-
-            {...propsBase}
-
-            onDataChanged={
-              onDataChanged
-            }
-
-          />
-
-        }
-
-      />
-
-
-      {/* ==================================================
-          EMPLEADOS
-          ================================================== */}
-
-      <Route
-
-        path={
-          rutasAdministrador.empleados
-        }
-
-        element={
-
-          <EmpleadosPage
 
             {...propsBase}
 
@@ -418,51 +306,6 @@ function RutasAdministradorContenido() {
 
 
       {/* ==================================================
-          PENDIENTES
-          ================================================== */}
-
-      <Route
-
-        path={
-          rutasAdministrador.pendientes
-        }
-
-        element={
-
-          !esModoPedido ? (
-
-            <PendientesPage
-
-              {...propsBase}
-
-              refreshKey={
-                refreshKey
-              }
-
-              promotions={
-                promotions
-              }
-
-            />
-
-          ) : (
-
-            <Navigate
-
-              to="../agenda"
-
-              replace
-
-            />
-
-          )
-
-        }
-
-      />
-
-
-      {/* ==================================================
           CERRAR ATENCIÓN
           ================================================== */}
 
@@ -516,49 +359,6 @@ function RutasAdministradorContenido() {
 
 
       {/* ==================================================
-          DISPONIBILIDAD
-          ================================================== */}
-
-      <Route
-
-        path={
-          rutasAdministrador.disponibilidad
-        }
-
-        element={
-
-          !esModoPedido ? (
-
-            <DisponibilidadPage
-
-              {...propsBase}
-
-              mode="admin"
-
-              onAvailabilityChanged={
-                onDataChanged
-              }
-
-            />
-
-          ) : (
-
-            <Navigate
-
-              to="../agenda"
-
-              replace
-
-            />
-
-          )
-
-        }
-
-      />
-
-
-      {/* ==================================================
           FALLBACK
           ==================================================
           
@@ -583,7 +383,7 @@ function RutasAdministradorContenido() {
 
           <Navigate
 
-            to="../agenda"
+            to="../pedidos"
 
             replace
 

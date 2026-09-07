@@ -191,7 +191,7 @@ export default function RutasCliente(
 
         <Route
 
-          path="reserva"
+          path="nuevo"
 
           element={
 
@@ -218,7 +218,7 @@ export default function RutasCliente(
 
         <Route
 
-          path="mis-turnos"
+          path="mis-pedidos"
 
           element={
 
@@ -226,7 +226,7 @@ export default function RutasCliente(
 
               {...props}
 
-              activeView="mis-turnos"
+              activeView="mis-pedidos"
 
               Page={
                 MisTurnosPage
@@ -245,7 +245,7 @@ export default function RutasCliente(
 
         <Route
 
-          path="perfil"
+          path="mi-cuenta"
 
           element={
 

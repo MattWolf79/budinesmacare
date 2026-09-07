@@ -4,8 +4,7 @@ import {
 
 import {
   getAdminPortalPath,
-  getClientPortalPath,
-  getEmployeePortalPath
+  getClientPortalPath
 } from '../utils/tenant';
 
 
@@ -68,19 +67,19 @@ export default function LandingPage({
     null;
 
 
-  const heroTitle =
-    landing.titulo ||
-    `Reservá tu turno en ${companyName}`;
+const heroTitle =
+  landing.titulo ||
+  `Budines artesanales Macaré`;
 
 
   const heroSubtitle =
-    landing.subtitulo ||
-    'Tu agenda, siempre a un clic';
+  landing.subtitulo ||
+  'Sabores únicos para cada momento';
 
 
   const heroDescription =
-    landing.descripcion ||
-    'Elegí el servicio, el día y el horario que más te convenga. Rápido, simple y sin llamadas.';
+  landing.descripcion ||
+  'Elegí tus productos favoritos, seleccioná una fecha de entrega y realizá tu pedido online de forma simple.';
 
 
   const heroImage =
@@ -89,8 +88,8 @@ export default function LandingPage({
 
 
   const ctaText =
-    landing.cta_texto ||
-    'Reservá tu turno';
+  landing.cta_texto ||
+  'Realizar pedido';
 
 
   const kicker =
@@ -181,13 +180,7 @@ export default function LandingPage({
       companySlug
     );
 
-
-  const employeePath =
-    getEmployeePortalPath(
-      companySlug
-    );
-
-
+ 
   const adminPath =
     getAdminPortalPath(
       companySlug
@@ -255,11 +248,11 @@ export default function LandingPage({
 
             {showInternalAccess && (
               <Link
-                className="landing-nav-link"
-                to={employeePath}
-              >
-                Soy del staff
-              </Link>
+  className="landing-nav-link"
+  to={adminPath}
+>
+  Administración
+</Link>
             )}
 
 
@@ -312,11 +305,11 @@ export default function LandingPage({
 
             {showInternalAccess && (
               <Link
-                className="landing-hero-secondary"
-                to={employeePath}
-              >
-                Acceso staff
-              </Link>
+  className="landing-hero-secondary"
+  to={adminPath}
+>
+  Administración
+</Link>
             )}
 
           </div>
@@ -349,7 +342,38 @@ export default function LandingPage({
         </ul>
 
       </section>
+<section className="landing-how-it-works">
 
+  <h2>¿Cómo realizar un pedido?</h2>
+
+  <div className="landing-steps">
+
+    <div>
+      <h3>1</h3>
+      <p>Elegí tus productos</p>
+    </div>
+
+    <div>
+      <h3>2</h3>
+      <p>Seleccioná fecha y horario</p>
+    </div>
+
+    <div>
+      <h3>3</h3>
+      <p>Confirmá el pedido</p>
+    </div>
+          <div>
+      <h3>4</h3>
+      <p>Te avisamos cuando está listo</p>
+    </div>
+    <div>
+      <h3>5</h3>
+      <p>Recibí tu pedido</p>
+    </div>
+
+  </div>
+
+</section>
 
       {/* ======================================================
           ACCESOS
@@ -392,12 +416,12 @@ export default function LandingPage({
 
 
               <span className="landing-access-card-copy">
-                Reservá, gestioná y consultá tus turnos.
+                Realizá pedidos, consultá estados y revisá tu historial.
               </span>
 
 
               <span className="landing-access-card-cta">
-                Reservar turno →
+                Realizar pedido →
               </span>
 
             </Link>
@@ -405,38 +429,6 @@ export default function LandingPage({
 
             {showInternalAccess && (
               <>
-
-                {/* EMPLEADO */}
-
-                <Link
-                  className="landing-access-card"
-                  to={employeePath}
-                >
-
-                  <span
-                    className="landing-access-icon variant-employee"
-                    aria-hidden
-                  >
-                    💼
-                  </span>
-
-
-                  <span className="landing-access-card-title">
-                    Soy del staff
-                  </span>
-
-
-                  <span className="landing-access-card-copy">
-                    Ingresá a tu agenda y disponibilidad.
-                  </span>
-
-
-                  <span className="landing-access-card-cta">
-                    Ir a mi agenda →
-                  </span>
-
-                </Link>
-
 
                 {/* ADMINISTRADOR */}
 
@@ -459,7 +451,7 @@ export default function LandingPage({
 
 
                   <span className="landing-access-card-copy">
-                    Gestioná la empresa, el staff y la configuración.
+                    Gestioná productos, categorías, pedidos y configuración.
                   </span>
 
 
@@ -477,6 +469,7 @@ export default function LandingPage({
         </div>
 
       </section>
+
 
 
       {/* ======================================================
@@ -600,7 +593,7 @@ export default function LandingPage({
         <span className="landing-footer-powered">
           Powered by{' '}
           <strong>
-            QuieroTurnoApp
+            ❤️
           </strong>
         </span>
 

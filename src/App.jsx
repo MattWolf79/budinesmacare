@@ -8,8 +8,7 @@ import {
 import {
   Navigate,
   useLocation,
-  useNavigate,
-  useParams
+  useNavigate
 } from 'react-router-dom';
 
 import { supabase } from './api/supabaseClient';
@@ -20,10 +19,8 @@ import {
 
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';
-import PlatformAdmin from './components/PlatformAdmin';
 import RoleAccess from './components/RoleAccess';
 import RutasCliente from './routes/RutasCliente';
-import RutasEmpleado from './routes/RutasEmpleado';
 import RutasAdministrador from './routes/RutasAdministrador';
 
 import {
@@ -35,13 +32,11 @@ import {
 import {
   defaultCompanySlug,
   getClientPortalPath,
-  getAdminPortalPath,
-  getEmployeePortalPath
+  getAdminPortalPath
 } from './utils/tenant';
 
 const validProfiles = [
   'client',
-  'employee',
   'admin'
 ];
 
@@ -123,10 +118,6 @@ const getAvailableProfiles = (
 ) => {
   if (role === 'admin') {
     return ['admin'];
-  }
-
-  if (role === 'employee') {
-    return ['employee'];
   }
 
   return ['client'];
@@ -368,10 +359,6 @@ const getAuthCallbackParams = () => {
 };
 
 function CompanyApp() {
-  const {
-    companySlug: routeCompanySlug
-  } = useParams();
-
   const location =
     useLocation();
 
@@ -379,11 +366,7 @@ function CompanyApp() {
     useNavigate();
 
   const companySlug =
-    String(
-      routeCompanySlug || ''
-    )
-      .trim()
-      .toLowerCase();
+    defaultCompanySlug;
 
   const pathname =
     location.pathname;
@@ -403,9 +386,6 @@ function CompanyApp() {
    *
    * No se utilizan rutas relativas para navegar.
    */
-  const companyBasePath =
-    `/${companySlug}`;
-
   const normalizedPath =
     pathname.replace(
       /\/+$/,
@@ -413,29 +393,19 @@ function CompanyApp() {
     );
 
   const isClientPortal =
-    normalizedPath ===
-      `${companyBasePath}/sacarturno` ||
+    normalizedPath === '/pedidos' ||
     normalizedPath.startsWith(
-      `${companyBasePath}/sacarturno/`
+      '/pedidos/'
     );
 
   const isAdminPortal =
-    normalizedPath ===
-      `${companyBasePath}/admin` ||
+    normalizedPath === '/admin' ||
     normalizedPath.startsWith(
-      `${companyBasePath}/admin/`
-    );
-
-  const isEmployeePortal =
-    normalizedPath ===
-      `${companyBasePath}/empleado` ||
-    normalizedPath.startsWith(
-      `${companyBasePath}/empleado/`
+      '/admin/'
     );
 
   const isInternalPortal =
-    isAdminPortal ||
-    isEmployeePortal;
+    isAdminPortal;
 
   /*
    * La ruta /admin SIN tenant pertenece
@@ -455,16 +425,11 @@ function CompanyApp() {
           return ['admin'];
         }
 
-        if (isEmployeePortal) {
-          return ['employee'];
-        }
-
         return validProfiles;
       },
       [
         isClientPortal,
-        isAdminPortal,
-        isEmployeePortal
+        isAdminPortal
       ]
     );
 
@@ -558,6 +523,7 @@ function CompanyApp() {
         );
       },
       [
+        internalSession,
         internalSession?.role,
         authProfile?.role,
         accessProfile,
@@ -624,21 +590,6 @@ function CompanyApp() {
       return;
     }
 
-    const tenantRoot =
-      `/${companySlug}`;
-
-    if (
-      normalizedPath === tenantRoot
-    ) {
-      navigate(
-        getClientPortalPath(
-          companySlug
-        ),
-        {
-          replace: true
-        }
-      );
-    }
   }, [
     companySlug,
     companyContextLoading,
@@ -667,78 +618,6 @@ function CompanyApp() {
       return;
     }
 
-    const duplicateClientPrefix =
-      `/${companySlug}/sacarturno/sacarturno`;
-
-    const duplicateAdminPrefix =
-      `/${companySlug}/admin/admin`;
-
-    const duplicateEmployeePrefix =
-      `/${companySlug}/empleado/empleado`;
-
-    if (
-      normalizedPath.startsWith(
-        duplicateClientPrefix
-      )
-    ) {
-      const rest =
-        normalizedPath.slice(
-          duplicateClientPrefix.length
-        );
-
-      navigate(
-        `${getClientPortalPath(
-          companySlug
-        )}${rest}`,
-        {
-          replace: true
-        }
-      );
-
-      return;
-    }
-
-    if (
-      normalizedPath.startsWith(
-        duplicateAdminPrefix
-      )
-    ) {
-      const rest =
-        normalizedPath.slice(
-          duplicateAdminPrefix.length
-        );
-
-      navigate(
-        `${getAdminPortalPath(
-          companySlug
-        )}${rest}`,
-        {
-          replace: true
-        }
-      );
-
-      return;
-    }
-
-    if (
-      normalizedPath.startsWith(
-        duplicateEmployeePrefix
-      )
-    ) {
-      const rest =
-        normalizedPath.slice(
-          duplicateEmployeePrefix.length
-        );
-
-      navigate(
-        `${getEmployeePortalPath(
-          companySlug
-        )}${rest}`,
-        {
-          replace: true
-        }
-      );
-    }
   }, [
     companySlug,
     normalizedPath,
@@ -907,9 +786,7 @@ function CompanyApp() {
     const portalPath =
       profile === 'admin'
         ? getAdminPortalPath(companySlug)
-        : profile === 'employee'
-          ? getEmployeePortalPath(companySlug)
-          : getClientPortalPath(companySlug);
+        : getClientPortalPath(companySlug);
 
     if (
       location.pathname !== portalPath
@@ -1095,10 +972,7 @@ function CompanyApp() {
     (role) => {
       if (
         !localInternalAccessEnabled ||
-        ![
-          'employee',
-          'admin'
-        ].includes(role)
+        role !== 'admin'
       ) {
         return;
       }
@@ -1785,16 +1659,6 @@ function CompanyApp() {
   ]);
 
   if (
-    companySlug === 'admin'
-  ) {
-    /*
-     * Esta protección evita que /admin sea
-     * interpretado como tenant "admin".
-     */
-    return <PlatformAdmin />;
-  }
-
-  if (
     companyContextLoading ||
     authLoading
   ) {
@@ -1819,13 +1683,11 @@ function CompanyApp() {
           </p>
 
           <h1 className="login-brand-heading">
-            QuieroTurnoApp
+            Budines Macaré
           </h1>
 
           <p className="login-copy">
-            Ingresá con la URL de tu empresa
-            para acceder a clientes,
-            empleados o administración.
+            Budines Macaré no está disponible en este momento.
           </p>
         </section>
       </main>
@@ -1834,9 +1696,26 @@ function CompanyApp() {
 
   if (
     !isClientPortal &&
-    !isAdminPortal &&
-    !isEmployeePortal
+    !isAdminPortal
   ) {
+    if (session && accessProfile === 'admin') {
+      return (
+        <Navigate
+          to={getAdminPortalPath(companySlug)}
+          replace
+        />
+      );
+    }
+
+    if (session && accessProfile === 'client') {
+      return (
+        <Navigate
+          to={getClientPortalPath(companySlug)}
+          replace
+        />
+      );
+    }
+
     if (!landingEnabled) {
       return (
         <Navigate
@@ -1917,9 +1796,7 @@ function CompanyApp() {
   const activeProfilePortalPath =
     activeProfile === 'admin'
       ? getAdminPortalPath(companySlug)
-      : activeProfile === 'employee'
-        ? getEmployeePortalPath(companySlug)
-        : activeProfile === 'client'
+      : activeProfile === 'client'
           ? getClientPortalPath(companySlug)
           : null;
 
@@ -2002,18 +1879,6 @@ function CompanyApp() {
       );
     }
 
-    if (internalSession.role === 'employee') {
-      return (
-        <RutasEmpleado
-          user={internalUser}
-          onChangeProfile={changeInternalAccess}
-          canChangeProfile={canChangeProfile}
-          onLogout={logout}
-          companySlug={companySlug}
-          companyContext={companyContext}
-        />
-      );
-    }
   }
 
   if (!accessProfile) {
@@ -2042,19 +1907,6 @@ function CompanyApp() {
     />
   );
 }
-
-  if (accessProfile === 'employee') {
-    return (
-      <RutasEmpleado
-        user={authenticatedUser}
-      onChangeProfile={clearAccessProfile}
-        canChangeProfile={canChangeProfile}
-        onLogout={logout}
-        companySlug={companySlug}
-        companyContext={companyContext}
-      />
-    );
-  }
 
   if (accessProfile === 'admin') {
     return (
@@ -2133,15 +1985,6 @@ export function LegacyClientRoute() {
   return (
     <Navigate
       to={getClientPortalPath(defaultCompanySlug)}
-      replace
-    />
-  );
-}
-
-export function LegacyEmployeeRoute() {
-  return (
-    <Navigate
-      to={getEmployeePortalPath(defaultCompanySlug)}
       replace
     />
   );

@@ -7,13 +7,11 @@ import {
 
 import {
   NavLink,
-  useLocation,
-  useParams
+  useLocation
 } from 'react-router-dom';
 
 import {
-  obtenerRutasCliente,
-  obtenerRutasEmpleado
+  obtenerRutasCliente
 } from '../routes/rutasAplicacion';
 
 
@@ -211,107 +209,6 @@ const getProfileNavItems = (
   }
 
 
-  if (
-    accessProfile ===
-    'employee'
-  ) {
-
-    const rutas =
-      obtenerRutasEmpleado(
-        companySlug
-      );
-
-
-    return [
-
-      {
-        id:
-          'agenda',
-
-        label:
-          'Agenda',
-
-        icon:
-          '📅',
-
-        path:
-          rutas.agenda
-      },
-
-      {
-        id:
-          'clientes',
-
-        label:
-          'Clientes',
-
-        icon:
-          '🙋',
-
-        path:
-          rutas.clientes
-      },
-
-      {
-        id:
-          'productos',
-
-        label:
-          'Productos',
-
-        icon:
-          '✨',
-
-        path:
-          rutas.productos
-      },
-
-      {
-        id:
-          'disponibilidad',
-
-        label:
-          'Disponibilidad',
-
-        icon:
-          '🕒',
-
-        path:
-          rutas.disponibilidad
-      },
-
-      {
-        id:
-          'cerrarAtencion',
-
-        label:
-          'Cerrar atención',
-
-        icon:
-          '💳',
-
-        path:
-          rutas.cerrarAtencion
-      },
-
-      {
-        id:
-          'perfil',
-
-        label:
-          'Mi perfil',
-
-        icon:
-          '👤',
-
-        path:
-          rutas.perfil
-      }
-
-    ];
-  }
-
-
   return [];
 };
 
@@ -329,9 +226,6 @@ export default function Navbar({
   onChangeProfile,
 
   onLogout,
-
-  showAdminNavigation =
-    accessProfile === 'admin',
 
   showNavigation,
 
@@ -356,27 +250,8 @@ export default function Navbar({
     useLocation();
 
 
-  const params =
-    useParams();
-
-
-  /*
-   * En las rutas actuales el slug de empresa
-   * viene de React Router.
-   *
-   * Dejamos un fallback para no romper
-   * el componente si alguna ruta antigua
-   * no expone el parámetro.
-   */
-
   const companySlug =
-    params?.companySlug ||
-    String(
-      location.pathname
-        .split('/')
-        .filter(Boolean)[0] ||
-        ''
-    );
+    'budinesmacare';
 
 
   /*

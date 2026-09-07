@@ -173,11 +173,7 @@ export default function Dashboard({
     {};
 
 
-  const esModoPedido =
-    configuracionOperativa.modo_operacion ===
-      'pedido' ||
-    configuracionOperativa.usa_agenda ===
-      false;
+  const esModoPedido = true;
 
 
   const preciosHabilitados =
@@ -296,21 +292,6 @@ export default function Dashboard({
         }
 
 
-        if (
-          matchPath(
-            {
-              path:
-                rutas.empleados,
-              end:
-                true
-            },
-            pathname
-          )
-        ) {
-
-          return 'empleados';
-
-        }
 
 
         if (
@@ -420,21 +401,6 @@ export default function Dashboard({
         }
 
 
-        if (
-          matchPath(
-            {
-              path:
-                rutas.pendientes,
-              end:
-                true
-            },
-            pathname
-          )
-        ) {
-
-          return 'pendientes';
-
-        }
 
 
         if (
@@ -454,21 +420,6 @@ export default function Dashboard({
         }
 
 
-        if (
-          matchPath(
-            {
-              path:
-                rutas.disponibilidad,
-              end:
-                true
-            },
-            pathname
-          )
-        ) {
-
-          return 'disponibilidad';
-
-        }
 
 
         return 'agenda';
@@ -720,7 +671,7 @@ export default function Dashboard({
                     '📋',
 
                   path:
-                    rutas.agenda
+                    rutas.pedidos
 
                 },
 
@@ -763,22 +714,6 @@ export default function Dashboard({
                     rutas.clientes
 
                 },
-
-                {
-
-                  id:
-                    'empleados',
-
-                  label:
-                    'Empleados',
-
-                  icon:
-                    '👥',
-
-                  path:
-                    rutas.empleados
-
-                }
 
               ]
 

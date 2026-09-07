@@ -57,14 +57,14 @@ const obtenerVistaCliente = (
 
 
   if (
-    path.endsWith('/mis-turnos')
+    path.endsWith('/mis-pedidos')
   ) {
-    return 'mis-turnos';
+    return 'mis-pedidos';
   }
 
 
   if (
-    path.endsWith('/perfil')
+    path.endsWith('/mi-cuenta')
   ) {
     return 'perfil';
   }
@@ -131,7 +131,7 @@ const crearNavegacionCliente = (
 
     {
       id:
-        'mis-turnos',
+        'mis-pedidos',
 
       label:
         etiquetaHistorial,
@@ -239,7 +239,7 @@ const crearTextoHeroCliente =
     },
 
 
-    'mis-turnos': {
+    'mis-pedidos': {
 
       eyebrow:
         esModoPedido
@@ -377,17 +377,7 @@ export default function ClientLayout({
    * ==========================================================
    */
 
-  const configuracionOperativa =
-    companyContext
-      ?.configuracion_operativa ||
-    {};
-
-
-  const esModoPedido =
-    configuracionOperativa.modo_operacion ===
-      'pedido' ||
-    configuracionOperativa.usa_agenda ===
-      false;
+  const esModoPedido = true;
 
 
   /*
@@ -643,7 +633,7 @@ export default function ClientLayout({
         reserve:
           rutas.reserva,
 
-        'mis-turnos':
+        'mis-pedidos':
           rutas.misTurnos,
 
         perfil:

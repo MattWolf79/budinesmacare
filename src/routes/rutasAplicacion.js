@@ -7,10 +7,7 @@
 export const rutasAdministrador = {
 
   agenda:
-    'agenda',
-
-  empleados:
-    'empleados',
+    'pedidos',
 
   clientes:
     'clientes',
@@ -30,14 +27,8 @@ export const rutasAdministrador = {
   pedidos:
     'pedidos',
 
-  pendientes:
-    'pendientes',
-
   cerrarAtencion:
     'cerrar-atencion',
-
-  disponibilidad:
-    'disponibilidad'
 
 };
 
@@ -54,13 +45,13 @@ export const rutasCliente = {
     'inicio',
 
   reserva:
-    'reserva',
+    'nuevo',
 
   misTurnos:
-    'mis-turnos',
+    'mis-pedidos',
 
   perfil:
-    'perfil'
+    'mi-cuenta'
 
 };
 
@@ -70,44 +61,6 @@ export const rutasCliente = {
  * RUTAS EMPLEADO
  * ============================================================
  */
-
-export const rutasEmpleado = {
-
-  /*
-   * La raíz del empleado no tiene segmento adicional.
-   *
-   * /empresa/empleado
-   */
-
-  inicio:
-    '',
-
-  agenda:
-    'agenda',
-
-  clientes:
-    'clientes',
-
-  productos:
-    'productos',
-
-  disponibilidad:
-    'disponibilidad',
-
-  perfil:
-    'perfil',
-
-  cerrarAtencion:
-    'cerrar-atencion',
-
-  nuevaReserva:
-    'nueva-reserva',
-
-  nuevoPedido:
-    'nuevo-pedido'
-
-};
-
 
 /*
  * ============================================================
@@ -129,21 +82,6 @@ export const rutasEmpleado = {
  *
  *   "empresa"
  */
-
-const normalizarSlug = (
-  companySlug
-) =>
-
-  String(
-    companySlug || ''
-  )
-    .trim()
-    .toLowerCase()
-    .replace(
-      /^\/+|\/+$/g,
-      ''
-    );
-
 
 /*
  * Construye URLs completas a partir
@@ -199,18 +137,9 @@ const crearRutasConBase = (
  * ============================================================
  */
 
-export const obtenerRutasAdministrador = (
-  companySlug
-) => {
+export const obtenerRutasAdministrador = () => {
 
-  const slug =
-    normalizarSlug(
-      companySlug
-    );
-
-
-  const base =
-    `/${slug}/admin`;
+  const base = '/admin';
 
 
   return crearRutasConBase(
@@ -227,51 +156,14 @@ export const obtenerRutasAdministrador = (
  * ============================================================
  */
 
-export const obtenerRutasCliente = (
-  companySlug
-) => {
+export const obtenerRutasCliente = () => {
 
-  const slug =
-    normalizarSlug(
-      companySlug
-    );
-
-
-  const base =
-    `/${slug}/sacarturno`;
+  const base = '/pedidos';
 
 
   return crearRutasConBase(
     base,
     rutasCliente
-  );
-
-};
-
-
-/*
- * ============================================================
- * RUTAS EMPLEADO - URL COMPLETA
- * ============================================================
- */
-
-export const obtenerRutasEmpleado = (
-  companySlug
-) => {
-
-  const slug =
-    normalizarSlug(
-      companySlug
-    );
-
-
-  const base =
-    `/${slug}/empleado`;
-
-
-  return crearRutasConBase(
-    base,
-    rutasEmpleado
   );
 
 };

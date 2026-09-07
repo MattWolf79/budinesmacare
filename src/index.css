@@ -25448,3 +25448,91 @@ body ::selection {
   }
 }
 
+/* ==========================================================
+   COMO COMPRAR
+   ========================================================== */
+
+.landing-how-it-works {
+  padding: 5rem 2rem;
+  background: #fff8fb;
+  text-align: center;
+}
+
+.landing-how-it-works h2 {
+  font-size: 2.2rem;
+  color: #7b1948;
+  margin-bottom: 3rem;
+  font-weight: 700;
+}
+
+.landing-steps {
+  max-width: 1400px;
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(220px, 1fr)
+  );
+
+  gap: 1.5rem;
+}
+
+.landing-steps > div {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.08);
+
+  transition: transform .2s;
+}
+
+.landing-steps > div:hover {
+  transform: translateY(-4px);
+}
+
+.landing-steps h3 {
+  width: 60px;
+  height: 60px;
+
+  margin: 0 auto 1rem;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #a01358;
+
+  color: white;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.landing-steps p {
+  margin: 0;
+  color: #4d4d4d;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .landing-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .landing-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+.landing-how-it-works {
+  margin-top: -20px;
+  position: relative;
+  z-index: 2;
+}
