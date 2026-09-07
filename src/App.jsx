@@ -1050,6 +1050,8 @@ function CompanyApp() {
     clearInternalSession();
 
     setLocalClientSession(null);
+    setSession(null);
+    setAuthProfile(null);
 
     sessionStorage.removeItem(
       lastActivityStorageKey
@@ -1068,9 +1070,7 @@ function CompanyApp() {
       return;
     }
 
-    navigate('/', {
-      replace: true
-    });
+    window.location.replace('/');
   };
 
   const loadAuthProfile =
