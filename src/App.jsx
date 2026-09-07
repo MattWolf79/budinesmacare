@@ -1064,7 +1064,13 @@ function CompanyApp() {
       alert(
         'No se pudo cerrar la sesión. Intentá nuevamente.'
       );
+
+      return;
     }
+
+    navigate('/', {
+      replace: true
+    });
   };
 
   const loadAuthProfile =

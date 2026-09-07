@@ -1004,19 +1004,16 @@ export default function NewBookingPanel({
         }
       }
 
-      // Un solo mail consolidado por reserva (best-effort: no bloquea al cliente).
+      let notificationError = null;
       if (clientGroupId && createdClientBookingIds.length > 0) {
-        try {
-          await supabase.rpc('notify_booking_group', {
-            group_id_value: clientGroupId,
-            company_slug_value: companySlug,
-            account_id_value: clientAccountId,
-            session_token_value: internalSessionToken,
-            event_kind: rescheduleMode ? 'reschedule' : 'new'
-          });
-        } catch (notifyError) {
-          console.warn('No se pudo enviar el mail de la reserva.', notifyError);
-        }
+        const notificationResult = await supabase.rpc('notify_booking_group', {
+          group_id_value: clientGroupId,
+          company_slug_value: companySlug,
+          account_id_value: clientAccountId,
+          session_token_value: internalSessionToken,
+          event_kind: rescheduleMode ? 'reschedule' : 'new'
+        });
+        notificationError = notificationResult.error;
       }
 
       setIsSaving(false);
@@ -1040,9 +1037,12 @@ export default function NewBookingPanel({
         return;
       }
       const [, cMonth, cDay] = String(date).split('-');
-      setSuccessMessage(esModoPedido
+      const completedMessage = esModoPedido
         ? `Pedido cargado para el ${cDay}/${cMonth}. Muchas gracias.`
-        : `Reservaste turno para el ${cDay}/${cMonth}. Muchas gracias.`);
+        : `Reservaste turno para el ${cDay}/${cMonth}. Muchas gracias.`;
+      setSuccessMessage(notificationError
+        ? `${completedMessage} No se pudo enviar el email de confirmación: ${formatSupabaseError(notificationError)}`
+        : completedMessage);
       return;
     }
 

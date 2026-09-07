@@ -22212,7 +22212,7 @@ body .platform-admin-header .app-navbar-logout:hover {
     linear-gradient(155deg, #1c1710 0%, #12100a 60%, #0d0b07 100%);
   background-size: cover;
   background-position: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .landing-hero.has-image {
@@ -25533,7 +25533,7 @@ body ::selection {
 }
 
 .landing-how-it-works {
-  margin-top: -20px;
+  margin-top: 70px;
   position: relative;
   z-index: 2;
 }
@@ -25646,6 +25646,7 @@ body ::selection {
   font-size: 14px;
   font-weight: 800;
   padding: 9px 18px;
+  border-radius: 999px !important;
 }
 
 .landing-nav-link:hover,
@@ -25746,7 +25747,7 @@ body ::selection {
   position: absolute;
   z-index: 2;
   right: clamp(24px, 5vw, 88px);
-  bottom: 30px;
+  bottom: -46px;
   left: clamp(24px, 5vw, 88px);
   display: grid;
   grid-template-columns: repeat(3, minmax(130px, 1fr));
@@ -25852,7 +25853,7 @@ body ::selection {
 
   .landing-hero-benefits {
     right: 8px;
-    bottom: 19px;
+    bottom: -42px;
     left: 8px;
     padding: 14px 2px;
   }
