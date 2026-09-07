@@ -25855,11 +25855,14 @@ body ::selection {
     right: 8px;
     bottom: -42px;
     left: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     padding: 14px 2px;
   }
 
   .landing-hero-benefit {
+    min-width: 0;
     padding: 0 6px;
     font-size: 11px;
+    overflow-wrap: anywhere;
   }
 }
