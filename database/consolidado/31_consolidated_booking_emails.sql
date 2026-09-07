@@ -1096,6 +1096,12 @@ begin
       where p.user_id = auth.uid()
         and p.company_id = grp_company
         and p.active is not false
+    ) and not exists (
+      -- Cliente publico autenticado con Supabase Auth que es dueno de los
+      -- bookings del grupo (no tiene profile de staff en esta empresa).
+      select 1 from public.bookings b
+      where b.booking_group_id = group_id_value
+        and b.user_id = auth.uid()
     ) then
       raise exception 'No autorizado.';
     end if;
