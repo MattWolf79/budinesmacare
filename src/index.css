@@ -22236,6 +22236,7 @@ body .platform-admin-header .app-navbar-logout:hover {
 }
 
 .landing-nav {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -25535,4 +25536,329 @@ body ::selection {
   margin-top: -20px;
   position: relative;
   z-index: 2;
+}
+
+/* Budines Macare public hero */
+.landing-page {
+  background: #fff9f1;
+  color: #35180f;
+}
+
+.landing-hero {
+  min-height: min(680px, 100vh);
+  padding: 28px 24px 0 clamp(24px, 5vw, 88px);
+  color: #35180f;
+  background: #fffaf4;
+}
+
+.landing-hero::after {
+  inset: auto -5% -85px;
+  height: 180px;
+  background: #fff9f1;
+  border-radius: 50% 50% 0 0 / 45% 45% 0 0;
+}
+
+.landing-nav,
+.landing-hero-content,
+.landing-hero-benefits {
+  z-index: 1;
+}
+
+.landing-brand {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  gap: 10px;
+  line-height: 1;
+}
+
+.landing-brand-overline {
+  grid-column: 1 / -1;
+  margin-left: 44px;
+  color: #35180f;
+  font-family: "Brush Script MT", cursive;
+  font-size: 28px;
+  font-weight: 400;
+}
+
+.landing-brand-name {
+  grid-column: 1;
+  color: #35180f;
+  font-family: "Brush Script MT", cursive;
+  font-size: clamp(42px, 4vw, 58px);
+  font-weight: 400;
+  letter-spacing: -0.07em;
+}
+
+.landing-brand-heart {
+  align-self: start;
+  margin: 6px 0 0 12px;
+  color: #f29b00;
+  font-size: 37px;
+  font-weight: 700;
+}
+
+.landing-nav-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  gap: 12px;
+  width: max-content;
+}
+
+.landing-nav-cta,
+.landing-nav-link,
+.landing-hero-primary,
+.landing-hero-secondary {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #35180f;
+  border: 1px solid #6f281c;
+  background: rgba(255, 252, 247, 0.74);
+  box-shadow: none;
+}
+
+.landing-nav-cta,
+.landing-hero-primary {
+  color: #35180f;
+  border-color: transparent;
+  background: linear-gradient(135deg, #ffbd31 0%, #f39100 100%);
+  box-shadow: 0 10px 22px rgba(185, 104, 0, 0.18);
+}
+
+.landing-nav-cta,
+.landing-nav-link {
+  min-height: 40px;
+  padding: 8px 17px;
+  font-size: 12px;
+}
+
+.landing-nav-cta:hover,
+.landing-hero-primary:hover {
+  box-shadow: 0 13px 28px rgba(185, 104, 0, 0.26);
+}
+
+.landing-nav-link {
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 9px 18px;
+}
+
+.landing-nav-link:hover,
+.landing-hero-secondary:hover {
+  color: #35180f;
+  border-color: #6f281c;
+  background: #fffaf4;
+}
+
+.landing-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: min(500px, 48%);
+  padding: clamp(100px, 11vw, 126px) 0 118px;
+}
+
+.landing-hero-image-wrap {
+  position: absolute;
+  z-index: 1;
+  top: clamp(130px, 13vw, 162px);
+  right: 0;
+  width: min(52vw, 690px);
+  height: min(38vw, 430px);
+  overflow: hidden;
+}
+
+.landing-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  clip-path: none;
+  box-shadow: none;
+}
+
+.landing-hero-image-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #fffaf4 0%, rgba(255, 250, 244, 0.9) 9%, rgba(255, 250, 244, 0.12) 39%, rgba(255, 250, 244, 0) 100%);
+}
+
+.landing-hero-kicker {
+  padding: 0 0 11px;
+  border: 0;
+  border-bottom: 3px solid #f5a000;
+  border-radius: 0;
+  color: #6f281c;
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+}
+
+.landing-hero-title {
+  color: #35180f;
+  font-size: clamp(41px, 5.2vw, 68px);
+  line-height: 1;
+  text-shadow: none;
+}
+
+.landing-hero-title-accent {
+  margin-top: 4px;
+  color: #ee9200;
+  font-family: "Brush Script MT", cursive;
+  font-size: clamp(38px, 5vw, 63px);
+  font-weight: 400;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.landing-hero-description {
+  max-width: 320px;
+  margin-top: 20px;
+  color: #674438;
+  font-size: 15px;
+  line-height: 1.5;
+  text-shadow: none;
+}
+
+.landing-hero-actions {
+  display: flex;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.landing-hero-primary,
+.landing-hero-secondary {
+  min-height: 39px;
+  padding: 8px 16px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.landing-hero-benefits {
+  position: absolute;
+  z-index: 2;
+  right: clamp(24px, 5vw, 88px);
+  bottom: 30px;
+  left: clamp(24px, 5vw, 88px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(130px, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 20px max(12px, 8%);
+  color: #35180f;
+  background: rgba(255, 250, 244, 0.8);
+}
+
+.landing-hero-benefit {
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 48px;
+  padding: 0 18px;
+  color: #35180f;
+  font-size: 13px;
+  text-align: center;
+}
+
+.landing-hero-benefit + .landing-hero-benefit {
+  border-left: 1px solid rgba(243, 145, 0, 0.35);
+}
+
+.landing-hero-benefit-icon {
+  width: 35px;
+  height: 35px;
+  color: #6f281c;
+  background: #ffe7af;
+  font-size: 19px;
+}
+
+@media (max-width: 700px) {
+  .landing-hero {
+    min-height: auto;
+    padding: 18px 14px 0 20px;
+    background: #fffaf4;
+  }
+
+  .landing-nav {
+    align-items: flex-start;
+  }
+
+  .landing-brand-overline {
+    margin-left: 31px;
+    font-size: 21px;
+  }
+
+  .landing-brand-name {
+    display: inline;
+    font-size: 41px;
+  }
+
+  .landing-brand-heart {
+    margin: 4px 0 0 8px;
+    font-size: 27px;
+  }
+
+  .landing-nav-actions {
+    top: 0;
+    right: 0;
+    gap: 6px;
+  }
+
+  .landing-nav-cta,
+  .landing-nav-link {
+    min-height: 35px;
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+
+  .landing-hero-content {
+    max-width: 56%;
+    padding: 78px 0 145px;
+  }
+
+  .landing-hero-image-wrap {
+    top: 174px;
+    right: 0;
+    bottom: auto;
+    width: 48%;
+    height: 190px;
+    opacity: 1;
+  }
+
+  .landing-hero-image-wrap::after {
+    background: linear-gradient(90deg, rgba(255, 250, 244, 0.88) 0%, rgba(255, 250, 244, 0.05) 42%, rgba(255, 250, 244, 0) 100%);
+  }
+
+  .landing-hero-actions {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 8px;
+  }
+
+  .landing-hero-primary,
+  .landing-hero-secondary {
+    min-height: 36px;
+    padding: 7px 12px;
+    font-size: 11px;
+  }
+
+  .landing-hero-benefits {
+    right: 8px;
+    bottom: 19px;
+    left: 8px;
+    padding: 14px 2px;
+  }
+
+  .landing-hero-benefit {
+    padding: 0 6px;
+    font-size: 11px;
+  }
 }

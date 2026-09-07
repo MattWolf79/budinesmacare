@@ -6,14 +6,7 @@ import {
   getAdminPortalPath,
   getClientPortalPath
 } from '../utils/tenant';
-
-
-const DEFAULT_BENEFITS = [
-  'Reservá online las 24 horas',
-  'Recordatorios automáticos por mail',
-  'Sin llamados ni esperas',
-  'Atención personalizada',
-];
+import budinHero from '../assets/budin-hero.jpg';
 
 
 const sanitizeInstagramHandle = (
@@ -67,57 +60,7 @@ export default function LandingPage({
     null;
 
 
-const heroTitle =
-  landing.titulo ||
-  `Budines artesanales Macaré`;
-
-
-  const heroSubtitle =
-  landing.subtitulo ||
-  'Sabores únicos para cada momento';
-
-
-  const heroDescription =
-  landing.descripcion ||
-  'Elegí tus productos favoritos, seleccioná una fecha de entrega y realizá tu pedido online de forma simple.';
-
-
-  const heroImage =
-    landing.hero_image_data_url ||
-    null;
-
-
-  const ctaText =
-  landing.cta_texto ||
-  'Realizar pedido';
-
-
-  const kicker =
-    String(
-      landing.etiqueta || ''
-    ).trim();
-
-
-  const benefits =
-    Array.isArray(
-      landing.beneficios
-    ) &&
-    landing.beneficios.length > 0
-      ? landing.beneficios
-          .filter(
-            (item) =>
-              String(
-                item || ''
-              ).trim() !== ''
-          )
-          .slice(
-            0,
-            4
-          )
-      : DEFAULT_BENEFITS;
-
-
-  const showInternalAccess =
+    const showInternalAccess =
     landing.mostrar_acceso_interno !==
     false;
 
@@ -134,12 +77,12 @@ const heroTitle =
 
   const whatsapp =
     landing.whatsapp ||
-    '';
+    '1171123490';
 
 
   const instagram =
     sanitizeInstagramHandle(
-      landing.instagram || ''
+      landing.instagram || 'macare.budines'
     );
 
 
@@ -187,15 +130,6 @@ const heroTitle =
     );
 
 
-  const heroStyle =
-    heroImage
-      ? {
-          backgroundImage:
-            `linear-gradient(105deg, rgba(14, 11, 6, 0.92) 0%, rgba(14, 11, 6, 0.66) 42%, rgba(14, 11, 6, 0.4) 100%), url(${heroImage})`
-        }
-      : undefined;
-
-
   return (
     <main className="landing-page">
 
@@ -204,64 +138,37 @@ const heroTitle =
           ====================================================== */}
 
       <section
-        className={
-          `landing-hero${
-            heroImage
-              ? ' has-image'
-              : ''
-          }`
-        }
-        style={
-          heroStyle
-        }
+        className="landing-hero"
       >
 
         <header className="landing-nav">
 
-          <div className="landing-brand">
-
-            {logoSrc ? (
-              <img
-                className="landing-brand-logo"
-                src={logoSrc}
-                alt={companyName}
-              />
-            ) : (
-              <span
-                className="landing-brand-mark"
-                aria-hidden
-              >
-                {companyName
-                  .charAt(0)
-                  .toUpperCase()}
-              </span>
-            )}
-
-            <span className="landing-brand-name">
-              {companyName}
-            </span>
-
+          <div className="landing-brand" aria-label="Budines Macaré">
+            <span className="landing-brand-overline">Budines</span>
+            <span className="landing-brand-name">Macaré</span>
+            <span className="landing-brand-heart" aria-hidden>♡</span>
           </div>
 
 
           <nav className="landing-nav-actions">
 
-            {showInternalAccess && (
-              <Link
-  className="landing-nav-link"
-  to={adminPath}
->
-  Administración
-</Link>
-            )}
-
-
             <Link
               className="landing-nav-cta"
               to={clientPath}
             >
-              Ingresar
+              <span aria-hidden>🛒</span>
+              Hacer pedido
             </Link>
+
+            {showInternalAccess && (
+              <Link
+                className="landing-nav-link"
+                to={adminPath}
+              >
+                <span aria-hidden>♙</span>
+                Soy admin
+              </Link>
+            )}
 
           </nav>
 
@@ -270,26 +177,24 @@ const heroTitle =
 
         <div className="landing-hero-content">
 
-          {kicker && (
-            <p className="landing-hero-kicker">
-              {kicker}
-            </p>
-          )}
+          <p className="landing-hero-kicker">
+            Budines artesanales
+          </p>
 
 
           <h1 className="landing-hero-title">
 
-            {heroTitle}
+            El sabor casero
 
             <span className="landing-hero-title-accent">
-              {heroSubtitle}
+              en cada bocado
             </span>
 
           </h1>
 
 
           <p className="landing-hero-description">
-            {heroDescription}
+            Budines frescos, esponjosos y llenos de sabor, hechos con ingredientes de calidad.
           </p>
 
 
@@ -299,45 +204,47 @@ const heroTitle =
               className="landing-hero-primary"
               to={clientPath}
             >
-              {ctaText}
+              <span aria-hidden>🛒</span>
+              Hacer pedido
             </Link>
 
 
             {showInternalAccess && (
               <Link
-  className="landing-hero-secondary"
-  to={adminPath}
->
-  Administración
-</Link>
+                className="landing-hero-secondary"
+                to={adminPath}
+              >
+                <span aria-hidden>♙</span>
+                Soy admin
+              </Link>
             )}
 
           </div>
 
         </div>
 
+        <div className="landing-hero-image-wrap" aria-hidden>
+          <img
+            className="landing-hero-image"
+            src={budinHero}
+            alt=""
+          />
+        </div>
 
         <ul className="landing-hero-benefits">
 
-          {benefits.map(
-            (
-              benefit
-            ) => (
-              <li
-                key={benefit}
-                className="landing-hero-benefit"
-              >
-                <span
-                  className="landing-hero-benefit-icon"
-                  aria-hidden
-                >
-                  ✓
-                </span>
-
-                {benefit}
-              </li>
-            )
-          )}
+          <li className="landing-hero-benefit">
+            <span className="landing-hero-benefit-icon" aria-hidden>◒</span>
+            Ingredientes seleccionados
+          </li>
+          <li className="landing-hero-benefit">
+            <span className="landing-hero-benefit-icon" aria-hidden>♡</span>
+            Recetas tradicionales
+          </li>
+          <li className="landing-hero-benefit">
+            <span className="landing-hero-benefit-icon" aria-hidden>☺</span>
+            El mejor sabor, siempre
+          </li>
 
         </ul>
 
@@ -374,103 +281,6 @@ const heroTitle =
   </div>
 
 </section>
-
-      {/* ======================================================
-          ACCESOS
-          ====================================================== */}
-
-      <section className="landing-access">
-
-        <div className="landing-access-inner">
-
-          <p className="landing-access-kicker">
-            Accesos
-          </p>
-
-
-          <h2 className="landing-access-title">
-            ¿Cómo querés ingresar?
-          </h2>
-
-
-          <div className="landing-access-grid">
-
-            {/* CLIENTE */}
-
-            <Link
-              className="landing-access-card"
-              to={clientPath}
-            >
-
-              <span
-                className="landing-access-icon"
-                aria-hidden
-              >
-                👤
-              </span>
-
-
-              <span className="landing-access-card-title">
-                Soy cliente
-              </span>
-
-
-              <span className="landing-access-card-copy">
-                Realizá pedidos, consultá estados y revisá tu historial.
-              </span>
-
-
-              <span className="landing-access-card-cta">
-                Realizar pedido →
-              </span>
-
-            </Link>
-
-
-            {showInternalAccess && (
-              <>
-
-                {/* ADMINISTRADOR */}
-
-                <Link
-                  className="landing-access-card"
-                  to={adminPath}
-                >
-
-                  <span
-                    className="landing-access-icon variant-admin"
-                    aria-hidden
-                  >
-                    ⚙️
-                  </span>
-
-
-                  <span className="landing-access-card-title">
-                    Administración
-                  </span>
-
-
-                  <span className="landing-access-card-copy">
-                    Gestioná productos, categorías, pedidos y configuración.
-                  </span>
-
-
-                  <span className="landing-access-card-cta">
-                    Panel admin →
-                  </span>
-
-                </Link>
-
-              </>
-            )}
-
-          </div>
-
-        </div>
-
-      </section>
-
-
 
       {/* ======================================================
           CONTACTO
