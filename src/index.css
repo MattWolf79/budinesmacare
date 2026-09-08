@@ -22281,6 +22281,14 @@ body .platform-admin-header .app-navbar-logout:hover {
   text-overflow: ellipsis;
 }
 
+.landing-nav-actions-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .landing-nav-actions {
   display: flex;
   align-items: center;
@@ -22320,6 +22328,43 @@ body .platform-admin-header .app-navbar-logout:hover {
 .landing-nav-cta:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 26px rgba(var(--app-accent-rgb, 224, 160, 32), 0.42);
+}
+
+.landing-hero-quicklinks {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.landing-hero-quicklink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  font-size: 12px;
+  font-weight: 700;
+  color: #efe7d6;
+}
+
+.landing-hero-quicklink svg,
+.landing-hero-quicklink span[aria-hidden] {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.landing-hero-quicklink a,
+.landing-hero-quicklink-alias {
+  color: var(--app-text, #35180f);
+  text-decoration: none;
+}
+
+.landing-hero-quicklink a:hover {
+  text-decoration: underline;
 }
 
 .landing-hero-content {
@@ -22549,7 +22594,7 @@ body .platform-admin-header .app-navbar-logout:hover {
 /* ===== Sección Contacto ===== */
 .landing-contact {
   padding: clamp(40px, 7vw, 72px) clamp(20px, 6vw, 96px);
-  background: #17130c;
+  background: #fffaf4;
   color: #efe7d6;
 }
 
@@ -22583,8 +22628,9 @@ body .platform-admin-header .app-navbar-logout:hover {
   color: #e2dac9;
 }
 
-.landing-contact-item a {
-  color: var(--app-surface-strong, #ffd98a);
+.landing-contact-item a,
+.landing-contact-item-alias {
+  color: var(--app-text, #4c1d95);
   text-decoration: none;
 }
 
@@ -25599,10 +25645,15 @@ body ::selection {
   font-weight: 700;
 }
 
-.landing-nav-actions {
+.landing-nav-actions-col {
   position: absolute;
   top: 0;
   right: 0;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.landing-nav-actions {
   gap: 12px;
   width: max-content;
 }
