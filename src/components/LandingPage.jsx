@@ -1,4 +1,7 @@
 import {
+  useState
+} from 'react';
+import {
   Link
 } from 'react-router-dom';
 
@@ -7,6 +10,7 @@ import {
   getClientPortalPath
 } from '../utils/tenant';
 import budinHero from '../assets/budin-hero.jpg';
+import quienesSomosImage from '../assets/quienessomos.jpg';
 
 
 const sanitizeInstagramHandle = (
@@ -128,6 +132,10 @@ export default function LandingPage({
   companySlug,
   companyContext
 }) {
+  const [
+    showAboutImage,
+    setShowAboutImage
+  ] = useState(false);
 
   const landing =
     companyContext?.landing ||
@@ -543,6 +551,13 @@ export default function LandingPage({
           {companyName}
         </span>
 
+        <button
+          className="landing-footer-about"
+          type="button"
+          onClick={() => setShowAboutImage(true)}
+        >
+          Quienes Somos?
+        </button>
 
         <span className="landing-footer-powered">
           Powered by{' '}
@@ -552,6 +567,28 @@ export default function LandingPage({
         </span>
 
       </footer>
+
+      {showAboutImage && (
+        <section
+          className="landing-about-viewer"
+          aria-label="Quienes Somos"
+          role="dialog"
+          aria-modal="true"
+        >
+          <img
+            className="landing-about-image"
+            src={quienesSomosImage}
+            alt="Quienes Somos - Macaré"
+          />
+          <button
+            className="landing-about-back"
+            type="button"
+            onClick={() => setShowAboutImage(false)}
+          >
+            Volver
+          </button>
+        </section>
+      )}
 
     </main>
   );

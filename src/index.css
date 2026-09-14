@@ -22641,10 +22641,9 @@ body .platform-admin-header .app-navbar-logout:hover {
 /* ===== Footer ===== */
 .landing-footer {
   margin-top: auto;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   padding: 20px clamp(20px, 6vw, 96px);
   background: #0d0b07;
@@ -22657,8 +22656,63 @@ body .platform-admin-header .app-navbar-logout:hover {
   color: #efe7d6;
 }
 
+.landing-footer-about {
+  border: 0;
+  color: #efe7d6;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.landing-footer-about:hover {
+  color: #ffd98a;
+  text-decoration: underline;
+}
+
+.landing-footer-powered {
+  justify-self: end;
+}
+
 .landing-footer-powered strong {
   color: var(--app-surface-strong, #ffd98a);
+}
+
+.landing-about-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  overflow: auto;
+  background: rgba(13, 11, 7, 0.96);
+}
+
+.landing-about-image {
+  display: block;
+  width: min(100%, 720px);
+  max-height: calc(100vh - 100px);
+  object-fit: contain;
+}
+
+.landing-about-back {
+  border: 1px solid #ffd98a;
+  border-radius: 999px;
+  padding: 9px 24px;
+  color: #35180f;
+  background: #ffd98a;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.landing-about-back:hover {
+  background: #fff0bd;
 }
 
 @media (max-width: 640px) {
@@ -22700,6 +22754,16 @@ body .platform-admin-header .app-navbar-logout:hover {
   .landing-hero-primary,
   .landing-hero-secondary {
     justify-content: center;
+  }
+
+  .landing-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .landing-footer-powered {
+    justify-self: auto;
   }
 }
 
