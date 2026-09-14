@@ -25927,7 +25927,7 @@ body ::selection {
 
   .landing-nav-actions {
     top: 0;
-    right: 0;
+    right: -22px;
     gap: 6px;
   }
 
