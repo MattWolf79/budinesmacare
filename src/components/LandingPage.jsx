@@ -562,7 +562,7 @@ export default function LandingPage({
         <span className="landing-footer-powered">
           Powered by{' '}
           <strong>
-            ❤️
+            QuieroTurnoApp
           </strong>
         </span>
 
