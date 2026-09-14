@@ -57,6 +57,29 @@ const getHoraActual = () => {
 };
 
 const PRODUCT_NAME_SEPARATOR = '::';
+const DEFAULT_ADDON_UNIT_PRICE = 500;
+
+const createEmptyPedidoAddon = () => ({
+  key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  kind: '',
+  quantity: 1,
+  unitPrice: DEFAULT_ADDON_UNIT_PRICE
+});
+
+const buildAddonsSummary = (addons) => {
+  if (!Array.isArray(addons)) return '';
+  return addons
+    .map((addon) => {
+      const kind = String(addon?.kind || '').trim();
+      const quantity = Math.max(1, Number(addon?.quantity || 1));
+      const unitPrice = Math.max(0, Number(addon?.unitPrice || 0));
+      if (!kind) return '';
+      const priceLabel = unitPrice > 0 ? ` ($ ${unitPrice.toLocaleString('es-AR')} c/u)` : '';
+      return `${kind} x${quantity}${priceLabel}`;
+    })
+    .filter(Boolean)
+    .join(' | ');
+};
 
 const parseProductCatalogName = (value) => {
   const raw = String(value || '').trim();
@@ -91,6 +114,8 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
   const [fechaPedido, setFechaPedido] = useState(getFechaActual());
   const [horaPedido, setHoraPedido] = useState(getHoraActual());
   const [aclaracionesPedido, setAclaracionesPedido] = useState('');
+  const [pedidoAddons, setPedidoAddons] = useState([]);
+  const [showPedidoAddonsModal, setShowPedidoAddonsModal] = useState(false);
   const [mensajePedido, setMensajePedido] = useState('');
 
   useEffect(() => {
@@ -430,9 +455,43 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
       .filter(Boolean)
   ), [productosActivos, cantidadesProducto]);
 
+  const normalizedPedidoAddons = useMemo(() => (
+    pedidoAddons
+      .map((row) => ({
+        kind: String(row?.kind || '').trim(),
+        quantity: Math.max(1, Number(row?.quantity || 1)),
+        unitPrice: Math.max(0, Number(row?.unitPrice || 0))
+      }))
+      .filter((row) => row.kind)
+  ), [pedidoAddons]);
+
+  const addonsTotal = useMemo(
+    () => normalizedPedidoAddons.reduce((total, addon) => total + addon.quantity * addon.unitPrice, 0),
+    [normalizedPedidoAddons]
+  );
+
+  const pedidoAddonsSummary = useMemo(() => buildAddonsSummary(normalizedPedidoAddons), [normalizedPedidoAddons]);
+
+  const itemsPedidoAgrupados = useMemo(() => {
+    const grouped = new Map();
+    itemsPedido.forEach((item) => {
+      const type = item.productoTipo || 'General';
+      const current = grouped.get(type) || [];
+      current.push(item);
+      grouped.set(type, current);
+    });
+
+    return Array.from(grouped.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+      .map(([type, items]) => ({
+        type,
+        items: items.sort((a, b) => a.productoNombre.localeCompare(b.productoNombre, 'es'))
+      }));
+  }, [itemsPedido]);
+
   const totalPedido = useMemo(
-    () => itemsPedido.reduce((total, item) => total + item.subtotal, 0),
-    [itemsPedido]
+    () => itemsPedido.reduce((total, item) => total + item.subtotal, 0) + addonsTotal,
+    [itemsPedido, addonsTotal]
   );
 
   const ajustarCantidadProducto = (productoId, diferencia) => {
@@ -456,6 +515,18 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
       behavior: 'smooth'
     });
   };
+
+  const updatePedidoAddon = (key, field, value) => {
+    setPedidoAddons((current) => current.map((row) => {
+      if (row.key !== key) return row;
+      if (field === 'quantity') return { ...row, quantity: Math.max(1, Number(value || 1)) };
+      if (field === 'unitPrice') return { ...row, unitPrice: Math.max(0, Number(value || 0)) };
+      return { ...row, [field]: value };
+    }));
+  };
+
+  const addPedidoAddon = () => setPedidoAddons((current) => [...current, createEmptyPedidoAddon()]);
+  const removePedidoAddon = (key) => setPedidoAddons((current) => current.filter((row) => row.key !== key));
 
   const registrarPedido = async () => {
     if (!itemsPedido.length) {
@@ -491,7 +562,8 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
         `Pedido x${item.cantidad}`,
         item.productoTipo ? `${item.productoTipo} · ${item.productoNombre}` : item.productoNombre,
         preciosHabilitados ? `${formatMoney(item.precioUnitario)} c/u` : '',
-        aclaracionesPedido.trim() ? `Aclaraciones: ${aclaracionesPedido.trim()}` : ''
+        aclaracionesPedido.trim() ? `Aclaraciones: ${aclaracionesPedido.trim()}` : '',
+        index === 0 && pedidoAddonsSummary ? `Agregados: ${pedidoAddonsSummary}` : ''
       ].filter(Boolean).join(' · ');
 
       const { data, error } = await supabase.rpc('request_client_booking', {
@@ -539,6 +611,8 @@ export default function ClientDashboard({ user, activeView = 'home', selectedPro
 
     setCantidadesProducto({});
     setAclaracionesPedido('');
+    setPedidoAddons([]);
+    setShowPedidoAddonsModal(false);
     setMensajePedido(`Pedido registrado: ${totalItems} item(s), entrega solicitada ${fechaPedido} ${horaPedido}.`);
     setRefreshKey((current) => current + 1);
     setIsProcessingAction(false);
@@ -1143,22 +1217,97 @@ url(${producto.product_image_url})` }
                 placeholder="Ejemplo: 2 empanadas con salsa picante, 1 pizza en caja."
               />
             </label>
+            <div className="platform-field" style={{ gridColumn: '1 / -1' }}>
+              <span>Agregados del pedido</span>
+              <button
+                type="button"
+                className="new-booking-addons-add"
+                onClick={() => {
+                  if (pedidoAddons.length === 0) addPedidoAddon();
+                  setShowPedidoAddonsModal(true);
+                }}
+              >
+                + Agregado
+              </button>
+              {normalizedPedidoAddons.length > 0 ? (
+                <small>
+                  {normalizedPedidoAddons.length} agregado(s)
+                  {preciosHabilitados ? ` · ${formatMoney(addonsTotal)}` : ''}
+                </small>
+              ) : (
+                <small>Podés sumar extras con precio y cantidad. Se guardan en el comentario del pedido.</small>
+              )}
+            </div>
           </div>
 
-          {itemsPedido.length > 0 && (
+          {(itemsPedido.length > 0 || normalizedPedidoAddons.length > 0) && (
             <div className="client-turno-detail-card" style={{ marginTop: '1rem' }}>
-              <h3>Resumen del pedido</h3>
-              <div className="client-turno-detail-fields">
-                {itemsPedido.map((item) => (
-                  <div className="client-turno-detail-field" key={item.producto.id}>
-                    <span>{item.productoTipo ? `${item.productoTipo} · ${item.productoNombre}` : item.productoNombre}</span>
-                    <strong>{item.cantidad} x {preciosHabilitados ? formatMoney(item.precioUnitario) : 'item'}{preciosHabilitados ? ` = ${formatMoney(item.subtotal)}` : ''}</strong>
-                  </div>
-                ))}
+              <h3>Detalle del pedido</h3>
+              {itemsPedidoAgrupados.length > 0 && (
+                <div className="new-booking-product-list" style={{ marginTop: 8 }}>
+                  {itemsPedidoAgrupados.map((group) => (
+                    <div key={group.type} className="new-booking-product-group">
+                      <span className="new-booking-modal-group-title">{group.type}</span>
+                      <div className="new-booking-product-list">
+                        {group.items.map((item) => (
+                          <div key={item.producto.id} className="new-booking-product-row">
+                            <div className="new-booking-product-main">
+                              <strong>{item.productoNombre}</strong>
+                              <span>{item.productoTipo ? `Pedido x${item.cantidad}` : 'Sin tipo'}</span>
+                            </div>
+                            <div className="new-booking-product-subtotal" style={{ textAlign: 'left', color: '#334155', fontSize: 13 }}>
+                              x{item.cantidad}
+                            </div>
+                            <div className="new-booking-product-subtotal">
+                              {preciosHabilitados ? formatMoney(item.subtotal) : `${item.cantidad} item(s)`}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {normalizedPedidoAddons.length > 0 && (
+                <div className="new-booking-confirm-addons" style={{ marginTop: 8 }}>
+                  <p className="new-booking-confirm-addons-title">Agregados</p>
+                  <ul>
+                    {normalizedPedidoAddons.map((addon, index) => {
+                      const subtotal = addon.unitPrice > 0 ? addon.unitPrice * addon.quantity : 0;
+                      return (
+                        <li key={`${addon.kind}-${addon.unitPrice}-${index}`}>
+                          <span>{addon.kind}</span>
+                          <strong>
+                            x{addon.quantity}
+                            {subtotal > 0 ? ` · ${formatMoney(subtotal)}` : ''}
+                          </strong>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              <div className="client-turno-detail-fields" style={{ marginTop: '1rem' }}>
                 <div className="client-turno-detail-field">
                   <span>Entrega solicitada</span>
                   <strong>{fechaPedido || '-'} {horaPedido || ''}</strong>
                 </div>
+                <div className="client-turno-detail-field">
+                  <span>Cantidad total de productos</span>
+                  <strong>{itemsPedido.reduce((total, item) => total + item.cantidad, 0)}</strong>
+                </div>
+                {preciosHabilitados && (
+                  <div className="client-turno-detail-field">
+                    <span>Total productos</span>
+                    <strong>{formatMoney(totalPedido - addonsTotal)}</strong>
+                  </div>
+                )}
+                {preciosHabilitados && (
+                  <div className="client-turno-detail-field">
+                    <span>Total agregados</span>
+                    <strong>{formatMoney(addonsTotal)}</strong>
+                  </div>
+                )}
                 {preciosHabilitados && (
                   <div className="client-turno-detail-field">
                     <span>Total estimado</span>
@@ -1177,6 +1326,68 @@ url(${producto.product_image_url})` }
             </button>
           </div>
         </section>
+      )}
+
+      {showPedidoAddonsModal && (
+        <div className="new-booking-modal" role="dialog" aria-modal="true">
+          <div className="new-booking-modal-card">
+            <header className="new-booking-modal-header">
+              <h3>Agregados del pedido</h3>
+              <button type="button" onClick={() => setShowPedidoAddonsModal(false)} aria-label="Cerrar">✕</button>
+            </header>
+            <div className="new-booking-modal-body">
+              <div className="new-booking-addons-header">
+                <span className="new-booking-label">Extras</span>
+                <button type="button" className="new-booking-addons-add" onClick={addPedidoAddon}>+ Agregado</button>
+              </div>
+              <div className="new-booking-addons-list">
+                {pedidoAddons.length === 0 && (
+                  <p className="new-booking-addons-empty">Aún no agregaste extras. Tocá + Agregado para sumar uno.</p>
+                )}
+                {pedidoAddons.length > 0 && (
+                  <div className="new-booking-addon-head" aria-hidden="true">
+                    <span>Agregado</span>
+                    <span>Precio</span>
+                    <span>Cant.</span>
+                    <span />
+                  </div>
+                )}
+                {pedidoAddons.map((row) => (
+                  <div key={row.key} className="new-booking-addon-row">
+                    <input
+                      type="text"
+                      placeholder="Nombre del agregado"
+                      value={row.kind}
+                      onChange={(event) => updatePedidoAddon(row.key, 'kind', event.target.value)}
+                      autoComplete="off"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      step="1"
+                      placeholder="Precio"
+                      value={Number(row.unitPrice || 0)}
+                      onChange={(event) => updatePedidoAddon(row.key, 'unitPrice', event.target.value)}
+                      autoComplete="off"
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      value={Number(row.quantity || 1)}
+                      onChange={(event) => updatePedidoAddon(row.key, 'quantity', event.target.value)}
+                      autoComplete="off"
+                    />
+                    <button type="button" className="new-booking-addon-remove" onClick={() => removePedidoAddon(row.key)} aria-label="Quitar agregado">✕</button>
+                  </div>
+                ))}
+              </div>
+              <span className="new-booking-day-hint">El costo base de cada agregado es {formatMoney(DEFAULT_ADDON_UNIT_PRICE)}. Si tienen costo, se suman al total estimado.</span>
+            </div>
+            <footer className="new-booking-modal-footer">
+              <button type="button" className="new-booking-config-confirm" onClick={() => setShowPedidoAddonsModal(false)}>Listo</button>
+            </footer>
+          </div>
+        </div>
       )}
 
       {showAgenda && (

@@ -91,6 +91,7 @@ const displayDateToIso = (value) => {
 };
 
 const PRODUCT_NAME_SEPARATOR = '::';
+const DEFAULT_ADDON_UNIT_PRICE = 500;
 const parseProductName = (value) => {
   const raw = String(value || '').trim();
   if (!raw.includes(PRODUCT_NAME_SEPARATOR)) return { group: '', name: raw };
@@ -105,7 +106,7 @@ const createEmptyAddonRow = (kind = '') => ({
   key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
   kind,
   quantity: 1,
-  unitPrice: 0
+  unitPrice: DEFAULT_ADDON_UNIT_PRICE
 });
 
 const buildAddonsSummary = (rows) => {
@@ -1353,6 +1354,7 @@ export default function NewBookingPanel({
                           placeholder="Nombre del agregado"
                           value={row.kind}
                           onChange={(event) => updateAddonRow(row.key, 'kind', event.target.value)}
+                          autoComplete="off"
                         />
                         <input
                           type="number"
@@ -1361,12 +1363,14 @@ export default function NewBookingPanel({
                           placeholder="Precio"
                           value={Number(row.unitPrice || 0)}
                           onChange={(event) => updateAddonRow(row.key, 'unitPrice', event.target.value)}
+                          autoComplete="off"
                         />
                         <input
                           type="number"
                           min={1}
                           value={Number(row.quantity || 1)}
                           onChange={(event) => updateAddonRow(row.key, 'quantity', event.target.value)}
+                          autoComplete="off"
                         />
                         <button type="button" className="new-booking-addon-remove" onClick={() => removeAddonRow(row.key)} aria-label="Quitar agregado">✕</button>
                       </div>
