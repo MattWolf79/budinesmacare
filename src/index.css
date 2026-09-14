@@ -25899,6 +25899,12 @@ body ::selection {
   font-size: 19px;
 }
 
+@media (min-width: 701px) {
+  .landing-hero-quicklinks {
+    transform: translateY(-14px);
+  }
+}
+
 @media (max-width: 700px) {
   .landing-hero {
     min-height: auto;
