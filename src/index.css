@@ -25680,6 +25680,7 @@ body ::selection {
   grid-template-columns: auto auto;
   grid-template-rows: auto auto;
   gap: 10px;
+  max-width: calc(100% - 190px);
   line-height: 1;
 }
 
@@ -25699,6 +25700,7 @@ body ::selection {
   font-size: clamp(42px, 4vw, 58px);
   font-weight: 400;
   letter-spacing: -0.07em;
+  white-space: nowrap;
 }
 
 .landing-brand-heart {
@@ -25914,7 +25916,8 @@ body ::selection {
 
   .landing-brand-name {
     display: inline;
-    font-size: 41px;
+    max-width: 100%;
+    font-size: clamp(34px, 10vw, 41px);
   }
 
   .landing-brand-heart {
@@ -25930,9 +25933,9 @@ body ::selection {
 
   .landing-nav-cta,
   .landing-nav-link {
-    min-height: 35px;
-    padding: 7px 9px;
-    font-size: 11px;
+    min-height: 32px;
+    padding: 6px 8px;
+    font-size: 10px;
   }
 
   .landing-hero-content {
